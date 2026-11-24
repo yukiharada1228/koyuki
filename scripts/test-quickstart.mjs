@@ -11,7 +11,7 @@ function npm(args, cwd, expectedFailure = false) {
   return output;
 }
 const registry = process.argv.includes('--registry');
-const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+const version = registry ? JSON.parse(readFileSync(join(root, 'examples/quickstart/package.json'), 'utf8')).dependencies.koyuki : JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 let dependency = `koyuki@${version}`;
 if (!registry) {
   npm(['run', 'build'], root);

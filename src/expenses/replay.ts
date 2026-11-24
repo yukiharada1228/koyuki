@@ -1,4 +1,4 @@
-import { defineRequestTarget, withReplay, replayOperation, defineApplication, type Result, type Execution } from '../framework/index.js';
+import { defineRequestTarget, withReplay, replayOperation, defineApplication, type Result, type Execution, type ActionReport } from '../framework/index.js';
 import { submitted, approved, rejected, returned, edited } from './application.js';
 import type { Actor, Input, RejectInput, EditInput, Loaded, Change, ExpenseState } from './domain.js';
 import type { LoadError } from './repository.js';
@@ -13,7 +13,7 @@ export function expenseReplayCommands(repository: ExpenseReplayRepository, actor
       load: (call: RequestInput<I>) => load(call.input),
       save: (change: Change, execution) => repository.saveRequest(request(operation, execution.request), change) });
   }
-  function replay<I extends Input, E extends { kind: string }>(operation: ExpenseOperation, command: { run(input: RequestInput<I>): Promise<Result<Execution<ExpenseState>, E>> }) {
+  function replay<I extends Input, E extends { kind: string }>(operation: ExpenseOperation, command: { run(input: RequestInput<I>): Promise<Result<Execution<ExpenseState>, E>>; runDetailed(input: RequestInput<I>): Promise<ActionReport<Execution<ExpenseState>, E>> }) {
     return withReplay(command, {
       lookup: call => repository.receipt(request(operation, call)),
       resolveAfter: error => error.kind === 'SaveConflict' || error.kind === 'InvalidState' || error.kind === 'RepositoryUnavailable',

@@ -32,7 +32,7 @@
     "check:inventory": "npm --prefix examples/inventory run check",
     "test:inventory": "npm --prefix examples/inventory test",
     "demo:inventory": "npm --prefix examples/inventory start",
-    "test:replay": "tsx --test src/replay.test.ts src/expense-replay.test.ts",
+    "test:replay": "tsx --test src/replay.test.ts src/replay-detail.test.ts src/expense-replay.test.ts",
     "demo:expenses:replay": "tsx src/examples/expense-replay.ts",
     "test:inventory:package": "node scripts/test-inventory-package.mjs",
     "demo:expenses:correction": "tsx src/examples/expense-correction.ts",
@@ -41,7 +41,8 @@
     "check:leave": "npm --prefix examples/leave run check",
     "test:leave": "npm --prefix examples/leave test",
     "demo:leave": "npm --prefix examples/leave start",
-    "test:leave:package": "node scripts/test-leave-package.mjs"
+    "test:leave:package": "node scripts/test-leave-package.mjs",
+    "test:leave:development": "node scripts/test-leave-package.mjs --development"
   },
   "devDependencies": {
     "@types/node": "latest",
@@ -55,7 +56,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Declarative, functional business workflows for TypeScript",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

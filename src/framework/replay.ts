@@ -1,4 +1,6 @@
 import { err, ok, type Result } from './result.js';
+import type { ActionReport } from './action.js';
+import type { Trace } from './workflow.js';
 import { operation, type Operation } from './application.js';
 
 /** The adapter must distinguish a new atomic commit from a concurrent winner's receipt. */
@@ -13,32 +15,60 @@ export interface ReplayBoundary<I, O, E, RE> {
 }
 export type ReplayInputError = { readonly kind: 'ReplayInputNotCloneable' };
 
-/**
- * Optional command boundary. Host authentication and request-key scoping precede it.
- * The adapter owns receipt identity, output hydration, and atomic data+receipt writes.
- * This function resolves successful receipts; it never retries the command itself.
+export type ReplayTrace =
+  | { readonly kind: 'snapshot'; readonly status: 'ok' | 'error' }
+  | { readonly kind: 'lookup'; readonly phase: 'before' | 'after-error'; readonly status: 'found' | 'missing' | 'error' }
+  | { readonly kind: 'command'; readonly status: 'committed' | 'replayed' | 'error' }
+  | { readonly kind: 'resolution'; readonly status: 'lookup' | 'skip' };
+export interface ReplayReport<O, E, RE> {
+  readonly result: Result<Execution<O>, E | RE | ReplayInputError>;
+  readonly trace: readonly ReplayTrace[];
+  /** null means not executed; trace:null means executed without command-level instrumentation. */
+  readonly attempt: {
+    readonly result: Result<Execution<O>, E>;
+    readonly trace: readonly Trace[] | null;
+    readonly plan: unknown;
+  } | null;
+}
+
+/** Optional receipt boundary; never retries a command. Unexpected exceptions still reject.
+ * run preserves the original run path. runDetailed uses command detail when supplied.
  */
 export function withReplay<I, O, E, RE>(command: {
   run(input: I): Promise<Result<Execution<O>, E>>;
+  runDetailed?(input: NoInfer<I>): Promise<ActionReport<Execution<NoInfer<O>>, NoInfer<E>>>;
 }, boundary: ReplayBoundary<NoInfer<I>, NoInfer<O>, NoInfer<E>, RE>) {
-  // Capture hooks now, so later mutation of a caller's configuration cannot replace them.
   const runCommand = command.run.bind(command);
+  const detailedCommand = command.runDetailed?.bind(command);
   const lookup = boundary.lookup.bind(boundary), resolveAfter = boundary.resolveAfter.bind(boundary);
+  async function execute(input: I, detailed: boolean): Promise<ReplayReport<O, E, RE>> {
+    const trace: ReplayTrace[] = [];
+    let attempt: ReplayReport<O, E, RE>['attempt'] = null;
+    const report = (result: ReplayReport<O, E, RE>['result']): ReplayReport<O, E, RE> => ({ result, trace, attempt });
+    let request: I;
+    try { request = structuredClone(input); }
+    catch { trace.push({ kind: 'snapshot', status: 'error' }); return report(err({ kind: 'ReplayInputNotCloneable' })); }
+    trace.push({ kind: 'snapshot', status: 'ok' });
+    const cached = await lookup(request);
+    trace.push({ kind: 'lookup', phase: 'before', status: cached.ok ? cached.value.kind : 'error' });
+    if (!cached.ok) return report(cached);
+    if (cached.value.kind === 'found') return report(ok({ kind: 'replayed', value: cached.value.value }));
+    if (detailed && detailedCommand) attempt = await detailedCommand(request);
+    else attempt = { result: await runCommand(request), trace: null, plan: null };
+    const result = attempt.result;
+    trace.push({ kind: 'command', status: result.ok ? result.value.kind : 'error' });
+    if (result.ok) return report(result);
+    const resolve = resolveAfter(result.error);
+    trace.push({ kind: 'resolution', status: resolve ? 'lookup' : 'skip' });
+    if (!resolve) return report(result);
+    const raced = await lookup(request);
+    trace.push({ kind: 'lookup', phase: 'after-error', status: raced.ok ? raced.value.kind : 'error' });
+    if (!raced.ok) return report(raced);
+    return report(raced.value.kind === 'found' ? ok({ kind: 'replayed', value: raced.value.value }) : result);
+  }
   return {
-    async run(input: I): Promise<Result<Execution<O>, E | RE | ReplayInputError>> {
-      // Detach nested data before any await. Non-cloneable opaque inputs are rejected.
-      let request: I;
-      try { request = structuredClone(input); }
-      catch { return err({ kind: 'ReplayInputNotCloneable' }); }
-      const cached = await lookup(request);
-      if (!cached.ok) return cached;
-      if (cached.value.kind === 'found') return ok({ kind: 'replayed', value: cached.value.value });
-      const result = await runCommand(request);
-      if (result.ok || !resolveAfter(result.error)) return result;
-      const raced = await lookup(request);
-      if (!raced.ok) return raced;
-      return raced.value.kind === 'found' ? ok({ kind: 'replayed', value: raced.value.value }) : result;
-    },
+    run: async (input: I): Promise<Result<Execution<O>, E | RE | ReplayInputError>> => (await execute(input, false)).result,
+    runDetailed: (input: I): Promise<ReplayReport<O, E, RE>> => execute(input, true),
   };
 }
 

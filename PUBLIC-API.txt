@@ -143,3 +143,9 @@ defineRequestTarget({ operation, load, save }).on({ validate, require, evolve })
 save(change, execution) のexecutionは { operation, request }。
 run / runDetailed / decisionを公開。要求なしのmutationは公開しない。
 既存defineTargetとsave(change)は維持。入力cloneはwithReplayを使う場合に行う。
+
+開発版alpha.3: withReplay(...).runDetailed(input)
+ReplayReport { result, trace: ReplayTrace[], attempt }
+境界traceと業務traceを分け、未実行はattempt:null、runのみのコマンドはattempt.trace:null。
+失敗後の再照会で成功してもattempt.resultに元の失敗を保持する。
+runの既存経路は維持。予期しない例外はreject。永続監査ログではない。

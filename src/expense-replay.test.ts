@@ -194,3 +194,28 @@ test('receipt boundary rejects a correction decision paired with different reque
     input: { ...input, amount: 2000 } }, decision), err({ kind: 'InvalidRequest' }));
   assert.equal(value(f.repository.read('e1')).kind, 'returned');
 });
+
+test('expense detailed replay distinguishes executed workflow from receipt-only response', async t => {
+  const f = fixture(t);
+  const first = await f.employee.submit.runDetailed(call('submit'));
+  assert.equal(value(first.result).kind, 'committed');
+  assert.deepEqual(first.attempt?.trace?.map(x => x.step), ['expense.submit.v1:load', 'validate-submission', 'submit', 'expense.submit.v1']);
+  const replay = await f.employee.submit.runDetailed(call('submit'));
+  assert.equal(value(replay.result).kind, 'replayed'); assert.equal(replay.attempt, null);
+  assert.deepEqual(replay.trace, [{ kind: 'snapshot', status: 'ok' }, { kind: 'lookup', phase: 'before', status: 'found' }]);
+  const denied = await f.employee.approve.runDetailed(call('deny', 2));
+  assert.deepEqual(denied.result, err({ kind: 'SelfApproval' }));
+  assert.deepEqual(denied.attempt?.trace?.map(x => x.step), ['expense.approve.v1:load', 'authorize-approval']);
+});
+test('expense unknown commit report preserves failing save and successful resolution', async t => {
+  const f = fixture(t), save = f.repository.saveRequest.bind(f.repository);
+  f.repository.saveRequest = async (request, change) => {
+    const result = await save(request, change);
+    return result.ok ? err({ kind: 'RepositoryUnavailable' as const }) : result;
+  };
+  const detail = await f.employee.submit.runDetailed(call('unknown'));
+  assert.equal(value(detail.result).kind, 'replayed');
+  assert.deepEqual(detail.attempt?.result, err({ kind: 'RepositoryUnavailable' }));
+  assert.equal(detail.attempt?.trace?.at(-1)?.status, 'error');
+  assert.deepEqual(detail.trace.slice(-2), [{ kind: 'resolution', status: 'lookup' }, { kind: 'lookup', phase: 'after-error', status: 'found' }]);
+});

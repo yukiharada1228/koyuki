@@ -95,7 +95,8 @@ const command = defineRequestTarget({
 単体では呼び出し後に入力を書き換えない契約です。再送を扱う場合は `withReplay` のclone済み入力を使います。
 要求IDと業務判断が一致するかの検証、認証、原子的な保存は引き続きアダプターの責任です。
 
-`withReplay` は `run` を公開します。元の `runDetailed` やmutationの準備用APIを再送境界で包むものではありません。
+`withReplay` の公開alpha.2は `run` を公開します。開発版alpha.3では[再送を含むrunDetailed](replay-trace.md)も提供します。
+mutationの準備用APIを再送境界で包むものではありません。
 検証用の準備APIを直接呼べば境界を迂回するため、通常の操作には包んだコマンドを使用してください。
 
 ## 開発版を検証する
