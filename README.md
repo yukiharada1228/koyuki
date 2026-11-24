@@ -125,3 +125,6 @@ APIの検討記録は [PUBLIC-API.txt](PUBLIC-API.txt) を参照してくださ�
 
 開発版の業務例：[差し戻し・修正・再申請](docs/expense-correction.md)。
 `npm run demo:expenses:correction` で、既存runtimeを使った複数周回と再送時のView維持を確認できます。
+
+[休暇申請サンプル](examples/leave/README.md)は、公開済みalpha.2だけで作った別業務の例です。
+申請時の残日数の仮確保・承認・取り下げ、SQLiteの競合と再送を検証しています。

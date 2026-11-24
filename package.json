@@ -37,7 +37,11 @@
     "test:inventory:package": "node scripts/test-inventory-package.mjs",
     "demo:expenses:correction": "tsx src/examples/expense-correction.ts",
     "test:quickstart": "node scripts/test-quickstart.mjs",
-    "test:quickstart:registry": "node scripts/test-quickstart.mjs --registry"
+    "test:quickstart:registry": "node scripts/test-quickstart.mjs --registry",
+    "check:leave": "npm --prefix examples/leave run check",
+    "test:leave": "npm --prefix examples/leave test",
+    "demo:leave": "npm --prefix examples/leave start",
+    "test:leave:package": "node scripts/test-leave-package.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",
