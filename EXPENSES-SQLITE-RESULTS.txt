@@ -1,0 +1,67 @@
+経費申請のSQLite化
+
+達成したこと
+経費のイベント定義とexpenseApplication、フレームワークを変更せず、
+ExpenseRepositoryの実装をMemoryExpensesからSqliteExpensesへ差し替えた。
+上長承認後に接続とプロセスを終了しても、別プロセスで保存状態を復元し、
+新しい外部イベントとして経理承認を実行できることを確認した。
+利用側へResultの手動接続や実行制御コードは戻っていない。
+
+変更
+src/expenses/sqlite.ts: 専用SQLite DB。状態とversion、遷移履歴を保存。
+src/expenses/domain.ts: unknownからの復元・状態別の証拠の検証。
+状態遷移後に前の状態固有の不要フィールドが残らないよう、共通データを明示的に構成。
+src/expenses/repository.ts: 共通の失敗型にCorruptExpense/RepositoryUnavailableを追加。
+業務の承認条件・権限・閾値は変更していない。
+タグDBとは別のDBファイルを利用する。既存のローカルタグDBは変更していない。
+
+保存契約
+BEGIN IMMEDIATEで最新レコードを読み、expectedVersion、次version、共通データ、
+許される遷移、既存の上長承認の証拠を再確認する。
+状態更新と履歴記録は同一トランザクションで保存し、片方の失敗なら両方を戻す。
+承認/却下の2つの準備済み判断が同じversionなら、片方だけが保存できる。
+古いversionや重複保存はSaveConflict。自動再試行はしない。
+
+復元契約
+JSONの形式、id/version列との一致、共通フィールドを検証。
+managerには領収書と金額条件、financeには上長承認の証拠を要求。
+approvedには経路に応じた承認証拠と金額/versionの整合を要求。
+rejectedには理由、本人以外の却下者、段階に応じた先行承認の証拠を要求。
+不正な値を型アサーションだけで信頼せず、CorruptExpenseで止める。
+ストレージ障害はRepositoryUnavailableとして通常の失敗型に合成される。
+
+検証
+npm run check: 成功。
+npm test: 292件成功（既存279＋13）。
+npm run demo:expenses:sqlite: 成功。出力EXPENSES-SQLITE-DEMO.txt。
+- 同じアプリ定義で申請→上長承認→経理承認が完了。
+- 実際の新規Nodeプロセスで、上長承認済みのDBから経理承認。
+- 別接続で同じversionから承認と却下を準備して競合。
+- さらに2つの実プロセスを準備完了まで同期させてから保存を競争させ、片方だけ成立。
+- 履歴挿入失敗をトリガーで注入し、状態/version/履歴のロールバックを確認。
+- 壊れたJSON、承認証拠の欠落、id/version列との不一致をreadと操作ロードの両方で拒否。
+- 金額別の各経路について、メモリ版と結果・保存状態が一致。
+- 上長/経理段階での却下を再接続後に復元。
+- 重複した下書きの挿入は上書きせず、閉じたDBは型付き障害として返す。
+既存のタグ/HTTP/React/型検査も成功。
+画面の追加・変更、ブラウザー再操作は行っていない。
+
+利用
+const repository = new SqliteExpenses(path);
+const rows = repository.list();
+if (rows.ok) {
+  const session = await expenseApplication(repository, authenticatedActor, rows.value).start();
+  await session.dispatch({ type: 'approve', input: { id, expectedVersion } });
+}
+呼出側が認証済み操作者を注入し、起動時のデータ読込失敗を扱う必要はある。
+業務の定義自体には保存方式への依存を追加していない。
+
+範囲と制約
+永続化したのは業務状態と遷移履歴。実行中のセッション/コマンドを永続化したのではない。
+再起動後は保存状態から新しいセッションを作り、次の外部操作を受け付ける。
+プロセスが処理途中で落ちた場合の自動再開、外部通知、分散ワークフローは提供しない。
+保存済み状態は現行ポリシーと状態別version規則に従って検証する。
+金額条件や状態モデルを将来変更する場合、保存スキーマ/ポリシーの移行設計が必要。
+既存の入力境界・実認証・組織上の承認関係の実装はこのアダプターに含めない。
+異なるセッションの一覧を自動同期する仕組みや、保存成功後の応答喪失に対する
+イベント単位の冪等な再送も提供しない。再読込とversionで不整合を防ぐ範囲。

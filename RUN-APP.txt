@@ -1,0 +1,40 @@
+Tag Studio
+
+cd /Users/yukiharada/dev/business-react-lab
+npm install
+npm run dev
+
+ブラウザーで http://127.0.0.1:4317 を開く。
+データは .data/tags.sqlite に保存され、再起動後も残る。
+Node v26.12.0で動作確認済み。Node内蔵のnode:sqliteを使用。
+
+確認
+npm run check
+npm test
+npm run test:web
+
+ポート変更
+PORT=4318 npm run dev
+
+別の検証用DB
+BUSINESS_REACT_DB=.data/another.sqlite npm run dev
+
+画面でできること
+- グループごとのタグの作成・一覧・編集
+- 同じ名前や件数上限の拒否
+- 古い画面からの更新の拒否
+- アーカイブと復元（利用中だけ3件上限、名前は保持）
+- 実行の記録の確認
+
+今回の検証結果: LIFECYCLE-RESULTS.txt
+公開APIと使い方: PUBLIC-API.txt
+初回Web版の検証結果: WEB-RESULTS.txt
+核の入口: src/framework/index.ts
+業務フローと宣言: src/tags/feature.tsx
+HTTPの入口: src/web/app.ts
+
+React + JSX view
+http://127.0.0.1:4317/react
+npm run devはReact viewをビルドしてから起動する。
+React版はメイングループの作成・編集を担当。グループ/アーカイブ管理は従来の / を利用。
+検証結果: JSX-VIEW-RESULTS.txt

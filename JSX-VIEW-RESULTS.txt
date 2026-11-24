@@ -1,0 +1,49 @@
+React + JSXをview層に追加
+
+実行
+npm run dev
+http://127.0.0.1:4317/react
+起動時にnpm run build:viewがブラウザー用バンドルを作る。
+npm testもpretestで同じバンドルを生成する。
+
+責務
+核のprogram.ts、業務ルール、状態遷移、保存アダプターは変更していない。
+ReactはJSXで表示部品を合成し、表示モデルの購読と外部操作の送信を担当する。
+useProgramViewはReactのuseSyncExternalStoreに対応するアダプター。
+getSnapshotの同一性を保つキャッシュはview層に置き、核のsnapshot実装は変えていない。
+React公式仕様: https://react.dev/reference/react/useSyncExternalStore
+
+サーバーのtagProgramが状態更新とコマンド、完了イベントを担当。
+Honoの/api/programがセッションを作り、初期状態をSQLiteから読み込む。
+操作時の状態をNDJSONストリームで返し、Reactは中間と完了の表示モデルを受け取る。
+作成/更新/dismissだけをHTTP境界で許可。created/updated等の内部完了イベントを拒否。
+ブラウザーにDBやビジネスロジック、Node専用の核をバンドルしていない。
+
+追加ファイル
+src/react/view.tsx: JSXによる画面とTagList部品。
+src/react/use-program.ts: Reactの購読Hook。
+src/react/store.ts: 安定したsnapshotを提供する表示ストア。
+src/react/remote.ts: HTTPによる状態配信と操作の送信。
+src/web/program-api.ts: 検証済みの外部操作とサーバーランタイムの境界。
+既存の / 画面・API・アーカイブ機能は維持。
+
+検証
+npm run build:view: 成功。
+npm run check: 成功。
+npm test: 261件成功（既存256＋5）。
+表示ストアのsnapshotキャッシュと購読解除、JSX部品のラベルのエスケープ、
+処理中の編集ボタン無効化、HTTP経由の中間状態・保存、
+アイコン保持、入力エラーと復帰、古いrevisionの拒否、内部イベントの拒否を確認。
+ego-browserで新画面の作成→編集→重複エラー→入力に戻る→再読み込みを確認。
+デスクトップと390px幅のスクリーンショットを確認。
+artifacts/tag-react-desktop.png / artifacts/tag-react-mobile.png
+ローカルDBに検証用タグ「JSX表示確認」を作成し、編集後の状態で保持。
+
+現在の範囲
+React版はメイングループの作成・編集のみ。グループ/アーカイブ管理は従来画面へリンク。
+サーバーセッションはメモリ上。1時間未使用のセッションは次の接続時に削除し、上限100。
+再読み込みはSQLiteから新しいセッションを作る。セッション状態の耐障害性は提供しない。
+別セッション/従来画面からの変更をリアルタイム購読しない。DBのversion検査は維持。
+未知の障害・通信中断では再読み込みを案内。自動再送で二重保存を起こさない。
+未実装の認証・利用者分離を備えた公開サービスとしては扱わず、従来どおりlocalhostで起動。
+核がReactに依存するようになったわけではない。既存の端末表示デモも利用可能。

@@ -1,0 +1,11 @@
+import { serve } from '@hono/node-server';
+import { mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { SqliteTagRepository } from '../tags/sqlite.js';
+import { createApp } from './app.js';
+const dbPath = resolve(process.env.BUSINESS_REACT_DB ?? '.data/tags.sqlite');
+mkdirSync(dirname(dbPath), { recursive: true });
+const repository = new SqliteTagRepository(dbPath), app = createApp(repository);
+const port = Number(process.env.PORT ?? 4317);
+const server = serve({ fetch: app.fetch, hostname: '127.0.0.1', port }, info => console.log(`Tag Studio: http://127.0.0.1:${info.port}\nSQLite: ${dbPath}`));
+for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => server.close(() => { repository.close(); process.exit(0); }));

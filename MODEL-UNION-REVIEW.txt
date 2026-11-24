@@ -1,0 +1,56 @@
+既存モデルの直和レビュー
+
+方針
+状態名だけをUnionにするのではなく、状態に応じて受け取れる値と操作を制限する。
+独立した真偽値まで機械的に直和に変えない。実際に存在する業務ルールを対象にする。
+新しいフレームワークAPIは追加せず、ドメインの型と境界の検証を改善する。
+
+変更1: タグのライフサイクル
+従来: LifecycleCommandにarchived:boolean。ActiveTag/ArchivedTagのブランドを付けても
+archivedの型はbooleanのままであり、状態名とフラグの矛盾を表せた。
+変更後: LoadedActiveTag | LoadedArchivedTag。kindがactive/archivedを直接表す。
+ActiveTagはactiveの型、ArchivedTag/RestorableTagはarchivedの型だけを持つ。
+復元の件数検証を通過しても、元がarchivedであることを型に保持する。
+SQLiteの0/1は保存境界に残し、ドメインへ渡す際に直和へ変換する。
+0/1以外の破損値はCorruptStoredTagとし、黙ってactiveに変換しない。
+DBスキーマ・一覧HTTPレスポンスは変更なし。内部ロード結果のkindは変更した。
+
+変更2: 送料の注文と見積もり
+従来: Order.statusはopen|shippedだが、QuoteRequestもその広いOrderを保持していた。
+変更後: Order = OpenOrder | ShippedOrder。QuoteRequestの注文はOpenOrderに限定する。
+見積もり要求も国内サービス＋JP、海外サービス＋USの直和にし、組み合わせを制約する。
+selectServiceが状態を判別し、出力にその事実を保持する。
+restoreOrderでunknownな保存/APIデータを検証してからOrderにする。
+デモのロードアダプターもrestoreOrderを利用。CorruptOrderを失敗型に含める。
+追跡番号必須など、現在の仕様にない新しい業務要件は追加していない。
+発送済み注文の全体モデルと、その不正なデータがないことを型だけで保証したわけではない。
+
+変更3: 経費の承認経路
+従来: ExpenseDecisionのrouteはUnionだが、expenseは未検証のExpenseにもできた。
+変更後: automaticはValidExpense、manager/manager-and-financeはReceiptedExpenseを持つ直和。
+ValidExpenseはemployeeActive:true、ReceiptedExpenseはさらにreceipt:trueを保持する。
+金額に応じた経路は既存の判断関数が検査する。数値の大小までUnionだけでは保証しない。
+原入力のreceipt/employeeActiveは独立した事実としてbooleanを維持する。
+
+確認して維持したもの
+タグの作成・更新は既に段階ごとのkindとブランド、各段階専用の関数で構成済み。
+Resultは成功/失敗の直和として維持。
+古いapproval/comparison/v2等は比較・弱点検証の履歴であり、一括して新APIに移行していない。
+特に旧approvalの承認履歴配列等には、型だけでは守れず実行時検査する制約が残る。
+今回改善した現行モデルと、過去の実験の保証範囲は同一ではない。
+
+検証
+npm run check: 成功
+npm test: 233件成功（既存228件＋5件）
+npm run demo:shipping: 成功
+追加した型検査: 発送済み注文での見積もり、国とサービスの不一致、
+active/archivedの取り違え、並列booleanフラグ、領収書未確認での承認経路を拒否。
+実行時検査: 保存データの復元、終了済み注文の拒否、経路ごとの状態保持、
+SQLiteの破損フラグの拒否。既存のHTTP/DB移行/競合テストも通過。
+UI変更なし。ブラウザーの再操作は行っていない。
+
+制限
+as/anyによる型検査の回避は防げない。境界の検証と信頼されたコンストラクターが前提。
+型は現在の判断時点を表す。保存時のversion比較・上限再検査は引き続き必要。
+ブランドの生成に使う型アサーションはドメイン関数内に閉じ込めている。
+外部配送APIと本番DBアダプターは依然として未実装。

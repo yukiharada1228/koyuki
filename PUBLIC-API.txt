@@ -1,0 +1,131 @@
+公開API候補 — business-react-lab
+
+入口: src/framework/index.ts
+利用例: src/examples/create-tag.ts（npm run checkとテストで検証）
+
+1. workflow(name, rule).then(name, rule)
+純粋関数を型付きでつなぐ。成功値を次の入力に渡し、Resultの失敗で止まる。
+失敗型を合成し、名前付きの実行記録を返す。業務用の状態型とルールは利用側で定義する。
+
+2. bindMutation({ workflow, operation, save, render? })
+純粋な判断と保存アダプターを結ぶ。prepareで保存せず判断を検証できる。
+renderを省略しても利用可能。JSXは任意で、画面描画ではなく実行する保存の宣言。
+JSX比較用のht、Mutation、Done、Viewはframework/experimental-jsx.tsからimportする。
+通常のタグ管理と公開利用例はJSXを使わない。
+保存ノードは結び付いたアダプターを保持し、別のアダプターへの差し替えを拒否する。
+
+3. defineAction({ loadName, load, mutation })
+入力からデータを取得し、判断と保存につなぐ。
+run(input): 型付きResult
+runDetailed(input): Result、ロードから保存までのtrace、観察用plan
+ロードの失敗で止まり、ロードとmutationをそれぞれ一度だけ呼ぶ。
+想定した失敗はアダプターでResultに変換する。予期しない例外は隠さない。
+
+流れ
+Hono → defineAction → load → workflow → 保存宣言 → save → Result
+HTTPステータスへの変換はHono側。DBトランザクションと競合検査は保存アダプター側。
+
+今回確かめた再利用
+タグの作成・編集に加え、アーカイブ・復元を同じ核で実装した。
+利用中→アーカイブ、アーカイブ→件数検証済み→利用中を異なる型で表す。
+DB側でもversionと件数を再検査する。型だけでは同時更新を防げない。
+
+得られるものと負担
+Resultの接続、失敗型の合成、実行記録、ロードから保存への接続が共通化される。
+業務の状態型・純粋関数・DBの整合性処理は通常のTypeScriptでも必要で、利用側に残る。
+単純なCRUDでは通常の関数の方が短い。状態や分岐が増えた時の見通しが検証対象。
+Reactとの共通点は状態から宣言を作り、実行側が解釈すること。
+Reactの再描画、Hooks、差分計算を再現したものではない。
+
+現時点の範囲
+一つのactionで保存は一回。複数DBや外部APIをまとめる分散トランザクション、
+永続的な待機・再開、汎用の承認エンジンは提供していない。
+planは観察用であり、JSONから復元して実行できる形式ではない。
+npmパッケージとしての公開、互換性保証、利用者向け安定APIはまだない。
+
+4. workflow.branch(name, predicate, { yes, no })
+選ばれた経路だけを評価し、出力型と失敗型をunionとして保持する。
+分岐名:yes/noと選択経路の実行記録を返す。
+利用例: src/examples/expense.ts
+検証結果と制約: BRANCH-RESULTS.txt
+
+5. collect({ field: result, ... })
+独立した検証結果を合成する。成功時は値のオブジェクト、失敗時はfield/errorの配列。
+fieldごとの値型・失敗型の対応を保持する。依存するルールの途中停止とは区別する。
+
+6. process<Input>().through(flow).effect(name, adapter).commit(mutation)
+途中IOが必要なときの接続API。同期の純粋なworkflowへ非同期IOを混ぜない。
+throughで計算、effectで取得、commitで最後の判断と保存を結ぶ。
+run/runDetailedが実行する。自動再試行・全体トランザクション・永続再開は含まない。
+単純なロード→判断→保存では従来のdefineActionを引き続き利用できる。
+
+途中IOの利用例と通常TS版: src/shipping/feature.ts
+独立検証と純粋な判断: src/shipping/domain.ts
+実行: npm run demo:shipping
+検証結果と制約: SHIPPING-RESULTS.txt
+
+ドメインモデルの直和レビュー
+MODEL-UNION-REVIEW.txtを参照。
+タグのactive/archived、注文のopen/shipped、配送サービスと国、
+経費の承認経路と領収書確認を型で関連付けた。
+この変更でフレームワークAPIは増やしていない。
+
+7. defineCommand({ operation, load, decide, save, loadName? })
+定型のロード→純粋なWorkflow→保存を1定義で接続する、通常の作成・更新向けAPI。
+run(input)とrunDetailed(input)、低水準の検証用mutationを返す。
+各関数の型から入力・成功・全失敗を推論する。
+loadNameは省略時operation:load。途中IOにはprocessを利用する。
+利用例: src/examples/create-tag.ts
+タグでの適用と検証: COMMAND-RESULTS.txt
+
+8. defineTarget({ operation, load, save, loadName? }).on(event)
+通常の作成・更新向けのモデル境界。取得・保存を一度登録し、純粋なイベントを接続する。
+event = { validate: step(name, rule), require: [step(...), ...], evolve: step(name, rule) }
+利用側はworkflow.thenやResultの分岐を記述しない。必要条件の順序は明示する。
+transition(event)で同じ定義をIOなしに評価できる。
+異なる状態の接続・必要条件の省略/逆転・保存先と最終状態の不一致を型で拒否する。
+requireは型付きの固定長配列として定義する（独立定義ではas constを利用）。
+
+利用側: src/examples/tag-events.ts（npm run demo:events）
+業務イベント: src/tags/events.ts
+モデル境界の登録: src/tags/model.ts
+達成条件と制限: MODEL-EVENT-RESULTS.txt
+
+9. defineProgram({ init, update, view })
+状態・イベント・表示・コマンドを統一するElm型の実行モデル。
+next(state, ...commands)で状態と実行するコマンドを返す。
+effect(name, adapter, completionMessage)は入力からCommandを生成する関数を返す。
+program.start()でセッションを起動し、dispatch/subscribe/snapshot/traceを利用する。
+updateが返したコマンドの実行と完了イベント、表示の再計算はランタイムが担当。
+init/update/viewは純粋な評価用に公開している（純粋性を型が強制するものではない）。
+単一プロセスのMVPで永続ランタイムではない。例外からの復旧等の制約はPROGRAM-RESULTS.txt。
+実例: src/tags/program.ts
+実行: npm run demo:program
+
+React + JSX view（核とは別の表示アダプター）
+src/react/view.tsxで表示をJSXの部品として記述する。
+useProgramViewで表示ストアを購読し、ランタイムの状態更新をReactへ反映する。
+JSXは業務の検証や保存の接続には使わない。
+実画面: /react
+構成と検証結果: JSX-VIEW-RESULTS.txt
+
+10. defineApplication({ initial, operations, view })
+通常操作の実行中・成功・失敗と内部完了イベントを自動生成する標準ライフサイクル。
+operations = { name: operation(登録済みコマンド, 純粋な成功結果の反映関数) }
+利用側でeffect/完了イベント/readyへの復帰を手書きする必要はない。
+外部dispatchは操作名に対応するinput、またはdismissのみ。
+ApplicationState/ ApplicationEventは操作定義から導出される。
+利用例: src/tags/program.ts
+比較と保証範囲: APPLICATION-RESULTS.txt
+
+第2ドメインでの検証
+src/expenses/application.tsで申請・上長承認・経理承認・却下を同じ標準形で宣言。
+新しいフレームワークAPIや手書きの完了イベントは追加していない。
+実行: npm run demo:expenses
+通常TSとの比較、残る業務定義と制約: EXPENSES-RESULTS.txt
+
+実DBへの差し替え検証
+経費申請のアプリ/イベント定義を変更せずSqliteExpensesへ差し替えた。
+再起動後の次の承認、別プロセスの競合、復元時の検証を確認。
+実行: npm run demo:expenses:sqlite
+詳細: EXPENSES-SQLITE-RESULTS.txt

@@ -1,0 +1,46 @@
+{
+  "name": "business-react-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts src/*.test.tsx",
+    "compare": "node scripts/compare.mjs",
+    "test:comparison": "tsx --test src/comparison.test.tsx",
+    "demo": "tsx src/comparison/demo.ts",
+    "test:approval": "tsx --test src/approval.test.tsx",
+    "demo:approval": "tsx src/approval/demo.ts",
+    "test:tags": "tsx --test src/tags.test.tsx",
+    "demo:tags": "tsx src/tags/demo.ts",
+    "compare:tags": "node scripts/compare-tags.mjs",
+    "dev": "npm run build:view && tsx src/web/server.ts",
+    "test:web": "tsx --test src/web.test.ts",
+    "test:lifecycle": "tsx --test src/lifecycle.test.tsx",
+    "test:shipping": "tsx --test src/shipping.test.ts",
+    "demo:shipping": "tsx src/shipping/demo.ts",
+    "demo:events": "tsx src/examples/tag-events.ts",
+    "test:model": "tsx --test src/model.test.ts src/command.test.ts",
+    "demo:program": "tsx src/examples/tag-program.ts",
+    "test:program": "tsx --test src/program.test.ts",
+    "build:view": "node scripts/build-view.mjs",
+    "pretest": "npm run build:view",
+    "demo:expenses": "tsx src/expenses/demo.ts",
+    "test:expenses": "tsx --test src/expenses.test.ts",
+    "demo:expenses:sqlite": "tsx src/expenses/sqlite-demo.ts",
+    "test:expenses:sqlite": "tsx --test src/expenses-sqlite.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "tsx": "latest",
+    "typescript": "latest"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.11",
+    "hono": "^4.13.21",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

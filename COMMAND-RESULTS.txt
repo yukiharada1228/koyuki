@@ -1,0 +1,63 @@
+タグ作成・更新の接続をどこまで省略できるか
+
+今回の結論
+一般的な「ロード→純粋な判断→保存」は、defineCommandの1定義にまとめられる。
+利用者はload/decide/saveという3つの対応を指定し、実行手順やResultの伝播を書かない。
+operationは保存処理の識別子。loadNameは任意の観察用名称。
+
+利用例
+const create = defineCommand({
+  operation: 'tag.create.v1',
+  load: repository.loadCreate.bind(repository),
+  decide: createWorkflow,
+  save: repository.saveCreated.bind(repository),
+});
+await create.run(input);
+
+フレームワークに移したもの
+- bindMutationとdefineActionの生成、お互いの接続
+- ロード失敗時の停止、判断失敗時の停止、型付き失敗の伝播
+- 判断と保存の接続、ロードから保存までの実行記録の統合
+- デフォルトのロード段階名（operation:load）
+新しいdefineCommandは既存の核を利用し、別の実行エンジンを増やしていない。
+JSX/renderは新しいAPIに含めない。
+
+利用側に残すものと理由
+- 何を取得するか: ユースケースごとに必要な既存状態や周辺情報が異なる。
+- どの純粋な判断をするか: validate→unique→quota等の順序は業務仕様。
+- どのアダプターに保存するか: 同じCreated型でも別の保存先を選ぶ場合がある。
+これらを名前から推測したり隠れた登録表に依存して自動化はしない。
+入力検証はこの例のドメインWorkflow内。ロード前のHTTP形式検査とは別。
+更新入力＋既存エンティティの組み立ては既存のloadUpdateアダプターが担当する。
+フレームワークが任意の入力とエンティティのマージを推測するわけではない。
+
+変更
+src/framework/command.ts: 公開defineCommand。
+src/tags/feature.ts: 作成・更新の実行を新APIへ移行。
+src/examples/create-tag.ts: 利用例を1定義に変更。
+既存のcreate/update/TagProcess等は比較実験の互換口として維持。
+戻り値はrun/runDetailedと、低水準のprepare/plan用mutation。
+複雑な途中IOは従来のprocess、独自の接続はdefineAction/bindMutationで記述できる。
+
+削減の評価
+タグ2操作の接続API呼び出しはbindMutation×2＋defineAction×2からdefineCommand×2へ。
+利用例でmutationを変数に取り出して次のAPIに渡す記述が不要になった。
+ただしload/decide/saveの指定自体は残る。全ファイルの行数の短縮は主張しない。
+通常TSの短い関数より常に短いわけではなく、共通の実行規約が利点。
+同一コマンド内の定型接続の改善であり、独立したドメインイベント間の購読や
+永続的な待機を自動接続するReact相当のランタイムを完成させたものではない。
+
+検証
+npm run check: 成功。
+npm test: 241件成功（既存233＋8）。
+旧接続方式と新方式を、作成成功・重複・入力不正・件数上限、
+更新成功・古いversion・重複・対象なしで比較。
+Resultだけでなくtrace/plan/IO呼び出し/最終レコードも一致。
+ロード・判断・保存の各失敗で後続が停止。各段階は1回のrunにつき最大1回。
+型検査で入力型・全段階の失敗型・保存結果の型を保持し、誤った保存先や判断を拒否。
+既存SQLite/HTTP/TCP/移行/競合テストも成功。UI変更なし、ブラウザー再操作なし。
+
+制約
+このAPIによる永続ジョブ、再送の冪等性、自動再試行、全体トランザクションの保証はない。
+runを呼び直すとロードから再実行する。保存アダプターの整合性検査は引き続き必要。
+予期しない例外は握りつぶさない。期待する外部障害のResult化はアダプターの責務。

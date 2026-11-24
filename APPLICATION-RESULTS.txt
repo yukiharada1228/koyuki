@@ -1,0 +1,71 @@
+業務状態・検証・遷移に集中するための定型ライフサイクルの自動化
+
+今回の変更
+従来のtagProgramでは、creating/updating、created/updated、effect、
+Resultを見てready/failedへ進めるswitchを利用者が実装していた。
+これらをdefineApplicationへ移した。
+タグ側は、登録済みの操作と、成功した保存結果を業務状態へ反映する純粋関数だけを指定する。
+
+実際の利用側（src/tags/program.ts）
+const tags = tagModel(repository);
+operations = {
+  create: operation(tags.creation.on(createTagEvent), (state, tag) => [...state, tag]),
+  update: operation(tags.revision.on(updateTagEvent),
+    (state, tag) => state.map(current => current.data.id === tag.data.id ? tag : current)),
+};
+業務イベントの検証・必要条件・状態遷移はsrc/tags/events.tsとdomain.tsにある。
+モデル境界の取得・保存登録はsrc/tags/model.tsの一度の定義を再利用する。
+appendやreplaceは業務上の意味なので自動推測しない。
+
+フレームワークが引き受けたもの
+- ready/running/failedの直和。runningは操作名、failedは操作名に対応する失敗型を持つ。
+- 操作名から入力型を決める外部イベントの型。
+- 実行中への遷移、コマンド生成、内部完了イベント、成功と失敗の分岐。
+- 成功時だけ純粋な業務状態反映関数を適用。
+- 失敗時は業務データを保持し、dismissで復帰。
+- 既存defineProgramによる直列実行、revision、購読、実行記録。
+利用側で完了イベントを送信できる公開APIは提供しない。
+未型付けJSから内部イベントを偽装しても公開dispatchで拒否する。
+
+書かなくなったもの
+現行src/tags/program.tsにeffect、created/updatedのイベント定義、
+defineProgram、next、Resultのif/switchによる実行接続はない。
+単にタグ専用ヘルパーへ移動したのではなく、別ドメインの数値操作でも同じ仕組みを検証。
+従来の手書き版はsrc/testing/tag-program-manual.tsへ比較用に凍結して移した。
+汎用ランタイムdefineProgramとドメインの純粋関数は維持。
+
+互換性
+公開操作create/update/dismissと、表示モデルの形は維持。
+内部状態は{kind:'ready'|'running'|'failed', data, operation?}へ変更。
+旧creating/updating、tagsフィールドと旧手書き完了イベントには互換でない。
+Reactの表示アダプターは参照先をstate.dataへ修正しただけで、UI機能の追加は行っていない。
+HTTP境界の外部操作検査は従来どおり必要。フレームワークの型はHTTP検証を代替しない。
+
+検証
+npm run check: 成功。
+npm test: 266件成功（既存261＋5）。
+npm run demo:program: 成功。出力はAPPLICATION-DEMO.txt。
+旧手書き版と新方式を8イベントの連続操作で比較し、表示・業務データ・revision・
+IO呼び出し・最終DB相当のレコードが一致。
+作成/更新成功、重複、入力不正、古いversion、失敗からの復帰を含む。
+型検査で操作名と入力、操作名と失敗型、成功値と状態反映関数の関係を維持。
+内部イベント偽装、実行中の操作名の欠落、異なる成功値型での反映を拒否。
+別ドメインのadd/replaceで生成されたライフサイクルが機能することも検証。
+既存SQLite/HTTPストリーム、React表示部品、DB競合等の回帰テストも成功。
+今回はブラウザー再操作なし。Web表示の接続はHTTP/Reactの既存テストで確認。
+
+達成した範囲
+通常のロード→検証/必要条件→ドメイン遷移→保存→業務状態反映について、
+利用者は状態・ルール・反映関数と境界の登録に集中し、実行接続を書かなくてよくなった。
+JSXやReactの利用そのものを達成基準にはしていない。
+イベントの定義に必要な業務順序は残し、名前からの暗黙の処理推測は導入していない。
+
+限界
+現在の標準形は単一操作を逐次実行するセッション。
+操作Aの成功から業務条件に応じて操作Bを自動開始する定義、永続的な承認待ち、
+分散実行、自動再試行、永続イベント配信は今回提供していない。
+必要な場合は既存の低水準process/defineProgramを利用するか別途意味論を定義する。
+予期しないIO例外や成功後の状態反映関数の例外ではdispatchがrejectし、
+既に行った保存は戻らず、状態がrunningに残り得る。自動再送でごまかさない。
+DBの整合性・権限・入力境界の検証は引き続きアダプター/ホストの責務。
+型だけで純粋性や仕様の正しさを保証しない。

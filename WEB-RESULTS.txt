@@ -1,0 +1,95 @@
+Hono + SQLiteでの実用検証
+
+動作中のアプリ
+http://127.0.0.1:4317
+作業フォルダ: /Users/yukiharada/dev/business-react-lab
+SQLite: .data/tags.sqlite
+停止後の再起動: npm run dev
+使用環境: Node v26.12.0。node:sqliteを使用。
+ローカルの127.0.0.1にバインド。ブラウザー検証で作ったタグ1件を残している。
+
+実装したもの
+src/framework/: Result、Workflow、Mutationの型付き接続、Viewを抽出。タグ、Hono、SQLiteへの依存なし。タグの旧workflow.tsは互換export。
+src/tags/repository.ts: 実装クラスに依存しないTagRepositoryインターフェース。
+src/tags/sqlite.ts: SQLiteアダプター。読み込み・復元検証・保存・version比較・一意制約・保存レシート。
+src/web/app.ts: Hono API、入力形式の確認、失敗型からHTTPステータスへの網羅的な変換。
+src/web/server.ts: ローカルHTTPサーバー、SQLiteパス、停止時のクローズ。
+src/web/ui.ts: グループ別の作成・一覧・編集、エラー表示、処理記録。小画面対応。
+src/web.test.ts: HTTPと実DBの検証19件。
+
+今回加えた業務ルール
+同一グループではタグ名を重複させない。
+前後の空白を除去しUnicode NFCで正規化。大文字・小文字は区別する。
+更新では自分の現在のタグ名を重複対象から除外。別グループでは同名を許可。
+
+ルール追加で変更した箇所
+1. ドメインにcheckUniqueCreate/checkUniqueUpdateと名前確認済みの型を追加。
+2. 純粋フローのthenに名前確認を追加。失敗UnionにDuplicateLabelが自動で加わる。
+3. 読み込み時に既存名のsnapshotを渡す。IDやDBアクセスを業務関数に埋め込まない。
+4. DBではUNIQUE(group_id,label_key)を設け、保存時にも確認する。
+5. HTTPはDuplicateLabelを409へ、画面は利用者が直せるメッセージへ変換する。
+1ルールの追加は1行では完結しなかった。業務判断・必要な外部情報・DBの整合性・表示の責務は、それぞれ必要。
+フレームワークが減らせたのは接続と失敗伝播の配線で、整合性設計そのものではない。
+
+実用化で必要だった追加
+- bindMutation.runDetailedで判断を1回だけ実行し、結果・停止箇所・実際の保存宣言を返す。
+- 画面の編集時にexpectedVersionを送信。保存前に読み直しても、利用者が古い画面を見ていたことを失わない。
+- SQLiteはBEGIN IMMEDIATEで書き込みをまとめ、タグ・グループversion・操作レシートを原子的に更新。
+- 読み取りsnapshotも一つのDBトランザクション内で取得。
+- HTTPの失敗変換をkind:stringのdefault処理から型Unionの網羅的switchへ。新しい失敗を無視したままにしない。
+
+検証結果
+npm run check: 成功。
+npm test: 全183件成功（新規Web/DB検証19件＋既存164件）。
+npm run compare:tags / npm run demo:tags: 抽出・ルール追加後も実行成功。
+
+自動検証
+- Hono経由の作成・一覧・更新。
+- 重複、前後空白、NFC、大文字小文字、グループ別の挙動。
+- 自分と同名の更新を許可し、他タグへの重複変更を拒否。
+- 版番号が古いHTTP更新を409で拒否。
+- グループの件数上限、入力形式、JSON不正、ボディ上限、存在しないデータ。
+- 独立したSQLite接続で、同名作成・staleな件数snapshot・staleな更新の競合を拒否。
+- 業務フローを通さない直接SQLでもDBのUNIQUE制約が働く。
+- レシート保存にSQLトリガーで障害を起こし、タグ・version・レシートの全てがロールバックされる。
+- 接続を作り直しても保存済みレシートが使え、後で更新したデータへの古い再実行は拒否。
+- 新しいNodeプロセスから同じDBファイルを開いて保存データを読める。
+- 実TCPのHTTPサーバーへのfetch。
+- 同時のHTTP作成要求でタグが1件だけ残る。
+- SQLite上の破損データを復元時に検出。
+- 汎用核がタグ以外の数値変換にも使え、タグ依存を必要としない。
+
+ブラウザー確認（ego-browser）
+画面操作でタグ作成、編集、重複名エラーを確認。
+編集中に別のAPI更新を入れ、古い画面からの保存が拒否されることを確認。
+サーバーを停止・再起動し、再読み込み後もタグが残ることを確認。
+デスクトップと390px幅のスクリーンショットを目視確認。横にはみ出さず縦に並ぶ。
+artifacts/tag-studio-desktop.png
+artifacts/tag-studio-mobile.png
+
+API
+GET /api/groups
+GET /api/tags?groupId=g
+POST /api/tags
+  {"groupId":"g","label":"VIP","icon":null}
+PATCH /api/tags/:id
+  {"groupId":"g","label":"Regular","icon":null,"expectedVersion":1}
+更新版番号は必須。POST成功201、PATCH成功200、検証400、対象なし404、重複/競合/上限409、保存先障害503。
+保存要求には判断のステップ・成否と観察用planを返す。
+
+残る制約
+- SQLiteの同期APIなのでDB処理は同じNodeプロセスをブロックする。高負荷の評価はしていない。
+- プロセス再起動後のタグ/保存レシートは検証したが、汎用ワークフローの永続実行・外部通知の再試行は実装していない。
+- HTTPのIdempotency-Keyは未実装。再送は元の201応答の再現ではなく、同名なら409になる。
+- ユーザー認証・公開運用・多人数の権限管理は対象外。
+- 元のMVP-SPEC.txtとTAG-RESULTS.txtは前段階の検証記録。現在は核の移動と重複ルールの追加が入っている。
+- JSX層を採用したこと自体の優位性は引き続き限定的。今回確認したのは、型付き判断とIO境界が実HTTP/DBでも維持できること。
+
+今後の判断
+この小さなアプリについては実用検証の完成条件を満たした。
+次に価値を確認するなら機能追加より、利用側が触るAPIを絞って使い方を一つにまとめる。
+HTTP再送の扱いとSQLiteアダプターの契約を仕様化してから、必要な場合に汎用ランタイムへ広げる。
+
+参照した公式資料
+https://hono.dev/docs/getting-started/nodejs
+https://nodejs.org/api/sqlite.html
