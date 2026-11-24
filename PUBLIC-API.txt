@@ -137,3 +137,9 @@ Execution<O> = committed(value) | replayed(value)
 replayOperation(command, reduce) — 再送では現在の業務データを維持する。
 詳細: docs/replay.md / REPLAY-RESULTS.md
 新APIはまだnpmへ公開していない。
+
+要求情報を伴う保存（開発版 alpha.2）
+defineRequestTarget({ operation, load, save }).on({ validate, require, evolve })
+save(change, execution) のexecutionは { operation, request }。
+run / runDetailed / decisionを公開。要求なしのmutationは公開しない。
+既存defineTargetとsave(change)は維持。入力cloneはwithReplayを使う場合に行う。

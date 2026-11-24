@@ -74,8 +74,26 @@ operations: {
 
 認証済みActorをfingerprintへ含め、役割や有効状態が変わった要求も同じ成功記録として返さないようにした例が、
 [経費のSQLite拡張](../src/expenses/sqlite-replay.ts)です。
-要求をsaveへ引き渡す接続は [経費の実行定義](../src/expenses/replay.ts) に残ります。
-現行Targetのsaveが受け取るのはドメインの決定だけなので、要求単位のclosureで関連付けています。
+[経費の実行定義](../src/expenses/replay.ts) は `defineRequestTarget` を使い、要求情報を保存へ渡します。
+
+```ts
+const command = defineRequestTarget({
+  operation: 'expense.submit.v1',
+  load: (call: RequestInput<Input>) => repository.load(call.input, identity),
+  save: (change: Change, execution) =>
+    repository.saveRequest(request('submit', execution.request), change),
+}).on(submitted);
+```
+
+コマンドは一度宣言し、要求ごとの接続はフレームワークが作ります。
+`execution` は `{ operation, request }`。業務の検証・遷移にはloadの結果だけが渡ります。
+既存の `defineTarget` と `save(change)` はそのまま使用できます。
+要求なしで保存できないよう、新APIは `run`・`runDetailed`・純粋な `decision` のみ公開し、`mutation` は公開しません。
+`runDetailed` でも要求情報とtrace・planが維持されます。
+
+実行情報の外側はfreezeしますが、入力全体のcloneやdeep freezeは行いません。
+単体では呼び出し後に入力を書き換えない契約です。再送を扱う場合は `withReplay` のclone済み入力を使います。
+要求IDと業務判断が一致するかの検証、認証、原子的な保存は引き続きアダプターの責任です。
 
 `withReplay` は `run` を公開します。元の `runDetailed` やmutationの準備用APIを再送境界で包むものではありません。
 検証用の準備APIを直接呼べば境界を迂回するため、通常の操作には包んだコマンドを使用してください。

@@ -50,3 +50,38 @@ export function defineTarget<I, C, LE, O, S, SE>(adapter: {
     },
   };
 }
+
+/** Host request metadata stays outside the pure domain decision. */
+export interface RequestExecution<I> {
+  readonly operation: string;
+  readonly request: I;
+}
+/** A request-bound target deliberately exposes no context-free mutation escape hatch.
+ * Input ownership follows defineCommand; use withReplay for a cloned request snapshot.
+ */
+export function defineRequestTarget<I, C, LE, O, S, SE>(adapter: {
+  operation: string; loadName?: string;
+  load: (input: I) => Promise<Result<C, LE>>;
+  save: (value: O, execution: RequestExecution<NoInfer<I>>) => Promise<Result<S, SE>>;
+}) {
+  const { operation, loadName, load, save } = adapter;
+  return {
+    on<VE, V, const T extends readonly AnyStep[], E>(definition: {
+      validate: Step<C, V, VE>;
+      require: T & Connected<NoInfer<V>, T>;
+      evolve: Step<NoInfer<End<V, T>>, NoInfer<O>, E>;
+    }) {
+      const decision = transition(definition);
+      function forRequest(request: I) {
+        const execution = Object.freeze({ operation, request });
+        return defineCommand({ operation, loadName, load, decide: decision,
+          save: (value: O) => save(value, execution) });
+      }
+      return {
+        decision,
+        run: (request: I) => forRequest(request).run(request),
+        runDetailed: (request: I) => forRequest(request).runDetailed(request),
+      };
+    },
+  };
+}
