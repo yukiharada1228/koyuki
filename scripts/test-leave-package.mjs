@@ -39,7 +39,8 @@ try {
     const result = spawnSync('npm', ['exec', '--', 'tsc', '--pretty', 'false'], { cwd: dir, encoding: 'utf8' });
     const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
     if (result.error || !result.status) throw new Error('Expected compiler rejection for invalid declarations');
-    for (const line of [5, 7, 9, 11]) if (!output.includes(`diagnostics.ts(${line},`)) throw new Error(output);
+    for (const line of [5, 7, 9, 11, 13, 15]) if (!output.includes(`diagnostics.ts(${line},`)) throw new Error(output);
+    if (output.includes('TS2769') || output.includes('TS7006') || !output.includes('Koyuki: replay requires save to return Execution<Output>')) throw new Error(output);
     console.log(output);
   }
   console.log(`Verified leave example outside the repository using ${development ? 'packed development package with replay detail' : 'published koyuki@0.1.0-alpha.2'}.`);

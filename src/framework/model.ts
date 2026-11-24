@@ -7,8 +7,9 @@ type AnyStep = Step<never, unknown, unknown>;
 type Output<T> = T extends Step<never, infer O, unknown> ? O : never;
 type Failure<T> = T extends Step<never, unknown, infer E> ? E : never;
 type End<I, T extends readonly AnyStep[]> = T extends readonly [infer H, ...infer R extends readonly AnyStep[]] ? End<Output<H>, R> : I;
+// Express the expected input at each slot, rather than collapsing a bad chain to never.
 type Connected<I, T extends readonly AnyStep[]> = T extends readonly [infer H extends AnyStep, ...infer R extends readonly AnyStep[]]
-  ? H extends Step<infer A, unknown, unknown> ? [I] extends [A] ? readonly [H, ...Connected<Output<H>, R>] : never : never
+  ? readonly [Step<I, Output<H>, Failure<H>>, ...Connected<Output<H>, R>]
   : readonly [];
 
 export type TransitionDefinition<I, V, VE, T extends readonly AnyStep[], O, E> = {

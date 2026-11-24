@@ -154,3 +154,8 @@ runの既存経路は維持。予期しない例外はreject。永続監査ロ�
 要求付きTargetと任意の再送境界を一つにまとめる試作入口。
 replayありはExecutionを返す保存が必要。run/runDetailedの既存契約を再利用。
 既存APIは維持し、推奨入口の全面置換はしない。比較結果はdocs/use-case.md。
+
+型診断改善：defineUseCaseは単一の公開シグネチャへ変更。
+save / require / evolveの期待入力を診断で示し、再送でExecutionを返さない場合は専用案内を示す。
+optionalな再送設定の戻り値はActionReportとReplayReportのUnion。
+複雑なインラインsaveは型注釈が必要な場合がある。詳細はdocs/use-case.md。

@@ -9,3 +9,7 @@ defineUseCase({ ...adapter, transition, save: async (s: string) => ok(s) });
 defineUseCase({ ...adapter, transition: { ...transition, evolve: step('wrong', (s: string) => ok(s)) } });
 // Missing Execution envelope for replay.
 defineUseCase({ ...adapter, transition, replay: { lookup: (_n: number) => ok({ kind: 'missing' as const }), resolveAfter: () => false } });
+// Wrong require input must identify the expected intermediate input.
+defineUseCase({ ...adapter, transition: { ...transition, require: [step('wrong-require', (s: string) => ok(s))] as const } });
+// The require output must match the evolve input.
+defineUseCase({ ...adapter, transition: { ...transition, require: [step('to-string', (n: number) => ok(String(n)))] as const } });

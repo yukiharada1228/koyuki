@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defineUseCase, defineRequestTarget, withReplay, ok, err, step, type Result, type Execution, type Receipt } from './framework/index.js';
+import { defineUseCase, defineRequestTarget, withReplay, ok, err, step, type Result, type Execution, type Receipt, type ReplayBoundary, type ActionReport, type ReplayReport } from './framework/index.js';
 type Failure = { kind: 'Invalid' } | { kind: 'Conflict' };
 const transition = {
   validate: step('positive', (n: number): Result<number, Failure> => n > 0 ? ok(n) : err({ kind: 'Invalid' })),
@@ -73,11 +73,51 @@ function typeContracts() {
   const exactPlain: Promise<Result<number, Failure>> = plain.run(1);
   void exactPlain;
   const replayed = defineUseCase({ ...commit, transition, replay: {
-    lookup: (_n: number): Result<Receipt<number>, { kind: 'Unavailable' }> => ok({ kind: 'missing' }),
-    resolveAfter: (error) => error.kind === 'Conflict',
+    lookup: (input): Result<Receipt<number>, { kind: 'Unavailable' }> => {
+      const number: number = input;
+      void number;
+      // @ts-expect-error lookup input remains inferred as number
+      input.notAnInputField;
+      return ok({ kind: 'missing' });
+    },
+    resolveAfter: (error) => {
+      // @ts-expect-error recovery callback is contextually typed, not any
+      error.notAnErrorField;
+      return error.kind === 'Conflict';
+    },
   } });
   const exactReplay: Promise<Result<Execution<number>, Failure | { kind: 'Unavailable' } | { kind: 'ReplayInputNotCloneable' }>> = replayed.run(1);
   void exactReplay;
+  const inferred = defineUseCase({ operation: 'inferred', load: async (input: number) => ok(input), transition,
+    save: async (change: number, execution: { request: number; operation: string }): Promise<Result<Execution<number>, never>> => {
+      const n: number = change;
+      const request: number = execution.request;
+      void n; void request;
+      // @ts-expect-error change comes from evolve, not any
+      change.notAChangeField;
+      // @ts-expect-error request context remains typed
+      execution.request.notARequestField;
+      return ok({ kind: 'committed' as const, value: change });
+    },
+    replay: { lookup: input => {
+      // @ts-expect-error inline lookup input is inferred from load
+      input.notAnInputField;
+      return ok({ kind: 'found' as const, value: input });
+    }, resolveAfter: error => error.kind === 'Conflict' },
+  });
+  const exactInferred: Promise<Result<Execution<number>, Failure | { kind: 'ReplayInputNotCloneable' }>> = inferred.run(1);
+  void exactInferred;
+  const noReplay = defineUseCase({ ...commit, transition, replay: undefined });
+  const exactNoReplay: Promise<ActionReport<Execution<number>, Failure>> = noReplay.runDetailed(1);
+  void exactNoReplay;
+  const optional: { replay?: ReplayBoundary<number, number, Failure, { kind: 'Unavailable' }> } = {};
+  const configured = defineUseCase({ ...commit, transition, ...optional });
+  const exactOptional: Promise<ActionReport<Execution<number>, Failure> | ReplayReport<number, Failure, { kind: 'Unavailable' }>> = configured.runDetailed(1);
+  void exactOptional;
+  configured.runDetailed(1).then(report => {
+    // @ts-expect-error optional configuration cannot promise a replay report at runtime
+    report.attempt;
+  });
   // @ts-expect-error caller input remains anchored to load
   plain.run('wrong');
   // @ts-expect-error request metadata cannot be used with the wrong type
