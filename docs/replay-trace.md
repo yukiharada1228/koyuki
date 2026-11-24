@@ -1,7 +1,7 @@
-# 再送を含む実行記録（開発版alpha.3）
+# 再送を含む実行記録（alpha.3）
 
 `withReplay(...).runDetailed(input)`は、再送境界と実際の業務実行を区別して返す。
-この追加APIは開発版alpha.3。npmのalphaタグはalpha.2のままで、まだ公開していない。
+この追加APIはnpmの `koyuki@0.1.0-alpha.3` に含まれる。
 
 ```ts
 const report = await commands.submit.runDetailed(input);

@@ -1,8 +1,8 @@
-# 接続をまとめるdefineUseCaseの試作（開発版alpha.3）
+# 接続をまとめるdefineUseCaseの試作（alpha.3）
 
 取得・純粋な遷移・要求情報を伴う保存・任意の再送を、一つの定義にまとめるAPI。
 既存のdefineRequestTargetとwithReplayを組み合わせる薄い入口で、別の実行エンジンではない。
-npmにはまだ公開していない。既存APIは引き続き利用できる。
+npmの `koyuki@0.1.0-alpha.3` に含まれる。既存APIは引き続き利用できる。
 
 ```ts
 const submit = defineUseCase({
