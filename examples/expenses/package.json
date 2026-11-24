@@ -8,7 +8,7 @@
     "test": "tsx --test expenses.test.ts"
   },
   "dependencies": {
-    "koyuki": "0.1.0-alpha.0"
+    "koyuki": "0.1.0-alpha.1"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
