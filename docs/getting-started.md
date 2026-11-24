@@ -31,7 +31,7 @@ Node.js 22以上を用意し、空のディレクトリで次を実行する。
 ```sh
 npm init -y
 npm pkg set type=module
-npm install koyuki@0.1.0-alpha.3
+npm install koyuki@0.1.0-alpha.4
 npm install -D typescript tsx @types/node
 ```
 
@@ -146,4 +146,4 @@ defineUseCaseではsaveの位置で不一致を表示する。Stepや型のinter
 
 ルートの`npm run test:quickstart`はpackしたパッケージを作業ツリー外へインストールし、
 型チェック、実行結果、4種類の誤定義が拒否されることを検証する。
-`npm run test:quickstart:registry`はnpmのalpha.3から同じ手順を再現する。
+`npm run test:quickstart:registry`はnpmのalpha.4から同じ手順を再現する。

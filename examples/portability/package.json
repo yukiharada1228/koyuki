@@ -12,13 +12,13 @@
     "audit:bundle": "wrangler deploy --dry-run --outdir .build/worker --metafile"
   },
   "dependencies": {
-    "koyuki": "file:../..",
-    "hono": "4.13.21"
+    "hono": "4.13.21",
+    "koyuki": "0.1.0-alpha.4"
   },
   "devDependencies": {
-    "wrangler": "4.168.0",
-    "typescript": "7.0.2",
+    "@cloudflare/workers-types": "5.20261124.2",
     "esbuild": "0.28.2",
-    "@cloudflare/workers-types": "5.20261124.2"
+    "typescript": "7.0.2",
+    "wrangler": "4.168.0"
   }
 }

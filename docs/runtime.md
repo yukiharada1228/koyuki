@@ -1,7 +1,7 @@
 # ランタイムと依存の方針
 
-開発版alpha.4から、公開するコアは次の方針を守る。
-npm公開済みalpha.3にはまだnode:crypto依存がある。
+alpha.4から、公開するコアは次の方針を守る。
+npmのalpha.4で利用できる。alpha.3以前にはnode:crypto依存がある。
 
 - ECMAScript組み込みとWeb標準APIのみを使用する。
 - Node / Bun / Denoなど特定ランタイム固有のAPIをコアに持ち込まない。
@@ -42,3 +42,5 @@ test:portableはビルド済み入口をブラウザ向けにbundleし、Nodeグ
 
 Safari / Firefox / Deno / Bun / 他のエッジ基盤は未確認。
 SQLiteを使うサンプルには引き続きNode.jsが必要。
+
+公開後の同じ依存契約は `npm run check:package:registry` でnpmから確認できる。

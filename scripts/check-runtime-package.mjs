@@ -11,11 +11,14 @@ function run(command, args, cwd = root) {
   if (result.error || result.status !== 0) throw new Error(result.stdout + result.stderr || String(result.error));
   return result.stdout;
 }
-const packed = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json']))[0];
+const registry = process.argv.includes('--registry');
+const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+const packed = registry ? null : JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json']))[0];
+const dependency = registry ? version : `file:${join(root, packed.filename)}`;
 const temp = mkdtempSync(join(tmpdir(), 'koyuki-runtime-contract-'));
 try {
-  writeFileSync(join(temp, 'package.json'), JSON.stringify({ private: true, type: 'module', dependencies: { koyuki: `file:${join(root, packed.filename)}` } }));
-  run('npm', ['install', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], temp);
+  writeFileSync(join(temp, 'package.json'), JSON.stringify({ private: true, type: 'module', dependencies: { koyuki: dependency } }));
+  run('npm', ['install', '--prefer-online', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], temp);
   const installed = join(temp, 'node_modules/koyuki');
   const manifest = JSON.parse(readFileSync(join(installed, 'package.json'), 'utf8'));
   for (const key of ['dependencies', 'optionalDependencies', 'peerDependencies']) assert.equal(Object.keys(manifest[key] ?? {}).length, 0, `${key} must be empty`);

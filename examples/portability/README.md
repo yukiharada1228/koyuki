@@ -9,11 +9,9 @@ Workerはnodejs_compatを指定せず、Node polyfillを追加しない。Hono�
 
 ## ローカルで再現
 
-現在は開発版alpha.4をfile:../..で参照するため、先にルートでビルドする。
+npmのalpha.4を参照する独立したサンプル。リポジトリをcloneした後：
 
 ```sh
-npm ci
-npm run build
 cd examples/portability
 npm ci
 npm run types
