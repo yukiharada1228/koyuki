@@ -1,7 +1,7 @@
 # Koyuki 在庫引当サンプル
 
 初回は公開済みalpha.1の既存APIだけで実装し、手書きの再送制御を洗い出しました。
-現在は開発版alpha.2の `withReplay` で、その手書きの分岐を置き換えています。
+現在はalpha.2の `withReplay` で、その手書きの分岐を置き換えています。
 業務の状態・検証・純粋な遷移は初回から変更していません。
 
 Node.js 22.13以上が必要です。Node.js 26.12.0で検証しています。
@@ -92,6 +92,6 @@ const reserveCommand = defineTarget({
 [初回検証の記録](FINDINGS.md)、[新しい境界の使い方](../../docs/replay.md)、
 [在庫・経費への適用結果](../../REPLAY-RESULTS.md)を参照してください。
 
-このサンプルは開発版を `file:../..` で参照します。npm公開版alpha.1には新APIがないためです。
+このサンプルは変更を検証しやすいよう、作業ツリーを `file:../..` で参照します。公開パッケージを試す場合は `npm install koyuki@0.1.0-alpha.2` で切り替えられます。
 ルートの `npm run test:inventory:package` で、packしたパッケージを別の一時ディレクトリへ
 インストールして検証できます。新しいnpm版の公開はこの変更では行っていません。
