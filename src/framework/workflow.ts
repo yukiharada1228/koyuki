@@ -1,5 +1,5 @@
 import type { Result } from './result.js';
-import { fingerprint } from './identity.js';
+import { canonicalIdentity } from './identity.js';
 export type Rule<I, O, E> = (input: I) => Result<O, E>;
 export interface Trace { readonly step: string; readonly status: 'ok' | 'error' }
 export interface Evaluation<O, E> { result: Result<O, E>; trace: readonly Trace[] }
@@ -75,7 +75,7 @@ export function bindMutation<I, O, E, S, F>(config: {
     if (node.kind !== 'write') throw new Error('WrongMutationBinding');
     const task = tasks.get(node);
     if (!task || task.identity !== identity) throw new Error('WrongMutationBinding');
-    if (fingerprint(node.input) !== fingerprint(decision.value)) throw new Error('ChangedDecision');
+    if (canonicalIdentity(node.input) !== canonicalIdentity(decision.value)) throw new Error('ChangedDecision');
     const result = await task.execute() as Result<S, F>;
     return { result, trace: [...evaluated.trace, { step: config.operation, status: result.ok ? 'ok' : 'error' }], plan: describeView(rendered) };
   }

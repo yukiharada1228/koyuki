@@ -43,7 +43,8 @@
     "demo:leave": "npm --prefix examples/leave start",
     "test:leave:package": "node scripts/test-leave-package.mjs",
     "test:leave:development": "node scripts/test-leave-package.mjs --development",
-    "test:use-case:package": "node scripts/test-leave-package.mjs --declarative"
+    "test:use-case:package": "node scripts/test-leave-package.mjs --declarative",
+    "test:portable": "npm run build && node scripts/test-portable.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",
@@ -57,7 +58,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "Declarative, functional business workflows for TypeScript",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

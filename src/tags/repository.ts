@@ -1,5 +1,5 @@
 import { ok, err, type Result } from '../framework/result.js';
-import { fingerprint } from '../framework/identity.js';
+import { fingerprint } from './identity.js';
 import { restoreTag, normalizeLabel, type DuplicateLabel, type RawTag, type TagInput, type UpdateInput, type CreateCommand, type UpdateCommand, type CreatedTag, type UpdatedTag, type PersistedTag, type CorruptError } from './domain.js';
 export type CreateLoadError = { kind: 'GroupNotFound' } | { kind: 'RepositoryUnavailable' } | CorruptError;
 export type UpdateLoadError = { kind: 'TagArchived' } | { kind: 'SaveConflict' } | { kind: 'NotFound' } | { kind: 'RepositoryUnavailable' } | CorruptError;

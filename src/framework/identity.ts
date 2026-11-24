@@ -1,6 +1,5 @@
-import { createHash } from 'node:crypto';
 // Reject values for which JSON would silently lose identity information.
-export function fingerprint(input: unknown): string {
+export function canonicalIdentity(input: unknown): string {
   const seen = new Set<object>();
   function normalize(value: unknown): unknown {
     if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
@@ -16,5 +15,5 @@ export function fingerprint(input: unknown): string {
       return Object.fromEntries(Object.keys(value).sort().map(key => [key, normalize((value as Record<string, unknown>)[key])]));
     } finally { seen.delete(value); }
   }
-  return createHash('sha256').update(JSON.stringify(normalize(input))).digest('hex');
+  return JSON.stringify(normalize(input));
 }

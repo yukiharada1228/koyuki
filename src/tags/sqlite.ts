@@ -1,7 +1,7 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { ok, err, type Result } from '../framework/result.js';
-import { fingerprint } from '../framework/identity.js';
+import { fingerprint } from './identity.js';
 import { normalizeLabel, restoreTag, type TagData, type RawTag, type TagInput, type UpdateInput, type CreateCommand, type UpdateCommand, type CreatedTag, type UpdatedTag, type PersistedTag } from './domain.js';
 import type { TagRepository, CreateLoadError, UpdateLoadError, SaveError } from './repository.js';
 import type { LifecycleRepository, LifecycleInput, LifecycleCommand, LifecycleChange, LifecycleSaved } from './lifecycle.js';
