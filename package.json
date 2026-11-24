@@ -28,7 +28,10 @@
     "demo:expenses:sqlite": "tsx src/expenses/sqlite-demo.ts",
     "test:expenses:sqlite": "tsx --test src/expenses-sqlite.test.ts",
     "build": "tsc -p tsconfig.build.json",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "check:inventory": "npm --prefix examples/inventory run check",
+    "test:inventory": "npm --prefix examples/inventory test",
+    "demo:inventory": "npm --prefix examples/inventory start"
   },
   "devDependencies": {
     "@types/node": "latest",

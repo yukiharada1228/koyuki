@@ -1,0 +1,21 @@
+{
+  "name": "koyuki-inventory-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx demo.ts",
+    "check": "tsc --noEmit",
+    "test": "tsx --test inventory.test.ts"
+  },
+  "dependencies": {
+    "koyuki": "0.1.0-alpha.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

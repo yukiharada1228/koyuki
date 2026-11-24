@@ -79,6 +79,22 @@ npm start
 サンプルはソース内部の相対importではなく、npmの `koyuki` を使用します。
 申請 → 上長承認 → 経理承認と、別申請の却下を確認できます。
 
+## 在庫引当で実行境界を検証する
+
+[在庫引当サンプル](examples/inventory/README.md)では、引当・確定・キャンセルを
+既存APIだけで実装しています。SQLiteで保存競合・成功済み要求の再送・rollbackを検証します。
+
+```sh
+cd examples/inventory
+npm ci
+npm run check
+npm test
+npm start
+```
+
+再送の事前照会と競合後の解決は、現行APIではアプリ側に残りました。
+[検証結果と次の設計課題](examples/inventory/FINDINGS.md)に詳細を記載しています。
+
 ## フレームワークを開発する
 
 リポジトリのルートで実行します。全テストには `node:sqlite` が必要です。
