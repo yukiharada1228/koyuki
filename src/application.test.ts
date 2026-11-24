@@ -92,3 +92,50 @@ function typeChecks(state: TagScreen) {
   void missingOperation;
 }
 void typeChecks;
+
+test('unexpected operation exceptions become a distinct terminal state without retrying or discarding data', async () => {
+  let writes = 0;
+  const app = defineApplication({ initial: () => 10,
+    operations: { change: operation({ run: async (_n: number): Promise<Result<number, { kind: 'Denied' }>> => {
+      writes++; throw new Error('response lost after commit');
+    } }, (before: number, after) => before + after) },
+    view: state => state,
+  });
+  const session = await app.start();
+  const states: string[] = [];
+  session.subscribe(snapshot => states.push(snapshot.state.kind));
+  const dispatched = await session.dispatch({ type: 'change', input: 1 });
+  assert(dispatched.ok);
+  assert.deepEqual(session.snapshot().state, { kind: 'crashed', data: 10, operation: 'change', error: { kind: 'UnexpectedException', message: 'response lost after commit' } });
+  assert.deepEqual(states, ['ready', 'running', 'crashed']); assert.equal(writes, 1);
+  assert.deepEqual(await session.dispatch({ type: 'change', input: 1 }), err({ kind: 'UnexpectedMessage' }));
+  assert.equal(writes, 1);
+  assert((await session.dispatch({ type: 'dismiss' })).ok);
+  assert.deepEqual(session.snapshot().state, { kind: 'ready', data: 10 });
+  assert.equal(writes, 1); // dismiss does not retry an operation that may already be committed
+  assert.deepEqual(await Reflect.apply(session.dispatch, session, [{ type: '@crash', operation: 'change', error: {} }]), err({ kind: 'UnexpectedMessage' }));
+});
+test('non-cloneable thrown values and projection failures cannot strand the application in running', async () => {
+  for (const failure of ['operation', 'reduce', 'clone', 'error'] as const) {
+    const session = await defineApplication({ initial: () => ({ value: 10 }),
+      operations: { change: operation({ run: async (_n: number) => {
+        if (failure === 'operation') throw () => 'not cloneable';
+        if (failure === 'error') return err({ kind: 'MalformedError', callback: () => {} });
+        return ok(2);
+      } }, (before: { value: number }, after) => {
+        if (failure === 'reduce') { before.value = 100; throw new Error('projection failed'); }
+        return { value: after, ...(failure === 'clone' ? { callback: () => {} } : {}) };
+      }) }, view: state => state.data.value,
+    }).start();
+    assert((await session.dispatch({ type: 'change', input: 2 })).ok);
+    const state = session.snapshot().state;
+    assert.equal(state.kind, 'crashed');
+    assert.deepEqual(state.data, { value: 10 });
+  }
+});
+test('tag presentation exposes crash recovery instead of offering blocked business operations', () => {
+  const view = tagProgram(new Repository()).view({ kind: 'crashed', operation: 'create', data: [], error: { kind: 'UnexpectedException', message: 'offline' } });
+  assert.equal(view.busy, false);
+  assert.equal(view.error, 'UnexpectedException');
+  assert.deepEqual(view.actions, ['dismiss']);
+});

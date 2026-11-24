@@ -42,6 +42,14 @@ try {
     for (const line of [5, 7, 9, 11, 13, 15]) if (!output.includes(`diagnostics.ts(${line},`)) throw new Error(output);
     if (output.includes('TS2769') || output.includes('TS7006') || !output.includes('Koyuki: replay requires save to return Execution<Output>')) throw new Error(output);
     console.log(output);
+    rmSync(join(dir, 'diagnostics.ts'));
+    copyFileSync(join(root, 'scripts/fixtures/group-diagnostics.ts'), join(dir, 'group-diagnostics.ts'));
+    const groupResult = spawnSync('npm', ['exec', '--', 'tsc', '--pretty', 'false'], { cwd: dir, encoding: 'utf8' });
+    const groupOutput = `${groupResult.stdout ?? ''}${groupResult.stderr ?? ''}`;
+    if (groupResult.error || !groupResult.status) throw new Error('Expected compiler rejection for invalid group declarations');
+    for (const line of [4, 5, 6, 7, 8, 9]) if (!groupOutput.includes(`group-diagnostics.ts(${line},`)) throw new Error(groupOutput);
+    if (groupOutput.includes('TS2769') || groupOutput.includes('TS7006') || !groupOutput.includes('Koyuki: replay requires save to return Execution<Output>')) throw new Error(groupOutput);
+    console.log(groupOutput);
   }
   console.log(`Verified leave example outside the repository using ${development ? 'packed development package with replay detail' : 'published koyuki@0.1.0-alpha.2'}.`);
 } finally { rmSync(dir, { recursive: true, force: true }); }

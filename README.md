@@ -137,3 +137,15 @@ APIの検討記録は [PUBLIC-API.txt](PUBLIC-API.txt) を参照してくださ�
 alpha.3では[再送を含む実行記録](docs/replay-trace.md)を追加しています。
 
 alpha.3では[defineUseCaseによる接続の集約](docs/use-case.md)も利用できます。既存APIは引き続き使用できます。
+
+
+## 開発版：複数操作の接続を一度宣言する
+
+`defineUseCaseGroup`で共通の保存・要求情報・再送境界を定義し、
+操作ごとのloadと純粋なtransitionを`.on`で接続できる。
+`operations(commands, reduce)`／`replayOperations(commands, reduce)`は、
+通常／再送の操作名を再列挙せずApplicationへ登録する。
+予期しない操作例外は業務失敗と区別した`crashed`状態で扱い、自動再試行しない。
+
+[全体例と責任範囲](docs/use-case-group.md)、[講演との対応と達成条件](docs/framework-goal.md)。
+これらの追加APIは未公開の開発版。既存APIは引き続き利用できる。

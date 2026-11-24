@@ -21,9 +21,9 @@ export interface TagPresentation {
 }
 export function tagView(state: TagScreen): TagPresentation {
   return { title: state.kind === 'running' ? state.operation === 'create' ? 'タグを作成中' : 'タグを更新中' : 'タグ管理',
-    busy: state.kind === 'running', error: state.kind === 'failed' ? state.error.kind : null,
+    busy: state.kind === 'running', error: state.kind === 'failed' || state.kind === 'crashed' ? state.error.kind : null,
     rows: state.data.map(tag => ({ id: tag.data.id, label: tag.data.label, version: tag.data.version })),
-    actions: state.kind === 'running' ? [] : state.kind === 'failed' ? ['dismiss'] : ['create', 'update'] };
+    actions: state.kind === 'running' ? [] : state.kind === 'failed' || state.kind === 'crashed' ? ['dismiss'] : ['create', 'update'] };
 }
 export function tagProgram(repository: TagRepository, initialTags: readonly PersistedTag[] = []) {
   return defineApplication({ initial: () => initialTags, operations: tagOperations(repository), view: tagView });

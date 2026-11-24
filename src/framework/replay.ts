@@ -78,3 +78,21 @@ export function replayOperation<S, I, O, E>(command: {
 }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, Execution<O>, E> {
   return operation(command, (state, execution) => execution.kind === 'replayed' ? state : reduce(state, execution.value));
 }
+
+/** Register commands sharing one projection rule, preserving each input/error pair. */
+export function replayOperations<S, const T extends Record<string, {
+  run(input: never): Promise<Result<Execution<unknown>, unknown>>;
+}>>(commands: T, reduce: (state: S, output: ReplayOutput<T[keyof T]>) => S): {
+  [K in keyof T]: Operation<S, ReplayInput<T[K]>, Execution<ReplayOutput<T[K]>>, ReplayError<T[K]>>
+} {
+  // Each key retains its own command. Only the shared projection rule is widened here.
+  const entries = Object.entries(commands).map(([key, command]) => [key,
+    replayOperation(command, reduce as (state: S, output: unknown) => S),
+  ]);
+  return Object.fromEntries(entries) as {
+    [K in keyof T]: Operation<S, ReplayInput<T[K]>, Execution<ReplayOutput<T[K]>>, ReplayError<T[K]>>
+  };
+}
+type ReplayInput<T> = T extends { run(input: infer I): unknown } ? I : never;
+type ReplayOutput<T> = T extends { run(input: never): Promise<Result<Execution<infer O>, unknown>> } ? O : never;
+type ReplayError<T> = T extends { run(input: never): Promise<Result<unknown, infer E>> } ? E : never;

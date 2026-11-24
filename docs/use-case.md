@@ -120,3 +120,41 @@ npm run test:use-case:package
 - 経費の既存テストは新APIに移行した実装で実行。
 - 作業ツリー外のpack済みパッケージで、休暇の既存14＋詳細記録2＋旧新比較1の17テスト、型チェック、デモ。
 - 別途6件の意図的な誤定義をコンパイルし、旧新それぞれ期待位置で拒否されることを確認。
+
+## 複数操作のApplication登録（未公開の開発版）
+
+同じ表示状態の更新規則を使う再送対応コマンドは、操作名を再列挙せず登録できる。
+
+```ts
+const commands = leaveCommands(repository, actor);
+return defineApplication({
+  initial: () => initial,
+  operations: replayOperations(commands, (_before: Account, after) => after),
+  view: state => ({
+    account: state.data,
+    balance: balance(state.data),
+    busy: state.kind === 'running',
+    error: state.kind === 'failed' || state.kind === 'crashed' ? state.error.kind : null,
+  }),
+});
+```
+
+`replayOperations`は各コマンドを既存の`replayOperation`で包むだけで、
+新しい実行エンジンや自動再試行を追加しない。各キーの入力・失敗型を保つ。
+committedの成功値だけを共通reduceへ渡し、replayedでは現在の状態を維持する。
+コマンド表は登録時にコピーされ、後から操作を追加しても登録済みの表は変わらない。
+
+全操作の成功値を扱える共通reduceがある場合に使う。
+操作ごとに更新規則が異なる場合や通常コマンドを混ぜる場合は、従来の個別登録を使う。
+
+これでなくせたのは「commandsのキーをApplication側でも繰り返す」接続。
+取得・保存・receiptの対応、認証済みidentity、保存の原子性は既存のadapterで引き続き明示する。
+休暇のadapterは既に一度だけ定義されているため、それを隠す新しい汎用APIは追加していない。
+業務の状態・検証・遷移だけでアプリ全体が完成するという保証ではない。
+
+検証は`src/replay-operations.test.ts`の通常成功・再送・失敗・型拒否と、
+`npm run test:use-case:package`の独立した休暇consumerの既存動作比較で行う。
+
+
+共通adapterを各操作へ展開する部分は、さらに
+[defineUseCaseGroup](use-case-group.md)で一度の宣言にまとめられる（未公開の開発版）。

@@ -4,7 +4,7 @@ import { defineRequestTarget, type RequestExecution, type Step, type TransitionD
 import { withReplay, type Execution, type ReplayBoundary, type ReplayInputError, type ReplayReport } from './replay.js';
 type AnyStep = Step<never, unknown, unknown>;
 type Failure<T> = T extends Step<never, unknown, infer E> ? E : never;
-type Errors<LE, VE, T extends readonly AnyStep[], E, SE> = LE | VE | Failure<T[number]> | E | SE;
+export type Errors<LE, VE, T extends readonly AnyStep[], E, SE> = LE | VE | Failure<T[number]> | E | SE;
 type Definition<I, C, LE, V, VE, T extends readonly AnyStep[], O, E, S, SE> = {
   operation: string;
   loadName?: string;
@@ -13,19 +13,19 @@ type Definition<I, C, LE, V, VE, T extends readonly AnyStep[], O, E, S, SE> = {
   save: (change: NoInfer<O>, execution: RequestExecution<NoInfer<I>>) => Promise<Result<S, SE>>;
 };
 type ReplayValue<S> = S extends Execution<infer O> ? O : never;
-type ReplaySaveCheck<S> = [S] extends [Execution<unknown>] ? unknown : {
+export type ReplaySaveCheck<S> = [S] extends [Execution<unknown>] ? unknown : {
   readonly 'Koyuki: replay requires save to return Execution<Output>': never;
 };
-type PlainCommand<I, S, F> = {
+export type PlainCommand<I, S, F> = {
   run(input: I): Promise<Result<S, F>>;
   runDetailed(input: I): Promise<ActionReport<S, F>>;
 };
-type ReplayCommand<I, S, F, RE> = {
+export type ReplayCommand<I, S, F, RE> = {
   run(input: I): Promise<Result<Execution<ReplayValue<S>>, F | RE | ReplayInputError>>;
   runDetailed(input: I): Promise<ReplayReport<ReplayValue<S>, F, RE>>;
 };
 // Optional or union-valued configuration must expose both possible report formats.
-type SelectCommand<D, Plain, Replayed> = D extends { replay: infer R }
+export type SelectCommand<D, Plain, Replayed> = D extends { replay: infer R }
   ? [R] extends [undefined] ? Plain : undefined extends R ? Plain | Replayed : Replayed
   : 'replay' extends keyof D ? Plain | Replayed : Plain;
 /** One signature keeps invalid plain declarations out of replay overload diagnostics. */

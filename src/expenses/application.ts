@@ -28,6 +28,6 @@ export function expenseApplication(repository: ExpenseRepository, actor: Actor, 
       approve: operation(model.change.on(approved), replace),
       reject: operation(model.rejection.on(rejected), replace),
     },
-    view: state => ({ expenses: state.data, busy: state.kind === 'running', error: state.kind === 'failed' ? state.error.kind : null }),
+    view: state => ({ expenses: state.data, busy: state.kind === 'running', error: state.kind === 'failed' || state.kind === 'crashed' ? state.error.kind : null }),
   });
 }

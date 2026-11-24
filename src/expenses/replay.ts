@@ -1,37 +1,33 @@
-import { defineUseCase, replayOperation, defineApplication, type Result, type RequestExecution } from '../framework/index.js';
+import { defineUseCaseGroup, replayOperations, defineApplication, type GroupExecution } from '../framework/index.js';
 import { submitted, approved, rejected, returned, edited } from './application.js';
-import type { Actor, Input, RejectInput, EditInput, Loaded, Change, ExpenseState } from './domain.js';
-import type { LoadError } from './repository.js';
+import type { Actor, Input, RejectInput, EditInput, Change, ExpenseState } from './domain.js';
 import { type ExpenseReplayRepository, type ExpenseOperation, type ExpenseRequest } from './sqlite-replay.js';
 export interface RequestInput<I> { readonly requestId: string; readonly input: I }
 export function expenseReplayCommands(repository: ExpenseReplayRepository, actor: Actor) {
   const identity = Object.freeze({ ...actor });
   const request = <I extends Input>(operation: ExpenseOperation, call: RequestInput<I>): ExpenseRequest =>
     ({ operation, actor: identity, requestId: call.requestId, input: call.input });
-  function adapter<I extends Input>(operation: ExpenseOperation, load: (input: I) => Promise<Result<Loaded<I>, LoadError>>) {
-    return {
-      operation: `expense.${operation}.v1`,
-      load: (call: RequestInput<I>) => load(call.input),
-      save: (change: Change, execution: RequestExecution<RequestInput<I>>) => repository.saveRequest(request(operation, execution.request), change),
-      replay: {
-        lookup: (call: RequestInput<I>) => repository.receipt(request(operation, call)),
-        resolveAfter: (error: { kind: string }) => error.kind === 'SaveConflict' || error.kind === 'InvalidState' || error.kind === 'RepositoryUnavailable',
-      },
-    };
-  }
+  const model = defineUseCaseGroup({
+    operation: (name: ExpenseOperation) => `expense.${name}.v1`,
+    save: (change: Change, execution: GroupExecution<ExpenseOperation, RequestInput<Input>>) => repository.saveRequest(request(execution.name, execution.request), change),
+    replay: {
+      lookup: (execution: GroupExecution<ExpenseOperation, RequestInput<Input>>) => repository.receipt(request(execution.name, execution.request)),
+      resolveAfter: ['SaveConflict', 'InvalidState', 'RepositoryUnavailable'],
+    },
+  });
   return {
-    submit: defineUseCase({ ...adapter('submit', (input: Input) => repository.load(input, identity)), transition: submitted }),
-    approve: defineUseCase({ ...adapter('approve', (input: Input) => repository.load(input, identity)), transition: approved }),
-    return: defineUseCase({ ...adapter('return', (input: RejectInput) => repository.load(input, identity)), transition: returned }),
-    edit: defineUseCase({ ...adapter('edit', (input: EditInput) => repository.load(input, identity)), transition: edited }),
-    reject: defineUseCase({ ...adapter('reject', (input: RejectInput) => repository.loadReject(input, identity)), transition: rejected }),
+    submit: model.on('submit', { load: (call: RequestInput<Input>) => repository.load(call.input, identity), transition: submitted }),
+    approve: model.on('approve', { load: (call: RequestInput<Input>) => repository.load(call.input, identity), transition: approved }),
+    return: model.on('return', { load: (call: RequestInput<RejectInput>) => repository.load(call.input, identity), transition: returned }),
+    edit: model.on('edit', { load: (call: RequestInput<EditInput>) => repository.load(call.input, identity), transition: edited }),
+    reject: model.on('reject', { load: (call: RequestInput<RejectInput>) => repository.loadReject(call.input, identity), transition: rejected }),
   };
 }
 export function expenseReplayApplication(repository: ExpenseReplayRepository, actor: Actor, initial: readonly ExpenseState[]) {
   const commands = expenseReplayCommands(repository, actor);
   const replace = (state: readonly ExpenseState[], expense: ExpenseState) => state.map(current => current.id === expense.id ? expense : current);
   return defineApplication({ initial: () => initial,
-    operations: { return: replayOperation(commands.return, replace), edit: replayOperation(commands.edit, replace), submit: replayOperation(commands.submit, replace), approve: replayOperation(commands.approve, replace), reject: replayOperation(commands.reject, replace) },
-    view: state => ({ expenses: state.data, busy: state.kind === 'running', error: state.kind === 'failed' ? state.error.kind : null }),
+    operations: replayOperations(commands, replace),
+    view: state => ({ expenses: state.data, busy: state.kind === 'running', error: state.kind === 'failed' || state.kind === 'crashed' ? state.error.kind : null }),
   });
 }
