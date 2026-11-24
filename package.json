@@ -31,7 +31,10 @@
     "prepack": "npm run build",
     "check:inventory": "npm --prefix examples/inventory run check",
     "test:inventory": "npm --prefix examples/inventory test",
-    "demo:inventory": "npm --prefix examples/inventory start"
+    "demo:inventory": "npm --prefix examples/inventory start",
+    "test:replay": "tsx --test src/replay.test.ts src/expense-replay.test.ts",
+    "demo:expenses:replay": "tsx src/examples/expense-replay.ts",
+    "test:inventory:package": "node scripts/test-inventory-package.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",
@@ -45,7 +48,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Declarative, functional business workflows for TypeScript",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

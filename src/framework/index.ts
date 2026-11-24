@@ -13,3 +13,5 @@ export { defineProgram, effect, next } from './program.js';
 export type { Command, Update, ProgramSnapshot, ProgramTrace } from './program.js';
 export { defineApplication, operation } from './application.js';
 export type { ApplicationState, ApplicationEvent } from './application.js';
+export { withReplay, replayOperation } from './replay.js';
+export type { Execution, Receipt, ReplayBoundary, ReplayInputError } from './replay.js';

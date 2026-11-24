@@ -1,0 +1,99 @@
+# 任意の再送・実行境界（開発版 alpha.2）
+
+`withReplay` は既存の `defineTarget(...).on(...)` などのコマンドに追加する、任意の実行境界です。
+`transition`、業務状態の型、検証関数を変える必要はありません。
+このAPIはリポジトリの開発版にあります。npm公開済みのalpha.1には含まれません。
+
+## 契約
+
+```ts
+type Receipt<O> = { kind: 'missing' } | { kind: 'found'; value: O };
+type Execution<O> =
+  | { kind: 'committed'; value: O }
+  | { kind: 'replayed'; value: O };
+```
+
+- `lookup` は記録なし・成功済みを区別します。キー衝突や読込失敗は `Result` のエラーです。
+- `save` は業務データと成功済み記録を同一トランザクションで確定します。
+- 新しく保存したら `committed`、同時実行した要求の記録を返したら `replayed` です。
+- `withReplay` はコマンドを実行する前に成功済み記録を確認します。
+- コマンドが失敗した際は、`resolveAfter` が明示的に許可した失敗だけ再照会します。
+- コマンド自体を自動リトライすることはありません。
+
+同じキーの異なる内容を拒否するfingerprint、要求キーのスコープ、応答の復元検証はアダプターが定義します。
+認証・要求ごとのアクセス制御は、この境界へ入る前にホストが行います。
+成功済み記録がある場合はドメインの検証関数を再実行しないため、認証をその検証だけに頼ることはできません。
+
+## 在庫引当への接続
+
+[application.ts](../examples/inventory/application.ts) の実コードでは、次の構成です。
+
+```ts
+const command = withReplay(commands.reserve, {
+  lookup: input => repository.receipt('reserve', input),
+  resolveAfter: error =>
+    error.kind === 'Conflict' ||
+    error.kind === 'InvalidState' ||
+    error.kind === 'StorageUnavailable',
+});
+```
+
+再送済みの注文は `reserved` や `confirmed` に進んでいるため、元の操作の `validate` は失敗し得ます。
+事前照会とloadの間に他の要求が成功する場合もあるため、このサンプルは `InvalidState` も再照会対象にしています。
+ただし、記録がなければ元のエラーをそのまま返します。業務上の拒否を成功に変換するものではありません。
+
+入力は最初のawaitより前に `structuredClone` で切り離します。
+呼び出し側が入れ子の入力を後から変更しても要求は変わりません。
+関数などcloneできない入力は `ReplayInputNotCloneable` になります。
+クラスのインスタンスに固有の振る舞いを期待する入力ではなく、clone可能な要求データを渡してください。
+フックが投げた想定外の例外は握りつぶさず、そのままrejectします。
+
+## 古い応答でViewを巻き戻さない
+
+成功済み記録は「その操作が成功した時点の応答」です。再送時点の最新状態ではありません。
+`replayOperation` は `committed` のときだけ利用者のreduceを呼び、`replayed` では現在の業務データを維持します。
+
+```ts
+operations: {
+  submit: replayOperation(commands.submit, replace),
+  approve: replayOperation(commands.approve, replace),
+  reject: replayOperation(commands.reject, replace),
+}
+```
+
+[経費精算への適用](../src/expenses/replay.ts)では、承認済みの画面で過去の申請を再送しても、
+画面は承認済みのままであることを検証しています。
+初期Viewそのものが古い場合は更新しません。別利用者の更新を取り込む再取得や購読はホストが設計します。
+明示的に過去の応答を扱いたい場合は `withReplay(...).run()` の結果から `kind` を確認できます。
+
+## 保存の責務は残る
+
+この境界は、独立した `save()` と `recordReceipt()` を安全なトランザクションに変換しません。
+在庫のアダプターは在庫・引当・成功済み記録を、経費のアダプターは経費・変更履歴・成功済み記録を、
+それぞれ同じDBトランザクションに含めています。
+
+認証済みActorをfingerprintへ含め、役割や有効状態が変わった要求も同じ成功記録として返さないようにした例が、
+[経費のSQLite拡張](../src/expenses/sqlite-replay.ts)です。
+要求をsaveへ引き渡す接続は [経費の実行定義](../src/expenses/replay.ts) に残ります。
+現行Targetのsaveが受け取るのはドメインの決定だけなので、要求単位のclosureで関連付けています。
+
+`withReplay` は `run` を公開します。元の `runDetailed` やmutationの準備用APIを再送境界で包むものではありません。
+検証用の準備APIを直接呼べば境界を迂回するため、通常の操作には包んだコマンドを使用してください。
+
+## 開発版を検証する
+
+```sh
+npm ci
+npm run build
+npm run test:replay
+npm run demo:expenses:replay
+npm ci --prefix examples/inventory
+npm run check:inventory
+npm run test:inventory
+npm run test:inventory:package
+```
+
+在庫サンプルは、新APIを試すため `file:../..` でビルド済み開発版を参照します。
+最後のコマンドはnpmパッケージをpackし、作業ツリー外の一時ディレクトリへインストールして、
+型チェック・在庫18テスト・デモを実行します。ソースへの相対importに依存しないことを確認します。
+記録の有効期限・削除・フォーマット変更時の移行や、分散トランザクションは提供していません。

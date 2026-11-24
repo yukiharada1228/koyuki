@@ -4,7 +4,7 @@ import { restoreExpense, type Actor, type Change, type Draft, type ExpenseState,
 import type { ExpenseRepository, LoadError, SaveError, StorageError } from './repository.js';
 type Row = Record<string, SQLOutputValue>;
 export class SqliteExpenses implements ExpenseRepository {
-  private readonly db: DatabaseSync;
+  protected readonly db: DatabaseSync;
   constructor(path: string) {
     this.db = new DatabaseSync(path);
     try {
@@ -61,7 +61,7 @@ export class SqliteExpenses implements ExpenseRepository {
       return err({ kind: 'RepositoryUnavailable' });
     }
   }
-  private commit(change: Change): Result<ExpenseState, SaveError> {
+  protected commit(change: Change): Result<ExpenseState, SaveError> {
     const current = this.read(change.next.id); if (!current.ok) return current.error.kind === 'NotFound' ? err({ kind: 'SaveConflict' }) : err(current.error);
     const next = restoreExpense(change.next); if (!next.ok) return next;
     const before = current.value, after = next.value;

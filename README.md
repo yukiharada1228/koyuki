@@ -82,9 +82,12 @@ npm start
 ## 在庫引当で実行境界を検証する
 
 [在庫引当サンプル](examples/inventory/README.md)では、引当・確定・キャンセルを
-既存APIだけで実装しています。SQLiteで保存競合・成功済み要求の再送・rollbackを検証します。
+SQLiteで保存競合・成功済み要求の再送・rollbackを検証します。
+開発版alpha.2の新しい再送境界を使うため、まずルートでビルドしてください。
 
 ```sh
+npm ci
+npm run build
 cd examples/inventory
 npm ci
 npm run check
@@ -92,8 +95,10 @@ npm test
 npm start
 ```
 
-再送の事前照会と競合後の解決は、現行APIではアプリ側に残りました。
-[検証結果と次の設計課題](examples/inventory/FINDINGS.md)に詳細を記載しています。
+初回検証で手書きになった再送処理は、開発版の `withReplay` へ取り込みました。
+`replayOperation` は過去の再送応答でViewを巻き戻さないための接続です。
+[契約と使い方](docs/replay.md)、[適用結果と残る課題](REPLAY-RESULTS.md)を参照してください。
+これらのAPIはnpm公開済みのalpha.1にはまだ含まれません。
 
 ## フレームワークを開発する
 

@@ -129,3 +129,11 @@ src/expenses/application.tsで申請・上長承認・経理承認・却下を�
 再起動後の次の承認、別プロセスの競合、復元時の検証を確認。
 実行: npm run demo:expenses:sqlite
 詳細: EXPENSES-SQLITE-RESULTS.txt
+
+開発版alpha.2の任意の再送境界
+withReplay(command, { lookup, resolveAfter })
+Receipt<O> = missing | found(value)
+Execution<O> = committed(value) | replayed(value)
+replayOperation(command, reduce) — 再送では現在の業務データを維持する。
+詳細: docs/replay.md / REPLAY-RESULTS.md
+新APIはまだnpmへ公開していない。

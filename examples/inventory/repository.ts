@@ -1,14 +1,14 @@
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
-import { ok, err, type Result } from 'koyuki';
+import { ok, err, type Result, type Receipt, type Execution } from 'koyuki';
 import { validInput, validStock, validReservation, validOutcome, type Input, type Operation, type Loaded, type Change, type Outcome, type Stock } from './domain.js';
 
 export type StorageError = { kind: 'NotFound' } | { kind: 'Conflict' } | { kind: 'IdempotencyConflict' } |
   { kind: 'InvalidInput' } | { kind: 'CorruptInventory' } | { kind: 'StorageUnavailable' };
 export interface InventoryRepository {
-  receipt(operation: Operation, input: Input): Result<Outcome | null, StorageError>;
+  receipt(operation: Operation, input: Input): Result<Receipt<Outcome>, StorageError>;
   load(operation: Operation, input: Input): Promise<Result<Loaded, StorageError>>;
-  save(change: Change): Promise<Result<Outcome, StorageError>>;
+  save(change: Change): Promise<Result<Execution<Outcome>, StorageError>>;
 }
 // Explicit tuple canonicalization: object key order and irrelevant JS fields don't affect identity.
 const fingerprint = (operation: Operation, input: Input) => createHash('sha256')
@@ -44,16 +44,16 @@ export class SqliteInventory implements InventoryRepository {
       return validStock(row) ? ok(Object.freeze({ ...row })) : err({ kind: 'CorruptInventory' });
     } catch { return err({ kind: 'StorageUnavailable' }); }
   }
-  receipt(operation: Operation, input: Input): Result<Outcome | null, StorageError> {
+  receipt(operation: Operation, input: Input): Result<Receipt<Outcome>, StorageError> {
     if (!validInput(input)) return err({ kind: 'InvalidInput' });
     try {
       const row = this.db.prepare('SELECT fingerprint,result_json FROM receipts WHERE request_id=?').get(input.requestId);
-      if (!row) return ok(null);
+      if (!row) return ok({ kind: 'missing' });
       if (row.fingerprint !== fingerprint(operation, input)) return err({ kind: 'IdempotencyConflict' });
       let value: unknown; try { value = JSON.parse(String(row.result_json)); } catch { return err({ kind: 'CorruptInventory' }); }
       if (!validOutcome(value) || value.reservation.orderId !== input.orderId || value.reservation.sku !== input.sku || value.reservation.quantity !== input.quantity ||
           value.reservation.kind !== (operation === 'reserve' ? 'reserved' : operation === 'confirm' ? 'confirmed' : 'cancelled')) return err({ kind: 'CorruptInventory' });
-      return ok(value);
+      return ok({ kind: 'found', value });
     } catch { return err({ kind: 'StorageUnavailable' }); }
   }
   async load(operation: Operation, input: Input): Promise<Result<Loaded, StorageError>> {
@@ -69,11 +69,11 @@ export class SqliteInventory implements InventoryRepository {
       return ok({ operation, input: Object.freeze({ ...input }), stock: stock.value, reservation: Object.freeze({ ...reservation }) });
     });
   }
-  async save(change: Change): Promise<Result<Outcome, StorageError>> {
-    return this.transaction(true, () => {
+  async save(change: Change): Promise<Result<Execution<Outcome>, StorageError>> {
+    return this.transaction<Execution<Outcome>>(true, () => {
       // Resolve simultaneous identical requests before checking now-stale stock versions.
       const receipt = this.receipt(change.operation, change.input); if (!receipt.ok) return receipt;
-      if (receipt.value) return ok(receipt.value);
+      if (receipt.value.kind === 'found') return ok({ kind: 'replayed', value: receipt.value.value });
       const { stock, reservation } = change.next;
       if (!validOutcome(change.next) || stock.version !== change.expectedStockVersion + 1 || reservation.version !== change.expectedReservationVersion + 1 ||
           reservation.orderId !== change.input.orderId || reservation.sku !== change.input.sku || reservation.quantity !== change.input.quantity) return err({ kind: 'CorruptInventory' });
@@ -88,7 +88,7 @@ export class SqliteInventory implements InventoryRepository {
         .run(reservation.kind, reservation.version, reservation.orderId);
       this.db.prepare('INSERT INTO receipts VALUES(?,?,?)')
         .run(change.input.requestId, fingerprint(change.operation, change.input), JSON.stringify(change.next));
-      return ok(structuredClone(change.next));
+      return ok({ kind: 'committed', value: structuredClone(change.next) });
     });
   }
   private transaction<T>(write: boolean, body: () => Result<T, StorageError>): Result<T, StorageError> {

@@ -6,11 +6,12 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
-import { transition, type Result } from 'koyuki';
+import { transition, type Result, type Execution } from 'koyuki';
 import { SqliteInventory, type InventoryRepository } from './repository.js';
 import { inventoryCommands, reserved } from './application.js';
-import { validateReserve, reserve, confirm, type Input, type Loaded, type Confirmed } from './domain.js';
+import { validateReserve, reserve, confirm, type Input, type Loaded, type Confirmed, type Outcome } from './domain.js';
 function value<T, E>(result: Result<T, E>): T { assert(result.ok, JSON.stringify(result)); return result.value; }
+function outcome<E>(result: Result<Execution<Outcome>, E>): Outcome { return value(result).value; }
 const input = (requestId: string, orderId = 'order-1', quantity = 3, sku = 'tea'): Input => ({ requestId, orderId, quantity, sku });
 function fixture(t: { after(fn: () => void): void }, stock = 10) {
   const dir = mkdtempSync(join(tmpdir(), 'koyuki-inventory-')), path = join(dir, 'inventory.sqlite');
@@ -41,12 +42,12 @@ test('pure reservation transition returns a new immutable state without changing
 });
 test('reserve, confirm and cancel preserve inventory accounting', async t => {
   const { repository, app } = fixture(t);
-  const held = value(await app.reserve.run(input('reserve')));
+  const held = outcome(await app.reserve.run(input('reserve')));
   assert.equal(held.stock.onHand, 10); assert.equal(held.stock.reserved, 3);
-  const final = value(await app.confirm.run(input('confirm')));
+  const final = outcome(await app.confirm.run(input('confirm')));
   assert.equal(final.reservation.kind, 'confirmed'); assert.equal(final.stock.onHand, 7); assert.equal(final.stock.reserved, 0);
-  value(await app.reserve.run(input('reserve-2', 'order-2', 2)));
-  const cancelled = value(await app.cancel.run(input('cancel-2', 'order-2', 2)));
+  outcome(await app.reserve.run(input('reserve-2', 'order-2', 2)));
+  const cancelled = outcome(await app.cancel.run(input('cancel-2', 'order-2', 2)));
   assert.equal(cancelled.reservation.kind, 'cancelled'); assert.equal(cancelled.stock.onHand, 7); assert.equal(cancelled.stock.reserved, 0);
   assert.equal(value(repository.stock('tea')).version, 5);
 });
@@ -57,43 +58,45 @@ test('insufficient stock and invalid requests never write stock or receipts', as
     assert.deepEqual(await app.reserve.run(input('invalid', 'order', quantity)), { ok: false, error: { kind: 'InvalidInput' } });
   }
   assert.deepEqual(await app.reserve.run(input(' ', 'order', 1)), { ok: false, error: { kind: 'InvalidInput' } });
-  assert.equal(value(repository.receipt('reserve', input('too-many'))), null);
+  assert.deepEqual(value(repository.receipt('reserve', input('too-many'))), { kind: 'missing' });
   assert.equal(value(repository.stock('tea')).version, 1);
 });
 test('full available stock may be reserved and cannot be oversold', async t => {
   const { app } = fixture(t, 3);
-  assert.equal(value(await app.reserve.run(input('all'))).stock.reserved, 3);
+  assert.equal(outcome(await app.reserve.run(input('all'))).stock.reserved, 3);
   assert.deepEqual(await app.reserve.run(input('other', 'order-2', 1)), { ok: false, error: { kind: 'InsufficientStock', available: 0 } });
 });
 test('unreserved and terminal reservations reject illegal transitions', async t => {
   const { app } = fixture(t);
   assert.deepEqual(await app.confirm.run(input('early')), { ok: false, error: { kind: 'InvalidState' } });
-  value(await app.reserve.run(input('reserve')));
+  outcome(await app.reserve.run(input('reserve')));
   assert.deepEqual(await app.reserve.run(input('again')), { ok: false, error: { kind: 'InvalidState' } });
-  value(await app.cancel.run(input('cancel')));
+  outcome(await app.cancel.run(input('cancel')));
   for (const operation of ['confirm', 'reserve', 'cancel'] as const) {
     assert.deepEqual(await app[operation].run(input(`new-${operation}`)), { ok: false, error: { kind: 'InvalidState' } });
   }
 });
 test('order identity cannot be changed to a different quantity or SKU', async t => {
   const { repository, app } = fixture(t); value(repository.seed('coffee', 20));
-  value(await app.reserve.run(input('reserve')));
+  outcome(await app.reserve.run(input('reserve')));
   assert.deepEqual(await app.confirm.run(input('wrong-quantity', 'order-1', 2)), { ok: false, error: { kind: 'OrderMismatch' } });
   assert.deepEqual(await app.reserve.run(input('wrong-sku', 'order-1', 3, 'coffee')), { ok: false, error: { kind: 'OrderMismatch' } });
 });
 test('exact retry returns the committed result without advancing versions', async t => {
   const { repository, app } = fixture(t);
-  const original = value(await app.reserve.run(input('reserve')));
-  assert.deepEqual(value(await app.reserve.run(input('reserve'))), original);
+  const first = value(await app.reserve.run(input('reserve'))); assert.equal(first.kind, 'committed');
+  const original = first.value;
+  const replay = value(await app.reserve.run(input('reserve'))); assert.equal(replay.kind, 'replayed');
+  assert.deepEqual(replay.value, original);
   assert.equal(value(repository.stock('tea')).version, 2);
-  value(await app.confirm.run(input('confirm')));
+  outcome(await app.confirm.run(input('confirm')));
   const stored = value(repository.stock('tea'));
   // Old success is the original response; replay must never write it over current data.
-  assert.deepEqual(value(await app.reserve.run(input('reserve'))), original);
+  assert.deepEqual(outcome(await app.reserve.run(input('reserve'))), original);
   assert.deepEqual(value(repository.stock('tea')), stored);
 });
 test('reusing a committed key for another operation or payload fails', async t => {
-  const { app } = fixture(t); value(await app.reserve.run(input('key')));
+  const { app } = fixture(t); outcome(await app.reserve.run(input('key')));
   for (const result of [await app.confirm.run(input('key')), await app.cancel.run(input('key')),
     await app.reserve.run(input('key', 'other')), await app.reserve.run(input('key', 'order-1', 2)),
     await app.reserve.run(input('key', 'order-1', 3, 'coffee'))]) {
@@ -104,8 +107,8 @@ test('caller mutation after dispatch cannot change request identity', async t =>
   const { app } = fixture(t);
   const request = { ...input('key') }, pending = app.reserve.run(request);
   request.quantity = 9; request.requestId = 'changed';
-  assert.equal(value(await pending).reservation.quantity, 3);
-  assert.equal(value(await app.reserve.run(input('key'))).reservation.quantity, 3);
+  assert.equal(outcome(await pending).reservation.quantity, 3);
+  assert.equal(outcome(await app.reserve.run(input('key'))).reservation.quantity, 3);
 });
 test('independent connections with the same stock snapshot cannot oversell', async t => {
   const { repository, path } = fixture(t, 10), second = new SqliteInventory(path); t.after(() => second.close());
@@ -121,7 +124,9 @@ test('simultaneous identical requests both return one committed reservation', as
   const { repository, path } = fixture(t), second = new SqliteInventory(path); t.after(() => second.close());
   const [a, b] = barrier([repository, second]).map(inventoryCommands);
   const results = await Promise.all([a!.reserve.run(input('same')), b!.reserve.run(input('same'))]);
-  assert.deepEqual(value(results[0]!), value(results[1]!)); assert.equal(value(repository.stock('tea')).version, 2);
+  assert.deepEqual(outcome(results[0]!), outcome(results[1]!));
+  assert.deepEqual(results.map(result => value(result).kind).sort(), ['committed', 'replayed']);
+  assert.equal(value(repository.stock('tea')).version, 2);
 });
 test('simultaneous different payloads using one key have exactly one winner', async t => {
   const { repository, path } = fixture(t), second = new SqliteInventory(path); t.after(() => second.close());
@@ -132,7 +137,7 @@ test('simultaneous different payloads using one key have exactly one winner', as
   assert.equal(value(repository.stock('tea')).version, 2);
 });
 test('confirm racing cancellation cannot both commit or release stock twice', async t => {
-  const { repository, path, app } = fixture(t); value(await app.reserve.run(input('reserve')));
+  const { repository, path, app } = fixture(t); outcome(await app.reserve.run(input('reserve')));
   const second = new SqliteInventory(path); t.after(() => second.close());
   const [a, b] = barrier([repository, second]).map(inventoryCommands);
   const results = await Promise.all([a!.confirm.run(input('confirm')), b!.cancel.run(input('cancel'))]);
@@ -149,7 +154,7 @@ test('receipt write failure rolls back both stock and reservation', async t => {
   assert.equal(admin.prepare('SELECT count(*) AS n FROM reservations').get()?.n, 0);
   assert.equal(admin.prepare('SELECT count(*) AS n FROM receipts').get()?.n, 0);
   admin.exec('DROP TRIGGER fail_receipt');
-  assert.equal(value(await app.reserve.run(input('retry'))).stock.reserved, 3);
+  assert.equal(outcome(await app.reserve.run(input('retry'))).stock.reserved, 3);
 });
 test('retry is resolved if another connection commits between receipt check and load', async t => {
   const { repository, path, app } = fixture(t), second = new SqliteInventory(path); t.after(() => second.close());
@@ -157,25 +162,25 @@ test('retry is resolved if another connection commits between receipt check and 
   const racing: InventoryRepository = {
     receipt: second.receipt.bind(second), save: second.save.bind(second),
     async load(operation, request) {
-      if (!intercepted) { intercepted = true; value(await app.reserve.run(input('race'))); }
+      if (!intercepted) { intercepted = true; outcome(await app.reserve.run(input('race'))); }
       return second.load(operation, request);
     },
   };
-  const result = value(await inventoryCommands(racing).reserve.run(input('race')));
+  const result = outcome(await inventoryCommands(racing).reserve.run(input('race')));
   assert.equal(result.reservation.kind, 'reserved'); assert.equal(value(repository.stock('tea')).version, 2);
 });
 test('receipts survive a fresh process after later confirmation', async t => {
   const { repository, path, app } = fixture(t);
-  const original = value(await app.reserve.run(input('reserve'))); value(await app.confirm.run(input('confirm')));
+  const original = outcome(await app.reserve.run(input('reserve'))); outcome(await app.confirm.run(input('confirm')));
   const code = `import {SqliteInventory} from './repository.ts'; import {inventoryCommands} from './application.ts'; const repo=new SqliteInventory(${JSON.stringify(path)}); try {console.log(JSON.stringify(await inventoryCommands(repo).reserve.run(${JSON.stringify(input('reserve'))})));} finally {repo.close();}`;
   const child = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', code],
     { cwd: dirname(fileURLToPath(import.meta.url)), encoding: 'utf8' });
-  assert.equal(child.status, 0, child.stderr); assert.deepEqual(JSON.parse(child.stdout), { ok: true, value: original });
+  assert.equal(child.status, 0, child.stderr); assert.deepEqual(JSON.parse(child.stdout), { ok: true, value: { kind: 'replayed', value: original } });
   assert.equal(value(repository.stock('tea')).onHand, 7); assert.equal(value(repository.stock('tea')).reserved, 0);
 });
 test('corrupt stored accounting and corrupt receipts return typed storage errors', async t => {
   const { path, app } = fixture(t), admin = new DatabaseSync(path); t.after(() => admin.close());
-  value(await app.reserve.run(input('reserve')));
+  outcome(await app.reserve.run(input('reserve')));
   admin.prepare('UPDATE receipts SET result_json=?').run('{broken');
   assert.deepEqual(await app.reserve.run(input('reserve')), { ok: false, error: { kind: 'CorruptInventory' } });
   admin.exec('UPDATE stock SET reserved=0');

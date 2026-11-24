@@ -8,7 +8,7 @@
     "test": "tsx --test inventory.test.ts"
   },
   "dependencies": {
-    "koyuki": "0.1.0-alpha.1"
+    "koyuki": "file:../.."
   },
   "devDependencies": {
     "@types/node": "26.6.6",
