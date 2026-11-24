@@ -1,6 +1,6 @@
 import { ok, err, type Result } from '../framework/index.js';
 import { expenseWorkflow } from '../examples/expense.js';
-interface Data { readonly id: string; readonly owner: string; readonly amount: number; readonly receipt: boolean; readonly version: number }
+interface Data { readonly id: string; readonly owner: string; readonly amount: number; readonly receipt: boolean; readonly version: number; readonly draftVersion?: number }
 export type Draft = Readonly<Data & { kind: 'draft' }>;
 export type PendingManager = Readonly<Data & { kind: 'manager'; receipt: true }>;
 export type PendingFinance = Readonly<Data & { kind: 'finance'; receipt: true; manager: string }>;
@@ -9,26 +9,29 @@ export type Approved =
   | Readonly<Data & { kind: 'approved'; receipt: true; approval: { kind: 'manager'; manager: string } }>
   | Readonly<Data & { kind: 'approved'; receipt: true; approval: { kind: 'finance'; manager: string; finance: string } }>;
 export type Rejected = Readonly<Data & { kind: 'rejected'; by: string; reason: string }>;
-export type ExpenseState = Draft | PendingManager | PendingFinance | Approved | Rejected;
+export type Returned = Readonly<Data & { kind: 'returned'; by: string; reason: string; manager?: string }>;
+export type ExpenseState = Returned | Draft | PendingManager | PendingFinance | Approved | Rejected;
 export interface Actor { readonly id: string; readonly role: 'employee' | 'manager' | 'finance'; readonly active: boolean }
 export interface Input { readonly id: string; readonly expectedVersion: number }
 export interface RejectInput extends Input { readonly reason: string }
+export interface EditInput extends Input { readonly amount: number; readonly receipt: boolean }
 export interface Loaded<I = Input> { readonly current: ExpenseState; readonly actor: Actor; readonly input: I }
 declare const proof: unique symbol;
 export type Submission = Loaded & { readonly current: Draft; readonly [proof]: 'submission' };
 export type AuthorizedApproval = Loaded & { readonly current: PendingManager | PendingFinance; readonly [proof]: 'approval' };
 export type AuthorizedRejection = Loaded<RejectInput> & { readonly current: PendingManager | PendingFinance; readonly [proof]: 'rejection' };
+export type AuthorizedEdit = Loaded<EditInput> & { readonly current: Returned; readonly [proof]: 'edit' };
 export type Change = Readonly<{ expectedVersion: number; next: ExpenseState }> & { readonly [proof]: 'change' };
 function change(current: ExpenseState, next: ExpenseState): Change {
   return Object.freeze({ expectedVersion: current.version, next: Object.freeze(next) }) as Change;
 }
-export type RuleError = { kind: 'InvalidState' } | { kind: 'Forbidden' } | { kind: 'SelfApproval' } | { kind: 'ReasonRequired' };
-export function draftExpense(data: Omit<Data, 'version'>): Result<Draft, { kind: 'InvalidExpense' }> {
+export type RuleError = { kind: 'InvalidState' } | { kind: 'Forbidden' } | { kind: 'SelfApproval' } | { kind: 'ReasonRequired' } | { kind: 'InvalidExpense' };
+export function draftExpense(data: Omit<Data, 'version' | 'draftVersion'>): Result<Draft, { kind: 'InvalidExpense' }> {
   if (!data.id.trim() || !data.owner.trim() || !Number.isSafeInteger(data.amount) || data.amount <= 0 || typeof data.receipt !== 'boolean') return err({ kind: 'InvalidExpense' });
   return ok(Object.freeze({ ...data, version: 1, kind: 'draft' }));
 }
 function evolvedData(current: ExpenseState): Data {
-  return { id: current.id, owner: current.owner, amount: current.amount, receipt: current.receipt, version: current.version + 1 };
+  return { id: current.id, owner: current.owner, amount: current.amount, receipt: current.receipt, version: current.version + 1, ...(current.draftVersion ? { draftVersion: current.draftVersion } : {}) };
 }
 export function validateSubmission(command: Loaded): Result<Submission, RuleError> {
   if (command.current.kind !== 'draft') return err({ kind: 'InvalidState' });
@@ -74,6 +77,23 @@ export function reject(command: AuthorizedRejection): Result<Change, never> {
   return ok(change(command.current, { ...evolvedData(command.current), ...(command.current.kind === 'finance' ? { manager: command.current.manager } : {}), kind: 'rejected', by: command.actor.id, reason: command.input.reason }));
 }
 
+/** Returning is reversible; rejecting remains terminal. Both require reviewer authority. */
+export function returnForCorrection(command: AuthorizedRejection): Result<Change, never> {
+  return ok(change(command.current, { ...evolvedData(command.current),
+    ...(command.current.kind === 'finance' ? { manager: command.current.manager } : {}),
+    kind: 'returned', by: command.actor.id, reason: command.input.reason }));
+}
+export function validateEdit(command: Loaded<EditInput>): Result<AuthorizedEdit, RuleError> {
+  if (command.current.kind !== 'returned') return err({ kind: 'InvalidState' });
+  if (!command.actor.active || command.actor.id !== command.current.owner) return err({ kind: 'Forbidden' });
+  if (!Number.isSafeInteger(command.input.amount) || command.input.amount <= 0 || typeof command.input.receipt !== 'boolean') return err({ kind: 'InvalidExpense' });
+  return ok(Object.freeze({ ...command }) as AuthorizedEdit);
+}
+export function edit(command: AuthorizedEdit): Result<Change, never> {
+  return ok(change(command.current, { ...evolvedData(command.current), kind: 'draft',
+    amount: command.input.amount, receipt: command.input.receipt, draftVersion: command.current.version + 1 }));
+}
+
 export type CorruptExpense = { kind: 'CorruptExpense' };
 /** Persistence boundary: validate both common fields and state-specific evidence. */
 export function restoreExpense(raw: unknown): Result<ExpenseState, CorruptExpense> {
@@ -83,30 +103,45 @@ export function restoreExpense(raw: unknown): Result<ExpenseState, CorruptExpens
   const text = (v: unknown): v is string => typeof v === 'string' && !!v.trim();
   if (!text(value.id) || !text(value.owner) || typeof value.amount !== 'number' || !Number.isSafeInteger(value.amount) || value.amount <= 0 ||
       typeof value.receipt !== 'boolean' || typeof value.version !== 'number' || !Number.isSafeInteger(value.version)) return fail();
-  const data = { id: value.id, owner: value.owner, amount: value.amount, receipt: value.receipt, version: value.version };
+  if (value.draftVersion !== undefined && (typeof value.draftVersion !== 'number' || !Number.isSafeInteger(value.draftVersion) || value.draftVersion < 4 || value.draftVersion > value.version)) return fail();
+  const stageVersion = value.version - (typeof value.draftVersion === 'number' ? value.draftVersion : 1) + 1;
+  const data = { ...(typeof value.draftVersion === 'number' ? { draftVersion: value.draftVersion } : {}), id: value.id, owner: value.owner, amount: value.amount, receipt: value.receipt, version: value.version };
   const reviewer = (v: unknown): v is string => text(v) && v !== data.owner;
   switch (value.kind) {
-    case 'draft': return data.version === 1 ? ok(Object.freeze({ ...data, kind: 'draft' })) : fail();
-    case 'manager': return data.version === 2 && data.amount > 3000 && data.receipt
+    case 'draft': return stageVersion === 1 ? ok(Object.freeze({ ...data, kind: 'draft' })) : fail();
+    case 'manager': return stageVersion === 2 && data.amount > 3000 && data.receipt
       ? ok(Object.freeze({ ...data, kind: 'manager', receipt: true })) : fail();
-    case 'finance': return data.version === 3 && data.amount > 100000 && data.receipt && reviewer(value.manager)
+    case 'finance': return stageVersion === 3 && data.amount > 100000 && data.receipt && reviewer(value.manager)
       ? ok(Object.freeze({ ...data, kind: 'finance', receipt: true, manager: value.manager })) : fail();
     case 'approved': {
       if (!value.approval || typeof value.approval !== 'object') return fail();
       const approval = value.approval as Record<string, unknown>;
-      if (approval.kind === 'automatic' && data.version === 2 && data.amount <= 3000)
+      if (approval.kind === 'automatic' && stageVersion === 2 && data.amount <= 3000)
         return ok(Object.freeze({ ...data, kind: 'approved', approval: Object.freeze({ kind: 'automatic' as const }) }));
-      if (approval.kind === 'manager' && data.version === 3 && data.amount > 3000 && data.amount <= 100000 && data.receipt && reviewer(approval.manager))
+      if (approval.kind === 'manager' && stageVersion === 3 && data.amount > 3000 && data.amount <= 100000 && data.receipt && reviewer(approval.manager))
         return ok(Object.freeze({ ...data, kind: 'approved', receipt: true, approval: Object.freeze({ kind: 'manager' as const, manager: approval.manager }) }));
-      if (approval.kind === 'finance' && data.version === 4 && data.amount > 100000 && data.receipt && reviewer(approval.manager) && reviewer(approval.finance))
+      if (approval.kind === 'finance' && stageVersion === 4 && data.amount > 100000 && data.receipt && reviewer(approval.manager) && reviewer(approval.finance))
         return ok(Object.freeze({ ...data, kind: 'approved', receipt: true, approval: Object.freeze({ kind: 'finance' as const, manager: approval.manager, finance: approval.finance }) }));
       return fail();
     }
+    case 'returned':
     case 'rejected':
       if (!data.receipt || data.amount <= 3000 || !reviewer(value.by) || !text(value.reason)) return fail();
-      if (data.version === 3) return ok(Object.freeze({ ...data, kind: 'rejected', by: value.by, reason: value.reason }));
-      if (data.version === 4 && data.amount > 100000 && reviewer(value.manager)) return ok(Object.freeze({ ...data, kind: 'rejected', by: value.by, reason: value.reason, manager: value.manager }));
+      if (stageVersion === 3) return ok(Object.freeze({ ...data, kind: value.kind, by: value.by, reason: value.reason }));
+      if (stageVersion === 4 && data.amount > 100000 && reviewer(value.manager)) return ok(Object.freeze({ ...data, kind: value.kind, by: value.by, reason: value.reason, manager: value.manager }));
       return fail();
     default: return fail();
   }
+}
+
+/** Storage invariant shared by adapters; atomic compare-and-swap still belongs to storage. */
+export function validExpenseChange(before: ExpenseState, after: ExpenseState, expectedVersion: number): boolean {
+  if (before.version !== expectedVersion || after.version !== before.version + 1 || before.owner !== after.owner || before.id !== after.id) return false;
+  if (before.kind === 'returned') return after.kind === 'draft' && after.draftVersion === after.version;
+  if (before.amount !== after.amount || before.receipt !== after.receipt || before.draftVersion !== after.draftVersion) return false;
+  if (before.kind === 'draft') return after.kind === 'manager' || (after.kind === 'approved' && after.approval.kind === 'automatic');
+  if (before.kind === 'manager') return after.kind === 'finance' || after.kind === 'rejected' || after.kind === 'returned' || (after.kind === 'approved' && after.approval.kind === 'manager');
+  if (before.kind === 'finance') return ((after.kind === 'rejected' || after.kind === 'returned') && (after as { manager?: string }).manager === before.manager) ||
+    (after.kind === 'approved' && after.approval.kind === 'finance' && after.approval.manager === before.manager);
+  return false;
 }

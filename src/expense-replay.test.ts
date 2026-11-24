@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { err, type Result, type Execution } from './framework/index.js';
 import { ReplaySqliteExpenses, type ExpenseRequest, type ReplayStorageError } from './expenses/sqlite-replay.js';
 import { expenseReplayCommands, expenseReplayApplication } from './expenses/replay.js';
-import { draftExpense, type Actor, type ExpenseState, type Change } from './expenses/domain.js';
+import { draftExpense, validateEdit, edit, type Actor, type ExpenseState, type Change } from './expenses/domain.js';
 function value<T, E>(result: Result<T, E>): T { assert(result.ok, JSON.stringify(result)); return result.value; }
 const employee: Actor = { id: 'owner', role: 'employee', active: true }, manager: Actor = { id: 'boss', role: 'manager', active: true }, finance: Actor = { id: 'accountant', role: 'finance', active: true };
 const call = (requestId: string, expectedVersion = 1) => ({ requestId, input: { id: 'e1', expectedVersion } });
@@ -109,4 +109,88 @@ test('request nested input is captured before async replay lookup and command in
   const f = fixture(t), request = call('snapshot');
   const pending = f.employee.submit.run(request); request.requestId = 'changed'; request.input.expectedVersion = 99;
   assert.equal(value(await pending).kind, 'committed'); assert.equal(value(await f.employee.submit.run(call('snapshot'))).kind, 'replayed');
+});
+
+test('return, edit and resubmit change approval route without resetting optimistic version', async t => {
+  const f = fixture(t);
+  value(await f.employee.submit.run(call('submit')));
+  const returned = { ...call('return', 2), input: { ...call('return', 2).input, reason: 'correct amount' } };
+  assert.equal(value(await f.manager.return.run(returned)).value.kind, 'returned');
+  const edit = { ...call('edit', 3), input: { ...call('edit', 3).input, amount: 2000, receipt: false } };
+  const revised = value(await f.employee.edit.run(edit));
+  assert.equal(revised.value.kind, 'draft'); assert.equal(revised.value.version, 4);
+  const approved = value(await f.employee.submit.run(call('resubmit', 4)));
+  assert.equal(approved.value.kind, 'approved'); assert.equal(approved.value.version, 5);
+  assert.equal(value(await f.employee.edit.run(edit)).kind, 'replayed');
+  assert.equal(value(await f.manager.return.run(returned)).kind, 'replayed');
+  assert.equal(value(f.repository.read('e1')).kind, 'approved');
+  assert.deepEqual(await f.employee.edit.run({ ...edit, input: { ...edit.input, amount: 2001 } }), err({ kind: 'IdempotencyConflict' }));
+  assert.deepEqual(await f.employee.edit.run({ ...edit, input: { ...edit.input, receipt: true } }), err({ kind: 'IdempotencyConflict' }));
+  const db = new DatabaseSync(f.path);
+  assert.equal(db.prepare('SELECT count(*) AS n FROM expense_changes').get()!.n, 4);
+  db.close();
+  const reopened = new ReplaySqliteExpenses(f.path);
+  assert.equal(value(reopened.read('e1')).version, 5); reopened.close();
+});
+
+test('finance return can repeat with fresh manager evidence after correction', async t => {
+  const f = fixture(t);
+  value(await f.employee.submit.run(call('submit')));
+  value(await f.manager.approve.run(call('manager', 2)));
+  value(await f.finance.return.run({ ...call('return', 3), input: { ...call('return', 3).input, reason: 'receipt' } }));
+  value(await f.employee.edit.run({ ...call('edit', 4), input: { ...call('edit', 4).input, amount: 150000, receipt: true } }));
+  value(await f.employee.submit.run(call('submit-2', 5)));
+  value(await f.manager.return.run({ ...call('return-2', 6), input: { ...call('return-2', 6).input, reason: 'again' } }));
+  value(await f.employee.edit.run({ ...call('edit-2', 7), input: { ...call('edit-2', 7).input, amount: 150000, receipt: true } }));
+  value(await f.employee.submit.run(call('submit-3', 8)));
+  value(await f.manager.approve.run(call('manager-3', 9)));
+  const final = value(await f.finance.approve.run(call('finance-3', 10)));
+  assert.equal(final.value.kind, 'approved'); assert.equal(final.value.version, 11);
+  assert.equal(value(f.repository.read('e1')).version, 11);
+});
+
+test('return and edit enforce authority, state, reason and corrected data', async t => {
+  const f = fixture(t); value(await f.employee.submit.run(call('submit')));
+  const request = { ...call('return', 2), input: { ...call('return', 2).input, reason: 'fix' } };
+  assert.deepEqual(await f.employee.return.run(request), err({ kind: 'SelfApproval' }));
+  assert.deepEqual(await f.finance.return.run(request), err({ kind: 'Forbidden' }));
+  assert.deepEqual(await f.manager.return.run({ ...request, input: { ...request.input, reason: ' ' } }), err({ kind: 'ReasonRequired' }));
+  const edit = { ...call('edit', 2), input: { ...call('edit', 2).input, amount: 5000, receipt: true } };
+  assert.deepEqual(await f.employee.edit.run(edit), err({ kind: 'InvalidState' }));
+  value(await f.manager.return.run(request));
+  const correction = { ...edit, input: { ...edit.input, expectedVersion: 3 } };
+  assert.deepEqual(await f.manager.edit.run(correction), err({ kind: 'Forbidden' }));
+  assert.deepEqual(await f.employee.edit.run({ ...correction, input: { ...correction.input, amount: 0 } }), err({ kind: 'InvalidExpense' }));
+  value(await f.employee.edit.run(correction));
+  value(await f.employee.submit.run(call('resubmit', 4)));
+  value(await f.manager.reject.run({ ...call('reject', 5), input: { ...call('reject', 5).input, reason: 'terminal' } }));
+  assert.deepEqual(await f.employee.edit.run({ ...correction, requestId: 'after-reject', input: { ...correction.input, expectedVersion: 6 } }), err({ kind: 'InvalidState' }));
+});
+
+test('competing corrections save once and receipt failure rolls correction back', async t => {
+  const f = fixture(t); value(await f.employee.submit.run(call('submit')));
+  value(await f.manager.return.run({ ...call('return', 2), input: { ...call('return', 2).input, reason: 'fix' } }));
+  const edit = { ...call('edit', 3), input: { ...call('edit', 3).input, amount: 5000, receipt: true } };
+  const db = new DatabaseSync(f.path);
+  db.exec("CREATE TRIGGER fail_edit BEFORE INSERT ON expense_receipts WHEN NEW.request_id='edit' BEGIN SELECT RAISE(ABORT,'fail'); END");
+  assert.deepEqual(await f.employee.edit.run(edit), err({ kind: 'RepositoryUnavailable' }));
+  assert.equal(value(f.repository.read('e1')).kind, 'returned');
+  assert.equal(db.prepare('SELECT count(*) AS n FROM expense_changes').get()!.n, 2);
+  db.exec('DROP TRIGGER fail_edit'); db.close();
+  const other = new ReplaySqliteExpenses(f.path);
+  try {
+    const results = await Promise.all([f.employee.edit.run(edit), expenseReplayCommands(other, employee).edit.run({ ...edit, requestId: 'different' })]);
+    assert.equal(results.filter(result => result.ok).length, 1);
+    assert.deepEqual(results.find(result => !result.ok), err({ kind: 'SaveConflict' }));
+  } finally { other.close(); }
+});
+
+test('receipt boundary rejects a correction decision paired with different request content', async t => {
+  const f = fixture(t); value(await f.employee.submit.run(call('submit')));
+  value(await f.manager.return.run({ ...call('return', 2), input: { ...call('return', 2).input, reason: 'fix' } }));
+  const input = { id: 'e1', expectedVersion: 3, amount: 5000, receipt: true };
+  const decision = value(edit(value(validateEdit(value(await f.repository.load(input, employee))))));
+  assert.deepEqual(await f.repository.saveRequest({ operation: 'edit', actor: employee, requestId: 'mismatch',
+    input: { ...input, amount: 2000 } }, decision), err({ kind: 'InvalidRequest' }));
+  assert.equal(value(f.repository.read('e1')).kind, 'returned');
 });

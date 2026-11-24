@@ -34,7 +34,8 @@
     "demo:inventory": "npm --prefix examples/inventory start",
     "test:replay": "tsx --test src/replay.test.ts src/expense-replay.test.ts",
     "demo:expenses:replay": "tsx src/examples/expense-replay.ts",
-    "test:inventory:package": "node scripts/test-inventory-package.mjs"
+    "test:inventory:package": "node scripts/test-inventory-package.mjs",
+    "demo:expenses:correction": "tsx src/examples/expense-correction.ts"
   },
   "devDependencies": {
     "@types/node": "latest",

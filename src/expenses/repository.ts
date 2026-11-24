@@ -1,10 +1,10 @@
 import { ok, err, type Result } from '../framework/index.js';
-import type { Actor, Change, ExpenseState, Input, Loaded, RejectInput, Draft } from './domain.js';
+import { validExpenseChange, type Actor, Change, ExpenseState, Input, Loaded, RejectInput, Draft } from './domain.js';
 export type StorageError = { kind: 'CorruptExpense' } | { kind: 'RepositoryUnavailable' };
 export type LoadError = { kind: 'NotFound' } | { kind: 'SaveConflict' } | StorageError;
 export type SaveError = { kind: 'SaveConflict' } | StorageError;
 export interface ExpenseRepository {
-  load(input: Input, actor: Actor): Promise<Result<Loaded, LoadError>>;
+  load<I extends Input>(input: I, actor: Actor): Promise<Result<Loaded<I>, LoadError>>;
   loadReject(input: RejectInput, actor: Actor): Promise<Result<Loaded<RejectInput>, LoadError>>;
   save(change: Change): Promise<Result<ExpenseState, SaveError>>;
 }
@@ -20,13 +20,12 @@ export class MemoryExpenses implements ExpenseRepository {
     if (current.version !== input.expectedVersion) return err({ kind: 'SaveConflict' });
     return ok({ current, actor: structuredClone(actor), input: structuredClone(input) });
   }
-  async load(input: Input, actor: Actor) { this.calls.push('load'); return this.readInput(input, actor); }
+  async load<I extends Input>(input: I, actor: Actor) { this.calls.push('load'); return this.readInput(input, actor); }
   async loadReject(input: RejectInput, actor: Actor) { this.calls.push('load-reject'); return this.readInput(input, actor); }
   async save(change: Change): Promise<Result<ExpenseState, SaveError>> {
     this.calls.push('save');
     const current = this.records.get(change.next.id);
-    if (!current || current.version !== change.expectedVersion || change.next.version !== current.version + 1 ||
-        change.next.owner !== current.owner || change.next.amount !== current.amount || change.next.receipt !== current.receipt) return err({ kind: 'SaveConflict' });
+    if (!current || !validExpenseChange(current, change.next, change.expectedVersion)) return err({ kind: 'SaveConflict' });
     // Compare and update without an await models one atomic storage operation.
     this.records.set(change.next.id, structuredClone(change.next)); return ok(structuredClone(change.next));
   }

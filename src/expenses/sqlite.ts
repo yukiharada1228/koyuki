@@ -1,6 +1,6 @@
 import { DatabaseSync, type SQLOutputValue } from 'node:sqlite';
 import { ok, err, type Result } from '../framework/index.js';
-import { restoreExpense, type Actor, type Change, type Draft, type ExpenseState, type Input, type Loaded, type RejectInput } from './domain.js';
+import { restoreExpense, validExpenseChange, type Actor, type Change, type Draft, type ExpenseState, type Input, type Loaded, type RejectInput } from './domain.js';
 import type { ExpenseRepository, LoadError, SaveError, StorageError } from './repository.js';
 type Row = Record<string, SQLOutputValue>;
 export class SqliteExpenses implements ExpenseRepository {
@@ -37,7 +37,7 @@ export class SqliteExpenses implements ExpenseRepository {
   }
   insertDraft(draft: Draft): Result<Draft, SaveError> {
     const valid = restoreExpense(draft); if (!valid.ok) return valid;
-    if (valid.value.kind !== 'draft') return err({ kind: 'CorruptExpense' });
+    if (valid.value.kind !== 'draft' || valid.value.version !== 1 || valid.value.draftVersion !== undefined) return err({ kind: 'CorruptExpense' });
     try {
       const result = this.db.prepare('INSERT OR IGNORE INTO expenses(id,version,state_json) VALUES(?,?,?)').run(draft.id, 1, JSON.stringify(valid.value));
       return result.changes === 1 ? ok(valid.value) : err({ kind: 'SaveConflict' });
@@ -48,7 +48,7 @@ export class SqliteExpenses implements ExpenseRepository {
     if (current.value.version !== input.expectedVersion) return err({ kind: 'SaveConflict' });
     return ok({ current: current.value, input: structuredClone(input), actor: structuredClone(actor) });
   }
-  async load(input: Input, actor: Actor) { return this.loadInput(input, actor); }
+  async load<I extends Input>(input: I, actor: Actor) { return this.loadInput(input, actor); }
   async loadReject(input: RejectInput, actor: Actor) { return this.loadInput(input, actor); }
   async save(change: Change): Promise<Result<ExpenseState, SaveError>> {
     try {
@@ -65,13 +65,7 @@ export class SqliteExpenses implements ExpenseRepository {
     const current = this.read(change.next.id); if (!current.ok) return current.error.kind === 'NotFound' ? err({ kind: 'SaveConflict' }) : err(current.error);
     const next = restoreExpense(change.next); if (!next.ok) return next;
     const before = current.value, after = next.value;
-    if (before.version !== change.expectedVersion || after.version !== before.version + 1 || before.owner !== after.owner || before.amount !== after.amount || before.receipt !== after.receipt) return err({ kind: 'SaveConflict' });
-    const allowed = before.kind === 'draft' ? after.kind === 'manager' || (after.kind === 'approved' && after.approval.kind === 'automatic')
-      : before.kind === 'manager' ? after.kind === 'finance' || after.kind === 'rejected' || (after.kind === 'approved' && after.approval.kind === 'manager')
-      : before.kind === 'finance' ? after.kind === 'rejected' || (after.kind === 'approved' && after.approval.kind === 'finance' && after.approval.manager === before.manager)
-      : false;
-    if (!allowed) return err({ kind: 'SaveConflict' });
-    if (before.kind === 'finance' && after.kind === 'rejected' && (after as ExpenseState & { manager?: string }).manager !== before.manager) return err({ kind: 'SaveConflict' });
+    if (!validExpenseChange(before, after, change.expectedVersion)) return err({ kind: 'SaveConflict' });
     const json = JSON.stringify(after);
     const update = this.db.prepare('UPDATE expenses SET version=?,state_json=? WHERE id=? AND version=?').run(after.version, json, after.id, change.expectedVersion);
     if (update.changes !== 1) return err({ kind: 'SaveConflict' });

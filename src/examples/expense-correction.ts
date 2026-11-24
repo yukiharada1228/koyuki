@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { draftExpense } from '../expenses/domain.js';
+import { ReplaySqliteExpenses } from '../expenses/sqlite-replay.js';
+import { expenseReplayCommands, expenseReplayApplication } from '../expenses/replay.js';
+const dir = mkdtempSync(join(tmpdir(), 'koyuki-correction-'));
+const repository = new ReplaySqliteExpenses(join(dir, 'expense.sqlite'));
+try {
+  const draft = draftExpense({ id: 'expense', owner: 'owner', amount: 150000, receipt: true }); assert(draft.ok);
+  assert(repository.insertDraft(draft.value).ok);
+  const owner = { id: 'owner', role: 'employee', active: true } as const;
+  const employee = expenseReplayCommands(repository, owner);
+  const manager = expenseReplayCommands(repository, { id: 'boss', role: 'manager', active: true });
+  const input = (expectedVersion: number) => ({ id: 'expense', expectedVersion });
+  assert((await employee.submit.run({ requestId: 'submit', input: input(1) })).ok);
+  const returned = { requestId: 'return', input: { ...input(2), reason: '金額を修正してください' } };
+  assert((await manager.return.run(returned)).ok);
+  console.log('差し戻し:', JSON.stringify(repository.read('expense')));
+  const correction = { requestId: 'edit', input: { ...input(3), amount: 2000, receipt: false } };
+  assert((await employee.edit.run(correction)).ok);
+  console.log('修正:', JSON.stringify(repository.read('expense')));
+  assert((await employee.submit.run({ requestId: 'resubmit', input: input(4) })).ok);
+  const latest = repository.list(); assert(latest.ok);
+  assert.equal(latest.value[0]?.kind, 'approved');
+  console.log('再申請（金額により自動承認）:', JSON.stringify(latest.value));
+  const session = await expenseReplayApplication(repository, owner, latest.value).start();
+  await session.dispatch({ type: 'edit', input: correction });
+  assert.equal(session.snapshot().view.expenses[0]?.kind, 'approved');
+  assert.equal(session.snapshot().view.expenses[0]?.version, 5);
+  console.log('古い修正要求の再送後:', JSON.stringify(session.snapshot().view));
+} finally { repository.close(); rmSync(dir, { recursive: true, force: true }); }

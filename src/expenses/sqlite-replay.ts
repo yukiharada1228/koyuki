@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { ok, err, type Result, type Receipt, type Execution } from '../framework/index.js';
 import { SqliteExpenses } from './sqlite.js';
-import { restoreExpense, type Actor, type Input, type RejectInput, type Change, type ExpenseState } from './domain.js';
+import { restoreExpense, type Actor, type Input, type RejectInput, type EditInput, type Change, type ExpenseState } from './domain.js';
 import type { SaveError, ExpenseRepository } from './repository.js';
-export type ExpenseOperation = 'submit' | 'approve' | 'reject';
+export type ExpenseOperation = 'submit' | 'approve' | 'reject' | 'return' | 'edit';
 export interface ExpenseRequest {
   readonly operation: ExpenseOperation; readonly actor: Actor;
-  readonly requestId: string; readonly input: Input | RejectInput;
+  readonly requestId: string; readonly input: Input | RejectInput | EditInput;
 }
 export type ReplayStorageError = SaveError | { kind: 'InvalidRequest' } | { kind: 'IdempotencyConflict' };
 export interface ExpenseReplayRepository extends ExpenseRepository {
@@ -15,21 +15,27 @@ export interface ExpenseReplayRepository extends ExpenseRepository {
 }
 function validRequest(r: ExpenseRequest): boolean {
   return !!r && typeof r === 'object' && !!r.input && typeof r.input === 'object' &&
-    ['submit', 'approve', 'reject'].includes(r.operation) && typeof r.requestId === 'string' && r.requestId.length > 0 && r.requestId.length <= 200 && r.requestId.trim() === r.requestId &&
+    ['submit', 'approve', 'reject', 'return', 'edit'].includes(r.operation) && typeof r.requestId === 'string' && r.requestId.length > 0 && r.requestId.length <= 200 && r.requestId.trim() === r.requestId &&
     typeof r.input.id === 'string' && r.input.id.length > 0 && Number.isSafeInteger(r.input.expectedVersion) && r.input.expectedVersion > 0 &&
-    (r.operation !== 'reject' || ('reason' in r.input && typeof r.input.reason === 'string'));
+    (!['reject', 'return'].includes(r.operation) || ('reason' in r.input && typeof r.input.reason === 'string')) &&
+    (r.operation !== 'edit' || ('amount' in r.input && Number.isSafeInteger(r.input.amount) && 'receipt' in r.input && typeof r.input.receipt === 'boolean'));
 }
 // Scope successful replay to trusted host identity, not a role supplied by the event.
 function fingerprint(r: ExpenseRequest): string {
-  return createHash('sha256').update(JSON.stringify(['expenses.v1', r.operation, r.actor.id, r.actor.role, r.actor.active,
-    r.input.id, r.input.expectedVersion, r.operation === 'reject' && 'reason' in r.input ? r.input.reason : null])).digest('hex');
+  const fields: unknown[] = ['expenses.v1', r.operation, r.actor.id, r.actor.role, r.actor.active,
+    r.input.id, r.input.expectedVersion, ['reject', 'return'].includes(r.operation) && 'reason' in r.input ? r.input.reason : null];
+  // Preserve existing receipt fingerprints for the original three operations.
+  if (r.operation === 'edit' && 'amount' in r.input && 'receipt' in r.input) fields.push(r.input.amount, r.input.receipt);
+  return createHash('sha256').update(JSON.stringify(fields)).digest('hex');
 }
 function matchesOperation(operation: ExpenseOperation, state: ExpenseState): boolean {
+  if (operation === 'return') return state.kind === 'returned';
+  if (operation === 'edit') return state.kind === 'draft';
   if (operation === 'reject') return state.kind === 'rejected';
   if (operation === 'submit') return state.kind === 'manager' || (state.kind === 'approved' && state.approval.kind === 'automatic');
   return state.kind === 'finance' || (state.kind === 'approved' && state.approval.kind !== 'automatic');
 }
-/** Optional adapter extension. Original expense domain and non-replay API remain unchanged. */
+/** Optional receipt boundary sharing the ordinary expense storage transaction. */
 export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseReplayRepository {
   constructor(path: string) {
     super(path);
@@ -64,6 +70,10 @@ export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseRepla
     if (cached.value.kind === 'found') return ok({ kind: 'replayed', value: cached.value.value });
     if (change.next.id !== request.input.id || change.expectedVersion !== request.input.expectedVersion ||
         !matchesOperation(request.operation, change.next)) return err({ kind: 'InvalidRequest' });
+    if (request.operation === 'edit' && (!('amount' in request.input) || !('receipt' in request.input) ||
+        change.next.amount !== request.input.amount || change.next.receipt !== request.input.receipt)) return err({ kind: 'InvalidRequest' });
+    if ((request.operation === 'return' || request.operation === 'reject') &&
+        (!('reason' in request.input) || !('reason' in change.next) || change.next.reason !== request.input.reason.trim())) return err({ kind: 'InvalidRequest' });
     const saved = this.commit(change); if (!saved.ok) return saved;
     this.db.prepare('INSERT INTO expense_receipts VALUES(?,?,?)').run(request.requestId, fingerprint(request), JSON.stringify(saved.value));
     return ok({ kind: 'committed', value: saved.value });

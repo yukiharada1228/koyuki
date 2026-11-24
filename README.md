@@ -119,3 +119,6 @@ APIの検討記録は [PUBLIC-API.txt](PUBLIC-API.txt) を参照してくださ�
 ## License
 
 [MIT](LICENSE) © 2026 yukiharada1228
+
+開発版の業務例：[差し戻し・修正・再申請](docs/expense-correction.md)。
+`npm run demo:expenses:correction` で、既存runtimeを使った複数周回と再送時のView維持を確認できます。
