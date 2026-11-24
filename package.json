@@ -44,7 +44,8 @@
     "test:leave:package": "node scripts/test-leave-package.mjs",
     "test:leave:development": "node scripts/test-leave-package.mjs --development",
     "test:use-case:package": "node scripts/test-leave-package.mjs --declarative",
-    "test:portable": "npm run build && node scripts/test-portable.mjs"
+    "test:portable": "npm run build && node scripts/test-portable.mjs",
+    "check:package": "npm run build && node scripts/check-runtime-package.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",
@@ -71,9 +72,6 @@
   "files": [
     "dist"
   ],
-  "engines": {
-    "node": ">=22"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yukiharada1228/koyuki.git"

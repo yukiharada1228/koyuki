@@ -4,7 +4,12 @@
     "noEmit": false,
     "declaration": true,
     "rootDir": "src/framework",
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": [],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   },
   "include": [
     "src/framework/index.ts"
