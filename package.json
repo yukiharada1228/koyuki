@@ -35,7 +35,9 @@
     "test:replay": "tsx --test src/replay.test.ts src/expense-replay.test.ts",
     "demo:expenses:replay": "tsx src/examples/expense-replay.ts",
     "test:inventory:package": "node scripts/test-inventory-package.mjs",
-    "demo:expenses:correction": "tsx src/examples/expense-correction.ts"
+    "demo:expenses:correction": "tsx src/examples/expense-correction.ts",
+    "test:quickstart": "node scripts/test-quickstart.mjs",
+    "test:quickstart:registry": "node scripts/test-quickstart.mjs --registry"
   },
   "devDependencies": {
     "@types/node": "latest",
