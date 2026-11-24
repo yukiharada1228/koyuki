@@ -21,13 +21,14 @@ if (!registry) {
 const dir = mkdtempSync(join(tmpdir(), 'koyuki-quickstart-'));
 try {
   const example = join(root, 'examples/quickstart');
-  for (const file of ['main.ts', 'tsconfig.json']) copyFileSync(join(example, file), join(dir, file));
+  for (const file of ['main.ts', 'replay.ts', 'tsconfig.json']) copyFileSync(join(example, file), join(dir, file));
   const pkg = JSON.parse(readFileSync(join(example, 'package.json'), 'utf8'));
   pkg.dependencies.koyuki = registry ? version : dependency;
   writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg));
   npm(['install', '--ignore-scripts', '--no-audit', '--no-fund'], dir);
   npm(['run', 'check'], dir);
   console.log(npm(['start'], dir).trim());
+  console.log(npm(['run', 'start:replay'], dir).trim());
   mkdirSync(join(dir, 'diagnostics'));
   copyFileSync(join(example, 'diagnostics/invalid.ts'), join(dir, 'diagnostics/invalid.ts'));
   const config = JSON.parse(readFileSync(join(dir, 'tsconfig.json'), 'utf8'));
@@ -38,5 +39,5 @@ try {
     if (!diagnostics.includes(`diagnostics/invalid.ts(${line},`)) throw new Error(`Expected error at line ${line}:\n${diagnostics}`);
   }
   console.log(diagnostics.trim());
-  console.log(`Verified quickstart and four rejected definitions from ${registry ? 'npm registry' : 'packed package'} (${version}).`);
+  console.log(`Verified ordinary execution, replay, detailed reports and four rejected definitions from ${registry ? 'npm registry' : 'packed package'} (${version}).`);
 } finally { rmSync(dir, { recursive: true, force: true }); }

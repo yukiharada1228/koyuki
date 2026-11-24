@@ -2,8 +2,20 @@
   "name": "koyuki-quickstart",
   "private": true,
   "type": "module",
-  "scripts": { "check": "tsc --noEmit", "start": "tsx main.ts" },
-  "dependencies": { "koyuki": "0.1.0-alpha.2" },
-  "devDependencies": { "@types/node": "26.6.6", "tsx": "4.23.15", "typescript": "7.0.2" },
-  "engines": { "node": ">=22" }
+  "scripts": {
+    "check": "tsc --noEmit",
+    "start": "tsx main.ts",
+    "start:replay": "tsx replay.ts"
+  },
+  "dependencies": {
+    "koyuki": "0.1.0-alpha.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
 }

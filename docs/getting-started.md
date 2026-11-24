@@ -9,10 +9,15 @@ Koyukiは、純粋な業務判断と、取得・保存・アプリケーショ�
 | --- | --- |
 | 成功・想定内の失敗を返す | `ok` / `err` / `Result` |
 | 検証・前提条件・遷移を宣言する | `step` と `{ validate, require, evolve }` |
-| 取得→判断→保存を実行する | `defineTarget(...).on(...)` |
+| 取得・遷移・保存・任意の再送をまとめる | `defineUseCase({ load, transition, save, replay? })` |
+| 取得→判断→保存を段階的につなぐ | `defineTarget(...).on(...)` |
 | 保存に要求IDなども渡す | `defineRequestTarget(...).on(...)` |
 | 複数操作と実行状態・Viewを管理する | `defineApplication` / `operation` |
 | 保存済み要求の再送を扱う | `withReplay` / `replayOperation` |
+
+新しく小さな業務操作を宣言する場合はdefineUseCaseから始められる。
+同じTargetへ複数の遷移を取り付けたい場合や、取得・保存の登録と業務定義を分けたい場合は既存のTarget→onを使う。
+既存コードを移行する必要はない。
 
 純粋な判断だけ試すなら`transition`を使える。
 `workflow`、`defineAction`、`defineCommand`、`bindMutation`、`defineProgram`は、
@@ -26,7 +31,7 @@ Node.js 22以上を用意し、空のディレクトリで次を実行する。
 ```sh
 npm init -y
 npm pkg set type=module
-npm install koyuki@0.1.0-alpha.2
+npm install koyuki@0.1.0-alpha.3
 npm install -D typescript tsx @types/node
 ```
 
@@ -86,6 +91,32 @@ Applicationでは操作成功時にタグ一覧へ追加する関数と、公開
 メモリ保存は単一プロセスの例。DB版の一意制約・トランザクション、認証・認可は利用者が設計する。
 HTTP境界で受け取るunknownの構造検証も別途必要。TypeScriptの型は外部入力を検証しない。
 
+## 任意の再送と詳細記録
+
+[replay.ts](../examples/quickstart/replay.ts)を同じディレクトリへコピーし、次を実行する。
+
+```sh
+npx tsc --noEmit
+npx tsx replay.ts
+```
+
+出力：
+
+```json
+{"normal":"committed","replay":"replayed","recovered":"replayed","writes":2}
+```
+
+サンプルはdefineUseCaseにreplay設定を追加する。
+新規実行・同じ要求の再送・入力拒否・保存結果が不明になった後の再照会をassertで検証する。
+再送ではattempt:nullとなり、失敗後の再照会では元の失敗をattempt.resultに残す。
+実行結果の詳細は[再送を含む記録](replay-trace.md)を参照。
+
+これは単一プロセスのメモリ保存で、再起動後の再送や永続的な保存は扱わない。
+DBで使う場合は業務データと成功記録を同じトランザクションで確定する。
+認証・再送前のアクセス制御と要求キーのスコープも利用側で設計する。
+
+複雑なsaveでは型注釈が必要な場合がある。[定義の比較と型診断](use-case.md)を参照。
+
 ## 型エラーの読み方
 
 [意図的に間違えた定義](../examples/quickstart/diagnostics/invalid.ts)は通常のサンプルの型チェックから除外し、
@@ -98,7 +129,8 @@ HTTP境界で受け取るunknownの構造検証も別途必要。TypeScriptの�
 | stringの検証結果をnumberの遷移へ接続 | Type 'string' is not assignable to type 'number' | 隣接するstepの入出力 |
 | 未検証stringをTagNameへ代入 | Type 'string' is not assignable to type 'TagName' | validateを通す |
 
-保存型の不一致は`.on(created)`に報告され、StepやNoInferを含む長い型が出る。
+比較用の旧APIでは保存型の不一致は`.on(created)`に報告される。
+defineUseCaseではsaveの位置で不一致を表示する。Stepや型のintersectionを含む長い型が出る場合もある。
 まず診断末尾の具体的な型の組み合わせを見る。専用の短い診断は現時点では提供していない。
 
 ## 次に読むもの
@@ -114,4 +146,4 @@ HTTP境界で受け取るunknownの構造検証も別途必要。TypeScriptの�
 
 ルートの`npm run test:quickstart`はpackしたパッケージを作業ツリー外へインストールし、
 型チェック、実行結果、4種類の誤定義が拒否されることを検証する。
-`npm run test:quickstart:registry`はnpmの公開済みalpha.2から同じ手順を再現する。
+`npm run test:quickstart:registry`はnpmのalpha.3から同じ手順を再現する。

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { ok, err, step, defineTarget, defineApplication, operation, type Result } from 'koyuki';
+import { ok, err, step, defineUseCase, defineApplication, operation, type Result } from 'koyuki';
 
 // State: raw user input becomes a validated tag before storage.
 export interface CreateTag { readonly id: string; readonly name: string }
@@ -22,14 +22,15 @@ export const created = {
 export function tagExample() {
   const records = new Map<string, Tag>();
   let writes = 0;
-  const create = defineTarget({
+  const create = defineUseCase({
     operation: 'tag.create.v1',
+    transition: created,
     load: async (input: CreateTag) => ok(input),
     save: async (tag: Tag): Promise<Result<Tag, { kind: 'DuplicateTag' }>> => {
       if (records.has(tag.id) || [...records.values()].some(current => current.name === tag.name)) return err({ kind: 'DuplicateTag' });
       records.set(tag.id, tag); writes++; return ok(tag);
     },
-  }).on(created);
+  });
   const application = defineApplication({
     initial: (): readonly Tag[] => [],
     operations: { create: operation(create, (tags: readonly Tag[], tag) => [...tags, tag]) },
