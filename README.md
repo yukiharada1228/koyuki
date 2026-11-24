@@ -130,3 +130,5 @@ APIの検討記録は [PUBLIC-API.txt](PUBLIC-API.txt) を参照してくださ�
 申請時の残日数の仮確保・承認・取り下げ、SQLiteの競合と再送を検証しています。
 
 開発版alpha.3では[再送を含む実行記録](docs/replay-trace.md)を追加しています。npmには未公開です。
+
+開発版では[defineUseCaseによる接続の集約と比較結果](docs/use-case.md)も試しています。既存APIは引き続き使用できます。

@@ -11,6 +11,12 @@ type Connected<I, T extends readonly AnyStep[]> = T extends readonly [infer H ex
   ? H extends Step<infer A, unknown, unknown> ? [I] extends [A] ? readonly [H, ...Connected<Output<H>, R>] : never : never
   : readonly [];
 
+export type TransitionDefinition<I, V, VE, T extends readonly AnyStep[], O, E> = {
+  validate: Step<I, V, VE>;
+  require: T & Connected<NoInfer<V>, T>;
+  evolve: Step<NoInfer<End<V, T>>, O, E>;
+};
+
 /** A pure event transition: validation, domain requirements, evolution. No IO or manual Result plumbing. */
 export function transition<I, V, VE, const T extends readonly AnyStep[], O, E>(definition: {
   validate: Step<I, V, VE>;

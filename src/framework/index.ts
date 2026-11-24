@@ -16,3 +16,4 @@ export type { ApplicationState, ApplicationEvent } from './application.js';
 export { withReplay, replayOperation } from './replay.js';
 export type { Execution, Receipt, ReplayBoundary, ReplayInputError, ReplayTrace, ReplayReport } from './replay.js';
 export type { RequestExecution } from './model.js';
+export { defineUseCase } from './use-case.js';

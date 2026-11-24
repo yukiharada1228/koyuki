@@ -1,4 +1,4 @@
-import { defineRequestTarget, withReplay, replayOperation, defineApplication, type Result, type Execution, type ActionReport } from '../framework/index.js';
+import { defineUseCase, replayOperation, defineApplication, type Result, type RequestExecution } from '../framework/index.js';
 import { submitted, approved, rejected, returned, edited } from './application.js';
 import type { Actor, Input, RejectInput, EditInput, Loaded, Change, ExpenseState } from './domain.js';
 import type { LoadError } from './repository.js';
@@ -8,23 +8,23 @@ export function expenseReplayCommands(repository: ExpenseReplayRepository, actor
   const identity = Object.freeze({ ...actor });
   const request = <I extends Input>(operation: ExpenseOperation, call: RequestInput<I>): ExpenseRequest =>
     ({ operation, actor: identity, requestId: call.requestId, input: call.input });
-  function target<I extends Input>(operation: ExpenseOperation, load: (input: I) => Promise<Result<Loaded<I>, LoadError>>) {
-    return defineRequestTarget({ operation: `expense.${operation}.v1`,
+  function adapter<I extends Input>(operation: ExpenseOperation, load: (input: I) => Promise<Result<Loaded<I>, LoadError>>) {
+    return {
+      operation: `expense.${operation}.v1`,
       load: (call: RequestInput<I>) => load(call.input),
-      save: (change: Change, execution) => repository.saveRequest(request(operation, execution.request), change) });
-  }
-  function replay<I extends Input, E extends { kind: string }>(operation: ExpenseOperation, command: { run(input: RequestInput<I>): Promise<Result<Execution<ExpenseState>, E>>; runDetailed(input: RequestInput<I>): Promise<ActionReport<Execution<ExpenseState>, E>> }) {
-    return withReplay(command, {
-      lookup: call => repository.receipt(request(operation, call)),
-      resolveAfter: error => error.kind === 'SaveConflict' || error.kind === 'InvalidState' || error.kind === 'RepositoryUnavailable',
-    });
+      save: (change: Change, execution: RequestExecution<RequestInput<I>>) => repository.saveRequest(request(operation, execution.request), change),
+      replay: {
+        lookup: (call: RequestInput<I>) => repository.receipt(request(operation, call)),
+        resolveAfter: (error: { kind: string }) => error.kind === 'SaveConflict' || error.kind === 'InvalidState' || error.kind === 'RepositoryUnavailable',
+      },
+    };
   }
   return {
-    submit: replay('submit', target('submit', (input: Input) => repository.load(input, identity)).on(submitted)),
-    approve: replay('approve', target('approve', (input: Input) => repository.load(input, identity)).on(approved)),
-    return: replay('return', target('return', (input: RejectInput) => repository.load(input, identity)).on(returned)),
-    edit: replay('edit', target('edit', (input: EditInput) => repository.load(input, identity)).on(edited)),
-    reject: replay('reject', target('reject', (input: RejectInput) => repository.loadReject(input, identity)).on(rejected)),
+    submit: defineUseCase({ ...adapter('submit', (input: Input) => repository.load(input, identity)), transition: submitted }),
+    approve: defineUseCase({ ...adapter('approve', (input: Input) => repository.load(input, identity)), transition: approved }),
+    return: defineUseCase({ ...adapter('return', (input: RejectInput) => repository.load(input, identity)), transition: returned }),
+    edit: defineUseCase({ ...adapter('edit', (input: EditInput) => repository.load(input, identity)), transition: edited }),
+    reject: defineUseCase({ ...adapter('reject', (input: RejectInput) => repository.loadReject(input, identity)), transition: rejected }),
   };
 }
 export function expenseReplayApplication(repository: ExpenseReplayRepository, actor: Actor, initial: readonly ExpenseState[]) {

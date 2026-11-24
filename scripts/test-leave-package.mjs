@@ -4,7 +4,8 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const development = process.argv.includes('--development');
+const declarative = process.argv.includes('--declarative');
+const development = process.argv.includes('--development') || declarative;
 function npm(args, cwd, capture = false) {
   const result = spawnSync('npm', args, { cwd, encoding: 'utf8', stdio: capture ? 'pipe' : 'inherit' });
   if (result.error || result.status !== 0) throw new Error(result.stderr || `npm ${args.join(' ')} failed`);
@@ -26,7 +27,20 @@ try {
     writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg));
     rmSync(join(dir, 'package-lock.json'));
     copyFileSync(join(root, 'scripts/fixtures/leave-replay-trace.test.ts'), join(dir, 'leave-replay-trace.test.ts'));
+    if (declarative) {
+      copyFileSync(join(dir, 'application.ts'), join(dir, 'application-legacy.ts'));
+      copyFileSync(join(root, 'scripts/fixtures/leave-use-case-application.ts'), join(dir, 'application.ts'));
+      copyFileSync(join(root, 'scripts/fixtures/leave-use-case-parity.test.ts'), join(dir, 'leave-use-case-parity.test.ts'));
+    }
   }
   for (const args of [[development ? 'install' : 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], ['run', 'check'], ['test'], ['start']]) npm(args, dir);
+  if (declarative) {
+    copyFileSync(join(root, 'scripts/fixtures/use-case-diagnostics.ts'), join(dir, 'diagnostics.ts'));
+    const result = spawnSync('npm', ['exec', '--', 'tsc', '--pretty', 'false'], { cwd: dir, encoding: 'utf8' });
+    const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+    if (result.error || !result.status) throw new Error('Expected compiler rejection for invalid declarations');
+    for (const line of [5, 7, 9, 11]) if (!output.includes(`diagnostics.ts(${line},`)) throw new Error(output);
+    console.log(output);
+  }
   console.log(`Verified leave example outside the repository using ${development ? 'packed development package with replay detail' : 'published koyuki@0.1.0-alpha.2'}.`);
 } finally { rmSync(dir, { recursive: true, force: true }); }

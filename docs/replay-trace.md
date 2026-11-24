@@ -11,7 +11,7 @@ report.attempt; // 業務コマンドの実行記録。実行しなければnull
 ```
 
 経費の実コードは[src/expenses/replay.ts](../src/expenses/replay.ts)。
-元のTargetはrunDetailedも持つため、そのコマンドを型でrunだけに狭めずwithReplayへ渡している。
+現在はdefineUseCaseの試作入口から接続し、元TargetのrunDetailedを再送境界まで維持している。
 
 ## レポートの構造
 

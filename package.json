@@ -42,7 +42,8 @@
     "test:leave": "npm --prefix examples/leave test",
     "demo:leave": "npm --prefix examples/leave start",
     "test:leave:package": "node scripts/test-leave-package.mjs",
-    "test:leave:development": "node scripts/test-leave-package.mjs --development"
+    "test:leave:development": "node scripts/test-leave-package.mjs --development",
+    "test:use-case:package": "node scripts/test-leave-package.mjs --declarative"
   },
   "devDependencies": {
     "@types/node": "latest",
