@@ -2,7 +2,7 @@ import type { Result } from './result.js';
 import { fingerprint } from './identity.js';
 export type Rule<I, O, E> = (input: I) => Result<O, E>;
 export interface Trace { readonly step: string; readonly status: 'ok' | 'error' }
-interface Evaluation<O, E> { result: Result<O, E>; trace: readonly Trace[] }
+export interface Evaluation<O, E> { result: Result<O, E>; trace: readonly Trace[] }
 export class Workflow<I, O, E> {
   constructor(readonly name: string, readonly steps: readonly string[], private readonly evaluate: (input: I) => Evaluation<O, E>) {}
   run(input: I): Result<O, E> { return this.evaluate(input).result; }

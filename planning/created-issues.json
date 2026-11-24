@@ -2,41 +2,41 @@
   {
     "key": "transactions",
     "title": "[Feature] Targetのトランザクション境界を宣言し、状態更新と履歴保存を原子的に実行する",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/1"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/1"
   },
   {
     "key": "tracing",
     "title": "[Feature] 既存の実行トレースを拡張し、業務操作から各ステップまで相関できるようにする",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/2"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/2"
   },
   {
     "key": "graphs",
     "title": "[Feature] 宣言からワークフロー構成図を生成し、実行経路を重ねて確認できるようにする",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/3"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/3"
   },
   {
     "key": "idempotency",
     "title": "[Feature] 操作の冪等性キーと結果保存を導入し、安全な再送と限定的なリトライを実現する",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/4"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/4"
   },
   {
     "key": "audit",
     "title": "[Feature] 業務状態の変更と原子的に記録する共通監査ログを提供する",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/5"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/5"
   },
   {
     "key": "static-analysis",
     "title": "[Feature] イベント宣言の静的検査を拡張し、型だけでは検出しない定義ミスを報告する",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/6"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/6"
   },
   {
     "key": "formal-verification",
     "title": "[Research] 明示した有限状態モデルに対する到達可能性・禁止遷移の検証を試作する",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/7"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/7"
   },
   {
     "key": "generated-tests",
     "title": "[Feature] 明示した業務仕様から境界値・状態遷移シーケンスのテストを生成する",
-    "url": "https://github.com/yukiharada1228/business-react-lab/issues/8"
+    "url": "https://github.com/yukiharada1228/koyuki/issues/8"
   }
 ]

@@ -1,6 +1,5 @@
 {
-  "name": "business-react-lab",
-  "private": true,
+  "name": "koyuki",
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit",
@@ -27,7 +26,9 @@
     "demo:expenses": "tsx src/expenses/demo.ts",
     "test:expenses": "tsx --test src/expenses.test.ts",
     "demo:expenses:sqlite": "tsx src/expenses/sqlite-demo.ts",
-    "test:expenses:sqlite": "tsx --test src/expenses-sqlite.test.ts"
+    "test:expenses:sqlite": "tsx --test src/expenses-sqlite.test.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "@types/node": "latest",
@@ -35,12 +36,39 @@
     "@types/react-dom": "^19.3.0",
     "esbuild": "^0.28.2",
     "tsx": "latest",
-    "typescript": "latest"
-  },
-  "dependencies": {
+    "typescript": "latest",
     "@hono/node-server": "^2.1.11",
     "hono": "^4.13.21",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
+  },
+  "version": "0.1.0-alpha.1",
+  "description": "Declarative, functional business workflows for TypeScript",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yukiharada1228/koyuki.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/yukiharada1228/koyuki#readme",
+  "bugs": {
+    "url": "https://github.com/yukiharada1228/koyuki/issues"
   }
 }

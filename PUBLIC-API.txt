@@ -1,4 +1,4 @@
-公開API候補 — business-react-lab
+公開API候補 — Koyuki
 
 入口: src/framework/index.ts
 利用例: src/examples/create-tag.ts（npm run checkとテストで検証）

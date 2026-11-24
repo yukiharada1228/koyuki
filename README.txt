@@ -1,4 +1,4 @@
-Business React Lab
+Koyuki
 
 業務の状態・検証・遷移を宣言し、Resultの合成と取得・保存・実行管理を任せる
 TypeScriptフレームワークの試作です。安定版APIではありません。
