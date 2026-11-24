@@ -9,7 +9,8 @@ npm install koyuki@alpha
 **実験段階のアルファ版です。** APIは変更される可能性があります。ES Modulesと
 Node.jsでの利用・サンプルの実行は22以上を対象にしています。
 開発版alpha.4のコアはNode固有APIへの依存を外し、`structuredClone` などの標準APIのみを使用します。
-ブラウザ向けbundleとNodeグローバルのない環境での実行を検証していますが、各ブラウザ・エッジ基盤の実機検証は未実施です。
+Chromium 156とCloudflare Workersの公開環境で、通常実行・再送・詳細記録を検証しています。
+[互換性の範囲と検証例](examples/portability/README.md)を参照してください。
 SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用します。
 
 [最小チュートリアル](docs/getting-started.md)では、タグ作成から始め、経費精算・再送へ進めます。

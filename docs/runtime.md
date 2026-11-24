@@ -33,5 +33,12 @@ check:packageは次を検証する。
 test:portableはビルド済み入口をブラウザ向けにbundleし、NodeグローバルのないVMで通常実行・詳細記録・再送を確認する。
 検証スクリプト自体のNode・esbuild・TypeScriptは開発用で、配布物の実行依存にはならない。
 
-これらは実ブラウザや各エッジ基盤での実機試験の代わりではない。
-動作環境ごとの互換性は今後個別に検証する。SQLiteを使うサンプルには引き続きNode.jsが必要。
+## 実環境の検証結果
+
+[ブラウザとWorkersの検証例](../examples/portability/README.md)で、Chromium 156とCloudflare Workersの公開環境で同じ業務定義を実行した。
+通常実行・再送・詳細記録・保存結果不明からの回復が一致。nodejs_compatは無効、Worker bundleに外部importやNode shimなし。
+各呼出し内のメモリ保存による互換性の検証で、永続DBや要求をまたぐ再送はこの例の対象外。
+実環境ではprocessとBufferが存在したが使用していない。APIが存在することと、依存することは区別する。
+
+Safari / Firefox / Deno / Bun / 他のエッジ基盤は未確認。
+SQLiteを使うサンプルには引き続きNode.jsが必要。
