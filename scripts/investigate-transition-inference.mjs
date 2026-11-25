@@ -7,6 +7,15 @@ import { fileURLToPath } from 'node:url';
 
 // Compile candidate declarations in an isolated copy. Never edit the working tree.
 const root = fileURLToPath(new URL('../', import.meta.url));
+const hash = value => createHash('sha256').update(value).digest('hex');
+function git(args) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) throw Error('Cannot identify investigation source');
+  return result.stdout.trim();
+}
+const sourcePaths = ['src', 'tsconfig.json', 'package.json', 'package-lock.json', 'scripts/investigate-transition-inference.mjs'];
+const sourceGitCommit = git(['rev-parse', 'HEAD']);
+const sourceStatus = git(['status', '--porcelain', '--', ...sourcePaths]);
 const original = await readFile(resolve(root, 'src/framework/model.ts'), 'utf8');
 const requirement = 'require?: T & ConnectedStages<StageOutput<NoInfer<A>>, T>;';
 if (!original.includes(requirement)) throw new Error('Declaration changed: re-evaluate candidate patches');
@@ -37,6 +46,14 @@ function rawTupleCandidate(constraint, spread = false, checked = false) {
     .replaceAll('NamedStages<T>', 'NamedStages<StageTuple<T>>')
     .replace('const stages: readonly AnyStage[] = definition.require ?? [];', 'const stages = (definition.require ?? []) as readonly AnyStage[];');
   return source;
+}
+// A tuple-shaped raw constraint can change contextual array inference without
+// adding a callable member to withInput's return type or erasing its correlation.
+function tupleConstraintCandidate(constraint) {
+  const source = rawTupleCandidate(constraint);
+  const previous = `const T extends readonly ${constraint}[] = readonly []`;
+  if (!source.includes(previous)) throw Error('Raw tuple constraint patch did not apply');
+  return source.replace(previous, `const T extends readonly [${constraint}, ...${constraint}[]] | readonly [] = readonly []`);
 }
 // Separate omitted requirements from a supplied tuple, so a default empty tuple
 // cannot win inference for a context-sensitive higher-order expression.
@@ -74,6 +91,9 @@ function restConnectionCandidate(constraint) {
 }
 const candidates = [
   ['current', original],
+  ['raw-object-tuple-constraint', tupleConstraintCandidate('object')],
+  ['raw-unknown-tuple-constraint', tupleConstraintCandidate('unknown')],
+  ['stage-tuple-constraint', original.replace('const T extends readonly AnyStage[] = readonly []', 'const T extends readonly [AnyStage, ...AnyStage[]] | readonly [] = readonly []')],
   ['direct-requirement-output', directRequirementOutput()],
   ['indexed-stage-end', indexedStageEnd()],
   ['indexed-stage-end-mapped-connection', mappedAdjacency(true).replace('type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<StageOutput<H>, R> : I;', 'type StageEnd<I, T extends readonly AnyStage[]> = (readonly [I, ...{ readonly [K in keyof T]: StageOutput<T[K]> }])[T["length"]];')],
@@ -144,8 +164,15 @@ ${signature};
   return original.replace(signature, overload + signature);
 }
 const args = process.argv.slice(2);
-if (!(args.length === 0 || (args.length === 2 && args[0] === '--only'))) throw new Error('Use no arguments or --only comma,separated,candidate,names');
-const selected = args.length ? args[1].split(',') : candidates.map(([name]) => name);
+let selected = candidates.map(([name]) => name), compiler = resolve(root, 'node_modules/.bin/tsc');
+const options = new Set();
+for (let index = 0; index < args.length; index += 2) {
+  const option = args[index], value = args[index + 1];
+  if (!['--only', '--compiler'].includes(option) || !value || options.has(option)) throw new Error('Use --only comma,separated,candidate,names and/or --compiler /path/to/tsc');
+  options.add(option);
+  if (option === '--only') selected = value.split(',');
+  else compiler = resolve(value);
+}
 if (!selected.length || selected.some(name => !candidates.some(([candidate]) => candidate === name))) throw new Error('Unknown candidate name');
 const temporary = await mkdtemp(join(tmpdir(), 'koyuki-inference-'));
 try {
@@ -153,7 +180,6 @@ try {
   await cp(resolve(root, 'tsconfig.json'), join(temporary, 'tsconfig.json'));
   await writeFile(join(temporary, 'package.json'), '{"type":"module"}');
   await symlink(resolve(root, 'node_modules'), join(temporary, 'node_modules'), 'dir');
-  const compiler = resolve(root, 'node_modules/.bin/tsc');
   const compile = () => {
     const result = spawnSync(compiler, ['--project', join(temporary, 'tsconfig.json'), '--pretty', 'false'], { encoding: 'utf8', cwd: root });
     if (result.error || result.signal || result.status === null) throw result.error ?? new Error(`Compiler terminated: ${result.signal}`);
@@ -196,7 +222,10 @@ try {
   if (!minimalBaseline.accepted) throw Error(JSON.stringify(minimalBaseline));
   await writeFile(minimalFile, minimalSource);
   const minimal = { fixtureSha256: createHash('sha256').update(minimalSource).digest('hex'), baselineAccepted: true, ...minimalCompile() };
-  console.log(JSON.stringify({ compiler: compileVersion(compiler), modelSourceSha256: createHash('sha256').update(original).digest('hex'), existingContractsPass: true, minimal, results }, null, 2));
+  if (git(['rev-parse', 'HEAD']) !== sourceGitCommit || git(['status', '--porcelain', '--', ...sourcePaths]) !== sourceStatus || hash(await readFile(resolve(root, 'src/framework/model.ts'))) !== hash(original)) throw Error('Investigation source changed during execution');
+  console.log(JSON.stringify({ collectedAt: new Date().toISOString(), sourceGitCommit, sourceDirty: sourceStatus.length > 0,
+    collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))), probeSha256: hash(probe),
+    compiler: compileVersion(compiler), modelSourceSha256: hash(original), existingContractsPass: true, minimal, results }, null, 2));
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }
