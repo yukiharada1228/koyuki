@@ -11,13 +11,13 @@ function npm(args, cwd, capture = false) {
 }
 const registry = process.argv.includes('--registry');
 let dependency = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
-if (!registry) {
-  npm(['run', 'build'], root);
-  const tarball = JSON.parse(npm(['pack', '--ignore-scripts', '--json'], root, true))[0].filename;
-  dependency = `file:${join(root, tarball)}`;
-}
 const dir = mkdtempSync(join(tmpdir(), 'koyuki-prisma-consumer-'));
 try {
+  if (!registry) {
+    npm(['run', 'build'], root);
+    const tarball = JSON.parse(npm(['pack', '--pack-destination', dir, '--ignore-scripts', '--json'], root, true))[0].filename;
+    dependency = `file:${join(dir, tarball)}`;
+  }
   const source = join(root, 'examples/prisma-stock');
   for (const name of readdirSync(source).filter(name => name.endsWith('.ts') || ['package.json', 'tsconfig.json'].includes(name))) copyFileSync(join(source, name), join(dir, name));
   cpSync(join(source, 'prisma'), join(dir, 'prisma'), { recursive: true });

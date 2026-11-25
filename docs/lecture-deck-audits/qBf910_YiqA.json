@@ -168,7 +168,7 @@
       "page": 16,
       "topic": "非同期照合と状態分岐",
       "status": "partial",
-      "assessment": "非同期照合後に状態Unionで作成・更新・変更なしを選ぶ統合例を既存Process/Workflowで検証。SQLite hostで一意制約・CAS・古い変更なし判定・group分離・復元・別OSプロセスでの永続読込みを追加検証した。",
+      "assessment": "非同期照合後に状態Unionで作成・更新・変更なしを選ぶ統合例を既存Process/Workflowで検証。SQLite hostで一意制約・CAS・古い変更なし判定・group分離・復元・別OSプロセスでの永続読込みを追加検証した。 別OSプロセスの2writerを読込み後に待ち合わせ、作成・更新の競合も検証する。",
       "evidence": [
         "src/framework/process.ts",
         "src/framework/workflow.ts",
@@ -398,6 +398,14 @@
         "src/customer-import-sqlite.test.ts"
       ],
       "scope": "Controlled interleavings with two connections and persisted reads in another OS process; not a full reservation implementation or parallel-writer load test."
+    },
+    {
+      "topic": "別OS writerの競合",
+      "evidence": [
+        "docs/customer-import-sqlite.md",
+        "src/customer-import-sqlite.test.ts"
+      ],
+      "scope": "Two independent writers released after both read the same prior state. Verifies one winner, one Conflict, persisted state/version and clean process exit; not a throughput or general load benchmark."
     }
   ]
 }

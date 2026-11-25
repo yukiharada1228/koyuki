@@ -9,10 +9,10 @@ function npm(args, cwd, capture = false) {
   if (result.error || result.status !== 0) throw new Error(result.stderr || `npm ${args.join(' ')} failed`);
   return result.stdout;
 }
-npm(['run', 'build'], root);
-const tarball = JSON.parse(npm(['pack', '--ignore-scripts', '--json'], root, true))[0].filename;
 const dir = mkdtempSync(join(tmpdir(), 'koyuki-registration-consumer-'));
 try {
+  npm(['run', 'build'], root);
+  const tarball = JSON.parse(npm(['pack', '--pack-destination', dir, '--ignore-scripts', '--json'], root, true))[0].filename;
   mkdirSync(join(dir, 'registration'));
   for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'delivery.ts']) {
     const source = readFileSync(join(root, 'src/registration', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'");
@@ -21,7 +21,7 @@ try {
   writeFileSync(join(dir, 'registration.test.ts'), readFileSync(join(root, 'src/registration.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const version = name => JSON.parse(readFileSync(join(root, 'node_modules', name, 'package.json'), 'utf8')).version;
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ private: true, type: 'module',
-    dependencies: { koyuki: `file:${join(root, tarball)}` },
+    dependencies: { koyuki: `file:${join(dir, tarball)}` },
     devDependencies: { tsx: version('tsx'), typescript: version('typescript'), '@types/node': version('@types/node') },
     scripts: { check: 'tsc --noEmit', test: 'tsx --test registration.test.ts' },
   }));
