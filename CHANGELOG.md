@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買plain/helper版へ独立Application driverを追加。状態・revision・queue・入力snapshot・通知・例外復旧と再送投影をKoyukiと比較し、実配布consumerで検証。応答消失後のreplayed成功でもViewを自動refreshしない共通の制約を明記。
+
 - 購買plain/helper版へ独立した永続再送driverを追加。共有SQLite/identity境界の下でKoyuki runtimeを使わず、過去結果・要求不一致・保存競合・不明commit照会のreportを比較し、原子的な記録失敗rollbackと重複要求を配布consumerで検証。全25操作の全障害経路やApplication比較とは区別。
 
 - 購買のplain/helper基準実装へ基本traceと保存計画を追加。KoyukiのrunDetailedと成功・load/rule/save失敗のreportを比較し、adapter例外の伝播と同時呼出しの記録分離も実配布consumerで検証。capture・永続監査・再送・Applicationまでの同等性とは区別。

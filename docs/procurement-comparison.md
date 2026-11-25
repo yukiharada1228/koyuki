@@ -16,7 +16,8 @@
 | load → domain → saveの接続 | 各方式で別実装 |
 | 基本trace・保存計画 | [追加比較](procurement-trace-comparison.md)で代表的な成功・失敗を検証 |
 | 永続再送 | [独立driver比較](procurement-replay-comparison.md)で代表的な要求・障害・重複を検証 |
-| 値の観測・Application | 現段階の比較対象外。Koyukiの実装検査とは分ける |
+| Application | [独立session比較](procurement-application-comparison.md)で代表的な状態・queue・通知・再送を検証 |
+| 値の観測 | 現段階の比較対象外。Koyukiの実装検査とは分ける |
 
 通常TypeScript版は`plain.ts`で各操作にResultの分岐と保存を明記する。
 helper版は`helper.ts`のaction関数へ同じ処理をまとめ、操作ごとにloadと業務関数を渡す。
@@ -76,3 +77,8 @@ Koyukiの共通saveによる型の広がりは、今後のAPI改善候補とし�
 [独立した永続再送driverの比較](procurement-replay-comparison.md)を追加した。
 同じSQLite/identity境界の下で、基準実装側のsnapshot・照会・業務実行・記録・失敗後照会を検証する。
 Applicationと値の観測を含む全体比較は引き続き未完了。
+
+
+[独立したApplication driverの比較](procurement-application-comparison.md)を追加した。
+状態・revision・通知・実行履歴・queue・例外復旧を代表ケースで比較し、応答消失後に自動refreshしない制約も確認した。
+値の観測と仕様変更を含む全体評価は引き続き未完了。

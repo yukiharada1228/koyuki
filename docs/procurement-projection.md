@@ -54,3 +54,8 @@ actorはsessionに固定されるため、承認者・倉庫担当等の間で�
 `src/procurement-projection.test.ts`と`src/procurement-sqlite.test.ts`で実行し、
 `npm run test:business:package`でも実tarballの公開APIを使って検査する。
 大規模開発の認知負担や通常TS/helperとの差は未測定。再送シナリオの拡充・比較評価は継続する。
+
+
+[独立Applicationとの比較](procurement-application-comparison.md)でも、再送時に過去値を適用しない方針を検証した。
+応答消失直後の復旧でも自動refreshしないため、初期値が空なら保存済み行がViewへ現れない場合がある。
+これは未解消のhost取得境界で、3方式の挙動一致を表示上の制約の解消とは扱わない。

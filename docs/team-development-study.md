@@ -52,7 +52,7 @@ framework側にだけ再送・traceを付けた状態で、同等機能のLOCと
 ## 次の実装対象：購買から支払記録まで
 
 既存の経費・在庫・承認の経験を使い、つながった業務を一つのアプリとして構築する。
-以下は評価用仕様である。[25操作の初期実装](procurement-study.md)を実装済み。[SQLiteの複合保存と復元](procurement-sqlite.md)を検証済み。[複合Application投影](procurement-projection.md)も検証済み。[永続再送境界](procurement-replay.md)も接続済み。[25操作の業務接続比較](procurement-comparison.md)を追加し、メモリ／SQLiteで3方式の結果一致を検証した。[基本traceと保存計画](procurement-trace-comparison.md)の代表ケースも一致を検証済み。[独立再送driver](procurement-replay-comparison.md)も代表ケースを比較済み。値の観測・Applicationを含む同等機能比較と変更評価は未実施で、評価完了ではない。
+以下は評価用仕様である。[25操作の初期実装](procurement-study.md)を実装済み。[SQLiteの複合保存と復元](procurement-sqlite.md)を検証済み。[複合Application投影](procurement-projection.md)も検証済み。[永続再送境界](procurement-replay.md)も接続済み。[25操作の業務接続比較](procurement-comparison.md)を追加し、メモリ／SQLiteで3方式の結果一致を検証した。[基本traceと保存計画](procurement-trace-comparison.md)の代表ケースも一致を検証済み。[独立再送driver](procurement-replay-comparison.md)も代表ケースを比較済み。[独立Application](procurement-application-comparison.md)も代表ケースを比較済み。値の観測を含む同等機能比較と変更評価は未実施で、評価完了ではない。
 
 | 業務 | 操作候補 | 件数 |
 | --- | --- | --- |
