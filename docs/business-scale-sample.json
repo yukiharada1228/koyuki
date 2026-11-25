@@ -1,0 +1,97 @@
+{
+  "schema": "koyuki.business-scale.v1",
+  "node": "v26.12.0",
+  "compiler": "7.0.2",
+  "source": {
+    "gitCommit": "51bfd67c49223f794ac2240a909cb4000d40e274",
+    "sourceDirty": false,
+    "hashes": {
+      "package-lock.json": "8efab17a72fa5d2a483dbb5cff21f1bf8e7148f5b2f3b2efebc58aa091b77f20",
+      "package.json": "73c4312b220a96fd1a0526aa139d4c57089ebb29d4e7fa3c069054c0ed567e25",
+      "src/experiments/business.ts": "2eef8bf523bbdca150176b43e138db009b327894cf740c03c786eae0e2b395c7",
+      "src/framework/action.ts": "ed1126a4eabcd4569950122953e09bd9c5802274c141c5cce8e6adaac7b85863",
+      "src/framework/application.ts": "d5c3616f105fc3bcc3919f776e601a74c4b5a69450b4141b761770736a840787",
+      "src/framework/audit.ts": "2ebc27807ed51e2d87222007b816c13fb0d0b90bd74195c6153c303c5644f0e7",
+      "src/framework/business.ts": "1cffaa509b0e2d52605331d59878f76f8a8b75f6bc2d4686e97d6dfbca17b70e",
+      "src/framework/collection-effects.ts": "695d97c945479c79445aab8dbaa1068493ea045cbf0a07eb3f97cb9a01f770f8",
+      "src/framework/command.ts": "35c0e7d07a89ac9544335b4e7b043ad50d806bacd340e01419e14a1b002c5b89",
+      "src/framework/execution.ts": "36d59ebd5d6657079f4c4d7cd7fa172c6fbd65aaef1e0f584a5fd3ec7dcfe540",
+      "src/framework/experimental-jsx.ts": "b60b6d3baddfca68e158b34cf7a0e632515b16afc7eab4876a6121096babe06e",
+      "src/framework/group-runtime.ts": "832be4c081ee983282668e6aa80ddfa8f166f07178a6c95fb7c18d290c513361",
+      "src/framework/identity.ts": "095fb9f5ba28db283a953674974376a9016edc2d22aa62cb676b8ef74e14e702",
+      "src/framework/index.ts": "7b8f9ebe8873345c5728e3b3efc482827a148915c9693ffc4f3c71d2b9f261eb",
+      "src/framework/instrumentation.ts": "41abf3906082de656ae716d151f8c7468d8afb12bcca6708c197d8afc0708b34",
+      "src/framework/model.ts": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "src/framework/observation.ts": "214ce1008375a6e2539d18ca0baa8298387dbc882c83ce6f3b0acaba79fc826e",
+      "src/framework/operation-table.ts": "5679d75db937c7191ccf9eb55d5092596737bb1530b455acfded92cd49f3f431",
+      "src/framework/process.ts": "2f9e4535f8eb2d9e06fa37b958d098960c49d02c52e7433c52e53619700bc11c",
+      "src/framework/program.ts": "d5d317e6c0c4999236fe13b135c4429ca51b1f80edc12ef5c2e7c3cbda21219e",
+      "src/framework/replay.ts": "178ece86d8aca99d0917de435d7b34f75036b4ca12f5931893cb1280e11e236a",
+      "src/framework/result.ts": "fbb1144091c801e34787f52a2521612e9103f3df984f32644855eb20ab50d93e",
+      "src/framework/retry.ts": "147d52f75dce1ca6fb6c7aed6dfbf3c08f6cb0ef9e2e02a628156eb1a17eafab",
+      "src/framework/snapshot.ts": "af64c2926f405be7529e11cc665d0c5d4d3ef349390866ee64b97a4f0eca9aaa",
+      "src/framework/structure.ts": "46acd9be398a4142ae5e6e24f1874b67e8425c6dea38f192100833f2dd94f08f",
+      "src/framework/testing-sequences.ts": "65b349109b9ca5ae0978051d5581160955b2cd0f3b17f5e212b84d906ec17b26",
+      "src/framework/testing.ts": "5552164ea46b41b47c2bdf31b7305ce05ad6a3fe2306691dcb457080b1910b71",
+      "src/framework/transaction.ts": "419a45b61012a3adf4207093e49f0cc6c656eadd1a7dabdcbeef9779d057f246",
+      "src/framework/use-case-group.ts": "f5a7f132f156b2a5275edf6e3f057a3be95aa00e294494c5fdfd04f1d2d1b9c4",
+      "src/framework/use-case.ts": "25c98decfdcd645f8c2a0ca667f66bc26fa3c314b1e9c909bbc92350553d923c",
+      "src/framework/validation.ts": "7e4915541dcb1381ce1dcfdd5d2337de263447ac4938a2c5a88999c9461ac8b8",
+      "src/framework/workflow.ts": "7452041483f426c0e762954e9fadea6fa8dd10f8d6638d32e19f9a2dcb6b92da"
+    }
+  },
+  "platform": "darwin",
+  "arch": "arm64",
+  "tarballSha256": "1f4349f0eff1f7fc6bdb610fc08da6f2384b57955f334c0e6759b4c8326e37d2",
+  "collectorSha256": "26a7f67f97833033f746971ed60a5d5d7ea4b2a3621c1f4fb7ffd5f8705c0dd9",
+  "results": [
+    {
+      "operations": 100,
+      "validSourceSha256": "5680189889f959eb0ca8626eeaddf5d5f53fb79b937ac1caba1bfe2c99df462d",
+      "invalidSourceSha256": "abd27fb5015b59538012f11a98cd8d2b67e33cc3ab5e9a905c0e0fe39b0f9774",
+      "rejectedMissingAuthorization": 100,
+      "verifiedInputOutputPairs": 100,
+      "rejectedWrongInputs": 100,
+      "executedOperations": 100,
+      "validCompileAndEmitMs": 340.953083,
+      "invalidCheckMs": 229.21520800000008,
+      "emittedProcessMs": 46.92395799999986
+    },
+    {
+      "operations": 500,
+      "validSourceSha256": "37abc463743ea06563b09ce9e5bce608698904c84c4b72e6ce3b910eb683a4e4",
+      "invalidSourceSha256": "3da8bf8006b84fb99f61abe3bc720b57239dc5dda7aba1f4ba0a76d40c45d6d0",
+      "rejectedMissingAuthorization": 500,
+      "verifiedInputOutputPairs": 500,
+      "rejectedWrongInputs": 500,
+      "executedOperations": 500,
+      "validCompileAndEmitMs": 1560.3007499999999,
+      "invalidCheckMs": 907.3826670000003,
+      "emittedProcessMs": 62.53704199999993
+    }
+  ],
+  "monolithic": [
+    {
+      "style": "Koyuki",
+      "sourceSha256": "35724983dac038bc589940ef45bb904e0379ece251cd5da5ff85c10f51986c23",
+      "diagnostic": "TS2563",
+      "scope": "500-inline-contract-and-result-check-blocks-in-one-module-body"
+    },
+    {
+      "style": "plain-TypeScript-no-imports",
+      "sourceSha256": "6bb8a39ca66b94ecec8422c0239f5326aa226198434688fce89dd5a80263dc77",
+      "diagnostic": "TS2563",
+      "scope": "500-inline-contract-and-result-check-blocks-in-one-module-body"
+    }
+  ],
+  "scope": "generated-independent-operation-types-and-success-paths",
+  "exclusions": [
+    "real-business-specification",
+    "editor-responsiveness",
+    "human-productivity",
+    "database",
+    "transport",
+    "long-stage-chains",
+    "performance-comparison"
+  ]
+}
