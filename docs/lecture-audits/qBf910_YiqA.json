@@ -278,11 +278,16 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "型推論と通常関数の配列を試作し、64段inline接続を検証。任意のgeneric推論・診断品質を完全解決したわけではない。",
+      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続を検証。generic saveを通した成功型と、複数readの無注釈コールバックの型も検査する。任意のgeneric推論・診断品質・独立利用者のDXを完全解決したわけではない。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
-        "docs/business-api-study.md"
+        "docs/business-api-study.md",
+        "src/framework/business.ts",
+        "docs/business-save-inference.md",
+        "src/business-save-inference.test.ts",
+        "docs/procurement-load-composition.md",
+        "src/procurement-load-composition.test.ts"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"

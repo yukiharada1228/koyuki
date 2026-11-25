@@ -276,10 +276,13 @@
       "page": 27,
       "topic": "状態変化前後を引数と戻り値へ明示",
       "status": "partial",
-      "assessment": "Workflowとbusinessは選択した前後値を再実行せず観測できる。",
+      "assessment": "Workflowとbusinessは選択した前後値を再実行せず観測できる。観測値のコピーで失われる情報は黙って捨てず失敗として分離する。詳細loaderの内部traceも接続できるが、全値の自動dumpや永続履歴ではない。",
       "evidence": [
         "docs/workflow-observation.md",
-        "src/business-observation.test.ts"
+        "src/business-observation.test.ts",
+        "docs/application-ownership.md",
+        "docs/detailed-load.md",
+        "src/detailed-load.test.ts"
       ],
       "remaining": [
         "全業務の自動永続履歴や、保存項目・機密性・保持期間のhost方針は提供しない。"
@@ -498,7 +501,7 @@
       "page": 48,
       "topic": "型の二つの見方と開発体験",
       "status": "partial",
-      "assessment": "業務語彙を型に表し、businessから操作APIを推論する。",
+      "assessment": "業務語彙を型に表し、businessから操作APIを推論する。generic saveの成功型と、無注釈callbackのfact保持も検査する。型が合うことと、業務仕様の正しさ・書き心地の実証は区別する。",
       "evidence": [
         "docs/business.md",
         "docs/business-api-study.md",
@@ -506,7 +509,10 @@
         "scripts/fixtures/branch-narrowing-types.ts",
         "docs/transition-inference-study.md",
         "scripts/fixtures/transition-inference-limit.ts",
-        "src/transition-inference.test.ts"
+        "src/transition-inference.test.ts",
+        "docs/business-save-inference.md",
+        "docs/procurement-load-composition.md",
+        "src/procurement-load-composition.test.ts"
       ],
       "remaining": [
         "defineTransitionでgenericヘルパー呼出しと未注釈evolveを同時に書く場合などの推論制限、および誤定義時の診断・独立利用者の学習負担の評価が残る。Workflow.branchのinline predicate入力型は推論可能になった。"

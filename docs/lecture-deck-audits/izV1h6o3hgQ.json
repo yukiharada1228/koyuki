@@ -900,13 +900,16 @@
       "page": 84,
       "topic": "Validate・更新の定型化とframework構想",
       "status": "partial",
-      "assessment": "businessの通常関数列でResult接続を委譲し、Program/Applicationで実行状態とviewを管理する。",
+      "assessment": "開発版businessで通常関数列のResult接続とload/Rule/saveを調停し、Program/Applicationで実行状態とviewを管理する。購買25操作、二段階承認への仕様変更、通常／詳細loaderを使う4操作の比較で具体化している。独立利用者のDX実証とは区別する。",
       "evidence": [
         "docs/business.md",
         "src/framework/program.ts",
         "src/framework/application.ts",
         "docs/business-change-study.md",
-        "src/application-receiver.test.ts"
+        "src/application-receiver.test.ts",
+        "docs/procurement-study.md",
+        "docs/procurement-approval-change.md",
+        "docs/procurement-load-composition.md"
       ],
       "remaining": [
         "React/Elmと同等の自然な開発体験・独立利用者の学習負担は未測定。一部generic推論の制限とhost側I/O設定は残る。"
@@ -928,10 +931,13 @@
       "page": 86,
       "topic": "値詰め替えと記述量の減少",
       "status": "partial",
-      "assessment": "plain dataを運ぶ設計を採るが、外部公開や機密性のためのprojectionは残す。",
+      "assessment": "plain dataを運ぶ設計を採り、購買の読み込みでは元の入力と取得済みfactを保持する試作も検証した。通常の業務値はopaqueでもsaveへ渡せるが、Applicationの所有状態やcaptureにはデータ契約がある。外部公開・機密性のためのprojectionを不要とはしない。",
       "evidence": [
         "docs/business.md",
-        "docs/business-change-study.md"
+        "docs/business-change-study.md",
+        "docs/procurement-load-composition.md",
+        "docs/opaque-decisions.md",
+        "docs/application-ownership.md"
       ],
       "remaining": [
         "同じ保証を持つ比較対象に対する一般的な記述量・生産性優位は証明していない。"
@@ -941,10 +947,12 @@
       "page": 87,
       "topic": "Result接続の負担とdo記法への希望",
       "status": "partial",
-      "assessment": "同期Result列はbusiness、I/OはProcessで接続し、andThen/asyncAndThenの手書きを減らす。",
+      "assessment": "同期Result列はbusiness、I/OはProcessで接続し、andThen/asyncAndThenの手書きを減らす。複数readの分岐も共通化できるが、取得キー・順番・NotFoundの扱い等の業務判断は残す。詳細loaderでは内部traceを接続する。",
       "evidence": [
         "docs/business.md",
-        "src/framework/process.ts"
+        "src/framework/process.ts",
+        "docs/procurement-load-composition.md",
+        "docs/detailed-load.md"
       ],
       "remaining": [
         "任意のHaskell do/F#計算式互換は提供しない。generic推論・複雑な分岐での診断と書き心地の検証は残る。"

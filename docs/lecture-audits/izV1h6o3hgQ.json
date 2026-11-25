@@ -288,14 +288,19 @@
       "endSeconds": 3139,
       "topic": "イベント接続をフレームワークへ委ねたい",
       "status": "partial",
-      "assessment": "既存宣言は接続・失敗伝播・実行状態を共通化。通常関数の配列と操作APIは非公開business試作で検証した段階。",
+      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。購買25操作と、通常／詳細loaderを使う4操作のメモリ・SQLite比較も追加した。公開済みnpm alpha.5への搭載や独立利用者のDX実証を意味しない。",
       "evidence": [
         "docs/business-api-study.md",
         "src/experiments/business.ts",
-        "src/framework/application.ts"
+        "src/framework/application.ts",
+        "docs/business.md",
+        "src/framework/business.ts",
+        "docs/procurement-approval-change.md",
+        "docs/procurement-load-composition.md",
+        "src/procurement-load-composition.test.ts"
       ],
       "remaining": [
-        "businessの利用者向けAPIと互換性を確定し、独立した利用で書き心地を検証する。"
+        "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
       ]
     },
     {
@@ -317,10 +322,14 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "宣言とwithInput・collect・collectEachで接続の一部を共通化。言語レベルのdo記法や任意のgeneric推論は提供しない。",
+      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readでも5か所のResult判定をローカルな接続へ移し、コールバック引数の型注釈なしで中間型を保持する。ただしattachは試作内のDTO用であり、言語レベルのdo記法や任意のgeneric推論は提供しない。",
       "evidence": [
         "docs/collection-validation.md",
-        "docs/declarative-transitions.md"
+        "docs/declarative-transitions.md",
+        "docs/procurement-load-composition.md",
+        "src/experiments/procurement/context-process.ts",
+        "src/procurement-load-composition.test.ts",
+        "docs/transition-inference-study.md"
       ],
       "remaining": [
         "genericヘルパーと未注釈evolveの同時推論には制限がある。"

@@ -181,7 +181,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "任意captureによりWorkflow/transitionの実行Rule前後、およびbusinessのload/Rule/save/receipt照会から選択した値をcloneして取得できる。過去のreplayで未実行の段階は捏造せず、観測失敗は業務結果から分離する。永続保存・保持方針・全アプリケーションの履歴の自動収集は未提供。",
+      "assessment": "任意captureによりWorkflow/transitionの実行Rule前後、およびbusinessのload/Rule/save/receipt照会から選択した値を取得できる。情報を失うコピーはCaptureFailedとして分離する。詳細形式のloadは内部段階のtraceも再実行なしで接続するが、その全値を自動観測するわけではない。過去のreplayで未実行の段階を捏造せず、永続保存・保持方針・全履歴の自動収集は未提供。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -189,7 +189,11 @@
         "src/workflow-observation.test.ts",
         "docs/workflow-observation.md",
         "src/business-observation.test.ts",
-        "src/framework/observation.ts"
+        "src/framework/observation.ts",
+        "docs/application-ownership.md",
+        "src/application-ownership.test.ts",
+        "docs/detailed-load.md",
+        "src/detailed-load.test.ts"
       ],
       "remaining": [
         "persistent-history-policy"

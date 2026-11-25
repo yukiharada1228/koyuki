@@ -331,7 +331,7 @@
       "page": 30,
       "topic": "plain dataと記述簡素化",
       "status": "partial",
-      "assessment": "公開項目の選別は維持し、型を広げず通常関数列へ簡素化する。",
+      "assessment": "公開項目の選別を維持し、通常関数列と操作ごとの型推論で簡素化する。generic saveの成功型や、無注釈callbackによる複数readのfact保持も追加検証した。型推論一般の解決とは扱わない。",
       "evidence": [
         "docs/business-api-study.md",
         "src/business-api-types.test.ts",
@@ -339,7 +339,11 @@
         "scripts/fixtures/branch-narrowing-types.ts",
         "docs/transition-inference-study.md",
         "scripts/fixtures/transition-inference-limit.ts",
-        "src/transition-inference.test.ts"
+        "src/transition-inference.test.ts",
+        "docs/business-save-inference.md",
+        "src/business-save-inference.test.ts",
+        "docs/procurement-load-composition.md",
+        "src/procurement-load-composition.test.ts"
       ],
       "remaining": [
         "defineTransitionでgenericヘルパー呼出しと未注釈evolveを同時に書く場合などの推論制限、および誤定義時の診断・独立利用者の学習負担の評価が残る。Workflow.branchのinline predicate入力型は推論可能になった。"
