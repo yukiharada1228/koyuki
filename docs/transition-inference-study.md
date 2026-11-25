@@ -79,3 +79,22 @@ TypeScript 7.0.2での観測結果:
 空tupleとの接続を壊す。これらの候補は採用していない。
 この結果からTypeScriptで解決不能とは判断しないが、単純なNoInferの移動や
 既定値の除去を解決策として再提案する根拠はない。
+
+### inline例だけが通る候補の落とし穴
+
+追加調査では、withInputの戻り値に通常の関数が持つ`readonly name: string`を
+交差させる候補はinline例を受理した。しかし、元から可能だった次の推論を壊した。
+
+```ts
+const preserve = withInput(<T>(value: T) => ok(value));
+const number = preserve(2);         // inputもvalueもnumber
+const text = preserve('approved'); // inputもvalueもstring
+```
+
+この候補ではnumber/string/objectの呼び出しごとの対応がunknownへ広がる。
+`src/transition-inference.test.ts`に3種類の厳密一致と実行結果の検査を追加した。
+候補調査スクリプトは、inline例の受理と既存契約の維持を別々に出力する。
+TS 7.0.2では`callable-name-member`はinline例の診断0、既存契約の診断3となる。
+したがって、これは互換性を保った改善ではなく、不採用とする。
+通常の関数・named Step向けのoverload追加も調査したが、今回のinline例の
+callbackがunknown/neverになる問題は解消しなかった。本体の宣言は変更していない。

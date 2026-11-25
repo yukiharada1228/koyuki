@@ -27,6 +27,10 @@ const candidates = [
   ['current', original],
   ['non-inferred-connection', original.replace(requirement, 'require?: T & NoInfer<ConnectedStages<StageOutput<A>, T>>;')],
   ['spread-tuple', original.replace(requirement, 'require?: readonly [...T] & NoInfer<ConnectedStages<StageOutput<A>, T>>;')],
+  // This accepts the inline probe, but must not sacrifice generic input/output correlation.
+  ['callable-name-member', original.replace(
+    'Rule<I, Readonly<{ input: I; value: O }>, E> {',
+    'Rule<I, Readonly<{ input: I; value: O }>, E> & { readonly name: string } {')],
   ['no-empty-default', original.replace('const T extends readonly AnyStage[] = readonly []', 'const T extends readonly AnyStage[]')],
   ['deferred-connection', original.replace(requirement, 'require?: T;').replace(
     '}): {\n  readonly validate: Step<StageInput<A>',
@@ -55,6 +59,7 @@ try {
     if (result.status !== 0 && diagnostics.length === 0) throw new Error(result.output || 'Compiler failed without diagnostics');
     const probeDiagnostics = diagnostics.filter(line => line.includes('inference-probe.ts('));
     results.push({ name, accepted: result.status === 0,
+      inlineProbeAccepted: probeDiagnostics.length === 0,
       probeDiagnosticCodes: [...new Set(probeDiagnostics.map(line => line.match(/error (TS\d+):/)[1]))],
       existingContractDiagnostics: diagnostics.length - probeDiagnostics.length });
   }

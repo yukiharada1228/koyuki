@@ -68,3 +68,17 @@ test('named generic requirements preserve multiple dependent inputs and every fa
   assert.deepEqual(flow.run(6), err('TooLarge'));
   assert.equal(evolutions, 1);
 });
+
+
+test('withInput preserves a generic domain function across distinct invocations', () => {
+  const preserve = withInput(<T>(value: T) => ok(value));
+  const number = preserve(2);
+  const text = preserve('approved');
+  const object = preserve({ amount: 3 });
+  type NumberResult = Assert<Equal<typeof number, Result<Readonly<{ input: number; value: number }>, never>>>;
+  type TextResult = Assert<Equal<typeof text, Result<Readonly<{ input: string; value: string }>, never>>>;
+  type ObjectResult = Assert<Equal<typeof object, Result<Readonly<{ input: { amount: number }; value: { amount: number } }>, never>>>;
+  assert.deepEqual(number, ok({ input: 2, value: 2 }));
+  assert.deepEqual(text, ok({ input: 'approved', value: 'approved' }));
+  assert.deepEqual(object, ok({ input: { amount: 3 }, value: { amount: 3 } }));
+});
