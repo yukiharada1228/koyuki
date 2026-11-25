@@ -41,3 +41,19 @@ const symbolOperation = Symbol('unsupported');
 business({ name: 'symbol', load: readState, save: saveState, operations: { [symbolOperation]: [checkState, allowState, finishState] } });
 // reject-next-line: numeric operation names also retain the stage-location diagnostic
 business({ name: 'numeric', load: readState, save: saveState, operations: { 0: [allowState, finishState] } });
+
+// Actual procurement model contracts, including private role proofs and the
+// original-context/decision pairs used by the compound stock pipeline.
+import { checkBuyerRequest, rejectCheckedRequest, type Loaded as PurchaseLoaded, type Request as PurchaseRequest, type ReasonInput as PurchaseReason, type Change as PurchaseChange, type Receipt as PurchaseReceipt } from './procurement/domain.js';
+import { receiveDecision } from './procurement/receipt-pipeline.js';
+import { includeChangedStock, type ReceiveStockContext } from './procurement/inventory.js';
+declare const readRequest: (id: string) => Promise<Result<PurchaseLoaded<PurchaseReason, PurchaseRequest>, never>>;
+const saveRequest = async (value: PurchaseChange<PurchaseRequest>) => ok(value.result);
+// reject-next-line: a buyer proof cannot authorize an approver operation
+business({ name: 'role', load: readRequest, save: saveRequest, operations: { wrongRole: [checkBuyerRequest, rejectCheckedRequest] } });
+// reject-next-line: an actual request update cannot omit the shared check
+business({ name: 'missing-request-proof', load: readRequest, save: saveRequest, operations: { omittedRequestProof: [rejectCheckedRequest] } });
+declare const readReceive: (id: string) => Promise<Result<ReceiveStockContext, never>>;
+const saveReceipt = async (value: PurchaseChange<PurchaseReceipt>) => ok(value.result);
+// reject-next-line: receiving an order cannot use the stock projector for changing an existing receipt
+business({ name: 'stock-projector', load: readReceive, save: saveReceipt, operations: { wrongStock: [receiveDecision, includeChangedStock] } });

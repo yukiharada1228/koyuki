@@ -183,6 +183,9 @@ try {
     'Koyuki: wrongSave[1] output must match save',
     'Koyuki: overridden[0] input must accept prior output',
     'Koyuki: 0[0] input must accept prior output',
+    'Koyuki: wrongRole[1] input must accept prior output',
+    'Koyuki: omittedRequestProof[0] input must accept prior output',
+    'Koyuki: wrongStock[1] input must accept prior output',
   ]) if (!diagnostics.includes(marker)) throw new Error(`Missing stage-location diagnostic: ${marker}\n${diagnostics}`);
   console.log(`Verified ${expected.length} invalid business definitions rejected by installed development declarations.`);
   if (process.argv.includes('--change')) {

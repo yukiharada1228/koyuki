@@ -108,6 +108,18 @@
       ],
       "scope": "Implementation contract correction: accidental same-realm native Promise capture returns remain rejected data but their rejections are handled without awaiting or reading arbitrary thenables. No new speech/audio/frame review or async capture requirement attributed to the lecture.",
       "record": "src/capture-rejection.test.ts"
+    },
+    "partialRequirementsFollowUp": {
+      "implementationBaseCommit": "aca25e5945a19fe3007a91361c68520c6b7fd3e7",
+      "sections": [
+        "w0o-13",
+        "w0o-17",
+        "w0o-23"
+      ],
+      "record": "docs/lecture-partial-reconciliation.md",
+      "scope": "Manual reread of the saved-caption windows for the nine partial topics and reconciliation with current implementation. Existing topic statuses are retained. Source checks do not prove semantic completeness. Real-model negative diagnostic fixtures are added by this follow-up.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -295,7 +307,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。Program単体も同じ観察入口で初期化・待機・更新・command・状態受理・完了を通知する。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や分散相関は未提供。",
+      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。Program単体も同じ観察入口で初期化・待機・更新・command・状態受理・完了を通知する。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や分散相関は未提供。 購買の共通検証と複合計画を分けた現在の32操作シナリオでは、明示した110境界の選択値と射影失敗を3方式・2adapterで比較する。予定された第一段のwritesは保存済み履歴と区別する。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -323,10 +335,13 @@
         "docs/lecture-local-asr.md",
         "docs/lecture-local-asr-pilot.json",
         "docs/lecture-local-asr-w0o-followup.md",
-        "docs/lecture-local-asr-w0o-followup.json"
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/procurement-receipt-pipeline.md",
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "persistent-history-policy"
+        "全値の永続履歴の保存先・公開項目・保持削除、opaque内部・分散相関は未提供。講演のdump可能性の説明を、既定で全値を永続収集する必須仕様へ読み替えない。"
       ]
     },
     {
@@ -384,10 +399,11 @@
       "evidence": [
         "docs/lecture-visual-w0o.json",
         "docs/lecture-local-asr-w0o-followup.md",
-        "docs/lecture-local-asr-w0o-followup.json"
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "continuous-omitted-slide-verification"
+        "説明を省略した全画面との連続照合や、画面内の全コードの動作確認は未完了。公開資料の説明例を全て業務runtimeへ組み込むこととは区別する。"
       ]
     },
     {
@@ -481,10 +497,11 @@
         "src/sum-model.test.ts",
         "docs/lecture-visual-w0o.json",
         "docs/lecture-local-asr-w0o-followup.md",
-        "docs/lecture-local-asr-w0o-followup.json"
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "omitted-slide-content-unverified"
+        "全画面との連続照合と、別記の直接音声確認が必要な区間は未確認。型の直和・直積の実装検査だけで、原発話や画面全体の確認完了とはしない。"
       ]
     },
     {

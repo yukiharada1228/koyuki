@@ -33,3 +33,11 @@ SQLiteの成功変更metadata監査も、この全値dumpと同じものでは�
 新しい業務DSLや自動永続履歴APIを追加していない。
 全講演の完全実現・一般的な性能優位・独立利用者の生産性向上は確認できておらず、
 [要件別判定](lecture-acceptance.md)は部分充足を維持する。
+
+
+## 後続の実モデルの分離による観測境界
+
+上の96記録は462dafaでの確認値。後続の[共通検証](procurement-shared-guards.md)と
+[入荷・在庫の複合計画](procurement-receipt-pipeline.md)の分離後は、同じ32操作で110記録を比較する。
+過去の測定値を現在の件数へ書き換えず、[部分充足の再点検](lecture-partial-reconciliation.md)で
+現在の実装と残件を再照合している。

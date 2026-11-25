@@ -130,6 +130,17 @@
       ],
       "scope": "Type-only investigation of a non-distributive conditional withInput return. Inline probe passes but nine diagnostics in four existing generic-correlation tests reject the candidate. No public API/runtime change or new audio/frame review.",
       "record": "docs/transition-inference-deferred-return.json"
+    },
+    "partialRequirementsFollowUp": {
+      "implementationBaseCommit": "aca25e5945a19fe3007a91361c68520c6b7fd3e7",
+      "sections": [
+        "qbf-12",
+        "qbf-19"
+      ],
+      "record": "docs/lecture-partial-reconciliation.md",
+      "scope": "Manual reread of the saved-caption windows for the nine partial topics and reconciliation with current implementation. Existing topic statuses are retained. Source checks do not prove semantic completeness. Real-model negative diagnostic fixtures are added by this follow-up.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -317,10 +328,11 @@
         "docs/validation-fields.md",
         "src/collect-fields.test.ts",
         "docs/lecture-local-asr-qbf-followup.md",
-        "docs/lecture-local-asr-qbf-followup.json"
+        "docs/lecture-local-asr-qbf-followup.json",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "language-level-result-syntax"
+        "固定フィールドのResult集約はcollectで具体化したが、TypeScript組込みResultや言語レベルの構文は提供しない。言語と同等の記述透明性や独立利用者のDX優位は未実証で、これを通常のlibrary実装不足と同一視しない。"
       ]
     },
     {
@@ -431,7 +443,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続とgeneric saveの成功型を検査する。動的に選ぶcommand/validateでは全候補が受け取れる入力を要求し、型を緩めた接続を避ける。宣言の参照保持に加え、接続ミスの操作名・段階位置・入力/保存出力の不一致を配布宣言で示すよう改善した。generic requireと未注釈evolveの推論制限、任意の複雑な型の診断品質、独立利用者のDXは未解決。",
+      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続とgeneric saveの成功型を検査する。動的に選ぶcommand/validateでは全候補が受け取れる入力を要求し、型を緩めた接続を避ける。宣言の参照保持に加え、接続ミスの操作名・段階位置・入力/保存出力の不一致を配布宣言で示すよう改善した。generic requireと未注釈evolveの推論制限、任意の複雑な型の診断品質、独立利用者のDXは未解決。 共通generic load・入力を保つ検証・privateな証明を追加する検証を、実関数の契約を確認して具体化する。購買の共通検証10操作と複合計画3操作へ適用した。実際の役割証明や在庫投影の取り違えも配布物の診断対象へ加えた。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -461,10 +473,19 @@
         "scripts/check-business-scale.mjs",
         "docs/transition-inference-compiler-comparison.json",
         "docs/lecture-local-asr-qbf-followup.md",
-        "docs/lecture-local-asr-qbf-followup.json"
+        "docs/lecture-local-asr-qbf-followup.json",
+        "docs/business-generic-load.md",
+        "src/business-generic-load.test.ts",
+        "docs/business-generic-checks.md",
+        "src/business-generic-check.test.ts",
+        "src/business-generic-proof.test.ts",
+        "src/transition-inline-step.test.ts",
+        "docs/procurement-shared-guards.md",
+        "docs/procurement-receipt-pipeline.md",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "generic-inference-and-diagnostics"
+        "名前なしinline要件と未注釈evolveの同時推論、任意の多相変換・あらゆるcallback注釈の省略は未解消。操作名と段階位置の診断を、任意の複雑な型の説明品質や利用者の修正容易性の実証とは扱わない。"
       ]
     },
     {

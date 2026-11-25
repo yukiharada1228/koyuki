@@ -141,6 +141,19 @@
       ],
       "scope": "Type-only investigation of a non-distributive conditional withInput return. Inline probe passes but nine diagnostics in four existing generic-correlation tests reject the candidate. No public API/runtime change or new audio/frame review.",
       "record": "docs/transition-inference-deferred-return.json"
+    },
+    "partialRequirementsFollowUp": {
+      "implementationBaseCommit": "aca25e5945a19fe3007a91361c68520c6b7fd3e7",
+      "sections": [
+        "iz-22",
+        "iz-24",
+        "iz-31",
+        "iz-36"
+      ],
+      "record": "docs/lecture-partial-reconciliation.md",
+      "scope": "Manual reread of the saved-caption windows for the nine partial topics and reconciliation with current implementation. Existing topic statuses are retained. Source checks do not prove semantic completeness. Real-model negative diagnostic fixtures are added by this follow-up.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -459,7 +472,7 @@
       "endSeconds": 3139,
       "topic": "イベント接続をフレームワークへ委ねたい",
       "status": "partial",
-      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。",
+      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。 購買10操作の共通検証と入荷3操作の複合計画を通常関数列へ移し、宣言した段階間の接続と失敗停止をruntimeへ委譲した。独立利用者の試用記録はないとの回答であり、実装例の成立とDX実証は区別する。",
       "evidence": [
         "docs/business-api-study.md",
         "src/experiments/business.ts",
@@ -487,7 +500,14 @@
         "docs/business-scale.md",
         "scripts/check-business-scale.mjs",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/business-generic-load.md",
+        "docs/business-generic-checks.md",
+        "src/business-generic-check.test.ts",
+        "src/business-generic-proof.test.ts",
+        "docs/procurement-shared-guards.md",
+        "docs/procurement-receipt-pipeline.md",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
@@ -514,7 +534,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。",
+      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。 共通generic検証の入力型とprivateな証明の保持、既存withInputによる複合計画の接続を追加した。入荷の3つのadapterには文脈の型注釈が残る。名前付きstepで通る限定例もあるが、名前なしinline要件と未注釈evolveの制限を解消したわけではない。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -528,10 +548,15 @@
         "src/procurement-framework-context.test.ts",
         "docs/transition-inference-compiler-comparison.json",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/business-generic-checks.md",
+        "docs/procurement-receipt-pipeline.md",
+        "src/experiments/procurement/receipt-pipeline.ts",
+        "src/transition-inline-step.test.ts",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "genericヘルパーと未注釈evolveの同時推論には制限がある。"
+        "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。"
       ]
     },
     {
@@ -635,7 +660,8 @@
         "docs/registration-events.md",
         "src/registration/delivery.ts",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
         "実メールprovider統合や常駐scheduler・heartbeat・dead letterはホスト側で未検証。at-least-once配送はexactly-onceを保証しない。"
@@ -705,15 +731,18 @@
       "endSeconds": 4480,
       "topic": "純粋なテストとResultを取り出す負担",
       "status": "partial",
-      "assessment": "純粋関数を直接テストでき、Result全体を比較する既存例もあるが、必要に応じた判定・取り出しの記述は残る。字幕再読では負担の指摘であり専用テストDSLの仕様指定とは扱わない。削減効果と独立利用者の評価は未実証。",
+      "assessment": "純粋関数を直接テストでき、Result全体を比較する既存例もあるが、必要に応じた判定・取り出しの記述は残る。字幕再読では負担の指摘であり専用テストDSLの仕様指定とは扱わない。削減効果と独立利用者の評価は未実証。 Result全体の比較と、成功判定による型の絞り込みを実際の購買検査でも使用する。専用DSLの不在を、それだけで講演指定の必須機能の欠落とは扱わない。",
       "evidence": [
         "src/collection-validation.test.ts",
         "docs/validation-fields.md",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/procurement-order-guard.test.ts",
+        "src/procurement-shared-guards.test.ts",
+        "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "専用のResultテストDSLは提供していない。必要性は実際のテスト記述で評価する。"
+        "必要に応じたResultの判定・取り出しは残る。専用テストDSLは講演で仕様指定されておらず、追加の必要性・削減効果を実際の利用者の課題で評価する。"
       ]
     },
     {
