@@ -35,6 +35,12 @@ export const result = (async () => {
   const transactionResult = transaction.run(() => ok(7));
   transaction.run(() => err('Denied'));
   if (!transactionResult.ok || transactionResult.value !== 7 || transactionCalls.join(',') !== 'begin,commit,begin,rollback') throw new Error('Portable transaction failed');
+  const rejectedObserverCalls = [], rejectedObserverEvents = [];
+  const observedTransaction = createSyncTransaction({ begin() { rejectedObserverCalls.push('begin'); }, commit() { rejectedObserverCalls.push('commit'); }, rollback() { rejectedObserverCalls.push('rollback'); } }, async event => { rejectedObserverEvents.push(event.kind); await Promise.resolve(); throw new Error('diagnostic rejection'); });
+  const originalSuccess = ok(9), originalFailure = err('Denied');
+  if (observedTransaction.run(() => originalSuccess) !== originalSuccess || observedTransaction.run(() => originalFailure) !== originalFailure) throw new Error('Portable observer changed Result identity');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  if (rejectedObserverCalls.join(',') !== 'begin,commit,begin,rollback' || rejectedObserverEvents.join(',') !== 'started,committed,started,rolled-back') throw new Error('Portable rejected transaction observer failed');
   const deniedTransaction = err('Denied');
   const asyncOutcome = await inTransaction({ transaction: async work => work({ id: 1 }) }, () => deniedTransaction);
   if (asyncOutcome !== deniedTransaction) throw new Error('Portable callback transaction failed');

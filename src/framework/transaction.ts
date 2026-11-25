@@ -24,7 +24,14 @@ export function createSyncTransaction<C = undefined>(driver: SyncTransactionDriv
   // Keep the receiver of host methods and prevent their replacement during a transaction.
   const begin = driver.begin.bind(driver), commit = driver.commit.bind(driver), rollback = driver.rollback.bind(driver);
   let active = false, unusable = false;
-  const emit = (event: TransactionEvent) => { try { observe?.(Object.freeze(event)); } catch { /* diagnostic only */ } };
+  const emit = (event: TransactionEvent) => {
+    try {
+      const pending: unknown = observe?.(Object.freeze(event));
+      // Notifications begin synchronously, but void callbacks can return promises.
+      // Consume rejection without waiting or changing the transaction result.
+      if (pending !== undefined) void Promise.resolve(pending).catch(() => {});
+    } catch { /* diagnostic only */ }
+  };
   return {
     run<R extends Result<unknown, unknown>>(work: () => R, context?: C): R {
       if (unusable) throw new TransactionFailure('unusable', 'unknown');

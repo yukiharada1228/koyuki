@@ -94,3 +94,25 @@ test('real SQLite rolls back writes on Result failure and deferred commit failur
     assert.equal(db.prepare('SELECT count(*) n FROM child').get()?.n, 0);
   } finally { db.close(); }
 });
+
+test('rejected observer promises cannot escape or change real committed and rolled-back results', async () => {
+  const { DatabaseSync } = await import('node:sqlite');
+  const db = new DatabaseSync(':memory:'), events: TransactionEvent[] = [], calls: string[] = [];
+  try {
+    db.exec('CREATE TABLE observed(id INTEGER PRIMARY KEY)');
+    const tx = createSyncTransaction({
+      begin: () => { calls.push('begin'); db.exec('BEGIN'); },
+      commit: () => { calls.push('commit'); db.exec('COMMIT'); },
+      rollback: () => { calls.push('rollback'); db.exec('ROLLBACK'); },
+    }, async event => { events.push(event); await Promise.resolve(); throw Error('observer rejected'); });
+    const saved = ok({ id: 1 }), denied = err('Denied' as const);
+    assert.equal(tx.run(() => { db.exec('INSERT INTO observed VALUES(1)'); return saved; }), saved);
+    assert.equal(tx.run(() => { db.exec('INSERT INTO observed VALUES(2)'); return denied; }), denied);
+    // Give unhandled rejections a full event-loop turn to reach the test runner.
+    await new Promise<void>(resolve => setImmediate(resolve));
+    assert.deepEqual(db.prepare('SELECT id FROM observed').all().map(row => row.id), [1]);
+    assert.deepEqual(calls, ['begin', 'commit', 'begin', 'rollback']);
+    assert.deepEqual(events.map(event => event.kind), ['started', 'committed', 'started', 'rolled-back']);
+    assert(events.every(Object.isFrozen));
+  } finally { db.close(); }
+});

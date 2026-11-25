@@ -43,21 +43,28 @@ function save(change: Change): Result<State, SaveError> {
 
 ## 接続の所有と観察
 
-同期callback専用。Promiseを返すworkやdriver hookは型検査で拒否する。
+work・driver hookは同期callback専用。Promiseを返すworkやdriver hookは型検査で拒否する。
 既存の名前付きdriver methodを渡す場合、hookの戻り値型を`undefined`と明記する。
 `void`ではTypeScriptがasync関数も代入可能にするため、意図的に受け付けない。
 型を偽装して非同期処理を開始した場合、その後の処理を停止・rollbackできるとは保証しない。
 
-同じ境界へのネスト・観察callbackからの再入はbusyで拒否する。savepointは提供しない。
+同じ境界へのネスト・transaction実行中の観察callbackからの再入はbusyで拒否する。savepointは提供しない。
 driverは接続を専有させ、別の境界や生SQLのBEGINで迂回しないこと。
 この規則は同じインスタンス内の保護であり、DBをまたぐロックではない。
 別接続・別プロセスの競合はDBのロックと既存CAS検査で解決する。
 
 第2引数のobserveは、値を含まないstarted/committed/rolled-back/failedイベントを受け取る。
-観察側のthrowは無視し、IOの回数やResultを変えない。
+観察側のthrowと、返されたPromiseのrejectは診断の失敗として処理し、IOの回数やResultを変えない。
 rolled-backはrollback呼出しが正常に完了した記録であり、commit失敗後の確定有無の証明ではない。
 認証情報、入力、成功値、例外causeは観察イベントへ含めない。
-observeは同期通知であり、永続監査や非同期subscriber管理ではない。
+通知は同期に開始し、返されたPromiseの完了は待たない。transactionの同期性は変わらない。
+callbackの非同期部分をtransaction内へ延長したり、そこで行うIOをrollbackの範囲へ加えたりはしない。
+永続監査や非同期subscriberの寿命管理は別のhost契約となる。
+
+以前はasyncな観察callbackのrejectが未処理となる場合があった。
+[SQLiteを使う回帰検査](../src/transaction.test.ts)では、開始・commit・rollbackの通知をrejectさせても、
+元の成功/失敗Resultのidentityと、commit済みの1行・rollbackした未保存行の状態を保つことを確認する。
+同期例外や再入busyの既存契約も維持する。
 
 アダプター固有の開始設定はrunの第2引数で渡せる。タグではDEFERRED/IMMEDIATEを使う。
 この値はdriverへ渡すだけで、coreがSQLや分離レベルを解釈しない。
