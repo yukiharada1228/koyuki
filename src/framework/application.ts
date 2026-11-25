@@ -2,6 +2,7 @@ import { bindDetailedFunction, invokeDetailed } from './instrumentation.js';
 import { registerStructure, structureOf } from './structure.js';
 import { executionSession, type OperationReport, type ExecutionContext, type ExecutionOptions, type CheckedDetails } from './execution.js';
 import { snapshotData } from './snapshot.js';
+import { operationEntries, type OperationName } from './operation-table.js';
 import { defineProgram, next, effect } from './program.js';
 import { ok, err, type Result } from './result.js';
 export interface Operation<S, I, O, E> {
@@ -24,7 +25,7 @@ export function operations<S, const T extends Record<string, {
 }>>(commands: T & NoInfer<CheckedDetails<T>>, reduce: (state: S, output: CommandOutput<T[keyof T]>) => S): {
   [K in keyof T]: Operation<S, CommandInput<T[K]>, CommandOutput<T[K]>, CommandError<T[K]>>
 } {
-  const entries = Object.entries(commands).map(([key, command]) => [key,
+  const entries = operationEntries(commands).map(([key, command]) => [key,
     operation(command, reduce as (state: S, output: unknown) => S),
   ]);
   return Object.fromEntries(entries) as {
@@ -34,8 +35,9 @@ export function operations<S, const T extends Record<string, {
 type AnyOperation<S> = { run(input: never): Promise<Result<unknown, unknown>>; runDetailed?(input: never): Promise<OperationReport<unknown, unknown>>; reduce(state: S, output: never): S };
 type Input<T> = CommandInput<T>;
 type ErrorOf<T> = T extends { run(input: never): Promise<Result<unknown, infer E>> } ? E : never;
-type Key<T> = Extract<keyof T, string>;
-export type ApplicationEvent<T> = { [K in Key<T>]: { readonly type: K; readonly input: Input<T[K]> } }[Key<T>] | { readonly type: 'dismiss' };
+type Index<T> = Extract<keyof T, string | number>;
+type Key<T> = OperationName<Index<T>>;
+export type ApplicationEvent<T> = { [K in Index<T>]: { readonly type: OperationName<K>; readonly input: Input<T[K]> } }[Index<T>] | { readonly type: 'dismiss' };
 export interface UnexpectedException { readonly kind: 'UnexpectedException'; readonly message: string }
 function unexpectedException(cause: unknown): UnexpectedException {
   try {
@@ -46,7 +48,7 @@ export type ApplicationState<S, T> =
   | { readonly kind: 'ready'; readonly data: S }
   | { readonly kind: 'running'; readonly data: S; readonly operation: Key<T> }
   | { readonly kind: 'crashed'; readonly data: S; readonly operation: Key<T>; readonly error: UnexpectedException }
-  | { [K in Key<T>]: { readonly kind: 'failed'; readonly data: S; readonly operation: K; readonly error: ErrorOf<T[K]> } }[Key<T>];
+  | { [K in Index<T>]: { readonly kind: 'failed'; readonly data: S; readonly operation: OperationName<K>; readonly error: ErrorOf<T[K]> } }[Index<T>];
 /** Standard operation lifecycle belongs to the framework, not each business application. */
 export function defineApplication<S, const T extends Record<string, AnyOperation<S>>, V>(definition: {
   initial: () => S; operations: T & NoInfer<CheckedDetails<T>>; view: (state: ApplicationState<S, T>) => V;
@@ -56,8 +58,9 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
   type Crash = { type: '@crash'; operation: Key<T>; error: UnexpectedException };
   type Completion = { type: '@complete'; operation: Key<T>; result: Result<unknown, unknown>; executionId?: number };
   type InternalEvent = { type: '@execute'; operation: Key<T>; input: unknown; executionId?: number } | Completion | Crash | { type: 'dismiss' };
-  for (const key of Object.keys(definition.operations)) if (key === 'dismiss' || key.startsWith('@')) throw new Error('ReservedOperationName');
-  const operations = { ...definition.operations }, view = definition.view;
+  const entries = operationEntries(definition.operations);
+  for (const [key] of entries) if (key === 'dismiss' || key.startsWith('@')) throw new Error('ReservedOperationName');
+  const operations = Object.fromEntries(entries) as Record<string, AnyOperation<S>>, view = definition.view;
   const createProgram = (contexts?: Map<number, ExecutionContext>) => defineProgram({
     init: () => next<State, InternalEvent>({ kind: 'ready', data: definition.initial() }),
     update(state: State, event: InternalEvent) {

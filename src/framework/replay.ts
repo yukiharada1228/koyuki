@@ -8,6 +8,7 @@ import { err, ok, type Result } from './result.js';
 import type { ActionReport } from './action.js';
 import type { Trace } from './workflow.js';
 import { operation, type Operation } from './application.js';
+import { operationEntries } from './operation-table.js';
 
 /** The adapter must distinguish a new atomic commit from a concurrent winner's receipt. */
 export type Execution<O> =
@@ -106,7 +107,7 @@ export function replayOperations<S, const T extends Record<string, {
   [K in keyof T]: Operation<S, ReplayInput<T[K]>, Execution<ReplayOutput<T[K]>>, ReplayError<T[K]>>
 } {
   // Each key retains its own command. Only the shared projection rule is widened here.
-  const entries = Object.entries(commands).map(([key, command]) => [key,
+  const entries = operationEntries(commands).map(([key, command]) => [key,
     replayOperation(command, reduce as (state: S, output: unknown) => S),
   ]);
   return Object.fromEntries(entries) as {
