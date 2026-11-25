@@ -1,0 +1,517 @@
+{
+  "videoId": "izV1h6o3hgQ",
+  "title": "TypeScriptによるGraphQLバックエンド開発 ─ TypeScriptの型システムとデータフローに着目した宣言的プログラミング",
+  "url": "https://www.youtube.com/watch?v=izV1h6o3hgQ",
+  "source": {
+    "file": "izV1h6o3hgQ.ja-orig.txt",
+    "sha256": "4a561e69273852d0acae5fb5be0a8488ba6adbd5f4b5cd35aa3ac31fe24a5ba4",
+    "lineCount": 2258,
+    "durationSeconds": 4890
+  },
+  "review": {
+    "basis": "Saved Japanese automatic captions, manually reread in full",
+    "audioDirectlyReviewed": false,
+    "allFramesReviewed": false,
+    "implementationBaseCommit": "505e0c1",
+    "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation."
+  },
+  "sections": [
+    {
+      "id": "iz-01",
+      "startSeconds": 0,
+      "endSeconds": 75,
+      "topic": "導入と自己紹介",
+      "status": "context",
+      "assessment": "登壇時の背景と個人の経験。現在の役職や製品状況を述べる根拠にはしない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "id": "iz-02",
+      "startSeconds": 75,
+      "endSeconds": 124,
+      "topic": "実装パラダイムを選び直す背景",
+      "status": "design-choice",
+      "assessment": "クラス中心の実装から別の表現を試す動機。すべてのクラスを禁止する要件ではない。",
+      "evidence": [
+        "docs/business-api-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-03",
+      "startSeconds": 124,
+      "endSeconds": 306,
+      "topic": "フロントとバックの思考の差",
+      "status": "experience",
+      "assessment": "Reactの小さな関数とバックエンドの実装負担という問題提起。Koyukiでの認知負荷改善は未測定。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-04",
+      "startSeconds": 306,
+      "endSeconds": 499,
+      "topic": "CQRSとGraphQLの取得形状",
+      "status": "design-choice",
+      "assessment": "参照の取得形状と更新時の集約・不変条件を分ける。DBやサービスの物理分離を要求しない。",
+      "evidence": [
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-05",
+      "startSeconds": 499,
+      "endSeconds": 639,
+      "topic": "Prismaと参照・更新の役割",
+      "status": "supported",
+      "assessment": "当該業務で参照が単純という条件付きの説明。Queryの認可や必要な業務計算を省略しない。Prisma採用は必須ではない。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-06",
+      "startSeconds": 639,
+      "endSeconds": 693,
+      "topic": "宣言的な開発への問題意識",
+      "status": "design-choice",
+      "assessment": "外部記事の紹介と方向性。紹介先の全仕様をそのまま実装する要件にはしない。",
+      "evidence": [
+        "docs/framework-goal.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-07",
+      "startSeconds": 693,
+      "endSeconds": 1044,
+      "topic": "Elm・Reduxのモデルと実行ループ",
+      "status": "supported",
+      "assessment": "Programのupdateとcommand、Applicationの状態・view・dispatchに対応。DOM描画や永続的な実行基盤まで含まない。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/framework/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-08",
+      "startSeconds": 1044,
+      "endSeconds": 1101,
+      "topic": "バックエンドのイベントと状態",
+      "status": "design-choice",
+      "assessment": "クリックに限らず業務上の出来事からモデルの変化を考える。イベント名の自動発見ではない。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-09",
+      "startSeconds": 1101,
+      "endSeconds": 1240,
+      "topic": "永続化前から始まる予約のモデル",
+      "status": "supported",
+      "assessment": "DBに行ができる前の未検証・検証済み・作成後を別の状態として扱う。予約アプリ全体を再現する要件ではない。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-10",
+      "startSeconds": 1240,
+      "endSeconds": 1423,
+      "topic": "IO・純粋計算・IOと既存アーキテクチャ",
+      "status": "supported",
+      "assessment": "入力から状態遷移、保存への境界を保つ。関数型とRepository・集約の併用が可能。",
+      "evidence": [
+        "src/framework/command.ts",
+        "src/framework/use-case.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-11",
+      "startSeconds": 1423,
+      "endSeconds": 1470,
+      "topic": "型とResult・例外の扱い",
+      "status": "supported",
+      "assessment": "想定失敗はResultに表す。注釈がthrowを禁止するわけではなく、予期しない欠陥と業務失敗は区別する。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/framework/application.ts",
+        "docs/result-boundaries.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-12",
+      "startSeconds": 1470,
+      "endSeconds": 1616,
+      "topic": "タグの未検証・検証済み・作成後",
+      "status": "supported",
+      "assessment": "後で決まる値を一律optionalにせず、状態ごとの必要な値を表す。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/registration/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-13",
+      "startSeconds": 1616,
+      "endSeconds": 1829,
+      "topic": "直和・直積と不可能な組み合わせ",
+      "status": "supported",
+      "assessment": "状態別Unionとprivate brandで接続を制約する。any・assertion・未検証JSONまで排除できるわけではない。",
+      "evidence": [
+        "src/business-api-types.test.ts",
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-14",
+      "startSeconds": 1829,
+      "endSeconds": 1950,
+      "topic": "状態遷移の入出力を型へ表す",
+      "status": "supported",
+      "assessment": "普通の関数が変更前後の型を結び、宣言から実行へ接続する。型整合性は業務仕様の正しさそのものではない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/experiments/business.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-15",
+      "startSeconds": 1950,
+      "endSeconds": 2132,
+      "topic": "失敗を含む計算をResultで合成",
+      "status": "supported",
+      "assessment": "最初の失敗で後続を止め、成功値と失敗型を保持する。neverthrow依存は採用せずコアのResultで実現。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-16",
+      "startSeconds": 2132,
+      "endSeconds": 2341,
+      "topic": "入力・ワークフロー・保存の一本道",
+      "status": "supported",
+      "assessment": "loadと純粋な計算とsaveを共通エンジンへ束縛。認知負荷の低下という評価は別途実測が必要。",
+      "evidence": [
+        "src/framework/command.ts",
+        "src/framework/group-runtime.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-17",
+      "startSeconds": 2341,
+      "endSeconds": 2431,
+      "topic": "Repositoryと非同期境界",
+      "status": "supported",
+      "assessment": "集約の保存とPromiseのResult変換を外側へ置く。Repository不要という書籍の意見を必須ルールへ置き換えない。",
+      "evidence": [
+        "docs/result-boundaries.md",
+        "src/framework/result.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-18",
+      "startSeconds": 2431,
+      "endSeconds": 2544,
+      "topic": "ドメインの近くへロジックを集める",
+      "status": "supported",
+      "assessment": "状態と関連する業務関数をモジュールへ置き、ワークフローを手順の合成へ限定する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/experiments/expense-business.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-19",
+      "startSeconds": 2544,
+      "endSeconds": 2817,
+      "topic": "取得済みモデルと入力をCommandにまとめる",
+      "status": "supported",
+      "assessment": "更新では取得済みモデルと入力をまとめ、検証前後のCommandを普通の関数で接続する。非公開の複雑な実製品コードの全詳細は検証対象にできない。",
+      "evidence": [
+        "src/experiments/expense-business.ts",
+        "src/business-api-migration.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-20",
+      "startSeconds": 2817,
+      "endSeconds": 3008,
+      "topic": "途中I/Oと部分適用による注入",
+      "status": "supported",
+      "assessment": "依存関数を外で束縛してDB型の漏出を抑える。引数からDB型が消えても実際のI/Oが純粋になるわけではない。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/registration/delivery.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-21",
+      "startSeconds": 3008,
+      "endSeconds": 3043,
+      "topic": "I/Oで分断されるワークフローの提案",
+      "status": "supported",
+      "assessment": "講演時には未実施の案として扱う。Processのeffectとthroughで純粋な区間とI/Oを接続する。",
+      "evidence": [
+        "docs/process.md",
+        "src/framework/process.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-22",
+      "startSeconds": 3043,
+      "endSeconds": 3139,
+      "topic": "イベント接続をフレームワークへ委ねたい",
+      "status": "partial",
+      "assessment": "既存宣言は接続・失敗伝播・実行状態を共通化。通常関数の配列と操作APIは非公開business試作で検証した段階。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "src/experiments/business.ts",
+        "src/framework/application.ts"
+      ],
+      "remaining": [
+        "businessの利用者向けAPIと互換性を確定し、独立した利用で書き心地を検証する。"
+      ]
+    },
+    {
+      "id": "iz-23",
+      "startSeconds": 3139,
+      "endSeconds": 3250,
+      "topic": "既存の設計とplain dataの利点",
+      "status": "experience",
+      "assessment": "構成要素は既存のまま、内部表現を変えるという評価。DTO削減は公開項目の選別や秘密情報の除外を不要にしない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-24",
+      "startSeconds": 3250,
+      "endSeconds": 3292,
+      "topic": "入れ子やandThen/mapの負担",
+      "status": "partial",
+      "assessment": "宣言とwithInput・collect・collectEachで接続の一部を共通化。言語レベルのdo記法や任意のgeneric推論は提供しない。",
+      "evidence": [
+        "docs/collection-validation.md",
+        "docs/declarative-transitions.md"
+      ],
+      "remaining": [
+        "genericヘルパーと未注釈evolveの同時推論には制限がある。"
+      ]
+    },
+    {
+      "id": "iz-25",
+      "startSeconds": 3292,
+      "endSeconds": 3360,
+      "topic": "まとめと今後の可能性",
+      "status": "design-choice",
+      "assessment": "宣言的な開発を試した結果と将来像。講演自体も未完成の構想を含み、普及を保証していない。",
+      "evidence": [
+        "docs/framework-goal.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-26",
+      "startSeconds": 3360,
+      "endSeconds": 3414,
+      "topic": "質疑の導入",
+      "status": "context",
+      "assessment": "司会の自己紹介と質問の開始。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "id": "iz-27",
+      "startSeconds": 3414,
+      "endSeconds": 3547,
+      "topic": "トランザクションと共有contextの提案",
+      "status": "supported",
+      "assessment": "講演時点で未実施の案。PrismaとSQLiteの実例で同じcontextに束縛しResult失敗・保存失敗・commit失敗を検証。任意のDB・driverへの保証ではない。",
+      "evidence": [
+        "examples/prisma-stock/transaction.ts",
+        "examples/prisma-stock/stock.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-28",
+      "startSeconds": 3547,
+      "endSeconds": 3667,
+      "topic": "必要な範囲の関数型を採用する",
+      "status": "design-choice",
+      "assessment": "宣言が目的で、関数型の道具一式の導入は目的ではない。通常TypeScriptと小さな実行境界を維持する。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "src/framework/result.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-29",
+      "startSeconds": 3667,
+      "endSeconds": 3782,
+      "topic": "TypeScriptとエコシステムを選ぶ理由",
+      "status": "experience",
+      "assessment": "フロントと同じ言語、当時のPrismaなどの利点。Pythonで実装不可能という主張や現在の言語ランキングにはしない。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-30",
+      "startSeconds": 3782,
+      "endSeconds": 3879,
+      "topic": "RESTとGraphQLの役割",
+      "status": "supported",
+      "assessment": "transport非依存の業務操作を両方から呼び出す例がある。RESTでクライアントキャッシュが不可能という一般論にはしない。",
+      "evidence": [
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-31",
+      "startSeconds": 3879,
+      "endSeconds": 3988,
+      "topic": "登録・メール・人の確認の連携",
+      "status": "partial",
+      "assessment": "講演では未経験の提案。登録とoutboxの原子保存・配送lease・確認の別操作を実装し別プロセスで検証。",
+      "evidence": [
+        "docs/registration-events.md",
+        "src/registration/delivery.ts"
+      ],
+      "remaining": [
+        "実メールprovider統合や常駐scheduler・heartbeat・dead letterはホスト側で未検証。at-least-once配送はexactly-onceを保証しない。"
+      ]
+    },
+    {
+      "id": "iz-32",
+      "startSeconds": 3988,
+      "endSeconds": 4053,
+      "topic": "チームへの導入経験",
+      "status": "experience",
+      "assessment": "小さなチームの経験と型の助言。新入社員100人や別組織での習得を確認した結果ではない。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-33",
+      "startSeconds": 4053,
+      "endSeconds": 4217,
+      "topic": "Resultは結果表現だけでなく計算の合成",
+      "status": "supported",
+      "assessment": "成功時のみ次へ進む共通実行で、各関数のnullチェックや失敗伝播を繰り返さない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/framework/group-runtime.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-34",
+      "startSeconds": 4217,
+      "endSeconds": 4372,
+      "topic": "Event Stormingとドメイン知識",
+      "status": "design-choice",
+      "assessment": "モデルの発見は専門知識と対話の責務。講演でもチーム全体での理想的な実施は未達とされ、自動モデリングを実装要件にしない。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-35",
+      "startSeconds": 4372,
+      "endSeconds": 4433,
+      "topic": "独立検証の複数エラー収集",
+      "status": "supported",
+      "assessment": "固定フィールドはcollect、可変長の独立同期検証はcollectEach。順次依存する処理の失敗停止とは区別。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/collection-validation.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-36",
+      "startSeconds": 4433,
+      "endSeconds": 4480,
+      "topic": "純粋なテストとResultを取り出す負担",
+      "status": "partial",
+      "assessment": "純粋関数を直接テストできるが、結果の判定・取り出しの記述は残る。",
+      "evidence": [
+        "src/collection-validation.test.ts"
+      ],
+      "remaining": [
+        "専用のResultテストDSLは提供していない。必要性は実際のテスト記述で評価する。"
+      ]
+    },
+    {
+      "id": "iz-37",
+      "startSeconds": 4480,
+      "endSeconds": 4673,
+      "topic": "書き心地の差と普及の見通し",
+      "status": "experience",
+      "assessment": "概念が近くなっても実装上の差は残るという回答。将来普及やチームの受容性をコードで保証しない。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-38",
+      "startSeconds": 4673,
+      "endSeconds": 4779,
+      "topic": "共有する型と共有しないドメイン",
+      "status": "design-choice",
+      "assessment": "汎用のID型などの共有と、バックエンドのドメイン・公開API境界を区別。ブラウザへドメインを自動公開しない。",
+      "evidence": [
+        "src/framework/identity.ts",
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "iz-39",
+      "startSeconds": 4779,
+      "endSeconds": 4890,
+      "topic": "終了と案内",
+      "status": "context",
+      "assessment": "登壇時の採用案内と挨拶。現在の募集状況やライブラリ機能に読み替えない。",
+      "evidence": [],
+      "remaining": []
+    }
+  ]
+}
