@@ -80,6 +80,7 @@ try {
   writeFileSync(join(consumer, 'application-ownership.test.ts'), readFileSync(join(root, 'src/application-ownership.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'application-receiver.test.ts'), readFileSync(join(root, 'src/application-receiver.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'combine.test.ts'), readFileSync(join(root, 'src/combine.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'collect-fields.test.ts'), readFileSync(join(root, 'src/collect-fields.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-inference.test.ts'), readFileSync(join(root, 'src/transition-inference.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replace("'./examples/order-lines.js'", "'./order-lines.js'"));
   writeFileSync(join(consumer, 'order-lines.ts'), readFileSync(join(root, 'src/examples/order-lines.ts'), 'utf8').replace("'../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'customer-import-sqlite.test.ts'), readFileSync(join(root, 'src/customer-import-sqlite.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));

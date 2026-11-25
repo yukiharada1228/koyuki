@@ -54,6 +54,14 @@
       "sections": [
         "iz-22"
       ]
+    },
+    "resultBurdenFollowUp": {
+      "implementationBaseCommit": "fe64125a0d4c308c575522cfa48d838242a2be97",
+      "sections": [
+        "iz-36"
+      ],
+      "scope": "Targeted saved-caption reread and implementation follow-up. Result syntax and testing burden are distinguished from a mandatory testing DSL. No new audio or full-frame review.",
+      "record": "docs/validation-fields.md"
     }
   },
   "sections": [
@@ -542,9 +550,10 @@
       "endSeconds": 4480,
       "topic": "純粋なテストとResultを取り出す負担",
       "status": "partial",
-      "assessment": "純粋関数を直接テストできるが、結果の判定・取り出しの記述は残る。",
+      "assessment": "純粋関数を直接テストでき、Result全体を比較する既存例もあるが、必要に応じた判定・取り出しの記述は残る。字幕再読では負担の指摘であり専用テストDSLの仕様指定とは扱わない。削減効果と独立利用者の評価は未実証。",
       "evidence": [
-        "src/collection-validation.test.ts"
+        "src/collection-validation.test.ts",
+        "docs/validation-fields.md"
       ],
       "remaining": [
         "専用のResultテストDSLは提供していない。必要性は実際のテスト記述で評価する。"

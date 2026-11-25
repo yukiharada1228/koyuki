@@ -1,7 +1,9 @@
 import { ok, err, type Result } from './result.js';
 import type { Rule } from './workflow.js';
+import { isPlainRecord } from './snapshot.js';
 type Value<R> = R extends { ok: true; value: infer A } ? A : never;
 type Failure<R> = R extends { ok: false; error: infer E } ? E : never;
+type FieldName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
 /** Combine already-evaluated results positionally; return the first failure unchanged.
  * This stops inspecting later results, not the computations that produced them.
  */
@@ -20,18 +22,28 @@ export function combine<const T extends readonly Result<unknown, unknown>[]>(res
 /** Combine independent, already-evaluated validations. Never short-circuits. */
 export function collect<const T extends Record<string, Result<unknown, unknown>>>(fields: T): Result<
   { readonly [K in keyof T]: Value<T[K]> },
-  readonly { readonly [K in keyof T]: { readonly field: K; readonly error: Failure<T[K]> } }[keyof T][]
+  readonly { readonly [K in keyof T]: { readonly field: FieldName<K>; readonly error: Failure<T[K]> } }[keyof T][]
 > {
+  if (!isPlainRecord(fields)) throw new TypeError('CollectRequiresPlainRecord');
+  const descriptors = Object.getOwnPropertyDescriptors(fields);
+  const entries: [string, Result<unknown, unknown>][] = [];
+  // Validate the whole table before inspecting Results. Never omit typed fields
+  // or evaluate a getter while collecting independent validation outcomes.
+  for (const key of Reflect.ownKeys(descriptors)) {
+    const descriptor = Object.getOwnPropertyDescriptor(descriptors, key)!.value as PropertyDescriptor;
+    if (typeof key !== 'string' || !Object.hasOwn(descriptor, 'value')) throw new TypeError('CollectRequiresStringDataKeys');
+    entries.push([key, descriptor.value]);
+  }
   const values: Record<string, unknown> = {};
   const failures: { field: string; error: unknown }[] = [];
-  for (const [field, result] of Object.entries(fields)) {
+  for (const [field, result] of entries) {
     if (result.ok) Object.defineProperty(values, field, { value: result.value, enumerable: true });
     else failures.push(Object.freeze({ field, error: result.error }));
   }
-  // Object.entries loses the relationship between each key and its Result type.
+  // Descriptor iteration loses the relationship between each key and its Result type.
   return (failures.length ? err(Object.freeze(failures)) : ok(Object.freeze(values))) as Result<
     { readonly [K in keyof T]: Value<T[K]> },
-    readonly { readonly [K in keyof T]: { readonly field: K; readonly error: Failure<T[K]> } }[keyof T][]
+    readonly { readonly [K in keyof T]: { readonly field: FieldName<K>; readonly error: Failure<T[K]> } }[keyof T][]
   >;
 }
 

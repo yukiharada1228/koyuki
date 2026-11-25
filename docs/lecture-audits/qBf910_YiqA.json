@@ -61,6 +61,14 @@
       "sections": [
         "qbf-19"
       ]
+    },
+    "resultBurdenFollowUp": {
+      "implementationBaseCommit": "fe64125a0d4c308c575522cfa48d838242a2be97",
+      "sections": [
+        "qbf-12"
+      ],
+      "scope": "Targeted saved-caption reread and implementation follow-up. Result syntax and testing burden are distinguished from a mandatory testing DSL. No new audio or full-frame review.",
+      "record": "docs/validation-fields.md"
     }
   },
   "sections": [
@@ -218,10 +226,12 @@
       "endSeconds": 1681,
       "topic": "独立したフィールドのResultをまとめる負担",
       "status": "partial",
-      "assessment": "collectは固定フィールドの検証結果と全エラーの収集を扱える。Resultが言語から透過的に消えるわけではない。",
+      "assessment": "collectは固定フィールドの検証結果と全エラーの収集を扱える。非列挙フィールドの欠落を修正し、数値名は実行と同じ文字列のエラー名として型を保持する。Symbol・accessor・custom prototypeのテーブルは構築時に拒否する。Resultが言語から透過的に消えるわけではない。",
       "evidence": [
         "src/framework/validation.ts",
-        "src/shipping.test.ts"
+        "src/shipping.test.ts",
+        "docs/validation-fields.md",
+        "src/collect-fields.test.ts"
       ],
       "remaining": [
         "language-level-result-syntax"
