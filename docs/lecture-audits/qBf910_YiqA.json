@@ -12,8 +12,9 @@
     "basis": "Saved Japanese automatic captions, manually reread in full",
     "audioDirectlyReviewed": false,
     "allFramesReviewed": false,
-    "implementationCommit": "8f6416c",
-    "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation."
+    "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation.",
+    "implementationBaseCommit": "dc96dc0",
+    "implementationChanges": "The collectEach implementation and its tests accompany this audit update in Git."
   },
   "sections": [
     {
@@ -198,14 +199,16 @@
       "startSeconds": 1749,
       "endSeconds": 1776,
       "topic": "ループ内で生じるResult列",
-      "status": "gap",
-      "assessment": "collectはRecord専用。可変長の要素列を業務関数へ渡してResult列をまとめる専用combinatorは未提供。",
+      "status": "partial",
+      "assessment": "collectEachで同期の独立した要素検証を元の位置付きで集約し、明細の失敗で集計・保存が止まることを検証。要素間に依存する処理やI/Oを含む任意のループまで自動合成したわけではない。",
       "evidence": [
         "src/framework/validation.ts",
-        "src/framework/index.ts"
+        "src/collection-validation.test.ts",
+        "src/examples/order-lines.ts",
+        "docs/collection-validation.md"
       ],
       "remaining": [
-        "result-collection-composition"
+        "dependent-or-effectful-result-collections"
       ]
     },
     {
