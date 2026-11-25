@@ -115,3 +115,17 @@ coreからdriverのrollback完了を外部検証することはできないた�
 [core検査](../src/async-transaction.test.ts)は中止・障害・並行実行の分離・型を検査する。
 Prismaの実driverでは途中のCAS失敗、履歴書込み失敗、callback例外、遅延制約によるcommit失敗等を検査する。
 共通の実行相関・永続監査・retry方針は依然として未提供。
+
+### callback契約の違反検出
+
+coreはcallbackを同じ呼出しで二度実行しない。driverによるcallbackの自動再試行も二度目の業務処理の前に拒否する。
+hostはcallbackの実行を一度完了し、返された成功Resultを同じidentityで返す必要がある。
+callbackを実行せず成功する、完了前に返る、失敗を握りつぶす、成功値を差し替える、複数回呼ぶ場合は
+`TransactionHostFailure`でrejectする。outcomeはunknownで、reasonが違反の種類を示す。
+既に記録した違反はhostがその例外を握りつぶしても取り消さない。
+
+transaction終了後に保持したcallbackを呼ぶことも拒否し、新しい業務処理は開始しない。
+ただし、hostがworkの完了前に戻った場合など、既に開始したIOをこの検査でキャンセルすることはできない。
+後からcallbackが呼ばれて検出した違反で、既に返したPromiseの結果を変更することもできない。
+検出はdriverのrollback・commitの実施や接続の隔離を証明しない。利用するhostの契約テストは引き続き必要。
+Prisma実例には自動的なcallback再試行を追加していない。

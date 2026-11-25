@@ -76,6 +76,14 @@ export interface TransactionHost<C> {
   readonly transaction: <T>(work: (context: C) => Promise<T>) => Promise<T>;
 }
 
+/** A host violated the callback protocol; the database outcome is not inferred. */
+export class TransactionHostFailure extends Error {
+  readonly outcome = 'unknown' as const;
+  constructor(readonly reason: 'repeated-callback' | 'late-callback' | 'missing-callback' | 'unfinished-callback' | 'swallowed-failure' | 'changed-result') {
+    super(`Transaction host protocol: ${reason}`); this.name = 'TransactionHostFailure';
+  }
+}
+
 /** For callback-based asynchronous drivers, including interactive ORM transactions.
  * A failed Result aborts through an invocation-local marker; it is returned only
  * when the host confirms that exact abort after rolling back. Driver failures reject.
@@ -84,16 +92,32 @@ export async function inTransaction<C, R extends Result<unknown, unknown>>(
   host: TransactionHost<C>, work: (context: C) => R | Promise<R>,
 ): Promise<R> {
   const abort = Object.freeze({});
-  let rejected: R | undefined;
+  let invoked = false, completed = false, failed = false, closed = false;
+  let original: R | undefined, violation: TransactionHostFailure | undefined;
+  const invalid = (reason: TransactionHostFailure['reason']) => violation ??= new TransactionHostFailure(reason);
   try {
-    return await host.transaction(async context => {
-      const result = await work(context);
-      if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') throw new TypeError('Transaction work must return Result');
-      if (!result.ok) { rejected = result; throw abort; }
-      return result;
+    const result = await host.transaction(async context => {
+      if (closed) throw invalid('late-callback');
+      if (invoked) throw invalid('repeated-callback');
+      invoked = true;
+      try {
+        const value = await work(context);
+        if (!value || typeof value !== 'object' || typeof value.ok !== 'boolean') throw new TypeError('Transaction work must return Result');
+        original = value;
+        completed = true;
+        if (!value.ok) { failed = true; throw abort; }
+        return value;
+      } catch (cause) { completed = true; failed = true; throw cause; }
     });
+    if (violation) throw violation;
+    if (!invoked) throw invalid('missing-callback');
+    if (!completed) throw invalid('unfinished-callback');
+    if (failed) throw invalid('swallowed-failure');
+    if (result !== original) throw invalid('changed-result');
+    return result;
   } catch (cause) {
-    if (cause === abort && rejected) return rejected;
+    if (violation) throw violation;
+    if (cause === abort && original && !original.ok) return original;
     throw cause;
-  }
+  } finally { closed = true; }
 }

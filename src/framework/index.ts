@@ -24,5 +24,5 @@ export { collectEffects } from './collection-effects.js';
 export type { CaptureFailure, ObservationReport } from './observation.js';
 export { createSyncTransaction, TransactionFailure } from './transaction.js';
 export type { SyncTransactionDriver, TransactionEvent } from './transaction.js';
-export { inTransaction } from './transaction.js';
+export { inTransaction, TransactionHostFailure } from './transaction.js';
 export type { TransactionHost } from './transaction.js';
