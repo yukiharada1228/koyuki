@@ -1,0 +1,68 @@
+{
+  "videoId": "w0oLNoGsGLc",
+  "method": "Manually inspected 10 full-resolution stills extracted from the saved MP4; not continuous video/audio review.",
+  "allFramesReviewed": false,
+  "audioDirectlyReviewed": false,
+  "frames": [
+    {
+      "timeSeconds": 1740,
+      "file": "w0o-1740.jpg",
+      "sha256": "e306229577ec6bff97553767f5cd9942a9089101d15a06180156945c9413114d",
+      "observation": "関数を集合間の写像として捉える図。"
+    },
+    {
+      "timeSeconds": 1755,
+      "file": "w0o-1755.jpg",
+      "sha256": "087901057fe1733891bd4b6c620c49a7e991d2b557009a6d71b3ad740b9b6e6e",
+      "observation": "HaskellのforM_で可変配列の入出力を行う補足。命令的な記述が適する場合もあると明記。"
+    },
+    {
+      "timeSeconds": 1770,
+      "file": "w0o-1770.jpg",
+      "sha256": "26722960e8240a2159c9bdd7ef9fbe2053f4965ab8f2764611df200fc2918f3d",
+      "observation": "計算の定義、写像、型の構造化という説明の再掲。"
+    },
+    {
+      "timeSeconds": 1785,
+      "file": "w0o-1785.jpg",
+      "sha256": "de50126c09c19462513bae97b1252d34511432ce9c2ed29c2ad2f93b7e4e0ac4",
+      "observation": "入力と戻り値が属する集合へ話題を移す図。"
+    },
+    {
+      "timeSeconds": 1800,
+      "file": "w0o-1800.jpg",
+      "sha256": "641ce1cb3f660275cfcba409421210c2b0223d7ccfeda1c58e911147df5e666e",
+      "observation": "関数が集合間の値を写し、型が集合を表す図。"
+    },
+    {
+      "timeSeconds": 2400,
+      "file": "w0o-2400.jpg",
+      "sha256": "0367e83dd97c2fcc06bbd346b7b81a25f9dfabfbaeb284f8fbef59cf9a3d211a",
+      "observation": "直積だけでまとめる階層と、直和による柔軟な組み合わせの比較。"
+    },
+    {
+      "timeSeconds": 2410,
+      "file": "w0o-2410.jpg",
+      "sha256": "4d1f196d34d6d820c3f5dbf0cc885af09cbd1397b2f3bacf8b9f1182dfce668a",
+      "observation": "同じ階層図。継承の禁止ではなく安易な差分実装への注意。"
+    },
+    {
+      "timeSeconds": 2420,
+      "file": "w0o-2420.jpg",
+      "sha256": "d5a5a23af2d446de578c0e3d857779497e7f1ec4d4e49464cfda02fb75c30b61",
+      "observation": "会員IDとゲストIDの両方・どちらもなしを減らす直和の例。"
+    },
+    {
+      "timeSeconds": 2430,
+      "file": "w0o-2430.jpg",
+      "sha256": "24c8c3feee98df3edf3c111fc1d1cb0f593e1439a1d3205ae4da04edea47809e",
+      "observation": "同じ直和・直積の比較。TypeScriptの構造的Unionの排他性までは保証しない。"
+    },
+    {
+      "timeSeconds": 2440,
+      "file": "w0o-2440.jpg",
+      "sha256": "2bea58edb6403966e332f7ff2bae322f6c85ee8e957e84bc1ba95e46b4c21614",
+      "observation": "取り得る状態を制約する型の表現力に関するまとめ。"
+    }
+  ]
+}
