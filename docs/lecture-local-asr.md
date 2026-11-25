@@ -36,8 +36,26 @@ tool自体はモデルや動画のdownloadを行わない。
 失敗時はmanifestをfailedにし、完了済みの動画とlogを保持する。
 
 本記録を追加した時点では、全3本の処理は実行中であり、完了・全テキスト確認とは扱わない。
+[1本目の部分照合](lecture-local-asr-iz-followup.md)では、音声認識の完了と、39話題中5話題の読み比べを記録した。
 終了後も、処理した音声秒数は「正しく理解した発話」の割合ではない。
 無音・脱落・誤認識・幻覚的な補完は別途点検し、保存済み字幕と異なる箇所を再確認する。
+
+## 字幕と並べた確認用資料を作る
+
+```sh
+node scripts/prepare-lecture-asr-review.mjs /path/to/saved-videos /path/to/asr-output /path/to/new-review-directory
+```
+
+全3本のASR完了とhash一致を確認してから、既存の84話題それぞれに前後10秒の文脈を付け、
+字幕とASR本文を並べたローカルMarkdownを作る。本文をGitへ追加するtoolではない。
+既存の出力や確認メモは上書きしない。全体が処理中なら、末尾に完了済みのvideo IDを
+明示して、その1本の資料だけを先に準備できる。全体完了と部分準備を区別して記録する。
+
+ASR区間は話題の境界をまたぐことがあり、文脈も重なるため、各ページの行数を足して
+認識率や新たな発話数とはしない。元字幕・ASR JSON・対応表・確認用ファイルのhashと、
+準備時点のASR manifestのコピーを保持する。
+準備しただけではtextComparisonReviewed/audioDirectlyReviewed/allFramesReviewedはすべてfalseのまま。
+実際の読み比べと解釈の修正は別途記録する。
 
 連続した全編音声映像の直接確認・全フレーム・全参照資料・全実装の等価性は未確認のまま。
 [講演への判定](lecture-acceptance.md)は部分充足を維持する。

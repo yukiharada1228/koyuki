@@ -80,6 +80,19 @@
       ],
       "scope": "Type-only comparison of current declarations and three new tuple-constraint candidates under TypeScript 7.0.2, 7.1.0-beta and 7.1.0-dev.20261125.1. No public declaration/runtime change, new source reread or audio/frame review.",
       "record": "docs/transition-inference-compiler-comparison.json"
+    },
+    "localAsrFollowUp": {
+      "sections": [
+        "iz-22",
+        "iz-24",
+        "iz-27",
+        "iz-31",
+        "iz-36"
+      ],
+      "scope": "First saved video fully processed by local ASR; only these five paired caption/ASR windows reviewed. Thirty-four other paired windows remain unreviewed. Not direct audio listening or whole-video text review.",
+      "record": "docs/lecture-local-asr-iz-followup.json",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -381,7 +394,9 @@
         "src/business-operation-table.test.ts",
         "docs/business-local-load.md",
         "docs/business-scale.md",
-        "scripts/check-business-scale.mjs"
+        "scripts/check-business-scale.mjs",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
@@ -418,7 +433,9 @@
         "src/process-projection.test.ts",
         "docs/procurement-framework-context.md",
         "src/procurement-framework-context.test.ts",
-        "docs/transition-inference-compiler-comparison.json"
+        "docs/transition-inference-compiler-comparison.json",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": [
         "genericヘルパーと未注釈evolveの同時推論には制限がある。"
@@ -459,7 +476,9 @@
         "docs/transactions.md",
         "src/framework/transaction.ts",
         "src/transaction.test.ts",
-        "src/async-transaction.test.ts"
+        "src/async-transaction.test.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -510,7 +529,9 @@
       "assessment": "講演では未経験の提案。登録とoutboxの原子保存・配送lease・確認の別操作を実装し別プロセスで検証。",
       "evidence": [
         "docs/registration-events.md",
-        "src/registration/delivery.ts"
+        "src/registration/delivery.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": [
         "実メールprovider統合や常駐scheduler・heartbeat・dead letterはホスト側で未検証。at-least-once配送はexactly-onceを保証しない。"
@@ -575,7 +596,9 @@
       "assessment": "純粋関数を直接テストでき、Result全体を比較する既存例もあるが、必要に応じた判定・取り出しの記述は残る。字幕再読では負担の指摘であり専用テストDSLの仕様指定とは扱わない。削減効果と独立利用者の評価は未実証。",
       "evidence": [
         "src/collection-validation.test.ts",
-        "docs/validation-fields.md"
+        "docs/validation-fields.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": [
         "専用のResultテストDSLは提供していない。必要性は実際のテスト記述で評価する。"
