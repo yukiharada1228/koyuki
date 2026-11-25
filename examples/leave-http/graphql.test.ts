@@ -7,7 +7,8 @@ import { serve } from '@hono/node-server';
 import { GraphQLError } from 'graphql';
 import { createLeaveGraphql } from './graphql.js';
 import { bearerAuthenticator } from './http.js';
-import { SqliteLeave } from './repository.js';
+import { err } from 'koyuki';
+import { SqliteLeave, type StorageError } from './repository.js';
 const identities = new Map([
   ['owner-token', { id: 'owner', role: 'employee' as const, active: true }],
   ['boss-token', { id: 'boss', role: 'manager' as const, active: true }],
@@ -126,4 +127,31 @@ test('unexpected query adapter exceptions are sanitized even if already GraphQL 
   const result = await (await post(app, '{ account(employee:"owner") { version } }')).json();
   assert.equal(result.data.account, null); assert.equal(result.errors[0].message, 'InternalError');
   assert(!JSON.stringify(result).includes('secret'));
+});
+
+test('schema publishes a finite mutation failure enum without command IO', async t => {
+  const { app, repository } = fixture(t);
+  repository.load = async () => assert.fail('introspection loaded a command');
+  repository.receipt = () => assert.fail('introspection consulted receipt');
+  repository.save = async () => assert.fail('introspection saved');
+  const response = await post(app, '{ failure: __type(name:"LeaveFailure") { fields { name type { kind name ofType { kind name } } } } codes: __type(name:"LeaveFailureCode") { kind enumValues { name } } }');
+  const result = await response.json(); assert.equal(result.errors, undefined);
+  assert.deepEqual(result.data.failure.fields, [{ name: 'code', type: { kind: 'NON_NULL', name: null, ofType: { kind: 'ENUM', name: 'LeaveFailureCode' } } }]);
+  assert.equal(result.data.codes.kind, 'ENUM');
+  assert.deepEqual(result.data.codes.enumValues.map((value: { name: string }) => value.name).sort(),
+    ['InvalidInput', 'ReplayInputNotCloneable', 'Forbidden', 'NotFound', 'Conflict', 'IdempotencyConflict', 'InvalidState', 'InsufficientDays', 'CorruptLeave', 'StorageUnavailable'].sort());
+});
+test('unregistered runtime codes and prototype names fail as InternalError rather than leaking', async t => {
+  for (const code of ['UnregisteredSecret', '__proto__', 'toString']) {
+    const { app, repository } = fixture(t);
+    const invalid = { kind: code } as unknown as StorageError; // deliberately violating the adapter contract
+    repository.load = async () => err(invalid);
+    const result = await (await post(app, mutation('submit'), { requestId: 'one', input })).json();
+    assert.equal(result.data, null); assert.equal(result.errors[0].message, 'InternalError');
+    assert.equal(result.errors[0].extensions.code, 'InternalError'); assert(!JSON.stringify(result).includes(code));
+    repository.read = () => err(invalid);
+    const query = await (await post(app, '{ account(employee:"owner") { employee } }')).json();
+    assert.equal(query.data.account, null); assert.equal(query.errors[0].message, 'InternalError');
+    assert.equal(query.errors[0].extensions.code, 'InternalError'); assert(!JSON.stringify(query).includes(code));
+  }
 });

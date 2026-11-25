@@ -41,8 +41,26 @@ RESTのIdempotency-KeyとGraphQLのrequestIdは、同じRepositoryの同じrecei
 - Queryはreadだけを使い、mutation用load・receipt・saveを実行しない。
   この小さな例ではreadが台帳全体を復元する。大きな参照モデル向けのSQL最適化・DataLoaderは未実装。
 - 想定内の業務失敗はLeaveFailure、成功はLeaveSuccessというGraphQL unionで返す。
+  LeaveFailure.codeは有限のLeaveFailureCode enumであり、Domain/Storage/Replayの失敗Unionに対する対応表から構築する。
 - Queryのscope違反や予期しないresolver例外はGraphQL errorsへ返す。内部例外の詳細は返さない。
 - 過去の成功の再送は`kind: replayed`。現在状態の表示はQueryで再取得する。
+
+## 失敗コードの型と互換性
+
+従来のcode: String!をcode: LeaveFailureCode!へ変更した。
+既存コードのJSON文字列は同じだが、GraphQL schemaのフィールド型としては互換でない変更である。
+生成済みのclient型やschema snapshotは更新が必要になる。
+
+新しいRuleErrorを追加して表へ登録し忘れると、HTTPのstatus表に加えてGraphQLのコード表も型エラーになる。
+表がschemaのenum値と失敗時の戻り値を同時に決めるため、SDLへ同じ一覧を手で二重記載しない。
+実行時にadapterが型契約を破って未登録のコードやprototype名を返した場合は、
+そのコードを公開せずInternalErrorという想定外例外の経路へ変換する。
+
+このenumはMutationのLeaveFailure.codeが対象であり、HTTP認証エラーや構文・検証エラー等の
+GraphQL errors全体を一つのenumへ変えたわけではない。
+Queryの既知の失敗はerrorsへ返す。InternalErrorも想定内の業務失敗には混ぜない。
+clientコードの生成・enum追加時の再生成・exhaustiveな分岐までは自動化していない。
+有限のschemaを公開したことだけで、古いclientが新コードへ対応できるとは保証しない。
 
 ## トランザクションの意味
 
@@ -70,9 +88,9 @@ npm run test:transition:package
 npm run test:leave:http:registry
 ```
 
-GraphQL固有12テストを追加。3操作、選択フィールド、Query/Mutation分離、mutationの順序と部分成功、
+GraphQL固有14テスト。3操作、選択フィールド、Query/Mutation分離、mutationの順序と部分成功、
 過去receiptと現在Query、入力の偽装と型不正、認証・scope、権限、保存後の例外と再送、
-envelope、実TCP、operationName、例外情報の保護を確認する。
+envelope、実TCP、operationName、例外情報の保護、enumのintrospection、未登録コードの拒否を確認する。
 RESTの既存プロセス再起動テストも、再起動後にGraphQLから同じreceiptを取得する検証へ拡張した。
 
 公開npm alpha.5によるconsumerと、通常関数宣言へ差し替えた開発版consumerの両方で実行する。

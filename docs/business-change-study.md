@@ -8,7 +8,7 @@
 npm run test:business:change
 ```
 
-このコマンドは実際の開発版をpackして独立consumerへインストールし、既存仕様と詳細effectの34テストを通した後、
+このコマンドは実際の開発版をpackして独立consumerへインストールし、既存仕様・配布型・実行検査を通した後、
 一時ディレクトリへ新仕様を適用する。npm公開物・サンプルDBを変更しない。
 初期検証ではprivate候補パッケージを使ったが、businessの開発版への昇格後はルートexportを検証する。
 
@@ -43,12 +43,13 @@ LimitedApprovalにはApprovalと異なる非公開のunique symbolを持たせ�
 
 HTTPのエラーコード表がRuleErrorに対して網羅的なので、新しい失敗理由の未対応も型エラーになった。
 `ApprovalLimitExceeded: 422`を追加して修正した。
-GraphQLは既存のLeaveFailure.codeで表現できるため、schema・resolverを変更していない。
+初回のString型codeではGraphQLの変更は不要だったが、現在は[有限のenum](../examples/leave-http/GRAPHQL.md)も型で検査する。
+新しいコードの表への追加が必要となり、schemaのenum値にも反映される。
 Applicationのviewも、既存のfailedとerror.kindで表現できるため変更していない。
-repository・GraphQL・serverのソースが変更前と一致することをスクリプトでも確認する。
+repository・serverのソースが変更前と一致することをスクリプトでも確認する。
 
-比較全体の変更ファイルはdomain.ts、application.ts、application-named.ts、approval-baselines.ts、http.tsの5つ。
-これは比較用の実装を同時に置いた場合の件数で、各方式で5ファイルの修正が必要という意味ではない。
+比較全体の変更ファイルはdomain.ts、application.ts、application-named.ts、approval-baselines.ts、http.ts、graphql.tsの6つ。
+これは比較用の実装を同時に置いた場合の件数で、各方式で6ファイルの修正が必要という意味ではない。
 TSの2方式は**純粋な承認判断のみ**の比較であり、Koyukiと同等の再送・HTTP・Application基盤を
 通常TSで構築するコストまで測っていない。コード量の総合的な勝敗や生産性の点数へ変換しない。
 
@@ -76,5 +77,5 @@ TSの2方式は**純粋な承認判断のみ**の比較であり、Koyukiと同�
 接続の型保証・実行時の失敗停止・再送契約を保ったまま、利用者向け記法を簡単にできることを確認した段階である。
 
 [認可エラー追加の比較](authorization-change-study.md)も追加した。
-成功型の証拠を変える変更とは異なり、今回は既存の接続を維持し、HTTPの未対応エラーを型検査で検出した。
-GraphQLのString型コードと、権限停止後の過去receiptの読取りは別の保証として記録する。
+成功型の証拠を変える変更とは異なり、今回は既存の接続を維持し、HTTP・GraphQLの未対応エラーを型検査で検出した。
+GraphQLの有限enumとclient生成の範囲、権限停止後の過去receiptの読取りは別の保証として記録する。

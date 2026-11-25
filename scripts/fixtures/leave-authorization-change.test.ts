@@ -80,12 +80,14 @@ test('HTTP maps the new typed failure to 403 and permission recovery is an expli
   const fresh = await request('new-approval', { expectedVersion: 3 }); assert.equal(fresh.status, 403);
   assert.deepEqual(await fresh.json(), { ok: false, error: { kind: 'ApprovalDisabled' } }); assert.deepEqual(counts(), { changes: 2, receipts: 2 });
 });
-test('GraphQL returns the domain code on its failure branch while permitted reads still work', async t => {
+test('GraphQL returns the mapped enum code on its failure branch while permitted reads still work', async t => {
   const { repository, counts } = await fixture(t), app = createLeaveGraphql(repository, () => disabled);
   const response = await app.request('/graphql', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
     query: 'mutation ($requestId:ID!,$input:ChangeInput!) { approve(requestId:$requestId,input:$input) { ... on LeaveFailure { code } } }', variables: call,
   }) });
   assert.equal(response.status, 200); assert.deepEqual(await response.json(), { data: { approve: { code: 'ApprovalDisabled' } } });
+  const introspection = await app.request('/graphql', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query: '{ __type(name:"LeaveFailureCode") { enumValues { name } } }' }) });
+  const exposed = await introspection.json(); assert(exposed.data.__type.enumValues.some((value: { name: string }) => value.name === 'ApprovalDisabled'));
   const query = await app.request('/graphql', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query: '{ account(employee:"owner") { version } }' }) });
   assert.equal(query.status, 200); assert.deepEqual(await query.json(), { data: { account: { version: 2 } } });
   assert.deepEqual(counts(), { changes: 1, receipts: 1 });

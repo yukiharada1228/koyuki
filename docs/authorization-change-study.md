@@ -27,17 +27,18 @@ activeなmanagerでもfalseなら、新しい承認をApprovalDisabledで拒否�
 
 ActorとRuleError、既存validateApprovalだけを変更した段階で型検査を行う。
 この変更は新しい中間成功型を要求しないため、4方式の既存の承認接続はそのまま通る。
-一方、HTTP側の`Record<Failure['kind'], number>`によるstatus対応表は、
+一方、HTTP側の`Record<Failure['kind'], number>`によるstatus表と、GraphQL側の失敗コード表は、
 ApprovalDisabledの未対応をコンパイルエラーとして検出する。
-この段階の診断がhttp.tsだけであることを検査し、対応する403を追加してから全体を再検査する。
+この段階の診断がhttp.ts・graphql.tsの両方にあり、その2ファイルだけであることを検査する。
+403とenum値の対応を追加してから全体を再検査する。
 
 businessのcallable・詳細reportと、既存宣言のrunが、新しい失敗型を保持することも厳密一致で検査する。
 HTTPのFailure型を手動で更新したから通っただけ、という証拠にはしない。
 
-GraphQLのLeaveFailure.codeはStringなので、未知のコードを型検査が拒否するschemaではない。
-resolverは新しい文字列をそのまま返せるため、schema/resolverの変更は不要だった。
-これは自動的に型安全なclientの網羅性を得たという意味ではない。
-型付きenumやclientのexhaustive対応を要求するなら、transportと生成型の設計が別途必要になる。
+初回の検証commit 037f225ではGraphQLのcodeはStringで、対応漏れは検出できなかった。
+後続で[LeaveFailureCode enum](../examples/leave-http/GRAPHQL.md)を導入し、現在の検査ではGraphQLの表も更新が必要になる。
+introspectionでApprovalDisabledがenum値として公開されることも確認する。
+ただしclient生成・再生成とexhaustiveな分岐は引き続き外部の責務であり、古いclientの対応を自動保証しない。
 
 ## 変更と同条件の範囲
 
@@ -48,7 +49,8 @@ resolverは新しい文字列をそのまま返せるため、schema/resolverの
 | businessの操作接続 | 変更なし |
 | 既存transitionの操作接続 | 変更なし |
 | 通常TS・共通helperの純粋な承認接続 | 変更なし |
-| repository・GraphQL・server | 変更なし |
+| graphql.ts | 失敗コード表へ新enum値を登録 |
+| repository・server | 変更なし |
 | core・Applicationのview | 変更なし |
 
 実行した一時consumer内のbefore/after hashと実diffを出力する。
@@ -66,7 +68,7 @@ npm run test:business:change
 - 通常TS・helper・transition・businessの4方式で、false・true・省略・従来の権限違反を比較。
 - businessと既存宣言で新しい失敗が伝播し、上限検証・更新・保存へ進まず、accountとreceipt数が変わらない。
 - HTTPは新規要求を403で拒否。権限を戻した明示再実行だけがcommitし、後の権限停止中の同一要求はreplayする。
-- GraphQLはHTTP 200の失敗branchへ新codeを返し、許可されたqueryは維持する。
+- GraphQLはHTTP 200の失敗branchへ新enum codeを返し、schemaへ公開する。許可されたqueryも維持する。
 - Applicationはモデルを保持してfailedとなり、既存viewが新しいkindを表示する。
 
 入力からのactor/権限の注入、保存回数、未実行段階のtrace、receiptが増えないことも確認する。

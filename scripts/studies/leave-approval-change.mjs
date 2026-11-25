@@ -20,7 +20,7 @@ export function studyApprovalChange(consumer, root, run) {
       if(!(await leaveCommands(r,{id:'boss',role:'manager',active:true}).approve.run({requestId:'before-policy-approve',input:{...input,expectedVersion:2}})).ok) throw new Error('ApproveFailed');
     } finally {r.close();}
   `], consumer));
-  const untouched = new Map(['repository.ts', 'graphql.ts', 'server.ts'].map(file => [file, readFileSync(join(consumer, file), 'utf8')]));
+  const untouched = new Map(['repository.ts', 'server.ts'].map(file => [file, readFileSync(join(consumer, file), 'utf8')]));
   const snapshots = new Map();
   const read = file => readFileSync(join(consumer, file), 'utf8');
   const write = (file, source) => {
@@ -46,7 +46,7 @@ export function requireApprovalLimit(command: Approval): Result<LimitedApproval,
   const broken = spawnSync('npm', ['exec', '--', 'tsc', '--pretty', 'false'], { cwd: consumer, encoding: 'utf8' });
   const diagnostics = `${broken.stdout ?? ''}${broken.stderr ?? ''}`;
   assert.notEqual(broken.status, 0, 'Changing the required proof must invalidate old connections');
-  for (const file of ['application.ts', 'application-named.ts', 'approval-baselines.ts', 'http.ts']) {
+  for (const file of ['application.ts', 'application-named.ts', 'approval-baselines.ts', 'http.ts', 'graphql.ts']) {
     assert(diagnostics.includes(`${file}(`), `Expected a migration diagnostic in ${file}:\n${diagnostics}`);
   }
   assert(!/TS230[57]|TS7006/.test(diagnostics), diagnostics);
@@ -56,7 +56,7 @@ export function requireApprovalLimit(command: Approval): Result<LimitedApproval,
     const line = baselineLines.findIndex(text => text.includes(fragment)) + 1;
     assert(diagnostics.includes(`approval-baselines.ts(${line},`), diagnostics);
   }
-  console.log('Policy mutation rejected all four old decision connections and the unmapped HTTP error.');
+  console.log('Policy mutation rejected all four old decision connections and unmapped HTTP/GraphQL errors.');
   for (const file of ['application.ts', 'application-named.ts', 'approval-baselines.ts']) {
     replace(file, 'validateApproval, approve,', 'validateApproval, requireApprovalLimit, approve,');
   }
@@ -66,6 +66,7 @@ export function requireApprovalLimit(command: Approval): Result<LimitedApproval,
   replace('approval-baselines.ts', '  return approve(validation.value);', '  const limited = requireApprovalLimit(validation.value);\n  if (!limited.ok) return limited;\n  return approve(limited.value);');
   replace('approval-baselines.ts', 'return chain(validateApproval(input), approve);', 'return chain(chain(validateApproval(input), requireApprovalLimit), approve);');
   replace('http.ts', 'Conflict: 409, IdempotencyConflict:', 'ApprovalLimitExceeded: 422, Conflict: 409, IdempotencyConflict:');
+  replace('graphql.ts', "  Conflict: 'Conflict',", "  ApprovalLimitExceeded: 'ApprovalLimitExceeded',\n  Conflict: 'Conflict',");
   copyFileSync(join(root, 'scripts/fixtures/leave-approval-change.test.ts'), join(consumer, 'approval-change.test.ts'));
   console.log(run('npm', ['run', 'check'], consumer));
   console.log(run('npm', ['exec', '--', 'tsx', '--test', 'approval-change.test.ts'], consumer));
@@ -77,10 +78,10 @@ export function requireApprovalLimit(command: Approval): Result<LimitedApproval,
     assert.equal(compared.status, 1, compared.stderr || 'Each recorded migration file must have a real diff');
     return { file, beforeSha256: createHash('sha256').update(before).digest('hex'), afterSha256: createHash('sha256').update(after).digest('hex'), diff: compared.stdout };
   });
-  assert.equal(changes.length, 5);
+  assert.equal(changes.length, 6);
   for (const [file, before] of untouched) assert.equal(read(file), before, `${file} unexpectedly changed`);
   console.log(JSON.stringify({ scope: 'Approval rule migration in the temporary leave consumer; ordinary TS comparison covers pure decisions only',
-    changedFiles: changes, unchanged: ['repository.ts', 'graphql.ts', 'server.ts'],
+    changedFiles: changes, unchanged: ['repository.ts', 'server.ts'],
     limitations: ['No productivity or learning-time measurement', 'No plain-TS replay/runtime equivalence claim', 'Historical receipts remain historical successes'],
   }, null, 2));
 }

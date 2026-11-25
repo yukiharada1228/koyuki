@@ -56,7 +56,7 @@ test('new policy failure maps to HTTP 422, stops before evolution and leaves no 
   assert.deepEqual(await repository.receipt({ operation: 'approve', actor: boss, ...approval }), ok({ kind: 'missing' }));
 });
 
-test('GraphQL exposes the new domain failure without a schema change; two days still approve and replay', async t => {
+test('GraphQL exposes the newly mapped enum failure; two days still approve and replay', async t => {
   const repository = fixture(t); assert((await leaveCommands(repository, owner).submit(call(3))).ok);
   const app = createLeaveGraphql(repository, authenticate);
   const response = await app.request('/graphql', { method: 'POST', headers: { authorization: 'Bearer boss', 'content-type': 'application/json' },
