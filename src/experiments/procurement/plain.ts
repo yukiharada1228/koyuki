@@ -9,7 +9,8 @@ import { createRequest, editRequest, submitRequest, withdrawRequest, approveRequ
 import { receiveIntoStock, returnFromStock, correctInStock, reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
 
 /** plain TypeScript orchestration baseline: no business/Workflow execution. */
-export function plainProcurement(repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink) {
+export const plainProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink) => plainWithCommit(repository, identity, policy, observe);
+export function plainWithCommit<E>(repository: ProcurementRepository<E>, identity: Actor, policy: Policy, observe?: StageSink) {
   const context = procurementContext(repository, identity, policy);
   return {
     requests: {
@@ -174,5 +175,5 @@ export function plainProcurement(repository: ProcurementRepository, identity: Ac
         observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
       },
     },
-  } satisfies StudyCommands;
+  } satisfies StudyCommands<E>;
 }

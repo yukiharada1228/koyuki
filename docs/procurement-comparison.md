@@ -15,7 +15,8 @@
 | 保存・CAS・一意性・復元・複合transaction | 同じMemory／SQLite adapterを使用 |
 | load → domain → saveの接続 | 各方式で別実装 |
 | 基本trace・保存計画 | [追加比較](procurement-trace-comparison.md)で代表的な成功・失敗を検証 |
-| 再送・値の観測・Application | 現段階の比較対象外。Koyukiの実装検査とは分ける |
+| 永続再送 | [独立driver比較](procurement-replay-comparison.md)で代表的な要求・障害・重複を検証 |
+| 値の観測・Application | 現段階の比較対象外。Koyukiの実装検査とは分ける |
 
 通常TypeScript版は`plain.ts`で各操作にResultの分岐と保存を明記する。
 helper版は`helper.ts`のaction関数へ同じ処理をまとめ、操作ごとにloadと業務関数を渡す。
@@ -70,3 +71,8 @@ Koyukiの共通saveによる型の広がりは、今後のAPI改善候補とし�
 [基本traceと保存計画の比較](procurement-trace-comparison.md)を追加した。
 基準実装側にも段階通知と呼出しごとの記録基盤を用意し、代表ケースのreport全体と例外・並行呼出しの結果を比較する。
 これは再送・Applicationを含む全体コスト比較を置き換えるものではない。
+
+
+[独立した永続再送driverの比較](procurement-replay-comparison.md)を追加した。
+同じSQLite/identity境界の下で、基準実装側のsnapshot・照会・業務実行・記録・失敗後照会を検証する。
+Applicationと値の観測を含む全体比較は引き続き未完了。

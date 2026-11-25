@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買plain/helper版へ独立した永続再送driverを追加。共有SQLite/identity境界の下でKoyuki runtimeを使わず、過去結果・要求不一致・保存競合・不明commit照会のreportを比較し、原子的な記録失敗rollbackと重複要求を配布consumerで検証。全25操作の全障害経路やApplication比較とは区別。
+
 - 購買のplain/helper基準実装へ基本traceと保存計画を追加。KoyukiのrunDetailedと成功・load/rule/save失敗のreportを比較し、adapter例外の伝播と同時呼出しの記録分離も実配布consumerで検証。capture・永続監査・再送・Applicationまでの同等性とは区別。
 
 - 購買25操作の通常TS/helper基準実装と共有load contextを追加。3方式×Memory/SQLiteで32回の成功結果と全保存状態を比較し、失敗時の保存停止と基準実装の承認成功型も検査。再送・trace・Applicationまで同等の比較や生産性測定とは区別。
