@@ -1,3 +1,4 @@
+import type { StageSink } from './trace-contract.js';
 import { procurementContext } from './context.js';
 import type { StudyCommands } from './comparison-contract.js';
 import type { ProcurementRepository, StorageError } from './repository.js';
@@ -8,13 +9,14 @@ import { createRequest, editRequest, submitRequest, withdrawRequest, approveRequ
 import { receiveIntoStock, returnFromStock, correctInStock, reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
-export function helperProcurement(repository: ProcurementRepository, identity: Actor, policy: Policy) {
+export function helperProcurement(repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink) {
   const context = procurementContext(repository, identity, policy);
   function action<I, C, T extends Entity>(load: (input: I) => Promise<Result<C, StorageError>>, decide: (context: C) => Result<Change<T>, RuleError>) {
     return async (input: I) => {
-      const loaded = await load(input); if (!loaded.ok) return loaded;
-      const changed = decide(loaded.value); if (!changed.ok) return changed;
-      return repository.commit(changed.value, context.actor);
+      const loaded = await load(input); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
+      const changed = decide(loaded.value); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+      const saved = await repository.commit(changed.value, context.actor);
+        observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
   return {

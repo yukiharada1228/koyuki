@@ -56,7 +56,7 @@ try {
   writeFileSync(join(consumer, 'order-lines.ts'), readFileSync(join(root, 'src/examples/order-lines.ts'), 'utf8').replace("'../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'customer-import-sqlite.test.ts'), readFileSync(join(root, 'src/customer-import-sqlite.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
   mkdirSync(join(consumer, 'procurement'));
-  for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'context.ts', 'comparison-contract.ts', 'plain.ts', 'helper.ts', 'inventory.ts', 'sqlite.ts', 'projection.ts', 'replay-identity.ts', 'replay.ts']) writeFileSync(join(consumer, 'procurement', file),
+  for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'context.ts', 'comparison-contract.ts', 'plain.ts', 'helper.ts', 'trace-contract.ts', 'baseline-detail.ts', 'inventory.ts', 'sqlite.ts', 'projection.ts', 'replay-identity.ts', 'replay.ts']) writeFileSync(join(consumer, 'procurement', file),
     readFileSync(join(root, 'src/experiments/procurement', file), 'utf8').replace("'../../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'procurement.test.ts'), readFileSync(join(root, 'src/procurement.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
@@ -67,6 +67,8 @@ try {
   writeFileSync(join(consumer, 'procurement-replay.test.ts'), readFileSync(join(root, 'src/procurement-replay.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   writeFileSync(join(consumer, 'procurement-comparison.test.ts'), readFileSync(join(root, 'src/procurement-comparison.test.ts'), 'utf8')
+    .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
+  writeFileSync(join(consumer, 'procurement-trace-comparison.test.ts'), readFileSync(join(root, 'src/procurement-trace-comparison.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");

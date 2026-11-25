@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買のplain/helper基準実装へ基本traceと保存計画を追加。KoyukiのrunDetailedと成功・load/rule/save失敗のreportを比較し、adapter例外の伝播と同時呼出しの記録分離も実配布consumerで検証。capture・永続監査・再送・Applicationまでの同等性とは区別。
+
 - 購買25操作の通常TS/helper基準実装と共有load contextを追加。3方式×Memory/SQLiteで32回の成功結果と全保存状態を比較し、失敗時の保存停止と基準実装の承認成功型も検査。再送・trace・Applicationまで同等の比較や生産性測定とは区別。
 
 - 購買25操作へ既存withReplayによる共通再送境界を接続。Web Cryptoで要求・actor・操作を識別し、SQLiteで全writesと成功記録を同時保存。応答消失・記録挿入失敗・重複呼出し・過去結果による投影維持を配布consumerで検証。自動retry・外部副作用のexactly-once・全障害経路の網羅とは区別。
