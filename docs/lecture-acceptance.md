@@ -25,6 +25,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | 要件 | 実装と検査 | 現在の限界 |
 | --- | --- | --- |
 | 状態を直和と必要なpayloadで表す | [domain](../src/tags/domain.ts)、[直和の検査](../src/sum-model.test.ts) | 型アサーションや外部入力は別の検証が必要 |
+| 宣言した遷移を独立仕様と照合する | [経費の有限探索](expense-state-exploration.md)で金額境界・権限・差戻し再申請を最大7操作まで比較 | 経費の有限集合のみ。無限状態・DB競合・任意業務の証明ではなく、汎用モデル検査器も未提供 |
 | 検証済みの前提を次段へ渡す | private brand、[配布入力契約](workflow-input-contract.md) | 業務規則そのものの正しさや純粋性を型だけで証明しない |
 | 普通の関数を並べ、Resultの接続を任せる | [business](business.md)、実tarballの型・実行検査 | [読み込みの接続試作](procurement-load-composition.md)でも定型分岐は減るが、書き心地の優位は未確認。工程・順番・必要な業務判断は利用者が宣言する。通常実行はopaque値を渡せるが、診断・Application・永続adapterには別の契約がある |
 | 検証→要件→更新の定型処理を委譲する | [defineTransition](declarative-transitions.md) | [generic要件と未注釈evolve](transition-inference-study.md)の推論制限は未解消 |
