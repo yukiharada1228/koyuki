@@ -132,3 +132,12 @@ Web標準のみ・外部実行依存なしの契約も維持している。今�
 全画面・音声との照合、独立した利用者の評価、運用実績、GraphQL / Prismaでの実統合、
 永続イベントを一般APIへ昇格させる設計判断は未完了。
 講演の経験談・モデリング・チームの合意をライブラリの機能で保証できるという扱いにはしない。
+
+## GraphQL実統合
+
+GraphQL.js 17.1.0＋Honoから既存の休暇3操作を実行するadapterを追加。
+GraphQL固有12テスト、既存RESTを含む公開npm consumer27テスト、通常関数宣言の開発版consumer30テストが成功。
+クエリの分離、要求ごとの認証、保存後の例外・再送、実TCP、サーバー再起動後のREST/GraphQL間receipt共有を確認した。
+複数mutationの文全体が一つのDB transactionになるわけではないことも検証する。
+コア・domain・repositoryの変更なし。PrismaやSDLからの型生成、実運用評価は残る。
+[具体例と契約](../examples/leave-http/GRAPHQL.md)に記載。

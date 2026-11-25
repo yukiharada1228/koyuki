@@ -16,7 +16,7 @@
 | 範囲 | 論点 | Koyukiの対応・限界 |
 | --- | --- | --- |
 | 02:04–05:04 | フロントとバックのメンタルモデルの差 | Applicationのdispatch・状態・viewを分離。開発者の認知負担がどれだけ減るかは未測定 |
-| 05:22–10:36 | CQRS、薄い参照と不変条件を守る更新 | HTTPサンプルのGETと業務commandを分離。Queryに更新用workflowを強制しない。GraphQLサーバーとの実統合は未検証 |
+| 05:22–10:36 | CQRS、薄い参照と不変条件を守る更新 | HTTPサンプルのGETと業務commandを分離。Queryに更新用workflowを強制しない。同じ宣言をGraphQL.js経由で実行し、Query/Mutation分離・再送・実TCPを検証 |
 | 11:33–16:04 | Elm/Reduxの状態と実行の分離 | defineProgram / defineApplicationと購読。インプロセスの実行loop |
 | 18:21–23:19 | イベントからモデルを発見、IO→状態遷移→IO | domain型・load/transition/save。何を集約やイベントにするかはモデリングの判断 |
 | 26:56–32:15 | 検証前後・作成後の型、不正な状態を減らす | タグ・経費・休暇・登録のUnionとprivate brand。配布型の誤接続検査 |
@@ -28,7 +28,7 @@
 | 54:10–54:50 | andThen/mapや入れ子の負担 | 宣言による順次接続、withInput、collect。TypeScriptのdo記法や全generic推論を提供するわけではない |
 | 56:54–58:59 | DB transaction、contextを渡す案 | SQLiteのCAS・履歴・receipt・outboxの原子保存をテスト。Prisma interactive transactionの提案は講演でも未実施。任意DBへの一括保証なし |
 | 59:07–61:00 | 関数型の全面導入より宣言に必要な範囲 | 通常の関数・Result。IO adapterは通常のTypeScript、実行時依存ゼロ |
-| 61:08–64:36 | 言語・Prisma・REST/GraphQLの選択理由 | transport非依存。Honoとの統合を検証。全言語・全ORMを再実装する要件にはしない |
+| 61:08–64:36 | 言語・Prisma・REST/GraphQLの選択理由 | transport非依存。HonoとGraphQL.jsとの統合を検証。全言語・全ORMを再実装する要件にはしない |
 | 64:39–66:24 | 登録・メール・人の確認から別workflowへ | 登録サンプルの永続outboxと確認command。別OSプロセス・配送失敗・ack失敗・lease競合を検証。講演では未経験の構想 |
 | 66分台–70:13 | 失敗を含む計算の合成、例外との違い | 明示的Result伝播。予期しない例外はApplicationのcrashedと区別 |
 | 70:21–72:46 | Event Storming、ドメイン知識・チームとの発見 | 状態表と具体例を提供。ドメイン専門家の判断やワークショップをライブラリで代替しない |
@@ -82,7 +82,15 @@
 2. 独立した利用者による開発体験・学習負担の評価と、実業務での運用実績。
 3. 永続イベントを一般機能にする場合の方針決定。ホストのscheduler、dead letter、lease更新、
    外部配送先の冪等性までをどこが担うか、現在は登録サンプルで境界を示した段階。
-4. GraphQL/Prismaなど、講演に登場する具体的技術との実統合。現在はtransport/DB非依存の契約とHono/SQLiteによる検証。
+4. Prisma interactive transactionとの実統合。GraphQL.js / Hono / SQLiteは同じ業務宣言で検証済み。
 
 したがって、現時点で「講演全内容を完全実現した」「最高と証明した」とは評価しない。
 コードとして確かめられる論点の対応を広げたことと、残る未確認事項を同時にレビューできる状態とする。
+
+## GraphQL実統合の追加検証
+
+[同じ業務宣言をGraphQLから利用する例](../examples/leave-http/GRAPHQL.md)を追加。
+独立consumerと公開npm alpha.5の両方で、認証・型付き業務失敗・再送・クエリ投影を検証する。
+GraphQLの複数mutationは文全体の原子性を意味しないことをテストし、DB transactionと区別した。
+RESTで保存したreceiptをサーバー再起動後のGraphQLで再利用する経路も確認する。
+コアAPI・依存・業務モデルは変更しない。Prisma、スキーマからの型生成、実運用評価は引き続き未検証。

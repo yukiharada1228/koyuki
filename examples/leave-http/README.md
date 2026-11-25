@@ -2,7 +2,7 @@
 
 Koyuki alpha.5を、公開入口`koyuki`から使うHono＋SQLiteサンプル。
 HonoとNodeサーバーはアプリケーションの依存で、Koyukiコアの実行依存は追加しない。
-Node.js 22.13以上（開発・検証環境は26.12.0）が必要。
+Node.js 22.13以降の22系、24系、26以降（開発・検証環境は26.12.0）が必要。
 
 ## 起動
 
@@ -137,3 +137,10 @@ Honoの[アプリAPI](https://hono.dev/docs/api/hono)と
 
 alpha.5公開後、registry検証でnpmから新規インストールし、同じ15テストを再実行した。
 このサンプルの依存先もローカルファイルから公開済み`koyuki@0.1.0-alpha.5`へ切り替えている。
+
+## GraphQLからの利用
+
+同じサーバーで`POST /graphql`も受け付ける。
+[操作例・スキーマ・エラーとトランザクションの契約](GRAPHQL.md)を参照。
+GraphQL.jsはこのサンプルの依存で、Koyukiコアへは追加しない。
+`npm test`はRESTの15テストとGraphQLの12テストを実行する。

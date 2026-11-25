@@ -210,7 +210,7 @@ async function startServer(path: string) {
     child.kill('SIGTERM');
   }) };
 }
-test('the runnable server preserves the account and receipt across a process restart', async t => {
+test('REST and GraphQL share durable receipts across a server process restart', async t => {
   const { path } = fixture(t);
   const first = await startServer(path);
   try {
@@ -223,6 +223,13 @@ test('the runnable server preserves the account and receipt across a process res
     assert.equal(response.status, 200); assert.equal((await response.json()).value.kind, 'replayed');
     const current = await fetch(`${second.url}/accounts/owner`, { headers: { authorization: 'Bearer owner-token' } });
     assert.equal((await current.json()).value.account.version, 2);
+    const graphql = await fetch(`${second.url}/graphql`, { method: 'POST',
+      headers: { authorization: 'Bearer owner-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ query: `mutation { submit(requestId:"restart",input:{employee:"owner",leaveId:"leave-1",expectedVersion:1,days:3}) {
+        ... on LeaveSuccess { kind account { version } } ... on LeaveFailure { code } } }` }),
+    });
+    const replay = await graphql.json();
+    assert.equal(replay.data.submit.kind, 'replayed'); assert.equal(replay.data.submit.account.version, 2);
   } finally { await second.stop(); }
 });
 test('a thrown error after commit returns 500, then the same request recovers without another write', async t => {

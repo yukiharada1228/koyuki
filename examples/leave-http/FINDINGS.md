@@ -40,3 +40,15 @@ runDetailedの結果をHTTPに変換するだけで、別の実行エンジン�
 この例からは、コアに新しいHTTP用DSLを増やす根拠は得られなかった。
 同じHTTP helperが別業務でも必要になるかを確認するまでは、アプリ側の小さな関数として保つ。
 新APIの公開候補として、既存consumerとこのHTTP consumerをリリース前の検証に使える。
+
+## GraphQLへの接続
+
+GraphQL.js 17.1.0のresolverから同じ3コマンドを実行し、コアの変更なしで接続できた。
+追加の責務はSDL、入力envelope、認証済みactorの束縛、アクセスscope、結果unionへの変換。
+Queryはmutationのload/receipt/saveを通さず、readから投影する。
+SDLと手書きのresolver引数型の一致は、TypeScript単独では証明されないため実際の文の実行で検証する。
+
+配布開発版のconsumer30テスト、公開npm alpha.5のconsumer27テストが成功。
+GraphQL固有12件に加え、RESTのプロセス再起動テストを跨transportのreceipt共有へ拡張。
+複数mutationの直列実行と、文全体の原子性は別であることも確認した。
+この接続のための新しいコアDSLやGraphQL依存は必要なかった。

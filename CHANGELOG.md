@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 休暇サンプルにGraphQL.js＋HonoのPOST /graphqlを追加。同じ業務宣言でQuery/Mutation分離、結果union、権限、再送、保存後の例外、複数mutationの部分成功を検証。公開npm consumer27件・開発版consumer30件が成功。コア依存の追加なし。
 - fromThrowable / fromPromise：既存の同期例外・Promiseを明示した境界で型付きResultへ接続。引数型を維持し、非同期境界は呼び出し時のthrowも変換する。
 - 登録→メール→人の確認を、既存のUseCase / ProcessとSQLite outboxで実装。原子保存・lease・再配送・古いclaim・別OSプロセスを配布パッケージから検証。永続workflow機能をコアへ追加したものではない。
 - [3講演との論点別対応と未確認事項](docs/lecture-coverage.md)を追加。全内容の完全実現という評価は未完了。
