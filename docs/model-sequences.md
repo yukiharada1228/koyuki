@@ -71,6 +71,7 @@ callback間や元の入力に変更を漏らさず、getterやclass等の非対�
 故意に壊した操作者の変換を挟むと申請→自己承認の反例を得る。
 両方を実tarballのconsumerにも含め、Node型なしの宣言検査とNode globalなしの実行も確認する。
 
-Issue #8の部分実装。タグの重複・上限・古いversionへの適用、メモリ/SQLiteの同じ契約、
-非同期adapterへの適用、payloadの縮小、テスト雛形の出力、全候補での最短列は未提供・未検証。
+Issue #8の部分実装。[タグの共通生成契約](tag-model-sequences.md)では重複・上限・古いversionを
+メモリ/SQLiteで比較する。生成後のasync比較はhostテスト側の処理で、sampleModelの非同期checkではない。
+非同期adapterの自動反例縮小、payloadの縮小、テスト雛形の出力、全候補での最短列は未提供・未検証。
 講演の純粋な業務関数・明示的な状態を検査へ使う具体化であり、講演がこのAPIを指定した意味ではない。
