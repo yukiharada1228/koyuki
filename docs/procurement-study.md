@@ -2,7 +2,7 @@
 
 25操作の評価アプリのうち、申請作成・変更・申請・取り下げ・承認・却下・差し戻し・担当変更・発注・発注変更・発注取消・発注完了・検収・返品・検収訂正・請求登録・請求照合・請求承認・請求無効化・支払記録・支払取消・在庫引当・引当解除・移動・棚卸調整を実装した。
 これは講演の実製品を再現した仕様ではなく、Koyukiの開発体験を検証するための独自の評価仕様である。
-[SQLite host](procurement-sqlite.md)で複合保存・復元を検証した。[複数モデルのApplication投影](procurement-projection.md)も検証済み。[永続再送境界](procurement-replay.md)も接続済み。通常TypeScript／helper版との同条件比較は未実施。
+[SQLite host](procurement-sqlite.md)で複合保存・復元を検証した。[複数モデルのApplication投影](procurement-projection.md)も検証済み。[永続再送境界](procurement-replay.md)も接続済み。[通常TypeScript／helper版との業務接続比較](procurement-comparison.md)で結果一致を検証した。同等の実行機能・仕様変更を含む比較は未実施。
 
 ## 実装と境界
 
@@ -178,3 +178,8 @@ SQLiteの検証を踏まえ、複合投影を検証済みとし、永続再送�
 
 SQLiteの保存は宣言されたcheckの行だけを取得し、業務のloadは親IDに限定したrelated照会へ変更した。
 全件listは診断用に残すが、業務宣言は必要としない。詳細と残る取得量の制約は[SQLite host](procurement-sqlite.md)を参照。
+
+
+[比較用context](../src/experiments/procurement/context.ts)を3方式で共有し、25操作の結果・保存状態をMemory/SQLiteで比較した。
+単純な取得・判断・保存だけでは小さなhelperでも同じ結果を表せ、成功型がKoyukiより狭い箇所も確認した。
+再送・Application・traceを含めた差はまだ比較していない。

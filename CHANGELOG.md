@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買25操作の通常TS/helper基準実装と共有load contextを追加。3方式×Memory/SQLiteで32回の成功結果と全保存状態を比較し、失敗時の保存停止と基準実装の承認成功型も検査。再送・trace・Applicationまで同等の比較や生産性測定とは区別。
+
 - 購買25操作へ既存withReplayによる共通再送境界を接続。Web Cryptoで要求・actor・操作を識別し、SQLiteで全writesと成功記録を同時保存。応答消失・記録挿入失敗・重複呼出し・過去結果による投影維持を配布consumerで検証。自動retry・外部副作用のexactly-once・全障害経路の網羅とは区別。
 
 - 購買の同じ25操作から通常結果と全writes付き結果を生成し、既存Applicationへ接続。返品時の発注・検収・請求・在庫を一度に投影し、型付きのモデル名付きdispatch、失敗時の投影保持、SQLite rollback後の再実行を実配布consumerで検証。初期読込み・別session同期・再送はhost側の未完了範囲として明記。
