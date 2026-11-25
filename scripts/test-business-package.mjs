@@ -55,6 +55,11 @@ try {
   writeFileSync(join(consumer, 'transition-inference.test.ts'), readFileSync(join(root, 'src/transition-inference.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replace("'./examples/order-lines.js'", "'./order-lines.js'"));
   writeFileSync(join(consumer, 'order-lines.ts'), readFileSync(join(root, 'src/examples/order-lines.ts'), 'utf8').replace("'../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'customer-import-sqlite.test.ts'), readFileSync(join(root, 'src/customer-import-sqlite.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
+  mkdirSync(join(consumer, 'procurement'));
+  for (const file of ['domain.ts', 'repository.ts', 'application.ts']) writeFileSync(join(consumer, 'procurement', file),
+    readFileSync(join(root, 'src/experiments/procurement', file), 'utf8').replace("'../../framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'procurement.test.ts'), readFileSync(join(root, 'src/procurement.test.ts'), 'utf8')
+    .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);
