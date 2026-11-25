@@ -21,13 +21,14 @@ replayed後に現在値を取得する制御と、取得結果を検査して状
 
 ## 比較した代表シナリオ
 
-`src/procurement-current-comparison.test.ts`の4シナリオをKoyuki/plain/helperへ適用する。
+`src/procurement-current-comparison.test.ts`の5シナリオをKoyuki/plain/helperへ適用する。
 dispatch結果・snapshot・revision・通知・session traceを比較し、実tarballのconsumerでも実行する。
 
 1. CommitUnknownからの復旧。空のViewへ保存行が表示され、その後の再送でもcommitは1回のまま。
 2. 古いdraftの成功記録から現在のsubmittedを表示する。取得不能・不正patch・例外を順に注入し、表示を保ったままdismiss後に再取得できる。
 3. 返品後に再入荷・再照合された4モデルを、過去返品の再送から現在versionへ更新する。
 4. 最初のcurrent取得をgateで止めてrunningを確認し、後続入力の待機中変更を受けず、さらに後ろのstale要求をIO前に拒否する。
+5. 作成済みversion 1から申請を保存した直後に例外を投げる。Applicationはcrashed、DBはversion 2、表示はversion 1となる。別の呼び出しで取下げてversion 3へ進めた後、同じ申請requestIdで再送する。currentがErrならfailed、例外ならcrashedとなり表示を保持する。dismiss後の取得成功では過去の申請version 2ではなく現在のversion 3を表示する。その間に申請の追加commitはなく、続く新規申請でのみversion 4へ進む。
 
 不正patchには不足・重複・別group・想定外ID・version 0を含む。
 シナリオ2は既存version 2の表示が失敗で消えないことと、再取得時に新しい業務commitが起きないことも直接検査する。
@@ -43,6 +44,7 @@ dispatch結果・snapshot・revision・通知・session traceを比較し、実t
 全体初期取得・ページング・他session同期・ブラウザ描画・任意の外部observer隔離は対象外。
 値のcapture・観測失敗・仕様変更差分・追加基盤を含めた実装量と、独立利用者の開発負担の評価は継続する。
 テスト時間から性能や生産性の優位性は主張しない。
+5番の例外は実際のSQLite保存の戻り直後にhost wrapperで注入する。ネットワーク障害や任意のDB driverの検証ではない。別の呼び出しによる更新も順序を固定しており、あらゆる競合順序を保証しない。現在値取得は保存の取消しではなく、保存済み記録と表示の復旧を別々に扱う方針である。独立利用者の試用は未実施。
 
 ## 後続機能との境界
 

@@ -116,7 +116,61 @@ async function queued(build: Builder) {
     return { results, snapshot: session.snapshot(), trace: session.trace() };
   } finally { release(); repository.close(); store.clean(); }
 }
+async function committedCrashRecovery(build: Builder) {
+  const store = disk(), repository = new SqliteProcurement(store.path, 'g1');
+  let broken = false, commits = 0, reads = 0;
+  let refresh: 'unavailable' | 'broken' | 'real' = 'unavailable';
+  try {
+    const faulty: CurrentRepository = { ...port(repository),
+      commitExecution: async (change, identity, request) => {
+        commits++;
+        const result = await repository.commitExecution(change, identity, request);
+        if (broken) throw new Error('CommittedButResponseLost');
+        return result;
+      },
+      current: (keys, identity) => {
+        reads++;
+        if (refresh === 'broken') throw new Error('CurrentReadCrashed');
+        return refresh === 'unavailable' ? { ok: false, error: { kind: 'ProjectionUnavailable' } } : repository.current(keys, identity);
+      },
+    };
+    const session = await build(faulty).start(), notifications: unknown[] = [];
+    session.subscribe(snapshot => notifications.push(snapshot));
+    await session.dispatch({ type: 'request.create', input: call });
+    broken = true;
+    const submit = { type: 'request.submit', input: { requestId: 'submit', input: { id: 'rq', expectedVersion: 1, approverId: 'approver' } } } as const;
+    await session.dispatch(submit);
+    assert.equal(session.snapshot().state.kind, 'crashed');
+    assert.equal(session.snapshot().view.error, 'UnexpectedException');
+    assert.equal(session.snapshot().view.busy, false);
+    assert.equal(session.snapshot().view.entities[0]?.version, 1);
+    assert.equal(repository.list('request', actor('buyer'))[0]?.version, 2);
+    assert.equal(commits, 2); assert.equal(reads, 0);
+    broken = false;
+    // Another caller advances the database beyond the historical submit receipt.
+    assert((await procurementReplay(repository, actor('buyer'), policy).requests.withdraw.run({ requestId: 'remote-withdraw', input: { id: 'rq', expectedVersion: 2 } })).ok);
+    for (const mode of ['unavailable', 'broken', 'real'] as const) {
+      await session.dispatch({ type: 'dismiss' });
+      refresh = mode;
+      await session.dispatch(submit);
+      assert.equal(session.snapshot().state.kind, mode === 'real' ? 'ready' : mode === 'broken' ? 'crashed' : 'failed');
+      assert.equal(session.snapshot().view.error, mode === 'real' ? null : mode === 'broken' ? 'UnexpectedException' : 'ProjectionUnavailable');
+      assert.equal(session.snapshot().view.busy, false);
+      assert.equal(session.snapshot().view.entities[0]?.version, mode === 'real' ? 3 : 1);
+      assert.equal(repository.list('request', actor('buyer'))[0]?.version, 3);
+      assert.equal(commits, 2);
+    }
+    assert.equal(reads, 3);
+    await session.dispatch({ type: 'request.submit', input: { requestId: 'submit-again', input: { id: 'rq', expectedVersion: 3, approverId: 'approver' } } });
+    assert.equal(session.snapshot().state.kind, 'ready');
+    assert.equal(session.snapshot().view.entities[0]?.version, 4);
+    assert.equal(repository.list('request', actor('buyer'))[0]?.version, 4);
+    assert.equal(commits, 3); assert.equal(reads, 3);
+    return { notifications, snapshot: session.snapshot(), trace: session.trace() };
+  } finally { repository.close(); store.clean(); }
+}
 for (const [name, build] of Object.entries(builders)) {
+  test(`current-read Application committed crash, failed refresh and newer state recovery: ${name}`, async () => assert.deepEqual(await committedCrashRecovery(build), await committedCrashRecovery(builders.koyuki)));
   test(`current-read Application unknown commit recovery parity: ${name}`, async () => assert.deepEqual(await unknown(build), await unknown(builders.koyuki)));
   test(`current-read Application invalid patches and recovery parity: ${name}`, async () => assert.deepEqual(await invalidAndRecovery(build), await invalidAndRecovery(builders.koyuki)));
   test(`current-read Application composite current patch parity: ${name}`, async () => assert.deepEqual(await composite(build), await composite(builders.koyuki)));
