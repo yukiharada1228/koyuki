@@ -78,4 +78,6 @@ Issue #8の部分実装。[タグの共通生成契約](tag-model-sequences.md)�
 [sampleModelAsync](async-model-sequences.md)は、隔離した非同期比較でも同じ反例削除を行える。
 [payload候補の縮小](event-payload-shrinking.md)と[テスト雛形の出力](model-test-template.md)も追加した。
 雛形の期待仕様・生成器・実装比較は利用者が埋める。全候補での最短列は未検証。
+記述済みの契約は`--contract`で接続でき、タグの同じ参照仕様と生成器から
+メモリ／SQLiteの6テストを生成し、配布物の利用側でも型検査・実行する。
 講演の純粋な業務関数・明示的な状態を検査へ使う具体化であり、講演がこのAPIを指定した意味ではない。

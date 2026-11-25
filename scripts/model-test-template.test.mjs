@@ -62,3 +62,38 @@ test('CLI emits deterministic source only and rejects unsupported arguments', ()
   const invalid = run(['scripts/generate-model-test.mjs', '--unknown']);
   assert.equal(invalid.status, 2); assert.equal(invalid.stdout, '');
 });
+
+test('contract generation never loads the module; generated tag tests run both adapters and expose stale-version faults', async () => {
+  const dir = await mkdtemp(join(root, '.model-template-contract-'));
+  try {
+    const forbidden = join(dir, 'never-import.mjs');
+    await writeFile(forbidden, "throw Error('GENERATION_EXECUTED_USER_CODE');");
+    const emitted = run(['scripts/generate-model-test.mjs', '--contract', forbidden]);
+    assert.equal(emitted.status, 0, emitted.stderr);
+    assert.equal(emitted.stdout, generateModelTest(forbidden));
+    assert.equal(emitted.stderr, '');
+    assert.throws(() => generateModelTest('bad\nmodule'), /Invalid model contract/);
+    // Quotes in a specifier are encoded as source data, never interpolated as code.
+    assert(generateModelTest("./it's-a-contract.js").includes(JSON.stringify("./it's-a-contract.js")));
+
+    const contract = new URL('../src/tags/model-testing.ts', import.meta.url).href;
+    const file = join(dir, 'generated.test.ts');
+    const source = module => generateModelTest(module).replace("'koyuki/testing'", JSON.stringify(testing));
+    await writeFile(file, source(contract));
+    const healthy = run(['node_modules/tsx/dist/cli.mjs', '--test', file]);
+    assert.equal(healthy.status, 0, healthy.stdout + healthy.stderr);
+    assert.match(healthy.stdout, /pass 6/);
+    const faulty = join(dir, 'faulty.mjs');
+    await writeFile(faulty, `import {models as healthy, compareTag, fixtures} from ${JSON.stringify(contract)};
+export const models = { memory: { ...healthy.memory,
+  check: (before, event, expected) => compareTag(fixtures.memory, before, event, expected, true)
+} };`);
+    await writeFile(file, source(faulty));
+    const broken = run(['node_modules/tsx/dist/cli.mjs', '--test', file]);
+    assert.equal(broken.status, 1, broken.stderr);
+    assert.match(broken.stdout, /counterexample/);
+    assert.match(broken.stdout, /stale: true/);
+    assert.match(broken.stdout, /one-deletion-minimal/);
+    assert.match(broken.stdout, /witness/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

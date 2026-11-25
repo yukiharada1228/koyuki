@@ -47,6 +47,16 @@ SQLiteは実際のDatabaseSyncを:memory:で使う。ファイル永続化・復
 各seedで新しいfixtureを作り、実装間で保存データや期待値を流用しない。
 実tarballの独立consumerにも同じテストとhost側adapterを含める。
 
+## 業務契約からの雛形生成
+
+[model-testing.ts](../src/tags/model-testing.ts)へ、参照仕様・生成器・fixture・隔離比較を
+抽出した。手書きの到達確認と反例縮小のテストでもこの同じ契約を使う。
+[雛形生成](model-test-template.md)の`--contract`へこのmoduleを指定すると、
+メモリ／SQLiteそれぞれに3 seedのテストを生成できる。
+生成テストの比較は毎回before状態からfixtureを再構築するため、手書きの連続実行の検査とは
+別の実行方法である。両方を残し、fixtureの再構築による違いも検出できるようにする。
+生成した6テストは、実tarballのconsumerで型検査・実行する。
+
 ## 残る範囲
 
 Issue #8のタグ・共通adapter契約の具体例。全グループ、icon、archive/restore、並行競合、
@@ -54,5 +64,5 @@ Issue #8のタグ・共通adapter契約の具体例。全グループ、icon、a
 [非同期反例縮小](async-model-sequences.md)も追加した。各比較でfixtureとbefore状態を再構築し、
 古いversionを無視する故意のwrapperを両adapterで検出してcreate→stale renameへ縮める。
 sampler自体がDBを自動でrollbackするものではなく、隔離と後片付けはhostの比較関数が行う。
-[payload候補の縮小](event-payload-shrinking.md)も追加し、故意のwrapperに対してlabelをBから空文字へ簡略化しても不一致を保てることを確認した。全候補での最短列やテスト雛形の出力は残る。
+[payload候補の縮小](event-payload-shrinking.md)も追加し、故意のwrapperに対してlabelをBから空文字へ簡略化しても不一致を保てることを確認した。全候補での最短列は保証しない。
 講演の全内容を完全実現したという根拠や、生成検査だけでの普遍的な正しさの証明にはしない。

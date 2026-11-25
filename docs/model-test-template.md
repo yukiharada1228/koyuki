@@ -12,6 +12,31 @@ npm run --silent generate:model-test > business-model.test.ts
 利用先では開発依存のTypeScript/tsx等で型検査・実行する。
 CLIはこのリポジトリの開発ツールであり、公開packageのbinには含めていない。
 
+## 記述済みの業務契約から生成する
+
+`--contract`は、利用者が記述した`models`をimportするテストを出力する。
+`models`は名前をキーとし、同じ状態・操作・出力型の
+`Omit<AsyncSequenceModel<State, Event, Output>, 'seed'>`を値とするrecordである。
+入力生成器・境界値・期待仕様・比較・不変条件・縮小候補はこの契約側で指定する。
+名前ごとに3 seedのテストを生成し、空のrecordや比較0件を拒否する。
+module specifierは生成されたテストファイルからの相対位置で指定する。
+
+リポジトリルートで、タグの既存契約を使う例：
+
+```sh
+npm run build
+npm run --silent generate:model-test -- --contract ./src/tags/model-testing.js > generated-tag-model.test.ts
+node --import tsx --test generated-tag-model.test.ts
+```
+
+[タグの契約](../src/tags/model-testing.ts)は、独立した参照仕様と入力生成器を
+メモリ／SQLiteで共有する。比較のたびにfixtureを作り直し、出力と保存状態を確認して閉じる。
+既存の手書きテストも同じ仕様を使い、重複・上限・古いversion等の到達確認を維持する。
+生成コードの実行を伴う検査では両adapterの計6テストを実行し、古いversionを無視する
+故意の不具合が反例として検出されることも確認する。配布物のconsumerでも生成テストを実行する。
+生成時に契約moduleのトップレベルthrowが実行されないことも検査する。
+これは利用者が指定した仕様の接続であり、業務コードから正しい仕様を発見する機能ではない。
+
 利用者が次を実装するまでは、生成されたテストは必ず失敗する。
 
 1. `State`・`Event`・`Output`と初期状態を業務に合わせる。

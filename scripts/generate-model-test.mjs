@@ -2,7 +2,28 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /** Source generation only: never import or execute the business being tested. */
-export function generateModelTest() {
+export function generateModelTest(contract) {
+  if (contract !== undefined) {
+    if (typeof contract !== 'string' || !contract.trim() || /[\r\n\0]/.test(contract)) throw new TypeError('Invalid model contract module');
+    return `import test from 'node:test';
+import assert from 'node:assert/strict';
+import { inspect } from 'node:util';
+import { sampleModelAsync } from 'koyuki/testing';
+import { models } from ${JSON.stringify(contract)};
+
+// models supplies independent specifications and isolated implementation checks.
+// Generation never imports that module. These callbacks run only during testing.
+assert(Object.keys(models).length > 0, 'No model contracts supplied');
+for (const [name, model] of Object.entries(models)) {
+  for (const seed of [0, 42, 0xffffffff]) test(name + ', seed ' + seed, async () => {
+    const report = await sampleModelAsync({ ...model, seed });
+    assert.equal(report.kind, 'sampled', inspect(report, { depth: null }));
+    assert(report.transitions > 0, 'No implementation comparison ran; check the generator');
+    // sampled is bounded evidence, not exhaustive correctness.
+  });
+}
+`;
+  }
   return `import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inspect } from 'node:util';
@@ -46,8 +67,9 @@ for (const seed of [0, 42, 0xffffffff]) test('business model, seed ' + seed, asy
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  if (process.argv.length !== 2) {
-    console.error('Usage: node scripts/generate-model-test.mjs > business-model.test.ts');
+  const args = process.argv.slice(2);
+  if (args.length !== 0 && !(args.length === 2 && args[0] === '--contract' && args[1].trim() && !/[\r\n\0]/.test(args[1]))) {
+    console.error('Usage: node scripts/generate-model-test.mjs [--contract ./model-contract.js] > business-model.test.ts');
     process.exitCode = 2;
-  } else process.stdout.write(generateModelTest());
+  } else process.stdout.write(generateModelTest(args[1]));
 }
