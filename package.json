@@ -57,7 +57,8 @@
     "test:prisma:package": "node scripts/test-prisma-package.mjs",
     "test:prisma:registry": "node scripts/test-prisma-package.mjs --registry",
     "test:business:package": "node scripts/test-business-package.mjs",
-    "test:business:change": "node scripts/test-business-package.mjs --change"
+    "test:business:change": "node scripts/test-business-package.mjs --change",
+    "check:lecture-audit": "node scripts/check-lecture-audit.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",

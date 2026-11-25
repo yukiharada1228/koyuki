@@ -1,0 +1,306 @@
+{
+  "videoId": "qBf910_YiqA",
+  "title": "TypeScript 関数型バックエンド開発のリアル",
+  "url": "https://www.youtube.com/watch?v=qBf910_YiqA",
+  "source": {
+    "file": "qBf910_YiqA.ja-orig.txt",
+    "sha256": "9d991ad2ee339c76806a9bd180dd70d7198da98152c06739abe68a48e527987b",
+    "lineCount": 812,
+    "durationSeconds": 2019
+  },
+  "review": {
+    "basis": "Saved Japanese automatic captions, manually reread in full",
+    "audioDirectlyReviewed": false,
+    "allFramesReviewed": false,
+    "implementationCommit": "8f6416c",
+    "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation."
+  },
+  "sections": [
+    {
+      "id": "qbf-01",
+      "startSeconds": 0,
+      "endSeconds": 136,
+      "topic": "導入と発表の対象",
+      "status": "context",
+      "assessment": "飲食店向けサービスの実践と、ドメイン外の実装との関係を説明する発表。フレームワークの機能要件ではない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "id": "qbf-02",
+      "startSeconds": 136,
+      "endSeconds": 191,
+      "topic": "設計全体は従来と連続する",
+      "status": "design-choice",
+      "assessment": "関数型の適用で全層を置き換えない。Koyukiも通常のadapterと既存アーキテクチャを残す。",
+      "evidence": [
+        "src/expenses/repository.ts",
+        "examples/leave-http/http.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-03",
+      "startSeconds": 191,
+      "endSeconds": 308,
+      "topic": "書籍から採用する点と採用しない点",
+      "status": "design-choice",
+      "assessment": "型・不変な状態遷移を採り、型と振る舞いの整理は既存の集約・モジュールを維持する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-04",
+      "startSeconds": 308,
+      "endSeconds": 458,
+      "topic": "型による構造とResult合成",
+      "status": "supported",
+      "assessment": "通常の型と関数を使い、入力を直接変更しない業務例、型付きの失敗停止を用意する。任意の利用者関数の純粋性は強制しない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/business-api-types.test.ts",
+        "src/shipping.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-05",
+      "startSeconds": 458,
+      "endSeconds": 588,
+      "topic": "Union・brand・検証付きの生成",
+      "status": "supported",
+      "assessment": "状態Unionと非公開の証拠型を実例で使用。外部データはrestoreで検証し、単なる型assertionを安全な生成とは扱わない。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts",
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-06",
+      "startSeconds": 588,
+      "endSeconds": 779,
+      "topic": "変更前後を引数と戻り値に表す",
+      "status": "supported",
+      "assessment": "業務関数の入力・出力と接続を型で表現する。仕様自体の正しさや任意の破壊的変更までの保証はない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-07",
+      "startSeconds": 779,
+      "endSeconds": 1078,
+      "topic": "サブステップから業務フローを構成",
+      "status": "supported",
+      "assessment": "workflow/transitionとbusiness試作で成功値を次へ渡し、最初の失敗で後続を止める。",
+      "evidence": [
+        "src/framework/model.ts",
+        "src/experiments/business.ts",
+        "src/business-api-study.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-08",
+      "startSeconds": 1078,
+      "endSeconds": 1211,
+      "topic": "更新と参照・DBアクセスの分離",
+      "status": "supported",
+      "assessment": "参照に更新workflowを要求せず、更新をload・純粋計算・saveへ接続する。",
+      "evidence": [
+        "examples/leave-http/http.ts",
+        "examples/leave-http/graphql.ts",
+        "examples/leave-http/graphql.test.ts",
+        "examples/prisma-stock/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-09",
+      "startSeconds": 1211,
+      "endSeconds": 1336,
+      "topic": "I/Oと計算のサンドイッチ",
+      "status": "supported",
+      "assessment": "I/O adapterと純粋coreを分離。メール等の途中I/Oはprocessの明示的境界で扱う。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/registration/delivery.ts",
+        "src/shipping/feature.ts",
+        "src/process.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-10",
+      "startSeconds": 1336,
+      "endSeconds": 1420,
+      "topic": "集約とコードの整理方法",
+      "status": "design-choice",
+      "assessment": "型と振る舞いを近くへ置き、ドメインモデルの発見自体は利用者が行う。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-11",
+      "startSeconds": 1420,
+      "endSeconds": 1562,
+      "topic": "目的は型と静的検査の有効利用",
+      "status": "supported",
+      "assessment": "型の誤接続拒否と実行時の業務仕様テストを分ける。FP自体の優越やすべてのテストの不要化を主張しない。",
+      "evidence": [
+        "src/business-api-types.test.ts",
+        "scripts/fixtures/leave-business-diagnostics.ts",
+        "docs/business-change-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-12",
+      "startSeconds": 1562,
+      "endSeconds": 1681,
+      "topic": "独立したフィールドのResultをまとめる負担",
+      "status": "partial",
+      "assessment": "collectは固定フィールドの検証結果と全エラーの収集を扱える。Resultが言語から透過的に消えるわけではない。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/shipping.test.ts"
+      ],
+      "remaining": [
+        "language-level-result-syntax"
+      ]
+    },
+    {
+      "id": "qbf-13",
+      "startSeconds": 1681,
+      "endSeconds": 1749,
+      "topic": "do記法や他言語の脱出構文との比較",
+      "status": "design-choice",
+      "assessment": "TypeScriptの構文拡張・HaskellやRustの再実装はしない。関数合成で定型接続を減らす。",
+      "evidence": [
+        "src/experiments/business.ts"
+      ],
+      "remaining": [
+        "language-level-result-syntax"
+      ]
+    },
+    {
+      "id": "qbf-14",
+      "startSeconds": 1749,
+      "endSeconds": 1776,
+      "topic": "ループ内で生じるResult列",
+      "status": "gap",
+      "assessment": "collectはRecord専用。可変長の要素列を業務関数へ渡してResult列をまとめる専用combinatorは未提供。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/framework/index.ts"
+      ],
+      "remaining": [
+        "result-collection-composition"
+      ]
+    },
+    {
+      "id": "qbf-15",
+      "startSeconds": 1776,
+      "endSeconds": 1813,
+      "topic": "Promiseと例外を境界で変換",
+      "status": "supported",
+      "assessment": "fromPromise/fromThrowableを明示的なI/O adapterで使う。未知の欠陥の自動分類や、mapperの正しさは保証しない。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/result-boundary.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-16",
+      "startSeconds": 1813,
+      "endSeconds": 1903,
+      "topic": "運用経験・開発速度・テストの役割",
+      "status": "experience",
+      "assessment": "登壇者の約2年の経験とKoyukiの実績は別。短期速度の改善は講演でも断定されず、Koyukiの障害削減率・教育効果は未測定。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/business-change-study.md"
+      ],
+      "remaining": [
+        "independent-adoption-evaluation"
+      ]
+    },
+    {
+      "id": "qbf-17",
+      "startSeconds": 1903,
+      "endSeconds": 1928,
+      "topic": "オンボーディングとResultの複雑化",
+      "status": "experience",
+      "assessment": "ガイドと実例を用意するが、独立した利用者の学習負担はまだ測定していない。",
+      "evidence": [
+        "docs/getting-started.md",
+        "docs/business-api-study.md"
+      ],
+      "remaining": [
+        "independent-adoption-evaluation"
+      ]
+    },
+    {
+      "id": "qbf-18",
+      "startSeconds": 1928,
+      "endSeconds": 1956,
+      "topic": "plain dataとDTOの組み替え",
+      "status": "design-choice",
+      "assessment": "plain dataは受け渡しを簡単にするが、HTTP/GraphQLの公開項目の投影・秘密情報の除外まで不要にはならない。",
+      "evidence": [
+        "examples/leave-http/graphql.ts",
+        "src/registration/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-19",
+      "startSeconds": 1956,
+      "endSeconds": 1978,
+      "topic": "ワークフロー型定義の冗長さ",
+      "status": "partial",
+      "assessment": "型推論と通常関数の配列を試作し、64段inline接続を検証。任意のgeneric推論・診断品質を完全解決したわけではない。",
+      "evidence": [
+        "src/experiments/business.ts",
+        "src/business-api-types.test.ts",
+        "docs/business-api-study.md"
+      ],
+      "remaining": [
+        "generic-inference-and-diagnostics"
+      ]
+    },
+    {
+      "id": "qbf-20",
+      "startSeconds": 1978,
+      "endSeconds": 2011,
+      "topic": "適用範囲を現場で判断する",
+      "status": "design-choice",
+      "assessment": "既存の設計を残し、利用現場がどの範囲を関数型にするか決める。KoyukiがすべてのCRUDに最適とは主張しない。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "qbf-21",
+      "startSeconds": 2011,
+      "endSeconds": 2019,
+      "topic": "終了と拍手",
+      "status": "context",
+      "assessment": "挨拶・拍手。実装機能へ変換しない。",
+      "evidence": [],
+      "remaining": []
+    }
+  ]
+}
