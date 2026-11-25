@@ -54,6 +54,9 @@ node --import tsx --test generated-expense-model.test.ts
 配布物のconsumerでも、この契約から生成したコードを型検査・実行する。
 経費のこの契約はDB・認証・再送の検査ではなく、それらの既存adapter検査を置き換えない。
 
+別の[経費要求モデル](expense-request-model-sequences.md)では、既存のSQLite再送APIを
+同じ生成入口へ接続する。ドメインだけの契約と要求ID付きの保存契約を区別する。
+
 利用者が次を実装するまでは、生成されたテストは必ず失敗する。
 
 1. `State`・`Event`・`Output`と初期状態を業務に合わせる。
