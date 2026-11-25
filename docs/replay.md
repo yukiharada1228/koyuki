@@ -42,10 +42,10 @@ const command = withReplay(commands.reserve, {
 事前照会とloadの間に他の要求が成功する場合もあるため、このサンプルは `InvalidState` も再照会対象にしています。
 ただし、記録がなければ元のエラーをそのまま返します。業務上の拒否を成功に変換するものではありません。
 
-入力は最初のawaitより前に `structuredClone` で切り離します。
+入力は最初のawaitより前に[対応する要求データの形式を検査](replay-request-snapshot.md)し、`structuredClone` で切り離します。
 呼び出し側が入れ子の入力を後から変更しても要求は変わりません。
-関数などcloneできない入力は `ReplayInputNotCloneable` になります。
-クラスのインスタンスに固有の振る舞いを期待する入力ではなく、clone可能な要求データを渡してください。
+関数などcloneできない入力や、Symbol属性・accessor・独自クラス等の情報を失う入力は `ReplayInputNotCloneable` になります。
+クラスのインスタンス等は黙ってDTOへ変換せず、照会前に拒否します。要求用のDTOを明示的に用意してください。
 フックが投げた想定外の例外は握りつぶさず、そのままrejectします。
 
 ## 古い応答でViewを巻き戻さない

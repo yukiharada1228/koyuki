@@ -31,6 +31,102 @@ export interface ReplayReport<O, E, RE> {
   } | null;
 }
 
+// Request ownership must not silently erase validation evidence or invoke accessors.
+// This boundary accepts data formats, not arbitrary objects with behavior.
+function snapshotRequest<I>(input: I): I {
+  const seen = new Set<object>();
+  let nullPrototype = false;
+  const typed = new Set<object>([Int8Array.prototype, Uint8Array.prototype, Uint8ClampedArray.prototype,
+    Int16Array.prototype, Uint16Array.prototype, Int32Array.prototype, Uint32Array.prototype,
+    Float32Array.prototype, Float64Array.prototype, BigInt64Array.prototype, BigUint64Array.prototype]);
+  function inspect(value: unknown): void {
+    if (value === null || typeof value === 'undefined' || typeof value === 'string' || typeof value === 'boolean' || typeof value === 'number' || typeof value === 'bigint') return;
+    if (typeof value !== 'object') throw new Error('UnsupportedReplayData');
+    if (seen.has(value)) return;
+    seen.add(value);
+    const prototype = Object.getPrototypeOf(value), array = Array.isArray(value);
+    const plain = prototype === Object.prototype || prototype === null, date = prototype === Date.prototype;
+    const map = prototype === Map.prototype, set = prototype === Set.prototype;
+    const regexp = prototype === RegExp.prototype, buffer = prototype === ArrayBuffer.prototype;
+    const view = ArrayBuffer.isView(value) && (prototype === DataView.prototype || typed.has(prototype));
+    if (!(plain || array && prototype === Array.prototype || date || map || set || regexp || buffer || view)) throw new Error('UnsupportedReplayData');
+    if (prototype === null) nullPrototype = true;
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    for (const key of Reflect.ownKeys(descriptors)) {
+      if (typeof key !== 'string') throw new Error('UnsupportedReplayData');
+      const descriptor = descriptors[key]!;
+      if (!Object.hasOwn(descriptor, 'value')) throw new Error('UnsupportedReplayData');
+      if (array && key === 'length') continue;
+      if (regexp && key === 'lastIndex' && descriptor.value === 0) continue;
+      if (!(plain || array || view && prototype !== DataView.prototype && /^(0|[1-9][0-9]*)$/.test(key))) throw new Error('UnsupportedReplayData');
+      if (!descriptor.enumerable) throw new Error('UnsupportedReplayData');
+      inspect(descriptor.value);
+    }
+    if (map) for (const [key, item] of Map.prototype.entries.call(value)) { inspect(key); inspect(item); }
+    if (set) for (const item of Set.prototype.values.call(value)) inspect(item);
+    if (view) {
+      // Only an ArrayBuffer provides detached ownership; SharedArrayBuffer does not.
+      const source = (value as ArrayBufferView).buffer;
+      Reflect.apply(Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'byteLength')!.get!, source, []);
+      inspect(source);
+    }
+  }
+  inspect(input);
+  const request = structuredClone(input);
+  const copied = new Set<object>();
+  // Native cloning reveals shared buffers even when their original prototype was
+  // replaced. Check collection contents and view buffers before any host callback.
+  function detached(value: unknown): void {
+    if (value === null || typeof value !== 'object' || copied.has(value)) return;
+    copied.add(value);
+    if (ArrayBuffer.isView(value)) { detached(value.buffer); return; }
+    const prototype = Object.getPrototypeOf(value);
+    if (!Array.isArray(value) && prototype !== null && Object.getPrototypeOf(prototype) !== null) {
+      let shared = false;
+      if (typeof SharedArrayBuffer !== 'undefined') {
+        try { Reflect.apply(Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, 'byteLength')!.get!, value, []); shared = true; }
+        catch { /* Not a shared buffer. */ }
+      }
+      if (shared) throw new Error('UnsupportedReplayData');
+      let entries: IterableIterator<[unknown, unknown]> | undefined;
+      try { entries = Map.prototype.entries.call(value); } catch { /* Not a Map. */ }
+      if (entries) { for (const [key, item] of entries) { detached(key); detached(item); } return; }
+      let values: IterableIterator<unknown> | undefined;
+      try { values = Set.prototype.values.call(value); } catch { /* Not a Set. */ }
+      if (values) { for (const item of values) detached(item); return; }
+    }
+    for (const descriptor of Object.values(Object.getOwnPropertyDescriptors(value))) {
+      if (Object.hasOwn(descriptor, 'value')) detached(descriptor.value);
+    }
+  }
+  detached(request);
+  if (nullPrototype) {
+    const restored = new Set<object>();
+    function restore(source: unknown, target: unknown): void {
+      if (source === null || typeof source !== 'object' || target === null || typeof target !== 'object' || restored.has(source)) return;
+      restored.add(source);
+      const prototype = Object.getPrototypeOf(source);
+      if (prototype === null) Object.setPrototypeOf(target, null);
+      if (prototype === Map.prototype) {
+        const entries = Map.prototype.entries.call(target);
+        for (const [key, value] of Map.prototype.entries.call(source)) {
+          const copy = entries.next().value; if (!copy) throw new Error('UnsupportedReplayData');
+          restore(key, copy[0]); restore(value, copy[1]);
+        }
+      } else if (prototype === Set.prototype) {
+        const values = Set.prototype.values.call(target);
+        for (const value of Set.prototype.values.call(source)) restore(value, values.next().value);
+      } else if (ArrayBuffer.isView(source) && ArrayBuffer.isView(target)) restore(source.buffer, target.buffer);
+      const copies = Object.getOwnPropertyDescriptors(target);
+      for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(source))) {
+        if (Object.hasOwn(descriptor, 'value') && copies[key] && Object.hasOwn(copies[key], 'value')) restore(descriptor.value, copies[key]!.value);
+      }
+    }
+    restore(input, request);
+  }
+  return request;
+}
+
 /** Optional receipt boundary; never retries a command. Unexpected exceptions still reject.
  * run preserves the original run path. runDetailed uses command detail when supplied.
  */
@@ -46,7 +142,7 @@ export function withReplay<I, O, E, RE>(command: {
     let attempt: ReplayReport<O, E, RE>['attempt'] = null;
     const report = (result: ReplayReport<O, E, RE>['result']): ReplayReport<O, E, RE> => ({ result, trace, attempt });
     let request: I;
-    try { request = structuredClone(input); }
+    try { request = snapshotRequest(input); }
     catch { trace.push({ kind: 'snapshot', status: 'error' }); return report(err({ kind: 'ReplayInputNotCloneable' })); }
     trace.push({ kind: 'snapshot', status: 'ok' });
     const cached = await lookup(request);

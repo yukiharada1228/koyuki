@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { workflow, combine, collectEffects, foldEach, business, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
+import { workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   const firstFailure = err('Invalid');
@@ -26,6 +26,11 @@ export const result = (async () => {
   const symbolReport = await opaque.save.runDetailed(symbolValue), classReport = await opaque.save.runDetailed(instance);
   if (!symbolReport.result.ok || symbolReport.result.value !== symbolValue || !symbolReport.result.value[proof] || symbolReport.plan.inputStatus !== 'unavailable') throw new Error('Opaque symbol decision failed');
   if (!classReport.result.ok || classReport.result.value !== instance || classReport.result.value.value() !== 7 || classReport.plan.inputStatus !== 'unavailable' || opaqueWrites !== 2) throw new Error('Opaque class decision failed');
+  let snapshotRuns = 0;
+  const guardedRequest = withReplay({ run: async input => { snapshotRuns++; return ok({ kind: 'committed', value: input.amount + input.date.getTime() + input.map.get('amount') }); } }, { lookup: () => ok({ kind: 'missing' }), resolveAfter: () => false });
+  const requestResult = await guardedRequest.run({ amount: 2, date: new Date(0), map: new Map([['amount', 2]]) });
+  const lostProof = await guardedRequest.run({ amount: 2, [proof]: true });
+  if (!requestResult.ok || requestResult.value.value !== 4 || lostProof.ok || lostProof.error.kind !== 'ReplayInputNotCloneable' || snapshotRuns !== 1) throw new Error('Replay request snapshot failed');
   let receipt = null, writes = 0;
   const model = defineUseCaseGroup({
     operation: name => 'portable',
@@ -77,4 +82,4 @@ const context = { structuredClone };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
 assert.deepEqual(result, { queuedValue: 3, crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
-console.log('Browser bundle executed without Node globals: function declarations, opaque domain decisions, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');
+console.log('Browser bundle executed without Node globals: function declarations, opaque domain decisions, replay request snapshots, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');

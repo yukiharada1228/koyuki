@@ -57,7 +57,8 @@ rendererを指定した既存のView経路は、登録済みの保存能力・�
 別のbindingのノード、偽造したノード、変更した決定値を許可する変更ではない。
 この明示的なView経路には従来のJSON照合の制限が残る。
 
-replayのrequest snapshotや、host固有のfingerprint・永続receiptの形式は変更しない。
+replayのrequest snapshotは別の[要求データの契約](replay-request-snapshot.md)を持ち、情報を失うコピーは照会前に拒否する。
+host固有のfingerprint・永続receiptの形式は変更しない。
 JSONの要求からSymbol付きの決定を作り、saveでDTOへ変換して再送する例を検証する。
 一方、関数付きの要求などstructuredCloneできない入力は、replayのsnapshot時点で従来どおり拒否する。
 
