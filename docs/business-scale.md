@@ -26,6 +26,7 @@ npmへの公開は行わず、生成consumerにNodeの型も要求しない。
 any/unknownや二重castで迂回していない。操作別loaderと共通generic saveを使う。
 初回の記録では共通loadも設定した。後続の[個別loadのみの宣言](business-local-load.md)では
 この未使用の設定を省略できるようにし、現在のscriptは共通loadなしで同じ検査を行う。
+[共通loadなしの追加記録](business-local-load-scale-sample.json)も保存している。
 
 ## 記録と発見した制限
 

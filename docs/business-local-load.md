@@ -45,6 +45,8 @@ generic saveの成功型、load失敗時の保存停止、capture、数値名の
 欠けた共通load、混在テーブル、unknown入力のRuleによる迂回、不正な隣接型も拒否する。
 同じ検査を実tarballの独立consumerでも実行する。
 [100/500操作の検査](business-scale.md)も共通loadなしの定義へ適用した。
+[記録](business-local-load-scale-sample.json)はfb95cb1eed641e9e0cf0e9c4c42a72bc4b6a83d1の
+sourceDirty:falseから生成し、各操作の型・不正入力/認可欠落の拒否・成功実行を確認している。
 
 この改善は不要な宣言を一つ除く。generic requireの推論制限や、独立利用者の開発体験の実証が
 解消したという意味ではなく、講演全体への部分充足という判定は維持する。
