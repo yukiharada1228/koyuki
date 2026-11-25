@@ -29,7 +29,7 @@ export function baselineDetail<const F extends Factory>(factory: F, repository: 
         let plan: unknown = null;
         const observations: { step: string; input: unknown; result: unknown }[] = [];
         const observationErrors: { step: string; phase: 'input' | 'result'; kind: 'CaptureFailed' }[] = [];
-        const stepName = (stage: Parameters<StageCapture>[0]) => stage === 'load' ? `${operation}:load` : stage === 'rule' ? 'run:1' : stage === 'rule:2' ? 'run:2' : operation;
+        const stepName = (stage: Parameters<StageCapture>[0]) => stage === 'load' ? `${operation}:load` : stage === 'rule' ? 'run:1' : stage === 'rule:2' ? 'run:2' : stage === 'rule:3' ? 'run:3' : operation;
         const record: StageCapture | undefined = capture ? (stage, value) => {
           const step = stepName(stage); let selected: unknown;
           try { selected = structuredClone(capture.input(value, step)); }

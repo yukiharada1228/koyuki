@@ -1,7 +1,7 @@
 import { returnDecision, correctDecision } from './receipt-pipeline.js';
 import { business } from '../../framework/index.js';
 import { procurementProcessContext } from './context-process.js';
-import { checkInvoice, approveCheckedInvoice, voidCheckedInvoice, type Actor, type ReceiptDepletion, type Change, type Invoice, type Receipt, type VersionInput, type ReasonInput, type CorrectInput } from './domain.js';
+import { checkReceipt, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, type Actor, type ReceiptDepletion, type Change, type Invoice, type Receipt, type VersionInput, type ReasonInput, type CorrectInput } from './domain.js';
 import { includeChangedStock } from './inventory.js';
 import type { ProcurementRepository } from './repository.js';
 
@@ -20,8 +20,8 @@ export function procurementComposedReads<E>(repository: ProcurementRepository<E>
   const receipts = business({ name: 'procurement.receipt.v1', load: receiptLoad<ReasonInput>(),
     save: <T extends Receipt>(change: Change<T>) => repository.commit(change, actor),
     operations: {
-      return: [returnDecision, includeChangedStock],
-      correct: { load: receiptLoad<CorrectInput>(), run: [correctDecision, includeChangedStock] },
+      return: [checkReceipt, returnDecision, includeChangedStock],
+      correct: { load: receiptLoad<CorrectInput>(), run: [checkReceipt, correctDecision, includeChangedStock] },
     } });
   return { invoices, receipts };
 }

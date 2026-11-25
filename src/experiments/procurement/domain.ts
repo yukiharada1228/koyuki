@@ -350,14 +350,16 @@ export function cancelPayment(value: Loaded<ReasonInput, Payment>): Result<Chang
 }
 
 export type ReceiptFacts = Readonly<{ order: Order; receipts: readonly Receipt[]; invoices: readonly Invoice[] }>;
-function receiptGuard(value: Loaded<VersionInput, Receipt> & ReceiptFacts): Result<Receipt, RuleError> {
+declare const receiptCheck: unique symbol;
+export type CheckedReceipt<T> = T & Readonly<{ [receiptCheck]: true }>;
+export function checkReceipt<T extends Loaded<VersionInput, Receipt> & ReceiptFacts>(value: T): Result<CheckedReceipt<T>, RuleError> {
   const { input, actor, current, order, receipts, invoices } = value;
   if (!allowed(actor, 'warehouse', current.groupId)) return failure('Denied');
   if (input.id !== current.id || order.id !== current.orderId || order.groupId !== current.groupId || [...receipts, ...invoices].some(row => row.groupId !== current.groupId || row.orderId !== order.id)) return failure('TargetMismatch');
   if (!integer(input.expectedVersion)) return failure('InvalidInput');
   if (input.expectedVersion !== current.version) return failure('Conflict');
   if (current.state !== 'accepted' || order.state !== 'placed' || invoices.some(invoice => invoice.state === 'approved')) return failure('WrongState');
-  return ok(current);
+  return ok(value as CheckedReceipt<T>);
 }
 function receiptChange(result: Receipt, current: Receipt, facts: ReceiptFacts): Change<Receipt> {
   const reset: Invoice[] = facts.invoices.filter(invoice => invoice.state === 'matched').map(invoice => ({ kind: 'invoice', state: 'registered',
@@ -366,18 +368,24 @@ function receiptChange(result: Receipt, current: Receipt, facts: ReceiptFacts): 
     [{ ...facts.order, version: facts.order.version + 1 }, result, ...reset]);
 }
 export function returnReceipt(value: Loaded<ReasonInput, Receipt> & ReceiptFacts): Result<Change<Receipt>, RuleError> {
-  const checked = receiptGuard(value); if (!checked.ok) return checked;
+  const checked = checkReceipt(value); if (!checked.ok) return checked;
+  return returnCheckedReceipt(checked.value);
+}
+export function returnCheckedReceipt(value: CheckedReceipt<Loaded<ReasonInput, Receipt> & ReceiptFacts>): Result<Change<Receipt>, RuleError> {
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
-  return ok(receiptChange({ ...checked.value, state: 'returned', returnedBy: value.actor.id, reason: value.input.reason.trim(), version: checked.value.version + 1 }, checked.value, value));
+  return ok(receiptChange({ ...value.current, state: 'returned', returnedBy: value.actor.id, reason: value.input.reason.trim(), version: value.current.version + 1 }, value.current, value));
 }
 export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFacts): Result<Change<Receipt>, RuleError> {
-  const checked = receiptGuard(value); if (!checked.ok) return checked;
+  const checked = checkReceipt(value); if (!checked.ok) return checked;
+  return correctCheckedReceipt(checked.value);
+}
+export function correctCheckedReceipt(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>): Result<Change<Receipt>, RuleError> {
   // Use the same quantity rule as receiving, excluding the record being replaced.
-  const parsed = receiveOrder({ input: { id: value.order.id, expectedVersion: value.order.version, receiptId: checked.value.id, quantities: value.input.quantities },
-    actor: value.actor, current: value.order, receipts: value.receipts.filter(receipt => receipt.id !== checked.value.id) });
+  const parsed = receiveOrder({ input: { id: value.order.id, expectedVersion: value.order.version, receiptId: value.current.id, quantities: value.input.quantities },
+    actor: value.actor, current: value.order, receipts: value.receipts.filter(receipt => receipt.id !== value.current.id) });
   if (!parsed.ok) return parsed;
-  const result: Receipt = { ...parsed.value.result, version: checked.value.version + 1 };
-  return ok(receiptChange(result, checked.value, value));
+  const result: Receipt = { ...parsed.value.result, version: value.current.version + 1 };
+  return ok(receiptChange(result, value.current, value));
 }
 
 /** Decode persisted values at the domain boundary; never restore proof by casting JSON. */

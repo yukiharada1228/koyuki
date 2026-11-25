@@ -233,7 +233,7 @@ test('composed business save failure is returned once without repeating reads or
   const report = await api.receipts.return.runDetailed({ id: 'rc', expectedVersion: 1, reason: 'damaged' });
   assert.deepEqual(report.result, err({ kind: 'Conflict' }));
   assert.equal(saves, 1); assert.equal(reads.calls.length, 5);
-  assert.deepEqual(report.trace.map(entry => entry.status), ['ok', 'ok', 'ok', 'error']);
+  assert.deepEqual(report.trace.map(entry => entry.status), ['ok', 'ok', 'ok', 'ok', 'error']);
   assert.deepEqual(memory.list('receipt', actor('warehouse')), before);
 });
 

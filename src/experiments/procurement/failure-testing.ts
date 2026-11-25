@@ -16,3 +16,5 @@ for (const name of ['receipts.return', 'receipts.correct']) readCounts[name] = 3
 export const relatedCounts: Record<string, number> = Object.fromEntries(operations.map(name => [name, 0]));
 for (const name of ['orders.place', 'receipts.receive', 'invoices.register', 'invoices.match', 'payments.record']) relatedCounts[name] = 1;
 for (const name of ['orders.amend', 'orders.cancel', 'orders.complete', 'receipts.return', 'receipts.correct']) relatedCounts[name] = 2;
+
+export const threeStage = new Set(['receipts.return', 'receipts.correct']);

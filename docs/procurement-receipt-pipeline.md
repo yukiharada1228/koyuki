@@ -4,8 +4,8 @@
 
 ```ts
 receive: [receiveDecision, includeReceivedStock],
-return: { load: context.receipt<ReasonInput>, run: [returnDecision, includeChangedStock] },
-correct: { load: context.receipt<CorrectInput>, run: [correctDecision, includeChangedStock] },
+return: { load: context.receipt<ReasonInput>, run: [checkReceipt, returnDecision, includeChangedStock] },
+correct: { load: context.receipt<CorrectInput>, run: [checkReceipt, correctDecision, includeChangedStock] },
 ```
 
 [接続用の宣言](../src/experiments/procurement/receipt-pipeline.ts)は既存のwithInputを使い、
@@ -25,6 +25,8 @@ frameworkの接続用関数は比較版の実行には使わない。
 入荷の数量・権限・版数、在庫の予約数・減算場所の選択、どの保存計画を結合するかは業務側の判断。
 在庫計画が成功した後にだけ、入荷・親注文・請求書のリセット等の既存計画へ、在庫のwrites/checksを加える。
 両段階ともDBへ保存せず、最後のsaveが一回だけ結合済み計画を受け取る。
+後続の[共通検証の分離](procurement-receipt-checks.md)では、返品と訂正の先頭へcheckReceiptを追加した。
+この2操作は3段階となり、検証も含めて全段階の成功後だけ保存する。
 第一段の予定されたwritesを観測できても、それは確定済み保存ではない。
 
 複数モデルの原子保存とCASは引き続きrepository/adapterの契約であり、関数列だけでtransactionを作るわけではない。
@@ -34,11 +36,13 @@ frameworkの接続用関数は比較版の実行には使わない。
 
 入荷の理由や数量が不正なら、在庫側の不正より先にその失敗を返す。
 入荷計画が成功した後に在庫が不足すれば、結合済み計画を作らず、saveを呼ばない。
-成功traceはload / run:1（入荷計画と元の文脈）/ run:2（在庫を加えた計画）/ saveとなる。
+入荷の成功traceはload / run:1（入荷計画と元の文脈）/ run:2（在庫を加えた計画）/ saveとなる。
+返品・訂正はload / run:1（共通検証）/ run:2（入荷計画と元の文脈）/ run:3（在庫を加えた計画）/ saveとなる。
 
 [全25操作の成功観測比較](procurement-observation-comparison.md)では、32操作のうち入荷が2回、
 返品と数量訂正が各1回現れる。分離した時点では、既存の共通検証10操作の106記録から4境界が加わり110記録となった。
-その後[申請・承認・発注](procurement-request-planning.md)も分離し、現在は117境界で入力/結果の射影失敗を比較する。結果・read/commit回数も3方式で一致する。
+その後[申請・承認・発注](procurement-request-planning.md)も分離して117境界、[在庫4操作](procurement-stock-planning.md)で121境界となった。
+現在は返品・訂正の共通検証も含む123境界で入力/結果の射影失敗を比較する。結果・read/commit回数も3方式で一致する。
 選択値の射影は、この実例で使うinput/valueの組から入荷計画のmetadataを選ぶよう明示した。
 任意のオブジェクトをframeworkが自動解釈する機能ではない。
 
@@ -53,7 +57,7 @@ frameworkの接続用関数は比較版の実行には使わない。
 既存の複合保存・競合・障害検査と、全25操作の3方式比較は別途継続する。
 追加検査も開発版tarballのconsumerで実行する。
 
-共通検証を分離した操作群とは異なる、成功値と元の文脈を併用する3操作への適用である。
+成功値と元の文脈を併用する3操作への適用であり、返品・訂正は共通検証の分離も行う。
 業務関数内部の全Result接続の自動除去、全障害・分散transaction・任意の純粋性の保証ではない。
 3つの型注釈と在庫投影関数の宣言も必要で、コード量や学習負担が小さくなったという実証はしていない。
 独立利用者のDXと講演全体の完全実現も未確認のままである。

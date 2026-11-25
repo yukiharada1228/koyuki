@@ -21,7 +21,7 @@ const builders: Record<string, Factory> = {
   plain: (repository, identity, policy) => baselineDetail(plainProcurement, repository, identity, policy),
   helper: (repository, identity, policy) => baselineDetail(helperProcurement, repository, identity, policy),
 };
-import { operations, split, readCounts } from './experiments/procurement/failure-testing.js';
+import { operations, split, threeStage, readCounts } from './experiments/procurement/failure-testing.js';
 const namespaces: Record<string, string> = { requests: 'request', orders: 'order', receipts: 'receipt', invoices: 'invoice', payments: 'payment', inventory: 'inventory' };
 type Mode = 'selected' | 'input-failure' | 'result-failure';
 type Failure = 'load-sync' | 'load-async' | 'invalid' | 'save-conflict';
@@ -91,7 +91,7 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
                 result: result => { resultSelections++; if (mode === 'result-failure') throw Error('private-selection-error'); return result.ok; },
               });
             } finally { rejectCommit = false; rejectRead = undefined; }
-            const steps = loadFailure ? [`${id}:load`] : failure === 'invalid' ? [`${id}:load`, 'run:1'] : [`${id}:load`, 'run:1', ...(split.has(operation) ? ['run:2'] : []), id];
+            const steps = loadFailure ? [`${id}:load`] : failure === 'invalid' ? [`${id}:load`, 'run:1'] : [`${id}:load`, 'run:1', ...(split.has(operation) ? ['run:2'] : []), ...(threeStage.has(operation) ? ['run:3'] : []), id];
             assert.deepEqual(report.result, err({ kind: failure === 'invalid' ? 'InvalidInput' : 'Conflict' }), operation);
             assert.deepEqual(report.trace, steps.map((step, index) => ({ step, status: index === steps.length - 1 ? 'error' : 'ok' })), operation);
             if (failure !== 'save-conflict') assert.equal(report.plan, null);
@@ -158,7 +158,7 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
       assert.equal(positions.length, 32);
       assert.deepEqual([...new Set(selected.map(row => `${row.operation}#${row.readAt}`))].sort(), positions);
     }
-    assert.equal(inputSelections, 263); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 263);
+    assert.equal(inputSelections, 265); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 265);
     return { outcome, reports, reads, commits };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }
 }
