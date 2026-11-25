@@ -84,6 +84,18 @@ type SaveResult<A> = Awaited<ReturnType<Extract<A, SaveFn>>>;
 /** Operations are own data entries of a plain record. Numeric names use JavaScript
  * string keys; Symbols, accessors and custom-prototype operation tables are rejected.
  */
+export function business<L extends Load, O, S extends Execution<unknown>, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
+  name: string;
+  operation?: (name: OperationNames<T>) => string;
+  load: L;
+  save: (value: O, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<S, SE>>;
+  // Infer the user tuple first; the compatibility check must not widen it.
+  operations: T & NoInfer<{ readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], O, OperationName<K>> : never }>;
+  replay: {
+    lookup: (context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
+    resolveAfter: readonly string[] | ((error: unknown) => boolean);
+  };
+}): Commands<L, T, S, SE, RE, D & { replay: object }>;
 export function business<L extends Load, O, S, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
   operation?: (name: OperationNames<T>) => string;

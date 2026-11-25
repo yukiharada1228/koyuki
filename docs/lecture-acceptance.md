@@ -62,7 +62,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 - 全編の連続音声映像と自動字幕の照合。
 - 独立利用者による開発体験・学習負担の評価、実業務での運用実績。[評価用課題](../examples/onboarding/README.md)と開発版配布物での成立性検査は用意したが、実際の参加者による結果は未取得。
 - genericな要件計算と未注釈callbackの推論制限。
-- [再送付きbusinessのcallback推論](replay-context-inference-study.md)にも制限がある。専用overloadの候補は調査例と既存型検査を通過したが、公開APIには未採用。
+- [再送付きbusinessのcallback推論](replay-context-inference-study.md)は専用overloadで改善した。検証した無注釈例を超える、あらゆるcallbackの推論省略は保証しない。
 - [opaque値の通常保存](opaque-decisions.md)は改善済み。[Application・captureの情報を失うコピー](application-ownership.md)も拒否するよう改善済み。明示的なView rendererのJSON照合や、任意のopaque値を状態・永続adapterで扱う保証は残る課題。
 - hostをまたぐ永続実行・再試行・監査保持の共通方針と、他DB/driverでの追加検証。
 - [25操作のチーム評価案](team-development-study.md)の実装・同条件での比較。[25操作の初期実装](procurement-study.md)を実装済み。[SQLiteの複合保存と復元](procurement-sqlite.md)を検証済み。[複合Application投影](procurement-projection.md)も検証済み。[永続再送境界](procurement-replay.md)も接続済み。[25操作の接続比較](procurement-comparison.md)で3方式の結果一致を検証済み。[基本traceと保存計画](procurement-trace-comparison.md)の代表ケースも一致を検証済み。[独立再送driver](procurement-replay-comparison.md)も代表ケースを比較済み。[独立Application](procurement-application-comparison.md)も代表ケースを比較済み。比較で見つかった表示制約に対する[現在値取得](procurement-current-projection.md)も追加。[現在値取得方針](procurement-current-comparison.md)も代表ケースを比較済み。[選択値観測](procurement-observation-comparison.md)も代表ケースを比較済み。[二段階承認への仕様変更](procurement-approval-change.md)と[複数場所からの返品・訂正](procurement-return-change.md)も3方式で検証済み。[2変更の差分計測](procurement-change-measurement.md)と[認可エラーのtransportへの接続](authorization-change-study.md)も追加済み。全観測経路の比較・その他の仕様変更評価・全体の実装負担の測定は未実施。
