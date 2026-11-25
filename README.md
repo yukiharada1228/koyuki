@@ -18,6 +18,10 @@ SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用�
 
 コアはWeb標準APIのみ・実行時外部依存ゼロを方針とします。[依存の契約と自動検証](docs/runtime.md)を参照してください。
 
+複数の業務を同じ実行契約で実装できることを価値仮説としています。
+大規模なチーム開発での効果はまだ未実証です。
+[比較対象・現在の証拠・次の評価仕様](docs/team-development-study.md)を公開しています。
+
 ## 最初の状態遷移
 
 ```ts
@@ -66,7 +70,7 @@ await approval.run({ id: 'expense-1', expectedVersion: 2 });
 | --- | --- |
 | 状態の型・検証・純粋な遷移関数 | 型の合う処理を接続し、Resultの失敗を伝播 |
 | データの取得・保存アダプター | load → validate → require → evolve → save |
-| 操作と成功時の業務データ更新 | `defineApplication` による ready / running / failed の管理 |
+| 操作と成功時の業務データ更新 | `defineApplication` による ready / running / failed / crashed の管理 |
 | 内部状態から返したい情報 | `view` の再計算、購読通知 |
 
 HTTPはHonoなどに任せられます。ReactやJSXは必須ではありません。

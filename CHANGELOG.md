@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- チーム開発での価値仮説と比較方針を文書化。通常TSの共通helper版を比較対象へ明示し、旧実験の計測漏れ・タグ比較の古いファイル参照を修正。行数比較を大規模開発・バグ率・生産性の証拠とは扱わない。
 - Prisma 7.10.1＋SQLiteの独立在庫サンプルを追加。transaction contextへ既存の業務宣言を束縛し、失敗Result→rollback、2件更新と履歴の原子保存、commit失敗時の専用Clientの後処理、実migrationを検証。コアの依存追加なし。
 - 休暇サンプルにGraphQL.js＋HonoのPOST /graphqlを追加。同じ業務宣言でQuery/Mutation分離、結果union、権限、再送、保存後の例外、複数mutationの部分成功を検証。公開npm consumer27件・開発版consumer30件が成功。コア依存の追加なし。
 - fromThrowable / fromPromise：既存の同期例外・Promiseを明示した境界で型付きResultへ接続。引数型を維持し、非同期境界は呼び出し時のthrowも変換する。

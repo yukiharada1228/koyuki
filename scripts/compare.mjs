@@ -1,23 +1,38 @@
 import { readFileSync } from 'node:fs';
-// Measures the named, multiline function declarations in these comparison fixtures.
-// Their closing brace has the same indentation as the declaration.
+import { createHash } from 'node:crypto';
+// Fixture-specific ranges, not a general TypeScript parser. Fail if boundaries drift.
 function measure(file, names) {
   const lines = readFileSync(file, 'utf8').split('\n');
   return names.map(name => {
-    const pattern = new RegExp(`^([ \\t]*)(?:export )?(?:async )?function ${name}\\b`);
-    const start = lines.findIndex(line => pattern.test(line));
-    if (start < 0) throw new Error(`Missing function: ${name}`);
-    const indent = pattern.exec(lines[start])[1];
-    const offset = lines.slice(start + 1).findIndex(line => line === `${indent}}`);
-    if (offset < 0) throw new Error(`Missing function end: ${name}`);
-    const end = start + 1 + offset;
-    return { name, file, start: start + 1, end: end + 1, lines: end - start + 1 };
+    const pattern = new RegExp(`^([ \\t]*)(?:export )?(?:(?:async )?function ${name}\\b|const ${name}\\b)`);
+    const matches = lines.flatMap((line, i) => pattern.test(line) ? [i] : []);
+    if (matches.length !== 1) throw new Error(`Expected one declaration: ${file}:${name}`);
+    const first = matches[0], indent = pattern.exec(lines[first])[1];
+    const arrow = lines[first].includes(`const ${name}`);
+    const last = arrow
+      ? lines.findIndex((line, i) => i >= first && line.trimEnd().endsWith(';'))
+      : lines.findIndex((line, i) => i > first && line === `${indent}}`);
+    if (last < first) throw new Error(`Missing fixture boundary: ${file}:${name}`);
+    return { name, file, start: first + 1, end: last + 1, physicalLines: last - first + 1 };
   });
 }
+const components = 'src/comparison/components.tsx', plain = 'src/comparison/plain.ts';
+const files = [components, plain, 'src/comparison/kernel.ts', 'src/comparison/domain.ts', 'src/core.ts'];
 console.log(JSON.stringify({
-  note: 'Physical function line counts with audit extension included. Not a usability or performance score. Shared kernel/adapters excluded equally. JSX setup and TS one-line wrappers are outside these function counts; inspect full files for total cost.',
-  measurements: [
-    ...measure('src/comparison/components.tsx', ['defineCommitAndNotify', 'ReservationProcess', 'OrderProcess']),
-    ...measure('src/comparison/plain.ts', ['reservationInline', 'orderInline', 'commitAndNotify']),
+  scope: 'Historical JSX experiment: two operations sharing the same adapters, journal and failure semantics. Not the current recommended Koyuki API.',
+  limitations: [
+    'Not a large-application, onboarding, bug-rate, usability or performance study.',
+    'Plain TypeScript with a reusable helper is a first-class baseline; inline duplication alone is insufficient.',
+    'Declaration line ranges exclude imports and assembly. Full file sizes and shared infrastructure are listed separately.',
+    'Do not sum overlapping declaration ranges or present these sizes as a feature-equivalent total cost.',
   ],
+  modes: {
+    inlineTS: { operations: measure(plain, ['reservationInline', 'orderInline']), support: [] },
+    sharedTS: { operations: measure(plain, ['reservationShared', 'orderShared']), support: measure(plain, ['commitAndNotify']) },
+    jsx: { operations: measure(components, ['ReservationProcess', 'OrderProcess']), support: measure(components, ['defineCommitAndNotify']) },
+  },
+  files: files.map(file => {
+    const source = readFileSync(file, 'utf8').trimEnd();
+    return { file, physicalLines: source.split('\n').length, sha256: createHash('sha256').update(readFileSync(file)).digest('hex') };
+  }),
 }, null, 2));
