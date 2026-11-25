@@ -114,3 +114,6 @@ Baseは検証に必要な操作者の最小の型、Permittedはprivate symbol�
 [申請5操作と請求書2操作](procurement-shared-guards.md)にも適用し、共通検証を分離した宣言は
 現在10操作となる。申請のbuyer/approverの証明を別の型にし、役割の混同も型検査で拒否する。
 全25操作を分解済みという意味ではなく、複合保存の判断を含む関数も残る。
+
+[申請・承認・発注の3操作](procurement-request-planning.md)も既存のgeneric検証と証明へ移し、
+共通検証を分離した宣言は13操作となった。後半へpolicyや入力を渡すための検証型引数やResultの取り出しを、操作宣言へ追加していない。
