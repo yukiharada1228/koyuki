@@ -118,7 +118,7 @@ core、実tarballのconsumer、Node globalなしのbundleで検査する。
 receiver、購読解除、観察側のthrow/reject、時計障害、誤った配布型の拒否を対象にする。
 
 [Issue #2](https://github.com/yukiharada1228/koyuki/issues/2)の相関観察の部分実装。
-対応するcoreのlive timing・親子spanは実装した。裸のProgram全体への共通API、永続的なtrace保存、
+対応するcoreのlive timing・親子spanは実装した。[Program単体の共通観察入口](program-execution.md)も追加した。永続的なtrace保存、
 HTTPや別サービスまでの分散相関はまだ提供していない。完全な実行trace基盤の完成とはしない。
 
 対応するcoreのlive spanは、reportが返らない例外でも開始済みの段階をdefectとして閉じる。

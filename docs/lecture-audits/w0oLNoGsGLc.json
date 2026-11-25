@@ -36,6 +36,13 @@
       "record": "docs/lecture-core-focus.md",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "programObservationFollowUp": {
+      "implementationBaseCommit": "77d286a87a65c19effd97784acc16eea18ac2838",
+      "sections": [
+        "w0o-13"
+      ],
+      "scope": "Implementation follow-up of standalone Program execution observation. No new source or audio review."
     }
   },
   "sections": [
@@ -198,7 +205,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や裸のProgram全体のlive timingは未提供。",
+      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。Program単体も同じ観察入口で初期化・待機・更新・command・状態受理・完了を通知する。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や分散相関は未提供。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -218,7 +225,9 @@
         "docs/audit.md",
         "src/sqlite-audit.test.ts",
         "docs/lecture-core-focus.md",
-        "src/live-execution.test.ts"
+        "src/live-execution.test.ts",
+        "docs/program-execution.md",
+        "src/program-execution.test.ts"
       ],
       "remaining": [
         "persistent-history-policy"

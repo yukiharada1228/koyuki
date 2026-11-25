@@ -8,7 +8,7 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 | Issue | 現在使える根拠 | 満たしたと扱えない条件 |
 | --- | --- | --- |
 | [#1 共通transaction](https://github.com/yukiharada1228/koyuki/issues/1) | `src/expenses/sqlite.ts`のsaveは状態と履歴を同一transactionで保存する。タグ・調達にも個別adapterがある | [同期共通境界](transactions.md)をタグ・経費・経費receiptへ接続済み。callback型の[非同期契約](transactions.md)もPrismaへ接続済み。Target全体の相関観察、他driverの追加検証は未完了 |
-| [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)で待機・開始・実行段階・投影後の完了を関連付ける | 対応するcoreのlive timing・親子spanを追加。裸のProgram全体の共通API・opaque関数内部・分散相関は未提供 |
+| [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)で待機・開始・実行段階・投影後の完了を関連付ける。[Program単体](program-execution.md)にも同じ観察入口を追加 | 対応するcoreのlive timing・親子spanを追加。opaque関数内部・分散相関・永続履歴は未提供 |
 | [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。既存Traceの名前を重ねる | 送料関数内部のifはopaqueで、branchを捏造しない。状態図・完全なnode実行対応は未提供 |
 | [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)、[明示的なretryEffect](retry.md)で上限・待機・中断・失敗の安全条件を指定 | withReplay単体は再試行しない。未適用・冪等性はhostの保証。receiptの期限・削除・定義version移行の運用は未提供 |
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続。監査障害のrollbackと再送非重複を検査 | 他DB adapter、保持・削除の実運用、改ざん耐性、拒否ログは未実装・未検証。診断traceを監査とは呼ばない |
