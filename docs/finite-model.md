@@ -50,7 +50,9 @@ actor、version、承認証跡等の必要な情報を落として統合する�
 この同値性、抽象モデルと実装の対応、callbackの純粋性・停止性は利用者の責任。
 有効なkeyを自動生成する機能や、不正な抽象化を一般に発見する機能はない。
 
-状態・イベント・出力はstructuredCloneできるデータとする。各callbackへ独立したコピーを渡し、
+状態・イベント・出力は[所有できる要求データ](replay-request-snapshot.md)の形式とする。
+単にstructuredCloneが成功するだけでは不十分で、SharedArrayBuffer・accessor・opaque class等は拒否する。
+各callbackへ独立したコピーを渡し、
 callback内の変更が他の辺や呼出し元の入力へ漏れないようにする。
 関数・private field付きの任意class等を状態として保持する契約ではない。
 チェックは同期関数。DB・HTTP・認証基盤を含む実装の自動形式証明やasync検査は提供しない。

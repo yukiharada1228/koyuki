@@ -1,3 +1,4 @@
+import { snapshotData } from './snapshot.js';
 /** Explicit, finite model exploration. This entry point is separate from the business runtime. */
 export interface ModelStep<S, O> { readonly state: S; readonly output: O }
 export interface ModelLimits { readonly depth: number; readonly states: number; readonly transitions: number }
@@ -23,7 +24,7 @@ export type ModelExploration<S, E> = Counts & (
 
 /**
  * Breadth-first exploration of an explicitly supplied model. States, events and
- * outputs must support structuredClone. Each callback receives its own copy.
+ * outputs must support the owned request-data snapshot contract. Each callback receives its own copy.
  * Callback purity, key equivalence and implementation-check fidelity are host contracts.
  */
 export function exploreModel<S, E, O>(definition: FiniteModel<S, E, O>): ModelExploration<S, E> {
@@ -36,22 +37,22 @@ export function exploreModel<S, E, O>(definition: FiniteModel<S, E, O>): ModelEx
   const queue: Entry[] = [], seen = new Set<string>(), cutoffs = new Set<'depth' | 'states' | 'transitions'>();
   let transitions = 0, maxDepth = 0;
   const counts = () => ({ states: queue.length, transitions, maxDepth });
-  const witness = (entry: Entry): Witness<S, E> => structuredClone({ initial: entry.initial, events: entry.path });
+  const witness = (entry: Entry): Witness<S, E> => snapshotData({ initial: entry.initial, events: entry.path });
   const fault = (phase: 'snapshot' | 'key' | 'events' | 'step' | 'check' | 'invariant', entry: Entry | undefined, cause: unknown): ModelExploration<S, E> =>
     ({ kind: 'defect', phase, ...counts(), ...(entry ? { witness: { initial: entry.initial, events: entry.path } } : {}), cause });
   let phase: 'snapshot' | 'key' | 'events' | 'step' | 'check' | 'invariant' = 'snapshot';
   let current: Entry | undefined;
   try {
-    const initial = structuredClone(definition.initial);
+    const initial = snapshotData(definition.initial);
     if (!Array.isArray(initial) || initial.length === 0) throw new TypeError('ModelInitialStatesRequired');
     for (const state of initial) {
       current = { state, initial: state, path: [] };
       if (invariant) {
-        phase = 'invariant'; const valid = invariant(structuredClone(state));
+        phase = 'invariant'; const valid = invariant(snapshotData(state));
         if (typeof valid !== 'boolean') throw new TypeError('ModelInvariantMustBeBoolean');
         if (!valid) return { kind: 'counterexample', reason: 'invariant', ...counts(), witness: witness(current) };
       }
-      phase = 'key'; const id = key(structuredClone(state));
+      phase = 'key'; const id = key(snapshotData(state));
       if (typeof id !== 'string') throw new TypeError('ModelKeyMustBeString');
       if (seen.has(id)) continue;
       if (queue.length >= limits.states) { cutoffs.add('states'); continue; }
@@ -59,31 +60,31 @@ export function exploreModel<S, E, O>(definition: FiniteModel<S, E, O>): ModelEx
     }
     for (let cursor = 0; cursor < queue.length; cursor++) {
       current = queue[cursor]!; maxDepth = Math.max(maxDepth, current.path.length);
-      phase = 'events'; const possible = events(structuredClone(current.state));
+      phase = 'events'; const possible = events(snapshotData(current.state));
       if (!Array.isArray(possible)) throw new TypeError('ModelEventsMustBeArray');
-      phase = 'snapshot'; const pending: readonly E[] = structuredClone(possible);
+      phase = 'snapshot'; const pending: readonly E[] = snapshotData(possible);
       if (current.path.length >= limits.depth) { if (pending.length) cutoffs.add('depth'); continue; }
       const before = current;
       for (const event of pending) {
         current = { ...before, path: [...before.path, event] };
         if (transitions >= limits.transitions) { cutoffs.add('transitions'); break; }
         phase = 'step';
-        const expected = step(structuredClone(before.state), structuredClone(event));
-        phase = 'snapshot'; const owned = structuredClone(expected);
+        const expected = step(snapshotData(before.state), snapshotData(event));
+        phase = 'snapshot'; const owned = snapshotData(expected);
         if (!owned || typeof owned !== 'object' || !('state' in owned) || !('output' in owned)) throw new TypeError('ModelStepMustContainStateAndOutput');
-        phase = 'check'; const matches = check(structuredClone(before.state), structuredClone(event), structuredClone(owned));
+        phase = 'check'; const matches = check(snapshotData(before.state), snapshotData(event), snapshotData(owned));
         transitions++; maxDepth = Math.max(maxDepth, current.path.length);
         if (typeof matches !== 'boolean') throw new TypeError('ModelCheckMustBeBoolean');
         if (!matches) return { kind: 'counterexample', reason: 'implementation', ...counts(), witness: witness(current) };
-        phase = 'snapshot'; const next = structuredClone(owned.state);
+        phase = 'snapshot'; const next = snapshotData(owned.state);
         // Check every reached state, even when its key aliases an existing node
         // or the state budget prevents it from being enqueued.
         if (invariant) {
-          phase = 'invariant'; const valid = invariant(structuredClone(next));
+          phase = 'invariant'; const valid = invariant(snapshotData(next));
           if (typeof valid !== 'boolean') throw new TypeError('ModelInvariantMustBeBoolean');
           if (!valid) return { kind: 'counterexample', reason: 'invariant', ...counts(), witness: witness(current) };
         }
-        phase = 'key'; const id = key(structuredClone(next));
+        phase = 'key'; const id = key(snapshotData(next));
         if (typeof id !== 'string') throw new TypeError('ModelKeyMustBeString');
         if (seen.has(id)) continue;
         if (queue.length >= limits.states) { cutoffs.add('states'); continue; }

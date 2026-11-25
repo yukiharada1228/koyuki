@@ -78,6 +78,18 @@ test('unexplored initial states and uncloneable outputs cannot be silently accep
   const uncloneable = exploreModel({ ...counter(), step: () => ({ state: 1, output: () => 1 }), check: () => { checked = true; return true; } });
   assert(uncloneable.kind === 'defect' && uncloneable.phase === 'snapshot'); assert.equal(checked, false);
 });
+test('shared memory cannot leak mutation across supposedly independent model edges', () => {
+  let calls = 0;
+  const result = exploreModel({ initial: [{ bytes: new Uint8Array(new SharedArrayBuffer(1)) }], key: () => { calls++; return 'root'; },
+    events: () => [1], step: state => ({ state, output: 1 }), check: () => true, limits: { depth: 1, states: 1, transitions: 1 } });
+  assert(result.kind === 'defect' && result.phase === 'snapshot'); assert.equal(calls, 0);
+});
+test('model snapshots reject accessors and opaque values without invoking getters', () => {
+  let reads = 0;
+  const initial = { get count() { reads++; return 0; } };
+  const result = exploreModel({ initial: [initial], key: state => String(state.count), events: () => [], step: state => ({ state, output: 0 }), check: () => true, limits: { depth: 0, states: 1, transitions: 1 } });
+  assert(result.kind === 'defect' && result.phase === 'snapshot'); assert.equal(reads, 0);
+});
 if (false) {
   // @ts-expect-error checks must be synchronous so a Promise cannot count as truthy proof
   exploreModel(counter({ check: async () => true }));
