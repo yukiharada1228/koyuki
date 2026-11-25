@@ -113,7 +113,7 @@ try {
   writeFileSync(join(consumer, 'order-lines.ts'), readFileSync(join(root, 'src/examples/order-lines.ts'), 'utf8').replace("'../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'customer-import-sqlite.test.ts'), readFileSync(join(root, 'src/customer-import-sqlite.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
   mkdirSync(join(consumer, 'procurement'));
-  for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'context.ts', 'context-framework.ts', 'context-process.ts', 'context-application.ts', 'comparison-scenario.ts', 'comparison-contract.ts', 'plain.ts', 'helper.ts', 'trace-contract.ts', 'baseline-detail.ts', 'baseline-replay.ts', 'baseline-application.ts', 'inventory.ts', 'sqlite.ts', 'projection.ts', 'replay-identity.ts', 'replay.ts', 'current-projection.ts']) writeFileSync(join(consumer, 'procurement', file),
+  for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'context.ts', 'context-framework.ts', 'context-process.ts', 'context-application.ts', 'comparison-scenario.ts', 'comparison-contract.ts', 'plain.ts', 'helper.ts', 'trace-contract.ts', 'baseline-detail.ts', 'baseline-replay.ts', 'baseline-application.ts', 'inventory.ts', 'receipt-pipeline.ts', 'sqlite.ts', 'projection.ts', 'replay-identity.ts', 'replay.ts', 'current-projection.ts']) writeFileSync(join(consumer, 'procurement', file),
     readFileSync(join(root, 'src/experiments/procurement', file), 'utf8').replace("'../../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'procurement-load-composition.test.ts'), readFileSync(join(root, 'src/procurement-load-composition.test.ts'), 'utf8')
     .replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
@@ -143,6 +143,7 @@ try {
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   writeFileSync(join(consumer, 'procurement-observation-scenario.test.ts'), readFileSync(join(root, 'src/procurement-observation-scenario.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
+  writeFileSync(join(consumer, 'procurement-receipt-pipeline.test.ts'), readFileSync(join(root, 'src/procurement-receipt-pipeline.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-shared-guards.test.ts'), readFileSync(join(root, 'src/procurement-shared-guards.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-order-guard.test.ts'), readFileSync(join(root, 'src/procurement-order-guard.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-return-change.test.ts'), readFileSync(join(root, 'src/procurement-return-change.test.ts'), 'utf8')

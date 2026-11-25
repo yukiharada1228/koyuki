@@ -28,7 +28,8 @@ const builders: Record<string, Factory> = {
 // Scenario-owned plain data only. Select entity metadata, never actor or arbitrary fields.
 function subject(value: unknown): Subject {
   const record = value && typeof value === 'object' ? value as Record<string, unknown> : {};
-  const selected = record.current ?? record.result ?? record;
+  const unwrapped = record.input && record.value && typeof record.value === 'object' ? record.value as Record<string, unknown> : record;
+  const selected = unwrapped.current ?? unwrapped.result ?? unwrapped;
   const entity = selected && typeof selected === 'object' ? selected as Record<string, unknown> : {};
   return { kind: typeof entity.kind === 'string' ? entity.kind : null, id: typeof entity.id === 'string' ? entity.id : null,
     state: typeof entity.state === 'string' ? entity.state : null, version: typeof entity.version === 'number' ? entity.version : null };
@@ -64,7 +65,8 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
           const operation = `procurement.${namespaces[group]}.v1.${name}`;
           const splitRule = group === 'orders' && ['amend', 'cancel', 'complete'].includes(name)
             || group === 'requests' && ['edit', 'withdraw', 'reject', 'return', 'reassign'].includes(name)
-            || group === 'invoices' && ['approve', 'void'].includes(name);
+            || group === 'invoices' && ['approve', 'void'].includes(name)
+            || group === 'receipts';
           const expectedSteps = [`${operation}:load`, 'run:1', ...(splitRule ? ['run:2'] : []), operation];
           assert.deepEqual(report.trace, expectedSteps.map(step => ({ step, status: 'ok' })));
           if (mode !== 'selected') {
@@ -92,7 +94,7 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
     assert.equal(commits, 32);
     if (build) {
       assert.equal(reports.length, 32); assert.equal(new Set(reports.map(row => row.operation)).size, 25);
-      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 106);
+      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 110);
     }
     return { outcome, reports, commits, reads };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }

@@ -1,12 +1,14 @@
+import { receiveOrder, returnReceipt, correctReceipt } from './domain.js';
+import { includeReceivedStock, includeChangedStock, type ReceiptDecision } from './inventory.js';
 import type { StageSink, StageCapture } from './trace-contract.js';
 import { procurementContext } from './context.js';
 import type { StudyCommands } from './comparison-contract.js';
 import type { ProcurementRepository, StorageError } from './repository.js';
-import type { Result } from '../../framework/index.js';
-import type { Actor, Policy, Entity, Change, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
+import { ok, type Result } from '../../framework/index.js';
+import type { Actor, Policy, Entity, Change, Receipt, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
 import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
-import { receiveIntoStock, returnFromStock, correctInStock, reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
+import { reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
 export const helperProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) => helperWithCommit(repository, identity, policy, observe, capture);
@@ -35,6 +37,20 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       const saved = await repository.commit(changed.value, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
+  function receiptAction<I, C, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, decide: (value: C) => Result<Change<Receipt>, RuleError>, include: (pair: ReceiptDecision<C>) => Result<Change<T>, RuleError>) {
+    return async (input: I) => {
+      const receiveLoad = capture?.('load', input);
+      const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
+      const receiveRule = capture?.('rule', loaded.value);
+      const decision = decide(loaded.value);
+      const prepared = decision.ok ? ok(Object.freeze({ input: loaded.value, value: decision.value })) : decision;
+      receiveRule?.(prepared); observe?.({ stage: 'rule', status: prepared.ok ? 'ok' : 'error' }); if (!prepared.ok) return prepared;
+      const receiveStock = capture?.('rule:2', prepared.value);
+      const changed = include(prepared.value); receiveStock?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+      const receiveSave = capture?.('save', changed.value);
+      const saved = await repository.commit(changed.value, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
+    };
+  }
   return {
     requests: {
       create: action(context.create, createRequest),
@@ -53,9 +69,9 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       complete: checkedAction(context.order<VersionInput>, checkOrder, completeCheckedOrder),
     },
     receipts: {
-      receive: action(context.receive, receiveIntoStock),
-      return: action(context.receipt<ReasonInput>, returnFromStock),
-      correct: action(context.receipt<CorrectInput>, correctInStock),
+      receive: receiptAction(context.receive, receiveOrder, includeReceivedStock),
+      return: receiptAction(context.receipt<ReasonInput>, returnReceipt, includeChangedStock),
+      correct: receiptAction(context.receipt<CorrectInput>, correctReceipt, includeChangedStock),
     },
     invoices: {
       register: action(context.register, registerInvoice),

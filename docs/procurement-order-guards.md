@@ -38,7 +38,7 @@ Readonlyな取得文脈を検証から更新まで保つ前提があり、任意
 
 [25操作の成功シナリオ](procurement-observation-comparison.md)は32操作であり、
 この3操作が各1回ずつ現れる。注文3操作のみを分離した時点では、選択値観測は96から99記録へ変わった。
-現在は[申請5操作・請求書2操作も分離](procurement-shared-guards.md)し、106記録と対応する観測エラーを比較する。
+現在は[申請5操作・請求書2操作も分離](procurement-shared-guards.md)して106記録となり、さらに[入荷・在庫](procurement-receipt-pipeline.md)の接続を分離した現在は110記録と対応する観測エラーを比較する。
 
 ## 確認した範囲
 

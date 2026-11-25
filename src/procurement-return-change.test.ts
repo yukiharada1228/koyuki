@@ -169,7 +169,7 @@ test('detailed composed loader carries the trusted depletion policy into the sam
   const api = procurementComposedReads(repository, actor('warehouse'), configuration);
   const report = await api.receipts.correct.runDetailed({ id: 'rc', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 2 }, { sku: 'b', quantity: 1 }] });
   assert(report.result.ok); assert.equal(report.result.value.version, 2);
-  assert.deepEqual(report.trace.map(row => row.step), ['read-receipt', 'read-order', 'read-stock', 'read-related', 'procurement.receipt.v1.correct:load', 'run:1', 'procurement.receipt.v1.correct']);
+  assert.deepEqual(report.trace.map(row => row.step), ['read-receipt', 'read-order', 'read-stock', 'read-related', 'procurement.receipt.v1.correct:load', 'run:1', 'run:2', 'procurement.receipt.v1.correct']);
   const stock = success(repository.read('stock', 'warehouse', actor('warehouse')));
   assert.deepEqual(stock.positions.find(row => row.sku === 'a' && row.location === 'alpha'), { sku: 'a', location: 'alpha', onHand: 2, reserved: 2 });
 });

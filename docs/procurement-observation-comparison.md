@@ -46,7 +46,7 @@ SQLiteは実driverだが、ファイルの再起動や別プロセスの比較�
 操作者や任意フィールドを全収集する機能を追加したものではない。
 全32回について、次を直接検査し、report全体も独立した通常TypeScriptの詳細実装と比較する。
 
-- load・業務段階・saveのtraceが成功し、順序も一致する。[共通検証を分離した10操作](procurement-shared-guards.md)はrun:1とrun:2、それ以外はrun:1となる。
+- load・業務段階・saveのtraceが成功し、順序も一致する。[共通検証の10操作](procurement-shared-guards.md)と[入荷・在庫の3操作](procurement-receipt-pipeline.md)はrun:1とrun:2、それ以外はrun:1となる。
 - 選択記録は3件で呼び出し番号が混ざらず、最後の成功値の対象情報が業務結果と一致する。
 - 各操作でcommitは1回だけ。最終の6モデルと32件の戻り値が、観測なしの通常実行と一致する。
 - Repositoryのread/relatedの対象と呼出し順も、観測なしの通常実行と一致し、診断用の再取得を増やさない。
@@ -54,8 +54,8 @@ SQLiteは実driverだが、ファイルの再起動や別プロセスの比較�
 - 全段階のResult射影がthrowしても、保存済み成功を失敗へ置換しない。
 - 射影の失敗は対応するstep/phase/CaptureFailedだけになり、例外の文面は残さない。
 
-成功時は1シナリオ106記録、観測失敗時は106件の観測エラーを確認する。
-[注文3操作の分離](procurement-order-guards.md)で96から99となり、[申請・請求書](procurement-shared-guards.md)の7操作も分離したため現在は106となる。
+成功時は1シナリオ110記録、観測失敗時は110件の観測エラーを確認する。
+[注文3操作の分離](procurement-order-guards.md)で96から99となり、[申請・請求書](procurement-shared-guards.md)の7操作も分離して106となり、[入荷・在庫の接続](procurement-receipt-pipeline.md)でさらに4境界が加わって現在は110となる。
 同じコードを実tarballの独立consumerでも型検査・実行する。
 この追加は新しい観察APIの導入ではなく、既存APIの検証範囲の拡張である。
 
