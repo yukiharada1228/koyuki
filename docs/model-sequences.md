@@ -45,7 +45,8 @@ shrinkAttemptsは反例の候補を再検査した回数。これらの上限は
 
 失敗した初期状態を固定し、操作の連続した範囲を削除して同じ種類の失敗を再検査する。
 最後に1操作ずつの削除を試す。各候補は初期状態からやり直し、生成時の乱数は使わない。
-step・check・invariantは繰り返し呼ばれるため、実DBへの書込みや外部送信を混ぜない。
+step・invariantは純粋な参照仕様とする。checkは同じbefore状態を独立に比較できる必要がある。
+検査用DB等を使う場合の状態再構築と後片付けは、[非同期比較](async-model-sequences.md)の契約を参照する。
 
 - one-deletion-minimal：受け付ける各1操作の削除では、同じ種類の反例が残らなかった。
 - limited：明示した縮小回数へ到達した。最小と扱わず、その時点の反例を返す。
@@ -73,5 +74,6 @@ callback間や元の入力に変更を漏らさず、getterやclass等の非対�
 
 Issue #8の部分実装。[タグの共通生成契約](tag-model-sequences.md)では重複・上限・古いversionを
 メモリ/SQLiteで比較する。生成後のasync比較はhostテスト側の処理で、sampleModelの非同期checkではない。
-非同期adapterの自動反例縮小、payloadの縮小、テスト雛形の出力、全候補での最短列は未提供・未検証。
+[sampleModelAsync](async-model-sequences.md)は、隔離した非同期比較でも同じ反例削除を行える。
+payloadの縮小、テスト雛形の出力、全候補での最短列は未提供・未検証。
 講演の純粋な業務関数・明示的な状態を検査へ使う具体化であり、講演がこのAPIを指定した意味ではない。

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { exploreModel, sampleModel } from './dist/testing.js';
+import { exploreModel, sampleModel, sampleModelAsync } from './dist/testing.js';
 import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
@@ -14,6 +14,8 @@ export const result = (async () => {
   if (explored.kind !== 'passed' || explored.states !== 3 || explored.transitions !== 2) throw new Error('Portable finite exploration failed');
   const sampled = sampleModel({ initial: [0], seed: 0, events: () => [1], step: (n, e) => ({ state: n + e, output: n + e }), check: (_n, _e, expected) => expected.output < 2, limits: { cases: 1, length: 4, shrinkAttempts: 20 } });
   if (sampled.kind !== 'counterexample' || sampled.witness.events.length !== 2 || sampled.shrink !== 'one-deletion-minimal') throw new Error('Portable seeded sampling failed');
+  const asyncSampled = await sampleModelAsync({ initial: [0], seed: 0, events: () => [1], step: (n, e) => ({ state: n + e, output: n + e }), check: async (_n, _e, expected) => expected.output < 2, limits: { cases: 1, length: 4, shrinkAttempts: 20 } });
+  if (JSON.stringify(asyncSampled) !== JSON.stringify(sampled)) throw new Error('Portable async sampling failed');
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   let retryCalls = 0;
   const retried = await retryEffect(async n => ++retryCalls === 1 ? err('Offline') : ok(n), { maxAttempts: 2, decide: () => ({ kind: 'retry', safety: 'not-applied', delayMs: 0 }) })(3);

@@ -51,6 +51,8 @@ SQLiteは実際のDatabaseSyncを:memory:で使う。ファイル永続化・復
 
 Issue #8のタグ・共通adapter契約の具体例。全グループ、icon、archive/restore、並行競合、
 失敗注入、実運用の全状態を同じ生成器で検証したものではない。
-非同期adapterの反例を自動で縮める機構も未提供であり、今回のasync比較はテスト側の処理。
+[非同期反例縮小](async-model-sequences.md)も追加した。各比較でfixtureとbefore状態を再構築し、
+古いversionを無視する故意のwrapperを両adapterで検出してcreate→stale renameへ縮める。
+sampler自体がDBを自動でrollbackするものではなく、隔離と後片付けはhostの比較関数が行う。
 payloadの縮小、全候補での最短列、テスト雛形の出力も引き続き残る。
 講演の全内容を完全実現したという根拠や、生成検査だけでの普遍的な正しさの証明にはしない。

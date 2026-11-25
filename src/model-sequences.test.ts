@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sampleModel, type SequenceModel } from './framework/testing.js';
+import { sampleModel, sampleModelAsync, type SequenceModel } from './framework/testing.js';
 
 test('seeded sampling repeats generated choices, supports seed zero, and never claims exhaustive success', () => {
   const run = (seed: number) => {
@@ -44,6 +44,37 @@ test('deletion shrinking keeps reference-admissible operations and reproduces th
 test('zero shrink budget retains the original witness and reports limited, not minimal', () => {
   const result = sampleModel(broken(0)); assert(result.kind === 'counterexample');
   assert.equal(result.shrink, 'limited'); assert.equal(result.shrinkAttempts, 0); assert.deepEqual(result.witness, result.original);
+});
+
+test('async comparisons use the identical shrinking engine and preserve rejected defects', async () => {
+  const model = broken(100); let active = 0, maximum = 0;
+  const result = await sampleModelAsync({ ...model, check: async (before, event, expected) => {
+    active++; maximum = Math.max(maximum, active); await Promise.resolve();
+    try { return model.check(before, event, expected); } finally { active--; }
+  } });
+  assert.deepEqual(result, sampleModel(model)); assert.equal(maximum, 1); assert.equal(active, 0);
+  const cause = new Error('async check rejected'); let calls = 0;
+  const defect = await sampleModelAsync({ ...model, check: async () => { calls++; throw cause; } });
+  assert(defect.kind === 'defect'); assert.equal(defect.phase, 'check'); assert.equal(defect.cause, cause); assert.equal(calls, 1);
+});
+
+test('concurrent async samplers keep independent seeded choices and owned callback values', async () => {
+  const run = async (seed: number, asynchronous: boolean) => {
+    const seen: number[] = [];
+    const definition = { initial: [{ n: 0 }], seed, limits: { cases: 2, length: 8, shrinkAttempts: 20 },
+      events: (_state: { n: number }, random: () => number) => [{ delta: Math.floor(random() * 20) }, { delta: Math.floor(random() * 20) }],
+      step: (state: { n: number }, event: { delta: number }) => ({ state: { n: state.n + event.delta }, output: state.n + event.delta }),
+      check: (before: { n: number }, event: { delta: number }, expected: { state: { n: number }; output: number }) => {
+        seen.push(event.delta); const valid = before.n + event.delta === expected.output;
+        before.n = -100; event.delta = -100; expected.state.n = -100; return valid;
+      },
+    };
+    const result = asynchronous ? await sampleModelAsync({ ...definition, check: async (...args) => { await Promise.resolve(); return definition.check(...args); } }) : sampleModel(definition);
+    return { result, seen };
+  };
+  const [left, right] = await Promise.all([run(1, true), run(99, true)]);
+  assert.deepEqual(left, await run(1, false)); assert.deepEqual(right, await run(99, false));
+  assert.notDeepEqual(left.seen, right.seen);
 });
 
 test('model callbacks own independent state, event and expectation copies', () => {

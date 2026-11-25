@@ -13,6 +13,9 @@ export interface SequenceModel<S, E, O> {
   readonly seed: number;
   readonly limits: { readonly cases: number; readonly length: number; readonly shrinkAttempts: number };
 }
+export type AsyncSequenceModel<S, E, O> = Omit<SequenceModel<S, E, O>, 'check'> & {
+  readonly check: (before: S, event: E, expected: ModelStep<S, O>) => boolean | Promise<boolean>;
+};
 type Phase = 'snapshot' | 'events' | 'accepts' | 'step' | 'check' | 'invariant';
 type Reason = 'invariant' | 'implementation';
 interface SequenceWitness<S, E> { readonly initial: S; readonly events: readonly E[] }
@@ -25,7 +28,32 @@ export type SequenceSampling<S, E> = SamplingCounts & (
 
 /** Seeded reference-model sampling and bounded deletion shrinking. Not exhaustive or a proof. */
 export function sampleModel<S, E, O>(definition: SequenceModel<S, E, O>): SequenceSampling<S, E> {
-  const { events, step, check, invariant, accepts, seed } = definition;
+  const check = definition.check, engine = samplingEngine<S, E, O>(definition);
+  let pending = engine.next();
+  while (!pending.done) {
+    let matches: boolean;
+    try { matches = check(pending.value.before, pending.value.event, pending.value.expected); }
+    catch (cause) { pending = engine.throw(cause); continue; }
+    pending = engine.next(matches);
+  }
+  return pending.value;
+}
+/** Comparisons must isolate or reconstruct external state for every supplied before-state. */
+export async function sampleModelAsync<S, E, O>(definition: AsyncSequenceModel<S, E, O>): Promise<SequenceSampling<S, E>> {
+  const check = definition.check, engine = samplingEngine<S, E, O>(definition);
+  let pending = engine.next();
+  while (!pending.done) {
+    let matches: boolean;
+    try { matches = await check(pending.value.before, pending.value.event, pending.value.expected); }
+    catch (cause) { pending = engine.throw(cause); continue; }
+    pending = engine.next(matches);
+  }
+  return pending.value;
+}
+interface CheckRequest<S, E, O> { readonly before: S; readonly event: E; readonly expected: ModelStep<S, O> }
+type SamplingEngine<S, E, O, R = SequenceSampling<S, E>> = Generator<CheckRequest<S, E, O>, R, boolean>;
+function* samplingEngine<S, E, O>(definition: Omit<SequenceModel<S, E, O>, 'check'>): SamplingEngine<S, E, O> {
+  const { events, step, invariant, accepts, seed } = definition;
   const limits = { ...definition.limits };
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff ||
     !Number.isSafeInteger(limits.cases) || limits.cases < 1 ||
@@ -45,17 +73,17 @@ export function sampleModel<S, E, O>(definition: SequenceModel<S, E, O>): Sequen
     if (!accepts) return true;
     phase = 'accepts'; return boolean(accepts(snapshotData(state), snapshotData(event)), 'ModelAcceptsMustBeBoolean');
   };
-  const edge = (state: S, event: E): { state: S; reason?: Reason } => {
+  function* edge(state: S, event: E): SamplingEngine<S, E, O, { state: S; reason?: Reason }> {
     phase = 'step'; const output = step(snapshotData(state), snapshotData(event));
     phase = 'snapshot'; const expected = snapshotData(output);
     if (!expected || typeof expected !== 'object' || !('state' in expected) || !('output' in expected)) throw new TypeError('ModelStepMustContainStateAndOutput');
-    phase = 'check'; const matches = boolean(check(snapshotData(state), snapshotData(event), snapshotData(expected)), 'ModelCheckMustBeBoolean');
+    phase = 'check'; const matches = boolean(yield { before: snapshotData(state), event: snapshotData(event), expected: snapshotData(expected) }, 'ModelCheckMustBeBoolean');
     transitions++;
     if (!matches) return { state, reason: 'implementation' };
     phase = 'snapshot'; const next = snapshotData(expected.state);
     return { state: next, ...(!valid(next) ? { reason: 'invariant' as const } : {}) };
-  };
-  const replay = (witness: SequenceWitness<S, E>): Failure | undefined => {
+  }
+  function* replay(witness: SequenceWitness<S, E>): SamplingEngine<S, E, O, Failure | undefined> {
     phase = 'snapshot'; let state = snapshotData(witness.initial);
     current = { initial: witness.initial, events: [] };
     if (!valid(state)) return { reason: 'invariant', witness: current };
@@ -63,13 +91,13 @@ export function sampleModel<S, E, O>(definition: SequenceModel<S, E, O>): Sequen
       const event = witness.events[index]!;
       current = { initial: witness.initial, events: witness.events.slice(0, index + 1) };
       if (!admissible(state, event)) return undefined;
-      const result = edge(state, event);
+      const result = yield* edge(state, event);
       if (result.reason) return { reason: result.reason, witness: current };
       state = result.state;
     }
     return undefined;
-  };
-  const shrink = (failure: Failure): SequenceSampling<S, E> => {
+  }
+  function* shrink(failure: Failure): SamplingEngine<S, E, O> {
     phase = 'snapshot'; const original = snapshotData(failure.witness);
     let witness = snapshotData(original), limited = false;
     // Descending chunks, then individual deletions. A successful deletion starts
@@ -80,14 +108,14 @@ export function sampleModel<S, E, O>(definition: SequenceModel<S, E, O>): Sequen
         if (shrinkAttempts >= limits.shrinkAttempts) { limited = true; break; }
         const candidate = { initial: witness.initial, events: [...witness.events.slice(0, index), ...witness.events.slice(index + chunk)] };
         shrinkAttempts++;
-        const result = replay(candidate);
+        const result = yield* replay(candidate);
         if (result?.reason === failure.reason) { phase = 'snapshot'; witness = snapshotData(result.witness); index = 0; }
         else index++;
       }
       if (limited) break;
     }
     return { kind: 'counterexample', reason: failure.reason, ...counts(), original, witness, shrink: limited ? 'limited' : 'one-deletion-minimal' };
-  };
+  }
   try {
     const initial = snapshotData(definition.initial);
     if (!Array.isArray(initial) || initial.length === 0) throw new TypeError('ModelInitialStatesRequired');
@@ -96,7 +124,7 @@ export function sampleModel<S, E, O>(definition: SequenceModel<S, E, O>): Sequen
       phase = 'snapshot'; const origin: S = snapshotData(initial[Math.floor(random() * initial.length)]!);
       let state = snapshotData(origin); const path: E[] = [];
       current = { initial: origin, events: path };
-      if (!valid(state)) return shrink({ reason: 'invariant', witness: current });
+      if (!valid(state)) return yield* shrink({ reason: 'invariant', witness: current });
       for (let index = 0; index < limits.length; index++) {
         phase = 'events'; const generated = events(snapshotData(state), random);
         if (!Array.isArray(generated)) throw new TypeError('ModelEventsMustBeArray');
@@ -105,8 +133,8 @@ export function sampleModel<S, E, O>(definition: SequenceModel<S, E, O>): Sequen
         const event = choices[Math.floor(random() * choices.length)]!; path.push(event);
         current = { initial: origin, events: [...path] };
         if (!admissible(state, event)) throw new TypeError('ModelGeneratedEventNotAdmissible');
-        const result = edge(state, event);
-        if (result.reason) return shrink({ reason: result.reason, witness: current });
+        const result = yield* edge(state, event);
+        if (result.reason) return yield* shrink({ reason: result.reason, witness: current });
         state = result.state;
       }
     }

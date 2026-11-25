@@ -1,5 +1,5 @@
 import { snapshotData } from './snapshot.js';
-export { sampleModel, type SequenceModel, type SequenceSampling } from './testing-sequences.js';
+export { sampleModel, sampleModelAsync, type SequenceModel, type AsyncSequenceModel, type SequenceSampling } from './testing-sequences.js';
 /** Explicit, finite model exploration. This entry point is separate from the business runtime. */
 export interface ModelStep<S, O> { readonly state: S; readonly output: O }
 export interface ModelLimits { readonly depth: number; readonly states: number; readonly transitions: number }

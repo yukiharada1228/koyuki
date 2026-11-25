@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sampleModel, type ModelStep } from './framework/testing.js';
+import { isDeepStrictEqual } from 'node:util';
+import { sampleModel, sampleModelAsync, type ModelStep } from './framework/testing.js';
 import { Repository, type TagRepository } from './tags/repository.js';
 import { SqliteTagRepository } from './tags/sqlite.js';
 import { tagModel } from './tags/model.js';
@@ -104,4 +105,49 @@ for (const [name, createFixture] of Object.entries(fixtures)) test(`seeded tag c
   for (const label of ['', ' A ', 'e\u0301', 'x'.repeat(30), 'x'.repeat(31)]) assert(observedLabels.has(label), JSON.stringify(label));
   assert.deepEqual([...rejected].sort(), ['DuplicateLabel', 'NotFound', 'SaveConflict', 'TagLimitReached', 'ValidationError']);
   t.diagnostic(JSON.stringify({ adapter: name, seeds: 5, checked }));
+});
+
+for (const [name, createFixture] of Object.entries(fixtures)) test(`async shrinking isolates ${name} checks and finds an adapter that ignores stale versions`, async () => {
+  let opened = 0, closed = 0;
+  const compare = async (before: State, event: Event, expected: ModelStep<State, Expected>, faulty: boolean): Promise<boolean> => {
+    const fixture = createFixture(); opened++;
+    try {
+      const correct = tagModel(fixture.repository), create = correct.creation.on(createTagEvent), rename = correct.revision.on(updateTagEvent);
+      const ids: string[] = [];
+      // Reconstruct THIS supplied before-state, including versions, in a fresh
+      // test fixture. Never reuse the database from a discarded shrink candidate.
+      for (const tag of before.tags) {
+        const created = await create.run({ groupId: 'g', label: tag.label, icon: null }); assert(created.ok);
+        const id = created.value.data.id; ids.push(id);
+        for (let version = 1; version < tag.version; version++) {
+          const updated = await rename.run({ groupId: 'g', id, label: tag.label, icon: null, expectedVersion: version }); assert(updated.ok);
+        }
+      }
+      const repository: TagRepository = faulty ? {
+        loadCreate: fixture.repository.loadCreate.bind(fixture.repository),
+        loadUpdate: input => fixture.repository.loadUpdate({ ...input, expectedVersion: undefined }),
+        saveCreated: fixture.repository.saveCreated.bind(fixture.repository),
+        saveUpdated: fixture.repository.saveUpdated.bind(fixture.repository),
+      } : fixture.repository;
+      const target = tagModel(repository), input = { groupId: 'g', label: event.label, icon: null };
+      const result = event.type === 'create' ? await target.creation.on(createTagEvent).run(input)
+        : await target.revision.on(updateTagEvent).run({ ...input, id: ids[event.slot] ?? 'missing', expectedVersion: (before.tags[event.slot]?.version ?? 1) - (event.stale ? 1 : 0) });
+      const output = result.ok
+        ? { kind: 'saved' as const, label: result.value.data.label, version: result.value.data.version, sortOrder: result.value.data.sortOrder }
+        : { kind: 'rejected' as const, error: result.error };
+      if (result.ok && event.type === 'create') ids.push(result.value.data.id);
+      const actual = fixture.rows().map(row => ({ id: row.id, label: row.label, version: row.version, sortOrder: row.sortOrder })).sort((a, b) => a.sortOrder - b.sortOrder);
+      const wanted = expected.state.tags.map((tag, slot) => ({ ...tag, id: ids[slot], sortOrder: slot }));
+      return isDeepStrictEqual(output, expected.output) && isDeepStrictEqual(actual, wanted);
+    } finally { fixture.close(); closed++; }
+  };
+  const model = { initial: [{ tags: [] }] as State[], seed: 7, limits: { cases: 2, length: 5, shrinkAttempts: 100 },
+    events: (state: State): Event[] => [state.tags.length === 0 ? { type: 'create', slot: 0, label: 'A', stale: false } : { type: 'rename', slot: 0, label: 'B', stale: true }], step: reference };
+  const healthy = await sampleModelAsync({ ...model, check: (before, event, expected) => compare(before, event, expected, false) });
+  assert.equal(healthy.kind, 'sampled'); assert.equal(opened, closed);
+  const broken = await sampleModelAsync({ ...model, check: (before, event, expected) => compare(before, event, expected, true) });
+  assert(broken.kind === 'counterexample' && broken.reason === 'implementation', JSON.stringify(broken));
+  assert.equal(broken.shrink, 'one-deletion-minimal');
+  assert.deepEqual(broken.witness.events.map(event => event.type), ['create', 'rename']); assert(broken.witness.events[1]!.stale);
+  assert.equal(opened, closed); assert(opened > 10);
 });
