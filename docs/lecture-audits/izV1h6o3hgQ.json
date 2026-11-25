@@ -164,6 +164,16 @@
       "scope": "Implementation/test follow-up of representative invalid inputs and pre-commit Conflict injection across all 25 operations. Observation projector failures and unchanged stored model state are compared. The comparison tests are added by this follow-up, not claimed to exist in the implementation base. No new caption, audio, frame or full-path review is claimed.",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "readFailureObservationFollowUp": {
+      "implementationBaseCommit": "acfd6744a6807f382fd2911c21d3ad809d0a6312",
+      "sections": [
+        "iz-22"
+      ],
+      "record": "docs/procurement-read-failure-observation.md",
+      "scope": "Test follow-up of sync and Promise-resolved Conflict at each read position exercised by the sequential story. Request creation performs no read. Tests are added by this follow-up, not claimed to exist in the base. No new source/audio/frame review or full-path completeness is claimed.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -482,7 +492,7 @@
       "endSeconds": 3139,
       "topic": "イベント接続をフレームワークへ委ねたい",
       "status": "partial",
-      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。 購買10操作の共通検証と入荷3操作の複合計画を通常関数列へ移し、宣言した段階間の接続と失敗停止をruntimeへ委譲した。独立利用者の試用記録はないとの回答であり、実装例の成立とDX実証は区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。一実行174境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。",
+      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。 購買10操作の共通検証と入荷3操作の複合計画を通常関数列へ移し、宣言した段階間の接続と失敗停止をruntimeへ委譲した。独立利用者の試用記録はないとの回答であり、実装例の成立とDX実証は区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。取得位置ごとのResult失敗も加えた現在の一実行252境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。",
       "evidence": [
         "docs/business-api-study.md",
         "src/experiments/business.ts",
@@ -519,7 +529,8 @@
         "docs/procurement-receipt-pipeline.md",
         "docs/lecture-partial-reconciliation.md",
         "docs/procurement-failure-observation.md",
-        "src/procurement-failure-observation.test.ts"
+        "src/procurement-failure-observation.test.ts",
+        "docs/procurement-read-failure-observation.md"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"

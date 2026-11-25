@@ -5,7 +5,7 @@
 同じg1内の逐次シナリオで、全25操作の名前を固定の一覧と照合し、Koyuki・通常TS・helperをメモリ/SQLiteで比較する。
 これは既存実装の検証範囲の追加であり、framework APIや実行エンジンは変更していない。
 
-## 2種類の失敗
+## 当初の2種類の失敗
 
 | 失敗 | 注入方法 | 明示した期待値 |
 | --- | --- | --- |
@@ -30,7 +30,8 @@
 - 汎用helperで手続き的につなぐ比較版と、その診断adapter。
 
 不正入力の観測は32回×2境界で64記録、保存前Conflictの観測は成功シナリオと同じ110境界。
-一実行の失敗観測は合計174境界となる。射影をthrowさせる場合も、同じ174境界で位置付きCaptureFailedを確認する。
+この2種類の失敗観測は合計174境界となる。射影をthrowさせる場合も、同じ174境界で位置付きCaptureFailedを確認する。
+現在は[各read位置の取得失敗](procurement-read-failure-observation.md)も加え、合計252境界を比較する。
 入力射影の失敗後は結果射影を呼ばず、業務のInvalidInput/Conflictを観測失敗へ置き換えない。
 privateな例外文面を観測エラーへ含めず、観測境界やread/commitが重複しないことを検査する。
 純粋なRule本体の呼出し回数を別にinstrumentした検査ではない。
@@ -50,6 +51,6 @@ trace、予定されたplan、選択値、観測エラー、全正常結果、�
 それらは[再送比較](procurement-replay-comparison.md)や[共通保存境界](transactions.md)等の別契約と検査で扱う。
 SQLiteは:memory:を用い、全6モデルの状態を検査する。全DB内部テーブルの検査や、別プロセス・高並列試験ではない。
 
-全エラー種別、すべてのRuleの失敗、load失敗、throw/reject、並行競合、永続再送、Applicationの表示を含む全経路の比較は未完了。
+[各read位置の同期/非同期Result失敗](procurement-read-failure-observation.md)は後続で追加済み。全エラー種別、すべてのRuleの失敗、全load分岐、throw/reject、並行競合、永続再送、Applicationの表示を含む全経路の比較は未完了。
 独立利用者の開発体験・実運用・講演全体の完全実現を証明するものではない。
-この7検査はrootと開発版tarballをinstallしたconsumerで実行し、npm公開は行わない。
+現在の8検査はrootと開発版tarballをinstallしたconsumerで実行し、npm公開は行わない。

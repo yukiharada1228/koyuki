@@ -31,13 +31,29 @@ const split = new Set(['requests.edit', 'requests.withdraw', 'requests.reject', 
   'orders.amend', 'orders.cancel', 'orders.complete', 'invoices.approve', 'invoices.void', 'receipts.receive', 'receipts.return', 'receipts.correct']);
 const namespaces: Record<string, string> = { requests: 'request', orders: 'order', receipts: 'receipt', invoices: 'invoice', payments: 'payment', inventory: 'inventory' };
 type Mode = 'selected' | 'input-failure' | 'result-failure';
+type Failure = 'load-sync' | 'load-async' | 'invalid' | 'save-conflict';
+// Independent expected topology of these host loaders, counting read (not related).
+const readCounts: Record<string, number> = Object.fromEntries(operations.map(name => [name, 1]));
+readCounts['requests.create'] = 0;
+for (const name of ['receipts.receive', 'invoices.match', 'invoices.approve', 'invoices.void']) readCounts[name] = 2;
+for (const name of ['receipts.return', 'receipts.correct']) readCounts[name] = 3;
 async function run(build: Factory, backend: string, mode: Mode, persistOnConflict = false) {
   const repository = backend === 'sqlite' ? new SqliteProcurement(':memory:', 'g1') : new MemoryProcurement();
   const reads: { method: string; kind: string; id: string }[] = [];
-  const reports: { operation: string; failure: 'invalid' | 'save-conflict'; report: ActionReport<unknown, unknown> & ObservationReport<null, boolean> }[] = [];
-  let commits = 0, rejectCommit = false, inputSelections = 0, resultSelections = 0;
+  const reports: { operation: string; failure: Failure; readAt?: number; report: ActionReport<unknown, unknown> & ObservationReport<null, boolean> }[] = [];
+  let commits = 0, rejectCommit = false, inputSelections = 0, resultSelections = 0, rejectedReads = 0;
+  let rejectRead: 'sync' | 'async' | undefined;
+  let rejectReadAt = 0;
   const tracked: Inspectable = {
-    read: (kind, id, identity) => { reads.push({ method: 'read', kind, id }); return repository.read(kind, id, identity); },
+    read: (kind, id, identity) => {
+      reads.push({ method: 'read', kind, id });
+      if (rejectRead && --rejectReadAt === 0) {
+        const delivery = rejectRead; rejectRead = undefined; rejectedReads++;
+        const rejected = err({ kind: 'Conflict' as const });
+        return delivery === 'sync' ? rejected : Promise.resolve(rejected);
+      }
+      return repository.read(kind, id, identity);
+    },
     related: (kind, id, identity) => { reads.push({ method: 'related', kind, id }); return repository.related(kind, id, identity); },
     list: repository.list.bind(repository),
     commit: async (change, identity) => {
@@ -68,9 +84,17 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
           const original = structuredClone(input);
           const invalid = group === 'requests' && name === 'create' ? { ...original, lines: [] } : { ...original, expectedVersion: -1 };
           const before = snapshot(), beforeCommits = commits;
-          const readSets: typeof reads[] = [];
-          for (const failure of ['invalid', 'save-conflict'] as const) {
-            const start = reads.length, selectionsBefore = [inputSelections, resultSelections];
+          const readSets: { failure: Failure; prefixLength?: number; calls: typeof reads }[] = [];
+          // Creating a request only prepares input/identity; it performs no read.
+          // First record the complete load with a rejected save, then derive the
+          // finite read positions. Check their count against the fixed topology.
+          const failures: { failure: Failure; readAt?: number; prefixLength?: number }[] = [{ failure: 'save-conflict' }, { failure: 'invalid' }];
+          for (const spec of failures) {
+            const { failure } = spec;
+            const loadFailure = failure === 'load-sync' || failure === 'load-async';
+            const start = reads.length, readsBefore = rejectedReads, attemptCommits = commits, selectionsBefore = [inputSelections, resultSelections];
+            rejectRead = failure === 'load-sync' ? 'sync' : failure === 'load-async' ? 'async' : undefined;
+            rejectReadAt = spec.readAt ?? 0;
             rejectCommit = failure === 'save-conflict';
             let report: ActionReport<unknown, unknown> & ObservationReport<null, boolean>;
             try {
@@ -78,17 +102,22 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
                 input: () => { inputSelections++; if (mode === 'input-failure') throw Error('private-selection-error'); return null; },
                 result: result => { resultSelections++; if (mode === 'result-failure') throw Error('private-selection-error'); return result.ok; },
               });
-            } finally { rejectCommit = false; }
-            const steps = failure === 'invalid' ? [`${id}:load`, 'run:1'] : [`${id}:load`, 'run:1', ...(split.has(operation) ? ['run:2'] : []), id];
+            } finally { rejectCommit = false; rejectRead = undefined; }
+            const steps = loadFailure ? [`${id}:load`] : failure === 'invalid' ? [`${id}:load`, 'run:1'] : [`${id}:load`, 'run:1', ...(split.has(operation) ? ['run:2'] : []), id];
             assert.deepEqual(report.result, err({ kind: failure === 'invalid' ? 'InvalidInput' : 'Conflict' }), operation);
             assert.deepEqual(report.trace, steps.map((step, index) => ({ step, status: index === steps.length - 1 ? 'error' : 'ok' })), operation);
-            if (failure === 'invalid') assert.equal(report.plan, null);
+            if (failure !== 'save-conflict') assert.equal(report.plan, null);
             else {
               const plan = report.plan;
               assert(plan && typeof plan === 'object' && 'kind' in plan && 'operation' in plan);
               assert.equal(plan.kind, 'write'); assert.equal(plan.operation, id);
             }
-            assert.equal(commits, beforeCommits + (failure === 'save-conflict' ? 1 : 0), operation);
+            assert.equal(commits, attemptCommits + (failure === 'save-conflict' ? 1 : 0), operation);
+            assert.equal(rejectedReads - readsBefore, loadFailure ? 1 : 0, operation);
+            if (loadFailure) {
+              assert.equal(reads.length - start, spec.prefixLength, `load failure continued repository calls at ${operation}`);
+              assert.equal(reads.at(-1)?.method, 'read', operation);
+            }
             assert.deepEqual(snapshot(), before, `${failure} changed persisted models at ${operation}`);
             if (mode === 'selected') {
               assert.deepEqual(report.observationErrors, []);
@@ -101,13 +130,27 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
             assert.equal(inputSelections - selectionsBefore[0]!, steps.length);
             assert.equal(resultSelections - selectionsBefore[1]!, mode === 'input-failure' ? 0 : steps.length);
             assert(Object.isFrozen(report.observations));
-            readSets.push(reads.slice(start)); reports.push({ operation, failure, report });
+            const calls = reads.slice(start);
+            readSets.push({ failure, prefixLength: spec.prefixLength, calls });
+            reports.push({ operation, failure, ...(spec.readAt === undefined ? {} : { readAt: spec.readAt }), report });
+            if (failure === 'save-conflict') {
+              assert.equal(calls.filter(call => call.method === 'read').length, readCounts[operation], operation);
+              let readAt = 0;
+              for (const [index, call] of calls.entries()) if (call.method === 'read') {
+                readAt++;
+                failures.push({ failure: 'load-sync', readAt, prefixLength: index + 1 }, { failure: 'load-async', readAt, prefixLength: index + 1 });
+              }
+            }
           }
           const start = reads.length;
           const success = await command.runDetailed(input);
           assert(success.result.ok, operation); assert.equal(commits, beforeCommits + 2);
-          // Both rejection attempts load once, with the same targets as the valid call.
-          for (const readSet of readSets) assert.deepEqual(readSet, reads.slice(start), operation);
+          const validReads = reads.slice(start);
+          if (operation === 'requests.create') assert.deepEqual(validReads, []);
+          for (const readSet of readSets) {
+            const loadFailure = readSet.failure === 'load-sync' || readSet.failure === 'load-async';
+            assert.deepEqual(readSet.calls, loadFailure ? validReads.slice(0, readSet.prefixLength) : validReads, operation);
+          }
           assert.deepEqual(input, original); return success.result;
         };
       }
@@ -117,9 +160,17 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
   };
   try {
     const outcome = await story(wrapped, tracked);
-    assert.equal(commits, 64); assert.equal(reports.length, 64);
+    assert.equal(commits, 64); assert.equal(reports.length, 142); assert.equal(rejectedReads, 78);
     assert.deepEqual([...new Set(reports.map(row => row.operation))].sort(), operations);
-    assert.equal(inputSelections, 174); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 174);
+    for (const failure of ['load-sync', 'load-async'] as const) {
+      const selected = reports.filter(row => row.failure === failure);
+      assert.equal(selected.length, 39);
+      assert.deepEqual([...new Set(selected.map(row => row.operation))].sort(), operations.filter(name => name !== 'requests.create'));
+      const positions = operations.flatMap(name => Array.from({ length: readCounts[name]! }, (_, index) => `${name}#${index + 1}`)).sort();
+      assert.equal(positions.length, 32);
+      assert.deepEqual([...new Set(selected.map(row => `${row.operation}#${row.readAt}`))].sort(), positions);
+    }
+    assert.equal(inputSelections, 252); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 252);
     return { outcome, reports, reads, commits };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }
 }
@@ -140,4 +191,14 @@ for (const backend of ['memory', 'sqlite']) for (const mode of ['selected', 'inp
 }
 test('the comparison detects an adapter that writes before returning the injected Conflict', async () => {
   await assert.rejects(run(builders.koyuki!, 'memory', 'selected', true), /save-conflict changed persisted models at requests.create/);
+});
+test('the comparison detects extra repository calls even when the loader returns the correct Conflict', async () => {
+  const continuing: Factory = (port, identity, policy) => builders.koyuki!({ ...port,
+    read: async (kind, id, actor) => {
+      const result = await port.read(kind, id, actor);
+      if (!result.ok) await port.related('receipt', id, actor);
+      return result;
+    },
+  }, identity, policy);
+  await assert.rejects(run(continuing, 'memory', 'selected'), /load failure continued repository calls at requests.edit/);
 });

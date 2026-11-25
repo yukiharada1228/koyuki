@@ -145,3 +145,10 @@ businessの通常関数列へ直接接続した。失敗のResult接続をruntim
 全25操作での後続停止・全6モデルの非変更・選択値観測を3方式とメモリ/SQLiteで比較する。
 観測射影の失敗でも業務エラーを保持し、追加のread/commitがないことを検査する。
 保存前に拒否する注入であり、全障害・全Rule・再送・Applicationを含む全経路の検証とはしない。
+
+## 後続の取得位置ごとのResult失敗
+
+[同期/非同期の取得失敗](procurement-read-failure-observation.md)を24操作の全32種類のread位置へ注入し、
+失敗した位置までの呼出しだけで停止することを、3方式とメモリ/SQLiteで比較する。
+業務のConflictと観測射影の失敗を分離し、予定された保存や追加のread/relatedがないことを検査する。
+元の成功シナリオで通る位置が対象であり、throw/rejectやApplicationの全経路を比較したとはしない。

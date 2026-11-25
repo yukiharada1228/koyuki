@@ -79,6 +79,10 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 
 ## 観測契約の追加確認
 
+[取得位置ごとのResult失敗](procurement-read-failure-observation.md)も、repositoryを読む24操作の32種類の位置で比較した。
+申請作成はreadがないため対象外とし、同期ErrとPromiseで解決するErrを、throw/rejectとは区別する。
+これは選んだ逐次シナリオの追加検査であり、全load分岐や全障害経路の完成とはしない。
+
 観測処理の追加点検では、同期captureへ誤ってasync関数を渡すと、値はCaptureFailedになっても
 返されたPromiseのrejectが未処理になる不具合を再現・修正した。
 [回帰検査](../src/capture-rejection.test.ts)は業務結果・保存回数・同期inspectの例外契約と、

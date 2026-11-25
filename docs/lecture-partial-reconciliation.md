@@ -51,3 +51,7 @@
 各成功操作の直前に失敗を挟み、全6モデルの非変更・呼出し回数・選択観測を3方式とメモリ/SQLiteで比較する。
 全エラー種別・全Rule・load失敗・throw/reject・再送・Applicationの全経路まで比較済みとはしない。
 次はこの区別を保ったまま、取得失敗等の未比較経路を優先して検討する。
+
+取得失敗については[各read位置の同期/非同期Result失敗](procurement-read-failure-observation.md)も追加した。
+repositoryを読まない申請作成を除く24操作の32種類の位置を、元シナリオの39回の取得で比較する。
+read/relatedのthrowやPromiseのrejectはこの追加検査に含めず、Result失敗との区別を維持する。
