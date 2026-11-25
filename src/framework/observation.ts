@@ -1,3 +1,4 @@
+import { snapshotData } from './snapshot.js';
 import type { Result } from './result.js';
 import type { WorkflowCapture, StepObservation, StageObserver } from './workflow.js';
 export interface CaptureFailure { readonly step: string; readonly phase: 'input' | 'result'; readonly kind: 'CaptureFailed' }
@@ -10,10 +11,10 @@ export function createObservation<I, R>(capture: WorkflowCapture<I, R>) {
   const observations: StepObservation<I, R>[] = [], errors: CaptureFailure[] = [];
   const observe: StageObserver = (step, value) => {
     let input: I;
-    try { input = structuredClone(capture.input(value, step)); }
+    try { input = snapshotData(capture.input(value, step)); }
     catch { errors.push(Object.freeze({ step, phase: 'input', kind: 'CaptureFailed' })); return () => {}; }
     return result => {
-      try { observations.push(Object.freeze({ step, input, result: structuredClone(capture.result(result, step)) })); }
+      try { observations.push(Object.freeze({ step, input, result: snapshotData(capture.result(result, step)) })); }
       catch { errors.push(Object.freeze({ step, phase: 'result', kind: 'CaptureFailed' })); }
     };
   };

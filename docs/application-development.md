@@ -61,9 +61,10 @@ return defineApplication({
 
 ## 実行時の所有権と並行性
 
-外部イベントはdispatch時点でstructuredCloneし、待ち行列中の呼び出し元の変更を受けない。
-cloneできない入力はPromiseのrejectとなり、状態・trace・後続イベントを変更しない。
-状態もclone境界を持つ。関数や接続オブジェクトはeventへ入れずadapterへ置く。
+外部イベントはdispatch時点で[共通snapshotの形式検査](application-ownership.md)を行ってコピーし、待ち行列中の呼び出し元の変更を受けない。
+コピーできない入力や、情報を失う入力はDataCloneErrorとしてPromiseをrejectし、状態・trace・後続イベントを変更しない。
+状態も同じsnapshot境界を持ち、受理できないreducer結果は状態を交換する前に拒否する。
+関数や接続オブジェクトはeventへ入れずadapterへ置く。Viewの戻り値はモデルとしてcloneしない。
 
 同じsessionの外部イベントは順次処理する。expectedRevisionは実行直前のrevisionと比較し、
 古い画面からの操作をIO前に拒否する。業務操作には通常、実行開始と完了で二回のrevision更新がある。

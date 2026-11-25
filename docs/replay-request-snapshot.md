@@ -55,8 +55,8 @@ SharedArrayBufferとそのviewは、native clone後も書込みが共有され�
 再送結果を現在のViewへどう反映するか、自動再試行や永続schedulerは別の契約のまま。
 コピーできた値が、hostのJSON fingerprint・DB・ネットワーク形式でも扱えるとは限らない。
 
-Application / Programのイベント・状態のsnapshotも別の境界。
-この変更を、全層のcloneで任意のTypeScript値の情報を保持できたという意味にはしない。
+Application / Programのイベント・状態とcaptureも、[同じ内部snapshot実装](application-ownership.md)を使う。
+境界ごとの失敗の扱いは別であり、任意のTypeScript値を自動で所有・永続化する保証にはしない。
 
 ## 検証
 

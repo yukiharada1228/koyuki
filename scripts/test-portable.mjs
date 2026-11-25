@@ -58,6 +58,15 @@ export const result = (async () => {
   }).start();
   const event = { type: 'add', input: { amount: 3 } };
   const pending = isolated.dispatch(event); event.input.amount = 99; await pending;
+  const ownedRevision = isolated.snapshot().revision;
+  let rejectedEvent = false;
+  try { await isolated.dispatch({ type: 'add', input: { amount: 500, [proof]: true } }); }
+  catch (cause) { rejectedEvent = cause.name === 'DataCloneError'; }
+  if (!rejectedEvent || isolated.snapshot().revision !== ownedRevision || isolated.snapshot().view !== 3) throw new Error('Application event ownership failed');
+  const presentation = await defineApplication({ initial: () => 7, operations: {}, view: state => ({ [proof]: true, render: () => state.data }) }).start();
+  if (!presentation.snapshot().view[proof] || presentation.snapshot().view.render() !== 7) throw new Error('Presentation values were incorrectly cloned');
+  const collections = await defineApplication({ initial: () => ({ rows: [{ amount: 2 }], date: new Date(0), map: new Map([['amount', 2]]) }), operations: {}, view: state => state.data.rows[0].amount + state.data.date.getTime() + state.data.map.get('amount') }).start();
+  if (collections.snapshot().view !== 4 || collections.snapshot().state.data.rows.length !== 1) throw new Error('Collection state snapshots failed');
   const syncFailure = fromThrowable(() => { throw 'offline'; }, () => 'Unavailable')();
   const asyncFailure = await fromPromise(async () => { throw 'offline'; }, () => 'Unavailable')();
   if (syncFailure.ok || asyncFailure.ok || syncFailure.error !== 'Unavailable' || asyncFailure.error !== 'Unavailable') throw new Error('Boundary adaptation failed');
@@ -82,4 +91,4 @@ const context = { structuredClone };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
 assert.deepEqual(result, { queuedValue: 3, crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
-console.log('Browser bundle executed without Node globals: function declarations, opaque domain decisions, replay request snapshots, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');
+console.log('Browser bundle executed without Node globals: function declarations, opaque domain decisions, replay and application snapshots, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');

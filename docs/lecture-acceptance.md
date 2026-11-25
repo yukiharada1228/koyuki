@@ -31,7 +31,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | 直和に応じて異なる関数へ分岐する | [型ガード付きbranch](typed-branch.md)、[顧客照合](customer-import-study.md) | 型ガードの真偽は利用者の責任 |
 | 複数の値生成と失敗方針を明示する | [combine](combine.md)、collect / collectEach / foldEach | 評価済みResultと遅延実行、先頭失敗と全失敗収集を選ぶ必要がある |
 | I/Oを純粋な計算から分離し、途中I/Oも接続する | [Process](process.md)、[複数集約](business-composition-study.md)、[collectEffects](collection-effects.md) | driver・再送・transactionの方針をhostに残す |
-| Applicationの実行状態・完了・viewを任せる | [Application](application-development.md)、成功・failed・crashed・再送投影の検査 | インプロセスのruntime。永続schedulerではない |
+| Applicationの実行状態・完了・viewを任せる | [Application](application-development.md)、[状態・イベントの所有](application-ownership.md)、成功・failed・crashed・再送投影の検査 | インプロセスのruntime。永続schedulerではない |
 | 通常の関数・オブジェクトを自然に接続する | [Workflow再利用](workflow-input-contract.md)、[command receiver](../src/application-receiver.test.ts) | あらゆるcallbackの型注釈を省けるわけではない |
 | Queryと更新の関心を分ける | [HTTP/GraphQLの実統合](../examples/leave-http/GRAPHQL.md) | SDLからの全自動型生成は未提供 |
 | Repositoryとtransactionを接続する | [Prisma](../examples/prisma-stock/README.md)、SQLiteの原子保存・CAS | 検証したdriver構成の範囲。任意DBの一括保証はない |
@@ -46,7 +46,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 - 全編の連続音声映像と自動字幕の照合。
 - 独立利用者による開発体験・学習負担の評価、実業務での運用実績。
 - genericな要件計算と未注釈callbackの推論制限。
-- [opaque値の通常保存](opaque-decisions.md)は改善済み。明示的なView rendererのJSON照合、Applicationのclone境界、永続adapterまで任意の値を扱う保証は残る課題。
+- [opaque値の通常保存](opaque-decisions.md)は改善済み。[Application・captureの情報を失うコピー](application-ownership.md)も拒否するよう改善済み。明示的なView rendererのJSON照合や、任意のopaque値を状態・永続adapterで扱う保証は残る課題。
 - hostをまたぐ永続実行・再試行・監査保持の共通方針と、他DB/driverでの追加検証。
 - [25操作のチーム評価案](team-development-study.md)の実装・同条件での比較。[25操作の初期実装](procurement-study.md)を実装済み。[SQLiteの複合保存と復元](procurement-sqlite.md)を検証済み。[複合Application投影](procurement-projection.md)も検証済み。[永続再送境界](procurement-replay.md)も接続済み。[25操作の接続比較](procurement-comparison.md)で3方式の結果一致を検証済み。[基本traceと保存計画](procurement-trace-comparison.md)の代表ケースも一致を検証済み。[独立再送driver](procurement-replay-comparison.md)も代表ケースを比較済み。[独立Application](procurement-application-comparison.md)も代表ケースを比較済み。比較で見つかった表示制約に対する[現在値取得](procurement-current-projection.md)も追加。[現在値取得方針](procurement-current-comparison.md)も代表ケースを比較済み。[選択値観測](procurement-observation-comparison.md)も代表ケースを比較済み。[二段階承認への仕様変更](procurement-approval-change.md)も3方式で検証済み。全観測経路の比較・その他の仕様変更評価・実装負担の測定は未実施。
 - 公開されていない元製品の予約取込・テーブル割当等との仕様の等価性。

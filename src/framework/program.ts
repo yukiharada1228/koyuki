@@ -1,3 +1,4 @@
+import { snapshotData } from './snapshot.js';
 import { ok, err, type Result } from './result.js';
 export interface Command<M> { readonly name: string; readonly execute: () => Promise<M> }
 export interface Update<S, M> { readonly state: S; readonly commands: readonly Command<M>[] }
@@ -18,10 +19,17 @@ export function defineProgram<S, M extends { type: string }, E, V>(definition: {
     init: definition.init, update: definition.update, view: definition.view,
     async start() {
       const initial = definition.init();
-      let state = structuredClone(initial.state), revision = 0;
+      let state = snapshotData(initial.state), revision = 0;
       const history: ProgramTrace[] = [];
       let tail: Promise<unknown> = Promise.resolve();
-      const snapshot = (): ProgramSnapshot<S, V> => ({ revision, state: structuredClone(state), view: definition.view(structuredClone(state)) });
+      const snapshot = (): ProgramSnapshot<S, V> => ({ revision, state: snapshotData(state), view: definition.view(snapshotData(state)) });
+      function commit(value: S, name: string): void {
+        let owned: S;
+        try { owned = snapshotData(value); }
+        catch (cause) { history.push({ revision, kind: 'event', name, status: 'error' }); throw cause; }
+        history.push({ revision, kind: 'event', name, status: 'ok' });
+        state = owned; revision++;
+      }
       async function settle(commands: readonly Command<M>[]): Promise<void> {
         const queue = [...commands];
         let count = 0;
@@ -32,10 +40,12 @@ export function defineProgram<S, M extends { type: string }, E, V>(definition: {
           try { message = await command.execute(); }
           catch (error) { history.push({ revision, kind: 'command', name: command.name, status: 'error' }); throw error; }
           history.push({ revision, kind: 'command', name: command.name, status: 'ok' });
-          const result = definition.update(structuredClone(state), message);
-          history.push({ revision, kind: 'event', name: message.type, status: result.ok ? 'ok' : 'error' });
-          if (!result.ok) throw new Error('RejectedCommandMessage', { cause: result.error });
-          state = structuredClone(result.value.state); revision++;
+          const result = definition.update(snapshotData(state), message);
+          if (!result.ok) {
+            history.push({ revision, kind: 'event', name: message.type, status: 'error' });
+            throw new Error('RejectedCommandMessage', { cause: result.error });
+          }
+          commit(result.value.state, message.type);
           publish(); queue.push(...result.value.commands);
         }
       }
@@ -49,7 +59,7 @@ export function defineProgram<S, M extends { type: string }, E, V>(definition: {
       await settle(initial.commands);
       return {
         snapshot,
-        trace: () => structuredClone(history),
+        trace: () => snapshotData(history),
         subscribe(listener: (value: ProgramSnapshot<S, V>) => void) {
           // Deliver the initial value before retaining a subscriber that may throw.
           listener(snapshot()); listeners.add(listener); return () => { listeners.delete(listener); };
@@ -58,15 +68,14 @@ export function defineProgram<S, M extends { type: string }, E, V>(definition: {
           // Take ownership at dispatch, before earlier commands release the queue.
           // Preserve the Promise rejection contract for non-cloneable events.
           let received: M;
-          try { received = structuredClone(event); }
+          try { received = snapshotData(event); }
           catch (error) { return Promise.reject(error); }
           const task = tail.then(async () => {
             if (expectedRevision !== undefined && expectedRevision !== revision) return err({ kind: 'StaleRevision' as const });
             const name = received.type;
-            const result = definition.update(structuredClone(state), received);
-            history.push({ revision, kind: 'event', name, status: result.ok ? 'ok' : 'error' });
-            if (!result.ok) return result;
-            state = structuredClone(result.value.state); revision++;
+            const result = definition.update(snapshotData(state), received);
+            if (!result.ok) { history.push({ revision, kind: 'event', name, status: 'error' }); return result; }
+            commit(result.value.state, name);
             publish(); await settle(result.value.commands); return ok(snapshot());
           });
           tail = task.catch(() => undefined);

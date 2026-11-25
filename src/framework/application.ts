@@ -1,3 +1,4 @@
+import { snapshotData } from './snapshot.js';
 import { defineProgram, next, effect } from './program.js';
 import { ok, err, type Result } from './result.js';
 export interface Operation<S, I, O, E> {
@@ -71,7 +72,7 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
         if (!event.result.ok) {
           // This private completion is generated only by the selected operation's command.
           try {
-            const error = structuredClone(event.result.error);
+            const error = snapshotData(event.result.error);
             return ok(next<State, InternalEvent>({ kind: 'failed', data: state.data, operation: event.operation, error } as State));
           } catch (cause) {
             return ok(next<State, InternalEvent>({ kind: 'crashed', data: state.data, operation: event.operation, error: unexpectedException(cause) }));
@@ -79,7 +80,7 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
         }
         const reduce = operations[event.operation]!.reduce as (state: S, output: unknown) => S;
         try {
-          const data = structuredClone(reduce(structuredClone(state.data), event.result.value));
+          const data = snapshotData(reduce(snapshotData(state.data), event.result.value));
           return ok(next<State, InternalEvent>({ kind: 'ready', data }));
         } catch (cause) {
           return ok(next<State, InternalEvent>({ kind: 'crashed', data: state.data, operation: event.operation, error: unexpectedException(cause) }));
@@ -98,6 +99,9 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
       return {
         snapshot: session.snapshot, subscribe: session.subscribe, trace: session.trace,
         dispatch(event: PublicEvent, expectedRevision?: number) {
+          // Validate before reading routing properties or deriving the private event.
+          try { event = snapshotData(event); }
+          catch (cause) { return Promise.reject(cause); }
           if (event.type === 'dismiss') return session.dispatch({ type: 'dismiss' }, expectedRevision);
           // Reject forged completion events even from untyped JS callers.
           if (!Object.hasOwn(operations, event.type)) return Promise.resolve(err({ kind: 'UnexpectedMessage' as const }));

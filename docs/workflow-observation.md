@@ -17,7 +17,7 @@ const report = flow.inspect(2, {
 
 callbackの第2引数は段階名。異なる型を通るため、値はunknownとして渡し、必要な情報を選ぶ。
 input callbackはRuleの実行前、result callbackはResultが返った後に呼ぶ。
-**選んでからstructuredCloneする**ため、選ばなかった秘密情報やcloneできない関数を履歴へ混ぜる必要はない。
+**選んでから[共通snapshotを作る](application-ownership.md)**ため、選ばなかった秘密情報やcloneできない関数を履歴へ混ぜる必要はない。
 ただしcallback自体は生の値を参照できるため、値の変更や外部I/Oを行わない設計が必要。
 
 選択した入力は実行前にcloneされ、次段階や呼び出し元による後の参照変更から隔離される。
@@ -28,7 +28,8 @@ Ruleは再実行しない。失敗したRuleも記録し、後続のRuleは実�
 branchでは選択した経路のRuleだけを記録し、predicateによる経路選択は従来のtraceに残す。
 transitionのvalidate/require/evolveも同じ仕組みで観測できる。
 
-input/result callbackやcloneの失敗は観測時の欠陥としてthrowする。
+input/result callbackやsnapshotの失敗は観測時の欠陥としてthrowする。
+クラスやSymbol属性を落とした値を成功した観測として返さず、対応するDTOへ投影する。
 inputの取得が失敗すればそのRuleは未実行、resultの取得で失敗した場合はRuleは実行済み。
 純粋な計算の検査APIであり、この失敗を業務エラーへ自動変換しない。
 Ruleの想定外のthrowにはResultがないため、完了した観測reportは返らない。

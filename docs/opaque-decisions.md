@@ -62,9 +62,9 @@ host固有のfingerprint・永続receiptの形式は変更しない。
 JSONの要求からSymbol付きの決定を作り、saveでDTOへ変換して再送する例を検証する。
 一方、関数付きの要求などstructuredCloneできない入力は、replayのsnapshot時点で従来どおり拒否する。
 
-Applicationのイベント・状態の所有境界もstructuredCloneのまま。
-Symbol属性やクラスのメソッド・private fieldが、その境界を通って同じ形で残る保証はない。
-Applicationや永続adapterへ渡す部分には必要なDTOを用意する。
+Applicationのイベント・状態は[共通snapshot契約](application-ownership.md)に従い、
+Symbol属性やクラスの情報を失うコピーは拒否する。
+Applicationに保存する部分や永続adapterへ渡す部分には必要なDTOを用意する。
 今回の改善を、全層で任意のオブジェクトを自動永続化・復元できる保証にはしない。
 
 ## 検証

@@ -1,3 +1,4 @@
+import { snapshotData } from './snapshot.js';
 import type { Result } from './result.js';
 import { canonicalIdentity } from './identity.js';
 export type Rule<I, O, E> = (input: I) => Result<O, E>;
@@ -29,8 +30,8 @@ export class Workflow<I, O, E> {
     const observations: StepObservation<A, B>[] = [];
     const evaluation = this.evaluate(input, (step, value) => {
       // Select before cloning: unselected fields never enter the recorded snapshot.
-      const before = structuredClone(capture.input(value, step));
-      return result => observations.push(Object.freeze({ step, input: before, result: structuredClone(capture.result(result, step)) }));
+      const before = snapshotData(capture.input(value, step));
+      return result => observations.push(Object.freeze({ step, input: before, result: snapshotData(capture.result(result, step)) }));
     });
     return { ...evaluation, observations: Object.freeze(observations) };
   }
