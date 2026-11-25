@@ -37,8 +37,12 @@ type Mode = 'selected' | 'input-failure' | 'result-failure';
 async function run(build: Factory | undefined, backend: string, mode: Mode = 'selected') {
   const repository = backend === 'sqlite' ? new SqliteProcurement(':memory:', 'g1') : new MemoryProcurement();
   let commits = 0, invocations = 0, resultProjections = 0;
+  const reads: { method: 'read' | 'related'; kind: string; id: string }[] = [];
   const reports: { operation: string; report: ActionReport<unknown, unknown> & Captured }[] = [];
-  const tracked: Inspectable = { read: repository.read.bind(repository), related: repository.related.bind(repository), list: repository.list.bind(repository),
+  const tracked: Inspectable = {
+    read: (kind, id, actor) => { reads.push({ method: 'read', kind, id }); return repository.read(kind, id, actor); },
+    related: (kind, id, actor) => { reads.push({ method: 'related', kind, id }); return repository.related(kind, id, actor); },
+    list: repository.list.bind(repository),
     commit: async (change, actor) => { commits++; return repository.commit(change, actor); } };
   const observed: StudyFactory = (repository, actor, policy) => {
     assert(build); const declared = build(repository, actor, policy);
@@ -86,7 +90,7 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
       assert.equal(reports.length, 32); assert.equal(new Set(reports.map(row => row.operation)).size, 25);
       assert.equal(resultProjections, mode === 'input-failure' ? 0 : 96);
     }
-    return { outcome, reports, commits };
+    return { outcome, reports, commits, reads };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }
 }
 
@@ -98,6 +102,7 @@ for (const backend of ['memory', 'sqlite']) for (const [name, build] of Object.e
     const failedResult = await run(build, backend, 'result-failure');
     assert.deepEqual(observed.outcome, ordinary.outcome); assert.deepEqual(failed.outcome, ordinary.outcome);
     assert.deepEqual(failedResult.outcome, ordinary.outcome);
+    assert.deepEqual(observed.reads, ordinary.reads); assert.deepEqual(failed.reads, ordinary.reads); assert.deepEqual(failedResult.reads, ordinary.reads);
     const reference = name === 'plain' ? observed : await run(builders.plain, backend);
     assert.deepEqual(observed, reference);
     const failedReference = name === 'plain' ? failed : await run(builders.plain, backend, 'input-failure');

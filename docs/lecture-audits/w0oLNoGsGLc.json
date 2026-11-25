@@ -43,6 +43,16 @@
         "w0o-13"
       ],
       "scope": "Implementation follow-up of standalone Program execution observation. No new source or audio review."
+    },
+    "ordinaryApiAndObservationFollowUp": {
+      "implementationBaseCommit": "462dafa0b178b62f3eabdee4ef0ed2ce19d460d8",
+      "sections": [
+        "w0o-13"
+      ],
+      "scope": "Targeted reread of saved captions for iz-22, qbf-19 and w0o-13 against current implementation. Operation-local loaders, generated 100/500 operation contracts and all-25-operation selected observation checks are distinguished from human DX evidence and automatic persistent history.",
+      "record": "docs/lecture-ordinary-api-observation.md",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -227,7 +237,9 @@
         "docs/lecture-core-focus.md",
         "src/live-execution.test.ts",
         "docs/program-execution.md",
-        "src/program-execution.test.ts"
+        "src/program-execution.test.ts",
+        "docs/procurement-observation-comparison.md",
+        "src/procurement-observation-scenario.test.ts"
       ],
       "remaining": [
         "persistent-history-policy"

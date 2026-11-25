@@ -69,6 +69,16 @@
       ],
       "scope": "Targeted saved-caption reread and implementation follow-up. Result syntax and testing burden are distinguished from a mandatory testing DSL. No new audio or full-frame review.",
       "record": "docs/validation-fields.md"
+    },
+    "ordinaryApiAndObservationFollowUp": {
+      "implementationBaseCommit": "462dafa0b178b62f3eabdee4ef0ed2ce19d460d8",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Targeted reread of saved captions for iz-22, qbf-19 and w0o-13 against current implementation. Operation-local loaders, generated 100/500 operation contracts and all-25-operation selected observation checks are distinguished from human DX evidence and automatic persistent history.",
+      "record": "docs/lecture-ordinary-api-observation.md",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -357,7 +367,10 @@
         "docs/business-diagnostic-study.json",
         "scripts/fixtures/leave-business-diagnostics.ts",
         "docs/business-operation-table.md",
-        "src/business-operation-table.test.ts"
+        "src/business-operation-table.test.ts",
+        "docs/business-local-load.md",
+        "docs/business-scale.md",
+        "scripts/check-business-scale.mjs"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"

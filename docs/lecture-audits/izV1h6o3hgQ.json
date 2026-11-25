@@ -62,6 +62,16 @@
       ],
       "scope": "Targeted saved-caption reread and implementation follow-up. Result syntax and testing burden are distinguished from a mandatory testing DSL. No new audio or full-frame review.",
       "record": "docs/validation-fields.md"
+    },
+    "ordinaryApiAndObservationFollowUp": {
+      "implementationBaseCommit": "462dafa0b178b62f3eabdee4ef0ed2ce19d460d8",
+      "sections": [
+        "iz-22"
+      ],
+      "scope": "Targeted reread of saved captions for iz-22, qbf-19 and w0o-13 against current implementation. Operation-local loaders, generated 100/500 operation contracts and all-25-operation selected observation checks are distinguished from human DX evidence and automatic persistent history.",
+      "record": "docs/lecture-ordinary-api-observation.md",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -360,7 +370,10 @@
         "docs/procurement-framework-context.md",
         "src/procurement-framework-context.test.ts",
         "docs/business-operation-table.md",
-        "src/business-operation-table.test.ts"
+        "src/business-operation-table.test.ts",
+        "docs/business-local-load.md",
+        "docs/business-scale.md",
+        "scripts/check-business-scale.mjs"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
