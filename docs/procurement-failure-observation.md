@@ -29,9 +29,9 @@
 - frameworkの実行を使わず手続き的につなぐ通常TSと、その診断adapter。
 - 汎用helperで手続き的につなぐ比較版と、その診断adapter。
 
-不正入力の観測は32回×2境界で64記録、保存前Conflictの観測は成功シナリオと同じ117境界。
-この2種類の失敗観測は合計181境界となる。射影をthrowさせる場合も、同じ181境界で位置付きCaptureFailedを確認する。
-現在は[各read位置の取得失敗](procurement-read-failure-observation.md)も加え、合計259境界を比較する。
+不正入力の観測は32回×2境界で64記録、保存前Conflictの観測は成功シナリオと同じ121境界。
+この2種類の失敗観測は合計185境界となる。射影をthrowさせる場合も、同じ185境界で位置付きCaptureFailedを確認する。
+現在は[各read位置の取得失敗](procurement-read-failure-observation.md)も加え、合計263境界を比較する。
 [申請・承認・発注の分離](procurement-request-planning.md)で、従来の174/252境界から7境界増えた。
 入力射影の失敗後は結果射影を呼ばず、業務のInvalidInput/Conflictを観測失敗へ置き換えない。
 privateな例外文面を観測エラーへ含めず、観測境界やread/commitが重複しないことを検査する。
@@ -58,3 +58,6 @@ SQLiteは:memory:を用い、全6モデルの状態を検査する。全DB内部
 
 [I/Oのthrow/reject](procurement-io-exceptions.md)も、別の検査で追加した。
 上のResultによる拒否と異なり、直接commandのPromiseは元の例外でrejectし、ActionReportを得たとはしない。
+
+[在庫4操作の分離](procurement-stock-planning.md)で保存前Conflictの観測がさらに4境界増えた。
+不正入力64境界と取得失敗78境界、試行回数とI/O回数は変わらない。

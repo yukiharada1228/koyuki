@@ -5,7 +5,7 @@ export const operations = [
   'invoices.register', 'invoices.match', 'invoices.approve', 'invoices.void', 'payments.record', 'payments.cancel',
   'inventory.reserve', 'inventory.release', 'inventory.move', 'inventory.adjust',
 ].sort();
-export const split = new Set(['requests.submit', 'requests.approve', 'orders.place', 'requests.edit', 'requests.withdraw', 'requests.reject', 'requests.return', 'requests.reassign',
+export const split = new Set(['inventory.reserve', 'inventory.release', 'inventory.move', 'inventory.adjust', 'requests.submit', 'requests.approve', 'orders.place', 'requests.edit', 'requests.withdraw', 'requests.reject', 'requests.return', 'requests.reassign',
   'orders.amend', 'orders.cancel', 'orders.complete', 'invoices.approve', 'invoices.void', 'receipts.receive', 'receipts.return', 'receipts.correct']);
 // Independent expected topology of these host loaders, counting read (not related).
 export const readCounts: Record<string, number> = Object.fromEntries(operations.map(name => [name, 1]));

@@ -8,7 +8,7 @@ import { ok, type Result } from '../../framework/index.js';
 import type { Actor, Policy, Entity, Change, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
 import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, createRequest, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
-import { reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
+import { checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock } from './inventory.js';
 
 /** plain TypeScript orchestration baseline: no business/Workflow execution. */
 export const plainProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) => plainWithCommit(repository, identity, policy, observe, capture);
@@ -256,8 +256,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       reserve: async (input: StockInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.inventory<StockInput>(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = reserveStock(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkStock(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = reserveCheckedStock(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
@@ -265,8 +267,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       release: async (input: StockInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.inventory<StockInput>(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = releaseStock(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkStock(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = releaseCheckedStock(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
@@ -274,8 +278,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       move: async (input: MoveInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.inventory<MoveInput>(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = moveStock(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkStock(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = moveCheckedStock(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
@@ -283,8 +289,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       adjust: async (input: AdjustInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.inventory<AdjustInput>(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = adjustStock(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkStock(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = adjustCheckedStock(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;

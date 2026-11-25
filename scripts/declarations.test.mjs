@@ -87,16 +87,16 @@ business({name:'large',operations:{first:[${Array(512).fill('rule')}],second:{lo
   assert.match(result.unresolved[0].reason, /1024 stages/);
 });
 
-test('selected procurement sources resolve all 41 rule labels and detect an injected label collision', async () => {
+test('selected procurement sources resolve all 45 rule labels and detect an injected label collision', async () => {
   const paths = ['application.ts', 'domain.ts', 'inventory.ts', 'receipt-pipeline.ts'].map(name => `src/experiments/procurement/${name}`);
   const files = await Promise.all(paths.map(async file => ({ file, source: await readFile(join(root, file), 'utf8') })));
   const result = analyzeDeclarations(files);
-  assert.equal(result.checkedDeclarations, 6); assert.equal(result.checkedOperationIds, 25); assert.equal(result.checkedBusinessRuleLabels, 41);
+  assert.equal(result.checkedDeclarations, 6); assert.equal(result.checkedOperationIds, 25); assert.equal(result.checkedBusinessRuleLabels, 45);
   assert.deepEqual(result.diagnostics, []); assert.deepEqual(result.unresolved, []);
   const mutated = files.map(file => file.file !== paths[0] ? file : { ...file, source: file.source.replace('run: [checkBuyerRequest, submitCheckedRequest]', "run: [diagnosticStep('run:2', checkBuyerRequest), submitCheckedRequest]") + "\nimport {step as diagnosticStep} from 'koyuki';" });
   assert.notEqual(mutated[0].source, files[0].source);
   const broken = analyzeDeclarations(mutated);
-  assert.equal(broken.checkedBusinessRuleLabels, 41); assert.deepEqual(broken.unresolved, []);
+  assert.equal(broken.checkedBusinessRuleLabels, 45); assert.deepEqual(broken.unresolved, []);
   assert.equal(broken.diagnostics.length, 1); assert.equal(broken.diagnostics[0].code, 'AMBIGUOUS_BUSINESS_RULE_LABEL');
   assert.equal(broken.diagnostics[0].file, paths[0]);
 });
@@ -408,7 +408,7 @@ test('all 25 procurement business IDs are checked without executing the applicat
   const source = await readFile(join(root, file), 'utf8');
   const baseline = analyzeDeclarations([{ file, source }]);
   assert.equal(baseline.checkedDeclarations, 6); assert.equal(baseline.checkedOperationIds, 25);
-  assert.deepEqual(baseline.diagnostics, []); assert.equal(baseline.unresolved.length, 41);
+  assert.deepEqual(baseline.diagnostics, []); assert.equal(baseline.unresolved.length, 45);
   assert.equal(baseline.checkedBusinessRuleLabels, 0);
   assert(baseline.unresolved.every(item => item.reason.includes('Business stage')));
   const expected = {

@@ -8,7 +8,7 @@ import { ok, type Result } from '../../framework/index.js';
 import type { Actor, Policy, Entity, Change, Receipt, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
 import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, createRequest, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
-import { reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
+import { checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
 export const helperProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) => helperWithCommit(repository, identity, policy, observe, capture);
@@ -84,10 +84,10 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       cancel: action(context.payment, cancelPayment),
     },
     inventory: {
-      reserve: action(context.inventory<StockInput>, reserveStock),
-      release: action(context.inventory<StockInput>, releaseStock),
-      move: action(context.inventory<MoveInput>, moveStock),
-      adjust: action(context.inventory<AdjustInput>, adjustStock),
+      reserve: checkedAction(context.inventory<StockInput>, checkStock, reserveCheckedStock),
+      release: checkedAction(context.inventory<StockInput>, checkStock, releaseCheckedStock),
+      move: checkedAction(context.inventory<MoveInput>, checkStock, moveCheckedStock),
+      adjust: checkedAction(context.inventory<AdjustInput>, checkStock, adjustCheckedStock),
     },
   } satisfies StudyCommands<E>;
 }

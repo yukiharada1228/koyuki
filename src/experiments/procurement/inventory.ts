@@ -12,21 +12,22 @@ function stockPlan(stock: Stock | null, actor: Actor, positions: readonly Positi
   const result: Stock = { kind: 'stock', id: stockId, groupId: actor.groupId, version: (stock?.version ?? 0) + 1, positions, lastAdjustment };
   return { result, writes: [result], checks: [{ kind: 'stock', id: stockId, groupId: actor.groupId, version: stock?.version ?? null }] };
 }
-function guard(value: Context<StockInput>): Result<readonly Position[], RuleError> {
+declare const checkedStock: unique symbol;
+type CheckedStock<T> = T & Readonly<{ [checkedStock]: true }>;
+export function checkStock<T extends Context<StockInput>>(value: T): Result<CheckedStock<T>, RuleError> {
   const { input, actor, stock } = value;
   if (actor.role !== 'warehouse' || actor.active !== true || !validId(actor.id) || !validId(actor.groupId)) return fail('Denied');
   if (input.id !== stockId || (stock && (stock.id !== stockId || stock.groupId !== actor.groupId))) return fail('TargetMismatch');
   if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0 || !validId(input.sku) || !validId(input.location) || !Number.isSafeInteger(input.quantity) || input.quantity < 0) return fail('InvalidInput');
   if (input.expectedVersion !== (stock?.version ?? 0)) return fail('Conflict');
-  return ok(stock?.positions ?? []);
+  return ok(value as CheckedStock<T>);
 }
-function operate(value: Context<StockInput> & (Readonly<{ mode: 'reserve' }> | Readonly<{ mode: 'release' }> | Readonly<{ mode: 'move'; destination: string }> | Readonly<{ mode: 'adjust'; reason: string }>)): Result<Change<Stock>, RuleError> {
-  const checked = guard(value); if (!checked.ok) return checked;
+function operateChecked(value: CheckedStock<Context<StockInput>> & (Readonly<{ mode: 'reserve' }> | Readonly<{ mode: 'release' }> | Readonly<{ mode: 'move'; destination: string }> | Readonly<{ mode: 'adjust'; reason: string }>)): Result<Change<Stock>, RuleError> {
   const { input, mode } = value;
   if (mode !== 'adjust' && input.quantity === 0) return fail('InvalidInput');
   if (mode === 'adjust' && (typeof value.reason !== 'string' || !value.reason.trim() || value.reason.trim().length > 1000)) return fail('InvalidInput');
   if (mode === 'move' && (!validId(value.destination) || value.destination === input.location)) return fail('InvalidInput');
-  const positions = checked.value.map(row => ({ ...row }));
+  const positions = (value.stock?.positions ?? []).map(row => ({ ...row }));
   let row = positions.find(row => row.sku === input.sku && row.location === input.location);
   if (!row) { row = { sku: input.sku, location: input.location, onHand: 0, reserved: 0 }; positions.push(row); }
   if (mode === 'reserve') {
@@ -47,10 +48,15 @@ function operate(value: Context<StockInput> & (Readonly<{ mode: 'reserve' }> | R
   }
   return ok(stockPlan(value.stock, value.actor, positions, mode === 'adjust' ? { reason: value.reason.trim(), by: value.actor.id } : value.stock?.lastAdjustment ?? null));
 }
-export const reserveStock = (value: Context<StockInput>) => operate({ ...value, mode: 'reserve' });
-export const releaseStock = (value: Context<StockInput>) => operate({ ...value, mode: 'release' });
-export const moveStock = (value: Context<MoveInput>) => operate({ ...value, mode: 'move', destination: value.input.destination });
-export const adjustStock = (value: Context<AdjustInput>) => operate({ ...value, mode: 'adjust', reason: value.input.reason });
+export const reserveCheckedStock = (value: CheckedStock<Context<StockInput>>) => operateChecked({ ...value, mode: 'reserve' });
+export const releaseCheckedStock = (value: CheckedStock<Context<StockInput>>) => operateChecked({ ...value, mode: 'release' });
+export const moveCheckedStock = (value: CheckedStock<Context<MoveInput>>) => operateChecked({ ...value, mode: 'move', destination: value.input.destination });
+export const adjustCheckedStock = (value: CheckedStock<Context<AdjustInput>>) => operateChecked({ ...value, mode: 'adjust', reason: value.input.reason });
+// Compatibility entry points; business declarations connect the checked functions directly.
+export function reserveStock(value: Context<StockInput>) { const checked = checkStock(value); return checked.ok ? reserveCheckedStock(checked.value) : checked; }
+export function releaseStock(value: Context<StockInput>) { const checked = checkStock(value); return checked.ok ? releaseCheckedStock(checked.value) : checked; }
+export function moveStock(value: Context<MoveInput>) { const checked = checkStock(value); return checked.ok ? moveCheckedStock(checked.value) : checked; }
+export function adjustStock(value: Context<AdjustInput>) { const checked = checkStock(value); return checked.ok ? adjustCheckedStock(checked.value) : checked; }
 function stockChange(change: Change<Receipt>, stock: Stock | null, actor: Actor, before: readonly { sku: string; quantity: number }[], depletion: ReceiptDepletion = 'receiving-only'): Result<Change<Receipt>, RuleError> {
   if (depletion !== 'receiving-only' && depletion !== 'available-locations') return fail('InvalidInput');
   if (stock && (stock.id !== stockId || stock.groupId !== actor.groupId)) return fail('TargetMismatch');

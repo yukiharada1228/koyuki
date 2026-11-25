@@ -1,6 +1,6 @@
 import { receiveDecision, returnDecision, correctDecision } from './receipt-pipeline.js';
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
-import { includeReceivedStock, includeChangedStock, reserveStock, releaseStock, moveStock, adjustStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
+import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, ok, type Result } from '../../framework/index.js';
 import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, createRequest, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
@@ -55,9 +55,9 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
     } });
   const inventory = business({ name: 'procurement.inventory.v1', load: context.inventory<StockInput>,
     save: <T extends Stock>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
-      reserve: [reserveStock], release: [releaseStock],
-      move: { load: context.inventory<MoveInput>, run: [moveStock] },
-      adjust: { load: context.inventory<AdjustInput>, run: [adjustStock] },
+      reserve: [checkStock, reserveCheckedStock], release: [checkStock, releaseCheckedStock],
+      move: { load: context.inventory<MoveInput>, run: [checkStock, moveCheckedStock] },
+      adjust: { load: context.inventory<AdjustInput>, run: [checkStock, adjustCheckedStock] },
     } });
   return { requests, orders, receipts, invoices, payments, inventory };
 }

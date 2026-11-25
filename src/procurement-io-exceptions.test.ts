@@ -113,7 +113,7 @@ async function run(build: Factory, backend: string, mode: Mode) {
       const selected = cases.filter(item => item.delivery === delivery); assert.equal(selected.length, 89);
       assert.deepEqual([...new Set(selected.map(item => `${item.operation}#${item.at}`))].sort(), positions);
     }
-    assert.equal(inputSelections, 348); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 170);
+    assert.equal(inputSelections, 356); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 178);
     return { outcome, calls, cases, realCommits, commitAttempts };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }
 }

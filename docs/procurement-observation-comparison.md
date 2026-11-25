@@ -46,17 +46,17 @@ SQLiteは実driverだが、ファイルの再起動や別プロセスの比較�
 操作者や任意フィールドを全収集する機能を追加したものではない。
 全32回について、次を直接検査し、report全体も独立した通常TypeScriptの詳細実装と比較する。
 
-- load・業務段階・saveのtraceが成功し、順序も一致する。[共通検証の13操作](procurement-shared-guards.md)と[入荷・在庫の3操作](procurement-receipt-pipeline.md)はrun:1とrun:2、それ以外はrun:1となる。
-- 選択記録は3件で呼び出し番号が混ざらず、最後の成功値の対象情報が業務結果と一致する。
+- load・業務段階・saveのtraceが成功し、順序も一致する。[在庫を含む共通検証17操作](procurement-stock-planning.md)と[入荷・在庫の3操作](procurement-receipt-pipeline.md)はrun:1とrun:2、それ以外はrun:1となる。
+- 選択記録は各操作のtrace段階数と一致し、呼び出し番号が混ざらず、最後の成功値の対象情報が業務結果と一致する。
 - 各操作でcommitは1回だけ。最終の6モデルと32件の戻り値が、観測なしの通常実行と一致する。
 - Repositoryのread/relatedの対象と呼出し順も、観測なしの通常実行と一致し、診断用の再取得を増やさない。
 - 全段階の入力射影がthrowしても、業務結果と保存状態を保つ。Result射影は一度も呼ばない。
 - 全段階のResult射影がthrowしても、保存済み成功を失敗へ置換しない。
 - 射影の失敗は対応するstep/phase/CaptureFailedだけになり、例外の文面は残さない。
 
-成功時は1シナリオ117記録、観測失敗時は117件の観測エラーを確認する。
+成功時は1シナリオ121記録、観測失敗時は121件の観測エラーを確認する。
 [注文3操作の分離](procurement-order-guards.md)で96から99となり、[申請・請求書](procurement-shared-guards.md)の7操作も分離して106となり、[入荷・在庫の接続](procurement-receipt-pipeline.md)で110となった。
-[申請・承認・発注の追加分離](procurement-request-planning.md)で7境界が加わり、現在は117となる。
+[申請・承認・発注の追加分離](procurement-request-planning.md)で7境界が加わり、その時点では117となった。[在庫4操作](procurement-stock-planning.md)の分離で現在は121となる。
 同じコードを実tarballの独立consumerでも型検査・実行する。
 この追加は新しい観察APIの導入ではなく、既存APIの検証範囲の拡張である。
 
@@ -77,7 +77,7 @@ Koyuki本体にある他の観測テストと、この購買比較の対象を�
 
 [全25操作の代表的不正入力とcommit前Conflict](procurement-failure-observation.md)も比較する。
 32回ずつの失敗に対する181境界で、射影失敗を含め、停止・全6モデルの非変更・その後の正常実行を照合する。
-上記の117境界は正常操作の観測であり、この181境界と混ぜて全失敗・全経路の完成件数とは扱わない。
+上記の121境界は正常操作の観測であり、この185境界と混ぜて全失敗・全経路の完成件数とは扱わない。
 
-[各read位置の取得失敗](procurement-read-failure-observation.md)も加え、現在の代表失敗観測は259境界。
-117境界は正常操作、181境界は不正入力と保存前Conflict、追加の78境界は選んだread位置のResult失敗として区別する。
+[各read位置の取得失敗](procurement-read-failure-observation.md)も加え、現在の代表失敗観測は263境界。
+121境界は正常操作、185境界は不正入力と保存前Conflict、追加の78境界は選んだread位置のResult失敗として区別する。

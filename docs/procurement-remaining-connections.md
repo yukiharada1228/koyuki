@@ -4,6 +4,10 @@
 独立利用者の試用は未実施との回答を踏まえ、保守者が実ソースを読んだ記録として扱う。
 書き心地の評価結果ではない。対象は購買サンプルであり、講演全体の完成判定ではない。
 
+以下は上記commit時点の棚卸し。その後、[在庫4操作の接続](procurement-stock-planning.md)を分離した。
+現在のbusinessではcheckStock→checked関数を宣言し、下表の在庫の内部guard接続は互換入口だけに残る。
+元の観察を消さず、残る入荷内部・文脈注釈・hostの入力構築と区別する。
+
 ## 操作宣言で既に委譲していること
 
 [application.ts](../src/experiments/procurement/application.ts)の6つのbusinessには25操作がある。

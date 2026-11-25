@@ -42,7 +42,7 @@ stockのNotFoundは空の在庫として受理する業務仕様があるため�
 
 選択観測、入力射影のthrow、結果射影のthrowという3モードを使い、業務のConflictを観測エラーへ置き換えない。
 各取得失敗の観測はloadの1境界。同期39回と非同期39回で78境界が加わり、
-不正入力・保存前Conflictの181境界と合わせ、現在の一実行は259境界となる。
+不正入力・保存前Conflictの185境界と合わせ、現在の一実行は263境界となる。
 [申請・承認・発注の分離](procurement-request-planning.md)で従来の174/252境界から7境界増え、取得失敗の78境界は変わらない。
 失敗の試行は142回（32不正入力＋32保存前Conflict＋78取得失敗）。
 commit試行は64回のままで、追加した取得失敗によるcommitはない。
@@ -63,3 +63,6 @@ SQLiteは:memory:を用い、この8検査をrootと開発版tarballのconsumer�
 
 後続の[read・related・commitの例外比較](procurement-io-exceptions.md)では、同期throwとPromiseのrejectも別の検査で追加した。
 Resultを得るこの検査と、元の例外でrejectしてActionReportを返さない契約を混同しない。
+
+[在庫4操作の分離](procurement-stock-planning.md)で保存前Conflictの観測がさらに4境界増えた。
+不正入力64境界と取得失敗78境界、試行回数とI/O回数は変わらない。
