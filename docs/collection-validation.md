@@ -84,3 +84,29 @@ npm run test:portable
 
 講演2本目29分台のResult列の接続負担のうち、同期の独立検証について具体化したもの。
 言語レベルのdo記法や、任意のループ・I/Oの自動合成まで実現したものではない。
+
+## 前の結果へ依存する明細処理
+
+`foldEach(initial, reduce)`は、Array.reduceに似た同期Resultの合成。
+前の成功状態を次の要素へ渡し、最初の失敗をそのまま返して残りを実行しない。
+
+```ts
+const allocate = foldEach(
+  () => 10,
+  (remaining, amount: number, index): Result<number, { kind: 'InsufficientBudget'; index: number }> =>
+    amount > remaining ? err({ kind: 'InsufficientBudget', index }) : ok(remaining - amount),
+);
+allocate([6, 5, 1]); // err({ kind: 'InsufficientBudget', index: 1 })
+allocate([6, 4]);    // ok(0)
+```
+
+初期状態は呼び出しごとにinitial()で作る。空配列ならその初期状態が成功値になる。
+要素の位置を浅くsnapshotするが、要素や蓄積状態をclone/freezeしない。
+利用者のreduceは元の値を変更せず新しい状態を返す。純粋性を型で強制するものではない。
+失敗を包み直さないので、要素位置をエラーへ含めたい場合はreduceのindex引数を使う。
+initial/reduceのthrowは伝播し、async reducerは型で拒否する。
+
+[残予算と割当明細の例](../src/fold-each.test.ts)では、
+前の明細を割り当てた後の残額で次を判定し、失敗時にbusinessのsaveが一度も動かないことを確認する。
+これにより利用者がループ内でResultを取り出して分岐・再包装する定型処理を省ける。
+全エラーを集めるcollectEachとは目的が異なる。I/O・並列処理・中間保存・再開は扱わない。

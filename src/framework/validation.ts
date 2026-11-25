@@ -37,3 +37,19 @@ export function collectEach<I, O, E>(rule: Rule<I, O, E>): Rule<readonly I[], re
     return failures.length ? err(Object.freeze(failures)) : ok(Object.freeze(values));
   };
 }
+
+/** Fold dependent synchronous calculations in order; preserve the first failure unchanged.
+ * The initializer runs once per invocation. State purity/ownership remains caller-owned.
+ */
+export function foldEach<I, S, E>(initial: () => S, reduce: (state: NoInfer<S>, item: I, index: number) => Result<S, E>): Rule<readonly I[], S, E> {
+  return input => {
+    const items = [...input];
+    let state = initial();
+    for (const [index, item] of items.entries()) {
+      const result = reduce(state, item, index);
+      if (!result.ok) return result;
+      state = result.value;
+    }
+    return ok(state);
+  };
+}

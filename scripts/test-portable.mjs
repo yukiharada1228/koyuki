@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { business, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
+import { foldEach, business, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   const ordinary = business({ name: 'portable-business', load: async input => ok(input), save: async value => ok(value), operations: { double: [n => ok(n * 2)] } });
@@ -42,6 +42,9 @@ export const result = (async () => {
   const syncFailure = fromThrowable(() => { throw 'offline'; }, () => 'Unavailable')();
   const asyncFailure = await fromPromise(async () => { throw 'offline'; }, () => 'Unavailable')();
   if (syncFailure.ok || asyncFailure.ok || syncFailure.error !== 'Unavailable' || asyncFailure.error !== 'Unavailable') throw new Error('Boundary adaptation failed');
+  const budgetFold = foldEach(() => 10, (remaining, amount, index) => amount > remaining ? err({ kind: 'InsufficientBudget', index }) : ok(remaining - amount));
+  const insufficient = budgetFold([6, 5, 1]);
+  if (insufficient.ok || insufficient.error.index !== 1 || budgetFold([6, 4]).value !== 0) throw new Error('Dependent fold failed');
   const collected = collectEach(n => n > 0 ? ok(n) : err('Invalid'))([1, -2, 3, -4]);
   if (collected.ok || collected.error.length !== 2 || collected.error[0].index !== 1 || collected.error[1].index !== 3) throw new Error('Collection validation failed');
   const delivered = await effectProcess().effect('send', async input => ok(input + 1)).effect('ack', async value => ok(value * 2)).runDetailed(3);

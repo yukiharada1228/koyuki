@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- foldEachを追加。前要素の成功状態に依存する同期Result計算を順次接続し、最初の失敗を保持して停止。残予算の明細配分で途中失敗時の保存停止、呼び出しごとの初期化、所有権・例外・型を検証。独立検証のcollectEachと区別し、非同期I/Oは対象外。
+
 - businessを開発版のルートexportへ昇格。通常の同期Result関数の配列から操作を宣言し直接呼び出す推奨入口を文書化。既存APIは維持。独立consumerは実際の開発版tarballとルートimportで検証し、利用ガイドの最小例も実行。npmへの公開は未実施。
 
 - 接続先メソッドの入力型が狭すぎても許容される型の穴を修正。Process.effect/commit・defineAction・withReplayの詳細操作を関数プロパティ契約で検査し、未検証のstring/状態Unionを狭い入力へ渡す接続を拒否。defineActionはloaderを先に推論し、既存の型引数指定と入出力・エラー推論を維持。

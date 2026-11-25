@@ -14,7 +14,9 @@
     "allFramesReviewed": false,
     "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation.",
     "implementationBaseCommit": "dc96dc0",
-    "implementationChanges": "The collectEach implementation and its tests accompany this audit update in Git."
+    "implementationChanges": "The collectEach implementation and its tests accompany this audit update in Git.",
+    "followUpBaseCommit": "027c03b",
+    "followUpChanges": "foldEach and dependent budget allocation accompany this update; the original caption review is unchanged."
   },
   "sections": [
     {
@@ -200,15 +202,16 @@
       "endSeconds": 1776,
       "topic": "ループ内で生じるResult列",
       "status": "partial",
-      "assessment": "collectEachで同期の独立した要素検証を元の位置付きで集約し、明細の失敗で集計・保存が止まることを検証。要素間に依存する処理やI/Oを含む任意のループまで自動合成したわけではない。",
+      "assessment": "collectEachで独立同期検証の全失敗を集約し、foldEachで前の状態に依存する同期Result計算を最初の失敗まで順次合成する。明細の失敗で後続・保存が止まることを検証。I/Oを含む任意のループまで自動合成したわけではない。",
       "evidence": [
         "src/framework/validation.ts",
         "src/collection-validation.test.ts",
         "src/examples/order-lines.ts",
-        "docs/collection-validation.md"
+        "docs/collection-validation.md",
+        "src/fold-each.test.ts"
       ],
       "remaining": [
-        "dependent-or-effectful-result-collections"
+        "effectful-result-collections"
       ]
     },
     {
