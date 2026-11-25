@@ -3,6 +3,10 @@
 開発版の`Workflow.inspect(input, capture)`で、実行した各Ruleの前後から選んだ情報を取得する。
 通常の`run(input)`と`inspect(input)`は値を記録せず、従来の結果と成否traceを返す。
 
+captureは同期の値選択で、PromiseはDataCloneErrorで拒否する。
+誤って返した通常のnative Promiseのrejectは処理するが、非同期captureを待つ機能は提供しない。
+対象と制限は[Processと共通のPromiseの扱い](process-observation.md)を参照する。
+
 ```ts
 const flow = workflow('increment', (n: number) => ok(n + 1))
   .then('double', n => ok(n * 2));

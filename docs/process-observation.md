@@ -56,6 +56,14 @@ through内の純粋Ruleでも、このI/O実行全体の方針を使う。
 選択関数は生の値を参照するため、値の変更やI/Oを行わない純粋な関数として実装する。
 その制約を型だけで強制したり、任意の悪意あるcallbackを隔離したりはしない。
 
+captureは同期の値選択であり、Promiseはsnapshotできる値として受け付けない。
+誤ってasync関数を渡した場合、同じrealmの通常のnative Promise（独自constructor属性なし）は、
+rejectを処理したうえで従来どおりCaptureFailedとする。完了を待たず、成功値も観測しない。
+then getterや任意のthenableを実行して値を得る処理にはしない。
+Promise subclass・別realmのPromise・constructorを加工した値や、callback内部で別途開始した処理の失敗は、
+この対策の保証外であり、呼び出し側が扱う。任意の非同期処理を隔離する機能ではない。
+直接のWorkflow.inspectもPromiseのsnapshotはDataCloneErrorで拒否するが、上記の通常Promiseのrejectは処理する。
+
 ## 他のAPIと保証範囲
 
 Processを詳細loaderとしてbusinessへ渡す場合、通常のbusinessのcaptureはload全体の入力・結果を選ぶ。

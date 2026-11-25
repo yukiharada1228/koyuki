@@ -100,6 +100,14 @@
       "record": "docs/lecture-local-asr-w0o-followup.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "nativeCaptureRejectionFollowUp": {
+      "implementationBaseCommit": "96d95a16e418eafd7ac3747cfdb95801eac2cf60",
+      "sections": [
+        "w0o-13"
+      ],
+      "scope": "Implementation contract correction: accidental same-realm native Promise capture returns remain rejected data but their rejections are handled without awaiting or reading arbitrary thenables. No new speech/audio/frame review or async capture requirement attributed to the lecture.",
+      "record": "src/capture-rejection.test.ts"
     }
   },
   "sections": [

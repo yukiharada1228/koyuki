@@ -71,6 +71,13 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 
 ## 完了扱いにしていないこと
 
+観測処理の追加点検では、同期captureへ誤ってasync関数を渡すと、値はCaptureFailedになっても
+返されたPromiseのrejectが未処理になる不具合を再現・修正した。
+[回帰検査](../src/capture-rejection.test.ts)は業務結果・保存回数・同期inspectの例外契約と、
+then getterを実行しないことを確認する。対象は同じrealmの通常のnative Promiseであり、
+非同期captureを待つ機能や、任意のcallbackの副作用を隔離する保証ではない。
+講演がasync captureの仕様を指定していたという意味ではなく、Koyuki自身の契約の改善である。
+
 [未完了Issueとの照合](open-feature-reconciliation.md)では、既存の部分実装と各提案の未充足条件を分けている。
 将来の機能案を講演の必須要件へ読み替えず、個別adapterの原子保存を共通transaction契約の完成とも扱わない。
 
