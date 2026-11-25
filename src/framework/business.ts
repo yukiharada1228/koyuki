@@ -46,10 +46,14 @@ type Loader<L extends Load, E extends Entry> = SpecializedLoader<RawLoader<L, E>
 type OperationName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
 type OperationNames<T> = OperationName<keyof T>;
 // A polymorphic check may promise to return exactly its input type. Retain that
-// type only when the actual function guarantees it for this preceding context;
-// a monomorphic broad return must never invent a narrower success value.
+// type only when the actual function guarantees it for this preceding context.
+// A proof-producing check may additionally retain its declared facts, but only
+// when the actual function guarantees the entire intersection. A monomorphic
+// broad return must never invent a narrower success value.
 type StageOutput<F extends Fn, I> = [Out<F>] extends [I] ? Out<F>
-  : [F] extends [Rule<I, I, ErrorOf<F>>] ? I : Out<F>;
+  : [I] extends [Out<F>]
+    ? [F] extends [Rule<I, I, ErrorOf<F>>] ? I : Out<F>
+    : [F] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : Out<F>;
 // Tail recursion carries the concrete context across generic identity checks.
 // Unknown-length arrays retain the original mapped fallback.
 type Outputs<C, P extends readonly Fn[], A extends readonly unknown[] = readonly []> = number extends P['length']
