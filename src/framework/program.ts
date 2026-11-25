@@ -51,13 +51,20 @@ export function defineProgram<S, M extends { type: string }, E, V>(definition: {
         snapshot,
         trace: () => structuredClone(history),
         subscribe(listener: (value: ProgramSnapshot<S, V>) => void) {
-          listeners.add(listener); listener(snapshot()); return () => { listeners.delete(listener); };
+          // Deliver the initial value before retaining a subscriber that may throw.
+          listener(snapshot()); listeners.add(listener); return () => { listeners.delete(listener); };
         },
         dispatch(event: M, expectedRevision?: number): Promise<Result<ProgramSnapshot<S, V>, E | { kind: 'StaleRevision' }>> {
+          // Take ownership at dispatch, before earlier commands release the queue.
+          // Preserve the Promise rejection contract for non-cloneable events.
+          let received: M;
+          try { received = structuredClone(event); }
+          catch (error) { return Promise.reject(error); }
           const task = tail.then(async () => {
             if (expectedRevision !== undefined && expectedRevision !== revision) return err({ kind: 'StaleRevision' as const });
-            const result = definition.update(structuredClone(state), structuredClone(event));
-            history.push({ revision, kind: 'event', name: event.type, status: result.ok ? 'ok' : 'error' });
+            const name = received.type;
+            const result = definition.update(structuredClone(state), received);
+            history.push({ revision, kind: 'event', name, status: result.ok ? 'ok' : 'error' });
             if (!result.ok) return result;
             state = structuredClone(result.value.state); revision++;
             publish(); await settle(result.value.commands); return ok(snapshot());

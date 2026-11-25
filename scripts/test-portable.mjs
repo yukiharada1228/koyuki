@@ -30,12 +30,18 @@ export const result = (async () => {
     view: state => state.kind,
   }).start();
   await crashed.dispatch({ type: 'broken', input: null });
-  return { crash: crashed.snapshot().view, appValue: app.snapshot().view, first: first.result.value.kind, value: first.result.value.value, steps: first.attempt.trace.length, replay: replay.result.value.kind, attempt: replay.attempt, writes };
+  const isolated = await defineApplication({ initial: () => 0,
+    operations: { add: operation({ run: async input => ok(input.amount) }, (before, amount) => before + amount) },
+    view: state => state.data,
+  }).start();
+  const event = { type: 'add', input: { amount: 3 } };
+  const pending = isolated.dispatch(event); event.input.amount = 99; await pending;
+  return { queuedValue: isolated.snapshot().view, crash: crashed.snapshot().view, appValue: app.snapshot().view, first: first.result.value.kind, value: first.result.value.value, steps: first.attempt.trace.length, replay: replay.result.value.kind, attempt: replay.attempt, writes };
 })();`;
 const bundled = await build({ stdin: { contents: source, resolveDir: root, loader: 'js' }, bundle: true, platform: 'browser', format: 'iife', globalName: 'Portable', write: false, metafile: true });
 assert.equal(Object.keys(bundled.metafile.outputs).flatMap(key => bundled.metafile.outputs[key].imports).length, 0);
 const context = { structuredClone };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
-assert.deepEqual(result, { crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
+assert.deepEqual(result, { queuedValue: 3, crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
 console.log('Browser bundle executed without Node globals: function declarations, input-preserving composition, group commit, replay and application lifecycle verified.');

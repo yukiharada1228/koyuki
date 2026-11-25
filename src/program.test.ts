@@ -80,3 +80,41 @@ test('init/update/view are independently testable without executing commands', (
   assert.equal(program.view(result.value.state).busy, true);
   assert.deepEqual(repository.calls, []);
 });
+
+test('queued events capture nested input and trace identity when dispatched', async () => {
+  type Msg = { type: 'hold' } | { type: 'record'; input: { labels: string[] } } | { type: 'done' };
+  let release!: () => void, entered!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const hold = effect('hold', async (_: null) => { entered(); await gate; }, (): Msg => ({ type: 'done' }));
+  const session = await defineProgram({ init: (): Update<string[], Msg> => next([]),
+    update: (state: string[], msg: Msg) => ok(msg.type === 'hold' ? next(state, hold(null)) :
+      next<string[], Msg>(msg.type === 'record' ? [...state, ...msg.input.labels] : state)), view: (state: string[]) => state,
+  }).start();
+  const first = session.dispatch({ type: 'hold' }); await started;
+  const event: Msg = { type: 'record', input: { labels: ['original'] } };
+  const second = session.dispatch(event);
+  event.input.labels[0] = 'changed'; Reflect.set(event, 'type', 'hold');
+  release(); await first; assert((await second).ok);
+  assert.deepEqual(session.snapshot().view, ['original']);
+  assert.equal(session.trace().at(-1)?.name, 'record');
+});
+
+test('uncloneable events reject without updating state or poisoning later dispatches', async () => {
+  const session = await defineProgram({ init: (): Update<number, { type: 'add'; input: unknown }> => next(0),
+    update: (state: number) => ok(next<number, { type: 'add'; input: unknown }>(state + 1)), view: (state: number) => state,
+  }).start();
+  const rejected = session.dispatch({ type: 'add', input: () => {} });
+  await assert.rejects(rejected, { name: 'DataCloneError' });
+  assert.equal(session.snapshot().revision, 0); assert.deepEqual(session.trace(), []);
+  assert((await session.dispatch({ type: 'add', input: 1 })).ok);
+  assert.equal(session.snapshot().view, 1);
+});
+
+test('a subscriber that fails during initial delivery is not retained', async () => {
+  const session = await tagProgram(new Repository()).start();
+  let calls = 0;
+  assert.throws(() => session.subscribe(() => { calls++; throw new Error('render failed'); }), /render failed/);
+  assert((await session.dispatch({ type: 'create', input })).ok);
+  assert.equal(calls, 1); assert.equal(session.snapshot().view.rows.length, 1);
+});

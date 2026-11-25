@@ -170,3 +170,6 @@ const approved = defineTransition({
 withInputは計算結果と元の入力を保持し、業務内のResultの受け渡しも共通化する。
 [設計・例・型推論の範囲](docs/declarative-transitions.md)。
 **この追加APIは未公開。npmのalpha.5には含まれない。**
+
+[業務宣言からApplicationまで](docs/application-development.md)に、状態・検証・遷移から
+dispatch・保存・View更新までの手順と、利用者に残るadapterの責務をまとめています。

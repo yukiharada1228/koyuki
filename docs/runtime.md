@@ -44,3 +44,6 @@ Safari / Firefox / Deno / Bun / 他のエッジ基盤は未確認。
 SQLiteを使うサンプルには引き続きNode.jsが必要。
 
 公開後の同じ依存契約は `npm run check:package:registry` でnpmから確認できる。
+
+開発版Applicationのイベント所有権・購読・revisionの契約は
+[業務宣言からApplicationまで](application-development.md)に記載。

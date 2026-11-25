@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Program / Applicationはdispatch時にイベントをcloneし、待機中の入力変更から実行を保護。clone不可の入力はPromiseでrejectし、状態と後続キューを維持。
+- subscribeの初回通知が失敗した場合は購読を保持しない。配布パッケージの休暇ApplicationでView更新・失敗・再送・待機入力・stale revisionを追加検証。
+- [Application全体の開発手順と責務](docs/application-development.md)を追加。
 - defineTransition：通常の業務関数から遷移を宣言。requireは任意で、依存する型と失敗を保持し、既存Step定義へ正規化する。宣言は不変、名前は役割ラベルまたは明示した業務名。
 - withInput：成功した計算結果と元の入力を保持し、Resultの接続を共通化。経費申請の承認経路を独立したrequireとして宣言し、失敗箇所をtraceへ表示。
 - 休暇の生関数宣言を独立したHTTP consumerで検証し、明示名の版と結果・状態を比較。既定のtrace名は異なる。
