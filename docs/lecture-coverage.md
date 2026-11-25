@@ -68,7 +68,7 @@
 | 05:19–05:53 | FPの無条件な優越ではない | 通常のIO・単純なQueryを許容。単純CRUDへの導入を強制しない |
 | 06:00–09:30 | React/Elm、明示した状態遷移と実行委譲 | Application / Program、viewの導出、購読。UI rendererそのものではない |
 | 10:08–19:29 | 文と式、命令と計算、関数適用・合成 | pure workflowとeffect/processの境界。TypeScriptの構文を置換しない |
-| 19:50–23:46 | 前後の状態を値として返す、観測可能性 | immutable domain、段階名と成否のtrace、Application snapshot。全段階の入力・出力dumpと永続的な全状態履歴は未提供。任意の破壊的変更を静的に禁止もできない |
+| 19:50–23:46 | 前後の状態を値として返す、観測可能性 | immutable domain、trace、Application snapshot。任意のWorkflow.inspect captureで選択したRuleの入力・結果を取得。businessのI/O・再送全体の観測と永続履歴は未提供。任意の破壊的変更を静的に禁止もできない |
 | 23:55–28:36 | IOと複雑な業務計算を分離する目的 | domainの独立テスト、load/save、途中effectと原子保存adapter |
 | 29:21–35:15 | 型による制約、compiler/toolの支援 | 配布d.tsの型検査と不正入力の実行時検証。仕様の正しさの形式証明はしない |
 | 35:18–40:55 | Result、直和と直積、不正な状態を表せなくする | domain states、private proof、Application状態Union。Resultの型注釈だけで予期しないthrowを排除できず、利用者の型設計の品質も自動保証しない |

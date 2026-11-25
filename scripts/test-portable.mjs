@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { collectEffects, foldEach, business, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
+import { workflow, collectEffects, foldEach, business, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   const ordinary = business({ name: 'portable-business', load: async input => ok(input), save: async value => ok(value), operations: { double: [n => ok(n * 2)] } });
@@ -42,6 +42,8 @@ export const result = (async () => {
   const syncFailure = fromThrowable(() => { throw 'offline'; }, () => 'Unavailable')();
   const asyncFailure = await fromPromise(async () => { throw 'offline'; }, () => 'Unavailable')();
   if (syncFailure.ok || asyncFailure.ok || syncFailure.error !== 'Unavailable' || asyncFailure.error !== 'Unavailable') throw new Error('Boundary adaptation failed');
+  const observed = workflow('increment', n => ok(n + 1)).inspect(2, { input: x => x, result: r => r.ok ? r.value : null });
+  if (observed.observations[0].input !== 2 || observed.observations[0].result !== 3) throw new Error('Workflow capture failed');
   const deliveries = await collectEffects(async (n, index) => n > 0 ? ok(n) : err({ kind: 'Offline', index }), { concurrency: 2 })([1, -1, 2]);
   if (deliveries.ok || deliveries.error.length !== 1 || deliveries.error[0].index !== 1) throw new Error('Effect collection failed');
   const budgetFold = foldEach(() => 10, (remaining, amount, index) => amount > remaining ? err({ kind: 'InsufficientBudget', index }) : ok(remaining - amount));

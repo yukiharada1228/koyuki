@@ -41,6 +41,7 @@ try {
   writeFileSync(join(consumer, 'process-detail.test.ts'), readFileSync(join(root, 'src/process-detail.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'fold-each.test.ts'), readFileSync(join(root, 'src/fold-each.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'collection-effects.test.ts'), readFileSync(join(root, 'src/collection-effects.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'workflow-observation.test.ts'), readFileSync(join(root, 'src/workflow-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);

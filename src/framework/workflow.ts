@@ -3,32 +3,56 @@ import { canonicalIdentity } from './identity.js';
 export type Rule<I, O, E> = (input: I) => Result<O, E>;
 export interface Trace { readonly step: string; readonly status: 'ok' | 'error' }
 export interface Evaluation<O, E> { result: Result<O, E>; trace: readonly Trace[] }
+export interface StepObservation<I, R> { readonly step: string; readonly input: I; readonly result: R }
+export interface WorkflowCapture<I, R> {
+  readonly input: (value: unknown, step: string) => I;
+  readonly result: (value: Result<unknown, unknown>, step: string) => R;
+}
+/** Internal stage hook. The returned receiver retains that stage's selected input. */
+export type StageObserver = (step: string, input: unknown) => (result: Result<unknown, unknown>) => void;
+export function evaluateRule<I, O, E>(step: string, rule: Rule<I, O, E>, input: I, observe?: StageObserver): Result<O, E> {
+  const receive = observe?.(step, input);
+  const result = rule(input);
+  receive?.(result);
+  return result;
+}
 export class Workflow<I, O, E> {
-  constructor(readonly name: string, readonly steps: readonly string[], private readonly evaluate: (input: I) => Evaluation<O, E>) {}
+  constructor(readonly name: string, readonly steps: readonly string[], private readonly evaluate: (input: I, observe?: StageObserver) => Evaluation<O, E>) {}
   run(input: I): Result<O, E> { return this.evaluate(input).result; }
-  inspect(input: I): Evaluation<O, E> { return this.evaluate(input); }
+  inspect(input: I): Evaluation<O, E>;
+  inspect<A, B>(input: I, capture: WorkflowCapture<A, B>): Evaluation<O, E> & { readonly observations: readonly StepObservation<A, B>[] };
+  inspect<A, B>(input: I, capture?: WorkflowCapture<A, B>): Evaluation<O, E> & { readonly observations?: readonly StepObservation<A, B>[] } {
+    if (!capture) return this.evaluate(input);
+    const observations: StepObservation<A, B>[] = [];
+    const evaluation = this.evaluate(input, (step, value) => {
+      // Select before cloning: unselected fields never enter the recorded snapshot.
+      const before = structuredClone(capture.input(value, step));
+      return result => observations.push(Object.freeze({ step, input: before, result: structuredClone(capture.result(result, step)) }));
+    });
+    return { ...evaluation, observations: Object.freeze(observations) };
+  }
   branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,
     paths: { yes: Workflow<O, A, F>; no: Workflow<O, B, G> }): Workflow<I, A | B, E | F | G> {
-    return new Workflow<I, A | B, E | F | G>(this.name, [...this.steps, name], input => {
-      const previous = this.evaluate(input);
+    return new Workflow<I, A | B, E | F | G>(this.name, [...this.steps, name], (input, observe) => {
+      const previous = this.evaluate(input, observe);
       if (!previous.result.ok) return { result: previous.result, trace: previous.trace };
       const selected = predicate(previous.result.value) ? 'yes' : 'no';
-      const next = paths[selected].inspect(previous.result.value);
+      const next = paths[selected].evaluate(previous.result.value, observe);
       return { result: next.result, trace: [...previous.trace, { step: `${name}:${selected}`, status: 'ok' }, ...next.trace] };
     });
   }
   then<N, F>(name: string, rule: Rule<O, N, F>): Workflow<I, N, E | F> {
-    return new Workflow<I, N, E | F>(this.name, [...this.steps, name], input => {
-      const previous = this.evaluate(input);
+    return new Workflow<I, N, E | F>(this.name, [...this.steps, name], (input, observe) => {
+      const previous = this.evaluate(input, observe);
       if (!previous.result.ok) return { result: previous.result, trace: previous.trace };
-      const result = rule(previous.result.value);
+      const result = evaluateRule(name, rule, previous.result.value, observe);
       return { result, trace: [...previous.trace, { step: name, status: result.ok ? 'ok' : 'error' }] };
     });
   }
 }
 export function workflow<I, O, E>(name: string, rule: Rule<I, O, E>): Workflow<I, O, E> {
-  return new Workflow(name, [name], input => {
-    const result = rule(input); return { result, trace: [{ step: name, status: result.ok ? 'ok' : 'error' }] };
+  return new Workflow(name, [name], (input, observe) => {
+    const result = evaluateRule(name, rule, input, observe); return { result, trace: [{ step: name, status: result.ok ? 'ok' : 'error' }] };
   });
 }
 // This rendering layer describes one mutation, not an implicit pipeline between JSX siblings.

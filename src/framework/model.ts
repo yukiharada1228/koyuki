@@ -1,5 +1,5 @@
 import type { Result } from './result.js';
-import { Workflow, type Rule } from './workflow.js';
+import { Workflow, evaluateRule, type Rule } from './workflow.js';
 import { defineCommand } from './command.js';
 export interface Step<I, O, E> { readonly name: string; readonly rule: Rule<I, O, E> }
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E> { return { name, rule }; }
@@ -26,12 +26,12 @@ export function transition<I, V, VE, const T extends readonly AnyStep[], O, E>(d
 }): Workflow<I, O, VE | Failure<T[number]> | E> {
   // Type checking above proves adjacency. Runtime iteration erases only heterogeneous intermediate states.
   const stages: readonly AnyStep[] = [definition.validate, ...definition.require, definition.evolve];
-  return new Workflow(definition.validate.name, stages.map(stage => stage.name), input => {
+  return new Workflow(definition.validate.name, stages.map(stage => stage.name), (input, observe) => {
     let value: unknown = input;
     const trace: { step: string; status: 'ok' | 'error' }[] = [];
     for (const stage of stages) {
       const rule = stage.rule as (value: unknown) => Result<unknown, VE | Failure<T[number]> | E>;
-      const result = rule(value);
+      const result = evaluateRule(stage.name, rule, value, observe);
       trace.push({ step: stage.name, status: result.ok ? 'ok' : 'error' });
       if (!result.ok) return { result, trace };
       value = result.value;
