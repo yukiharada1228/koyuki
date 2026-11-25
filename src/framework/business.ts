@@ -45,10 +45,18 @@ type SpecializedLoader<L extends Load, E extends Entry> = [Loaded<L>] extends [F
 type Loader<L extends Load, E extends Entry> = SpecializedLoader<RawLoader<L, E>, E>;
 type OperationName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
 type OperationNames<T> = OperationName<keyof T>;
-// Shift stage outputs by one position to check every input without recursive expansion.
-// Only the final output is constrained by save; intermediate outputs remain exact.
-type Outputs<P extends readonly Fn[]> = { readonly [K in keyof P]: Out<P[K]> };
-type Inputs<C, P extends readonly Fn[]> = readonly [C, ...Outputs<P>];
+// A polymorphic check may promise to return exactly its input type. Retain that
+// type only when the actual function guarantees it for this preceding context;
+// a monomorphic broad return must never invent a narrower success value.
+type StageOutput<F extends Fn, I> = [Out<F>] extends [I] ? Out<F>
+  : [F] extends [Rule<I, I, ErrorOf<F>>] ? I : Out<F>;
+// Tail recursion carries the concrete context across generic identity checks.
+// Unknown-length arrays retain the original mapped fallback.
+type Outputs<C, P extends readonly Fn[], A extends readonly unknown[] = readonly []> = number extends P['length']
+  ? { readonly [K in keyof P]: Out<P[K]> }
+  : P extends readonly [infer F extends Fn, ...infer R extends readonly Fn[]]
+    ? Outputs<StageOutput<F, C>, R, readonly [...A, StageOutput<F, C>]> : A;
+type Inputs<C, P extends readonly Fn[]> = readonly [C, ...Outputs<C, P>];
 type Tail<P extends readonly Fn[]> = P extends readonly [Fn, ...infer T extends readonly Fn[]] ? T : readonly [];
 // Keep the actual function contract even in the error branch. The marker is
 // diagnostic-only: adding a property cannot make an incompatible rule valid.
@@ -57,7 +65,7 @@ type DiagnosticRule<F extends Fn, I, O, Operation extends string, Index extends 
     readonly [K in `Koyuki: ${Operation}[${Extract<Index, string | number>}] ${[F] extends [Rule<I, Out<F>, ErrorOf<F>>] ? 'output must match save' : 'input must accept prior output'}`]: never
   }) & Rule<I, O, ErrorOf<F>>;
 type Connect<C, P extends readonly Fn[], O, Operation extends string> = {
-  readonly [K in keyof P]: DiagnosticRule<P[K], Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Out<P[K]> : O, Operation, K>
+  readonly [K in keyof P]: DiagnosticRule<P[K], Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Outputs<C, P>[K & keyof Outputs<C, P>] : O, Operation, K>
 };
 type Checked<L extends Load, E extends Entry, O, Operation extends string> = E extends Pipeline ? Connect<Loaded<Loader<L, E>>, E, O, Operation> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
   ? { readonly load: A; readonly run: Connect<Loaded<Loader<L, E>>, P, O, Operation> } : never;
@@ -69,7 +77,7 @@ type ObservedDetailed<I, R> = {
 };
 type Callable<C> = C extends { run: infer R extends (...args: never[]) => unknown; runDetailed(input: infer I): Promise<infer D> }
   ? R & Omit<C, 'runDetailed'> & { readonly runDetailed: ObservedDetailed<I, D> } : never;
-type DecisionOutput<E extends Entry> = Stages<E> extends readonly [...Fn[], infer F extends Fn] ? Out<F> : never;
+type DecisionOutput<L extends Load, E extends Entry> = Outputs<Loaded<Loader<L, E>>, Stages<E>> extends readonly [...unknown[], infer O] ? O : never;
 // Refine only when the actual save function accepts this decision and promises the
 // narrower output. A monomorphic broad save must keep its declared result type.
 type DirectCandidate<O, S> = O extends S ? O : O extends object ? Extract<O[keyof O], S> : never;
@@ -82,7 +90,7 @@ type Saved<D, O, S, SE, C> = [DirectCandidate<O, S>] extends [never] ? ShapeSave
   : D extends { save: (value: O, context: C) => Promise<Result<DirectCandidate<O, S>, SE>> } ? DirectCandidate<O, S> : ShapeSaved<D, O, S, SE, C>;
 type Commands<L extends Load, T extends Record<string, Entry>, S, SE, RE, D extends object> = {
   readonly [K in keyof T]: Callable<SelectCommand<D,
-    PlainCommand<Input<Loader<L, T[K]>>, Saved<D, DecisionOutput<T[K]>, S, SE, GroupExecution<OperationNames<T>, Requests<L, T>>>, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE>,
+    PlainCommand<Input<Loader<L, T[K]>>, Saved<D, DecisionOutput<L, T[K]>, S, SE, GroupExecution<OperationNames<T>, Requests<L, T>>>, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE>,
     ReplayCommand<Input<Loader<L, T[K]>>, S, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE, RE>
   >>
 };
