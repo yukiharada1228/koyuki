@@ -35,3 +35,17 @@ DB transaction・receipt・outbox・配送先の冪等性・lease管理は各ada
 
 登録メールの実例は[永続イベント接続](registration-events.md)にある。
 この直接実行APIは開発版の追加で、公開済みnpm alpha.5には含まれない。
+
+## 途中の業務操作の詳細記録
+
+```ts
+process<Order>()
+  .effect('reserve', { runDetailed: inventory.reserve.runDetailed })
+  .commit(shipping.create);
+```
+
+effectのobject形式はActionReportを返すrunDetailedを1回呼び、内部traceの後にeffect自身の成否を追加する。
+途中のplanは全体のplanに採用せず、値のdumpも追加しない。失敗した内部traceは残し、後続は停止する。
+通常の関数形式は従来通り、その関数を1回呼び出した成否のみを記録する。
+runDetailedを持つcallableをそのまま関数として渡しても、自動で詳細形式へ切り替えない。
+ReplayReportは別の形式なのでobject形式には渡せない。replayの値で後続を進める意味は明示的に設計する。

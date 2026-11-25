@@ -13,5 +13,5 @@ export function fulfillment(ports: FulfillmentPorts) {
   const shipping = business({ name: 'shipping.v1', load: async (reservation: Reservation) => ok(reservation),
     save: (shipment: Shipment) => ports.saveShipment(shipment), operations: { create: [createShipment] } });
   // The reservation is already saved when shipping starts. This is not a DB transaction.
-  return process<Order>().effect('reserve-inventory', inventory.reserve).commit(shipping.create);
+  return process<Order>().effect('reserve-inventory', { runDetailed: inventory.reserve.runDetailed }).commit(shipping.create);
 }

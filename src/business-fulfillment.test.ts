@@ -43,7 +43,7 @@ test('two business declarations keep distinct save/output contracts and run only
   const report = await command.runDetailed(order);
   assert.deepEqual(report.result, ok({ kind: 'shipment', orderId: order.id, sku: order.sku, quantity: 2 }));
   assert.deepEqual(f.calls, ['load-stock', 'save-reservation', 'save-shipment']);
-  assert.deepEqual(report.trace.map(t => t.step), ['reserve-inventory', 'shipping.v1.create:load', 'run:1', 'shipping.v1.create']);
+  assert.deepEqual(report.trace.map(t => t.step), ['inventory.v1.reserve:load', 'run:1', 'inventory.v1.reserve', 'reserve-inventory', 'shipping.v1.create:load', 'run:1', 'shipping.v1.create']);
   assert.deepEqual(f.counts(), { stock: 3, reservationWrites: 1, shipmentWrites: 1 });
 });
 test('reservation validation failure stops both saves and the second aggregate', async () => {

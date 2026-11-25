@@ -20,12 +20,16 @@ class Process<I, O, E> {
     });
   }
   /** An explicit IO boundary; the adapter returns the next workflow's complete input. */
-  effect<N, F>(name: string, perform: (value: O) => Promise<Result<N, F>>): Process<I, N, E | F> {
+  effect<N, F>(name: string, perform: ((value: O) => Promise<Result<N, F>>) | { runDetailed(value: O): Promise<ActionReport<N, F>> }): Process<I, N, E | F> {
     return new Process<I, N, E | F>(async input => {
       const prior = await this.evaluate(input);
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace };
-      const result = await perform(prior.result.value);
-      return { result, trace: [...prior.trace, { step: name, status: result.ok ? 'ok' : 'error' }] };
+      // A function keeps its original opaque IO contract. The object form opts into detail.
+      const detail = typeof perform === 'function'
+        ? { result: await perform(prior.result.value), trace: [] }
+        : await perform.runDetailed(prior.result.value);
+      const { result } = detail;
+      return { result, trace: [...prior.trace, ...detail.trace, { step: name, status: result.ok ? 'ok' : 'error' }] };
     });
   }
   /** The bound mutation owns its pure final decision and single save. */

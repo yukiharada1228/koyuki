@@ -49,6 +49,7 @@ try {
     httpSource = httpSource.replace(before, after);
   }
   writeFileSync(httpTest, httpSource);
+  writeFileSync(join(consumer, 'process-detail.test.ts'), readFileSync(join(root, 'src/process-detail.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki/study'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);

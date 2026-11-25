@@ -19,7 +19,7 @@ const shipping = business({
   operations: { create: [createShipment] },
 });
 const fulfill = process<Order>()
-  .effect('reserve-inventory', inventory.reserve)
+  .effect('reserve-inventory', { runDetailed: inventory.reserve.runDetailed })
   .commit(shipping.create);
 ```
 
@@ -48,9 +48,10 @@ Processは最初の失敗で止まるが、過去の保存を自動rollbackし�
 
 ## 見つかった限界
 
-Process.effectは呼び出したcommandを一つの段階として記録するため、在庫command内部のtraceは
-全体reportには展開されない。最後のcommitの詳細traceは含まれる。
-これは既存のProcessの契約であり、この実例を「全段階の自動監査」の証拠にはしない。
+関数をeffectへ渡す形式では、そのI/Oを一つの段階として記録する。
+今回、詳細な操作を明示するobject形式を追加し、在庫command内部のtraceも全体reportへ接続した。
+内部の段階の後にeffect自身の成否を記録する。最後のcommitの詳細traceも含まれる。
+途中commandのplanや値を自動収集するわけではなく、永続監査やチェックポイントにはならない。
 再送付きcommandはExecutionで包まれるので、この例と同じ接続だけでは後続入力にならない。
 その値をunwrapして続行してよいか、過去の結果で現在の操作を進めてよいかは、業務ごとに判断が必要。
 
