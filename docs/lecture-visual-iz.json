@@ -1,0 +1,477 @@
+{
+  "videoId": "izV1h6o3hgQ",
+  "source": "izV1h6o3hgQ.mp4",
+  "sourceSha256": "32e6077237d786b6ed6344dedde15e5190c71923b227c79c10539757b53b5e63",
+  "method": "Sample at 1 fps, select scene score > 0.12, manually inspect all 73 candidates in 19 contact sheets; inspect four extra full-resolution frames at important timestamps.",
+  "allFramesReviewed": false,
+  "audioDirectlyReviewed": false,
+  "limitations": [
+    "Scene detection misses small changes, brief displays and static text slides.",
+    "Frame 45 shows a complex workflow whose small code is not fully legible; no full implementation equivalence is claimed.",
+    "No continuous audio/video review or complete external slide-deck verification."
+  ],
+  "frames": [
+    {
+      "file": "slides-iz/slide-001.jpg",
+      "timeSeconds": 1.0,
+      "sha256": "461b38e883858d7928e33b18d949567313b60fae40123aa1e7f97787287b6f51",
+      "observation": "開始アニメーション"
+    },
+    {
+      "file": "slides-iz/slide-002.jpg",
+      "timeSeconds": 2.0,
+      "sha256": "e767f90627b7b43e420d1b0e443d5e9b78c7976561caa3be7462406d0389cb02",
+      "observation": "開始アニメーション"
+    },
+    {
+      "file": "slides-iz/slide-003.jpg",
+      "timeSeconds": 3.0,
+      "sha256": "64013f58ae1d174591735bffb80ac6ce6a2a3283fd11605257120af6aa75de95",
+      "observation": "開始アニメーション"
+    },
+    {
+      "file": "slides-iz/slide-004.jpg",
+      "timeSeconds": 4.0,
+      "sha256": "e834e301baf4eb9da4196efbe45fed087c8a8a0f2436927481f7525b84878fe2",
+      "observation": "開始アニメーション"
+    },
+    {
+      "file": "slides-iz/slide-005.jpg",
+      "timeSeconds": 11.0,
+      "sha256": "cb90c204f40d093634d26b586032bc440b62c869f7658202df175c4f71e5717d",
+      "observation": "開始アニメーション"
+    },
+    {
+      "file": "slides-iz/slide-006.jpg",
+      "timeSeconds": 16.0,
+      "sha256": "4f798205a71726a36eea5c0412e7e3403eb21321318bdb141249b1fc57ab5d14",
+      "observation": "タイトルへの切替途中"
+    },
+    {
+      "file": "slides-iz/slide-007.jpg",
+      "timeSeconds": 17.0,
+      "sha256": "fcc50bc757977b08a9254f3b05506a83637ac26ff8e897feff83a160ca024e18",
+      "observation": "講演タイトル"
+    },
+    {
+      "file": "slides-iz/slide-008.jpg",
+      "timeSeconds": 64.0,
+      "sha256": "94a8b6fb052c8b39c68766ab56357b2882233194a7a67136f30890dafbb6bdf9",
+      "observation": "趣味の紹介"
+    },
+    {
+      "file": "slides-iz/slide-009.jpg",
+      "timeSeconds": 75.0,
+      "sha256": "7ee66c1adf819c160ce68559e06e16ce9c62942a1b3b3cca651dd1b20639e667",
+      "observation": "動機の導入"
+    },
+    {
+      "file": "slides-iz/slide-010.jpg",
+      "timeSeconds": 150.0,
+      "sha256": "3c202aca4e7cff4088107b1208152dd783933fe96f008b09514c0b57f1a2cc63",
+      "observation": "Reactとバックエンドの書き方の差"
+    },
+    {
+      "file": "slides-iz/slide-011.jpg",
+      "timeSeconds": 251.0,
+      "sha256": "e96a409d2febcce672768c92695c01edf2b34441315f50ad74efa400f765255f",
+      "observation": "状態管理をバックエンドへ応用する動機"
+    },
+    {
+      "file": "slides-iz/slide-012.jpg",
+      "timeSeconds": 307.0,
+      "sha256": "71cc7bb675be2c3e78d21532fe7e7c65bde7cdf9400f8b5dacbdc75dfeb78a7a",
+      "observation": "GraphQLとCQRSの導入"
+    },
+    {
+      "file": "slides-iz/slide-013.jpg",
+      "timeSeconds": 479.0,
+      "sha256": "ef1749b8eeefe4987ce2515c2ec7160f59ccb9cc328a292e5ba6a84c985d7f28",
+      "observation": "参照・更新の違いに関する他講演の紹介"
+    },
+    {
+      "file": "slides-iz/slide-014.jpg",
+      "timeSeconds": 501.0,
+      "sha256": "2ca11b12817201bdb5e5262c25c34ebbe9d0e1fa5bd1dabb14b1ce1cc7797168",
+      "observation": "Prismaの紹介"
+    },
+    {
+      "file": "slides-iz/slide-015.jpg",
+      "timeSeconds": 512.0,
+      "sha256": "51e93b587e997466a3370f80717b748f05a9e05d02bd8cc80c0ad612f3eba336",
+      "observation": "Prismaのコード例"
+    },
+    {
+      "file": "slides-iz/slide-016.jpg",
+      "timeSeconds": 570.0,
+      "sha256": "733a85be631ea42a681bc0773bc163a19ce75f04d540d0158ebef122fbe9d7f8",
+      "observation": "QueryとMutationの責務の図"
+    },
+    {
+      "file": "slides-iz/slide-017.jpg",
+      "timeSeconds": 748.0,
+      "sha256": "50d50bc3dac8f378d47b6c514caec318d7d70d0e14bb1a5bd0abffc182b99b07",
+      "observation": "Elmのview/updateコード"
+    },
+    {
+      "file": "slides-iz/slide-018.jpg",
+      "timeSeconds": 823.0,
+      "sha256": "664134a8f77dd81cb609586041d4273aa8313615f521a9da669e4d7c18cbf6a0",
+      "observation": "状態遷移・外部I/Oの循環図"
+    },
+    {
+      "file": "slides-iz/slide-019.jpg",
+      "timeSeconds": 975.0,
+      "sha256": "b0a0fd3f20816ff3eeb44a1dfc3f745d25c979de45252f3b5fd888f6b8f0196c",
+      "observation": "オブジェクトの状態と関数の対比"
+    },
+    {
+      "file": "slides-iz/slide-020.jpg",
+      "timeSeconds": 1055.0,
+      "sha256": "ee37b79a9b97d2c3abaf9643a12b2872ce7b2f3cf343ba4bf1b412889c6c581f",
+      "observation": "バックエンドの状態とドメインイベント"
+    },
+    {
+      "file": "slides-iz/slide-021.jpg",
+      "timeSeconds": 1360.0,
+      "sha256": "8502544b1d119dc9af517563425dd87fddfdcb3b4e8a385bc74ae17a7eda8fc2",
+      "observation": "Functional Core / Imperative Shellの図"
+    },
+    {
+      "file": "slides-iz/slide-022.jpg",
+      "timeSeconds": 1394.0,
+      "sha256": "2913d7972d349d3740bc159954dce10dd2a2270545221823ad1eb5241ecf577f",
+      "observation": "フロントとバックで扱う状態の違い"
+    },
+    {
+      "file": "slides-iz/slide-023.jpg",
+      "timeSeconds": 1402.0,
+      "sha256": "9c74ba3e5934c1e638d2dad19ad9cbae746a6864701a900ff324f88b051ee152",
+      "observation": "宣言的な実装の導入"
+    },
+    {
+      "file": "slides-iz/slide-024.jpg",
+      "timeSeconds": 1470.0,
+      "sha256": "66ce889d25c938e021e0b802c8d7dc770bfb007eadeb627aeb76f6242510f9f9",
+      "observation": "タグ管理画面"
+    },
+    {
+      "file": "slides-iz/slide-025.jpg",
+      "timeSeconds": 1553.0,
+      "sha256": "dea481effa5c9daf377ae98c06a60263eeb89fe0750c4d518b2575eb08a1578a",
+      "observation": "状態をまとめたクラスの比較例"
+    },
+    {
+      "file": "slides-iz/slide-026.jpg",
+      "timeSeconds": 1615.0,
+      "sha256": "aceb524fdf6ee81df0fd24fd8c180c1ac241788fbec204696e24a781bc19f986",
+      "observation": "状態別のタグ型"
+    },
+    {
+      "file": "slides-iz/slide-027.jpg",
+      "timeSeconds": 1699.0,
+      "sha256": "4ba2b3bf5f371790c66c485596889c150bd6579d4d3a9b333b92a9a771176b1b",
+      "observation": "会員・ゲストの直和と直積"
+    },
+    {
+      "file": "slides-iz/slide-028.jpg",
+      "timeSeconds": 1811.0,
+      "sha256": "adc2eb6dceb5d1b5d85d41304bbc10ebbe9937bdffd8bf7e6dbe7451f77d712e",
+      "observation": "optionalが多いクラスの再掲"
+    },
+    {
+      "file": "slides-iz/slide-029.jpg",
+      "timeSeconds": 1818.0,
+      "sha256": "9aa65a338bef9295d749cc4b4fa5b58b14974d8af5071ee6d9255c5715f39dcc",
+      "observation": "状態別のタグ型の再掲"
+    },
+    {
+      "file": "slides-iz/slide-030.jpg",
+      "timeSeconds": 1888.0,
+      "sha256": "e5c937e62c0a84aac474fcf39cf0f8ced03ab3b1f27a64bac2ab251219926b72",
+      "observation": "入出力型と状態遷移の図"
+    },
+    {
+      "file": "slides-iz/slide-031.jpg",
+      "timeSeconds": 2007.0,
+      "sha256": "4e320d04ea91a79c8c1be8f85779b73197e1a28d5d0c57514e3dc2dbfab4c03f",
+      "observation": "neverthrowのResult合成のコード"
+    },
+    {
+      "file": "slides-iz/slide-032.jpg",
+      "timeSeconds": 2092.0,
+      "sha256": "0bca1e473e8bdd167d328720401607372d4f69c121e1c9e95550deaae40dafc7",
+      "observation": "状態遷移をワークフローへ接続する図"
+    },
+    {
+      "file": "slides-iz/slide-033.jpg",
+      "timeSeconds": 2131.0,
+      "sha256": "4a0979266aeb0fe418e8bad5400bce596d5d6b8469c1e8401f7fa084a1786244",
+      "observation": "タグ検証とResult.combineのコード"
+    },
+    {
+      "file": "slides-iz/slide-034.jpg",
+      "timeSeconds": 2182.0,
+      "sha256": "7759aaf17620f56f78362f5202ad2c90bea07166024687e7c744c32cde1fcf5d",
+      "observation": "入力とRepositoryを外側へ接続する図"
+    },
+    {
+      "file": "slides-iz/slide-035.jpg",
+      "timeSeconds": 2190.0,
+      "sha256": "4ead952bd7cf3ca6ca04db634a4238b603317fe307b1854fed239010299e88c6",
+      "observation": "GraphQL resolverのコード"
+    },
+    {
+      "file": "slides-iz/slide-036.jpg",
+      "timeSeconds": 2219.0,
+      "sha256": "8925f5dff6b4ddeb3bfa08a3c83a21726801d38e585b53e82cb6ed37d6195a56",
+      "observation": "I/O→計算→I/Oの対応図"
+    },
+    {
+      "file": "slides-iz/slide-037.jpg",
+      "timeSeconds": 2342.0,
+      "sha256": "50714f4536e9e6e7b9f380103a3e01da4e34d54bfaa27eade47fd8ecb39ee2bf",
+      "observation": "RepositoryとPromise変換のコード"
+    },
+    {
+      "file": "slides-iz/slide-038.jpg",
+      "timeSeconds": 2399.0,
+      "sha256": "ac0153906aa733b6983989ba18bda3c05d5bfbe5f61ceb06bdbbcd536c515ce2",
+      "observation": "Repositoryを維持する設計判断"
+    },
+    {
+      "file": "slides-iz/slide-039.jpg",
+      "timeSeconds": 2482.0,
+      "sha256": "9ab20ac3f2547f539bc9a035c5425c9ae0b122ed20d2e4fd91e7319a522bcd86",
+      "observation": "ドメイン関数のモジュール化"
+    },
+    {
+      "file": "slides-iz/slide-040.jpg",
+      "timeSeconds": 2500.0,
+      "sha256": "a14192c48ca8a12b1afb06f3823ff1b193dbff8fc50ef05079275e48549fae11",
+      "observation": "workflowとUseCaseの役割"
+    },
+    {
+      "file": "slides-iz/slide-041.jpg",
+      "timeSeconds": 2611.0,
+      "sha256": "1477c0f03e9fdd2eb79e40c02ae52f6760b9490e156200ac33d06248b635d793",
+      "observation": "更新入力と既存タグをまとめたCommand"
+    },
+    {
+      "file": "slides-iz/slide-042.jpg",
+      "timeSeconds": 2681.0,
+      "sha256": "8d0f95f18fb7a3d160db9f43631f59bebe015e11e45a5a0b528a84d5fee6f933",
+      "observation": "更新Commandの流れの図"
+    },
+    {
+      "file": "slides-iz/slide-043.jpg",
+      "timeSeconds": 2695.0,
+      "sha256": "218b00fa4c6ebe39daf6f1d69849013155d51ddc72295579fa4aed397dd8742d",
+      "observation": "Repositoryのfind/getと復元のコード"
+    },
+    {
+      "file": "slides-iz/slide-044.jpg",
+      "timeSeconds": 2757.0,
+      "sha256": "049ccaafb9922af9aefa0e20dc28cfc1919a921ce9b05b0ee71db8a33a73a55d",
+      "observation": "I/O→状態遷移→I/Oの再掲"
+    },
+    {
+      "file": "slides-iz/slide-045.jpg",
+      "timeSeconds": 2763.0,
+      "sha256": "fdabcd89cda4b31c0b3788f705dd313253935fab5df86b5c1acfd639e707682e",
+      "observation": "複雑な実製品workflowの全体像。細かいコードはこの解像度では未照合"
+    },
+    {
+      "file": "slides-iz/slide-046.jpg",
+      "timeSeconds": 2817.0,
+      "sha256": "852399d2b829fc9f496b3e703749fa91f7469e8b2863cca38d8ddd06bb606324",
+      "observation": "途中でI/Oが必要な例"
+    },
+    {
+      "file": "slides-iz/slide-047.jpg",
+      "timeSeconds": 2902.0,
+      "sha256": "529514e3d8993945037e137762f9c78841801ac3358d7c0c0e49ff3696063dc2",
+      "observation": "部分適用するI/O関数のコード"
+    },
+    {
+      "file": "slides-iz/slide-048.jpg",
+      "timeSeconds": 2946.0,
+      "sha256": "41cde088b5c6866aab2cd2806669cd61a80f90ca23622a73533ddfd87030dff1",
+      "observation": "contextを束縛して関数を渡すresolver"
+    },
+    {
+      "file": "slides-iz/slide-049.jpg",
+      "timeSeconds": 2964.0,
+      "sha256": "056f959ba21fac31a296fb3e0c3d7d9695e39be191f595bf32a697dfad8c9e52",
+      "observation": "非同期Resultの依存関数をワークフローへ注入するコード"
+    },
+    {
+      "file": "slides-iz/slide-050.jpg",
+      "timeSeconds": 3018.0,
+      "sha256": "10f1d46cfdfae32eb30e110ccf1b70104781ce360caf7eda74784cb71c4588b7",
+      "observation": "途中I/Oを挟む純粋区間の図"
+    },
+    {
+      "file": "slides-iz/slide-051.jpg",
+      "timeSeconds": 3298.0,
+      "sha256": "897c0111eafa097c330fc9182393b95e8de1dc281416724c7571f8fd48cb90e1",
+      "observation": "まとめと外部記事"
+    },
+    {
+      "file": "slides-iz/slide-052.jpg",
+      "timeSeconds": 3363.0,
+      "sha256": "bb1f78b1a8bbfedca7974c357f589056d7f601297f6d840bbece38290b15924d",
+      "observation": "質疑への切替"
+    },
+    {
+      "file": "slides-iz/slide-053.jpg",
+      "timeSeconds": 3371.0,
+      "sha256": "5f3670ade082bcfb4c437cd819157d5e741730373f5d1560068ce4a50c28ff0f",
+      "observation": "司会の導入"
+    },
+    {
+      "file": "slides-iz/slide-054.jpg",
+      "timeSeconds": 3422.0,
+      "sha256": "200cf1750731f583889bd72179b1c31105deab46f6493eda8d2f792d7876e522",
+      "observation": "transaction rollbackの質問"
+    },
+    {
+      "file": "slides-iz/slide-055.jpg",
+      "timeSeconds": 3543.0,
+      "sha256": "32daeece162ca4812f265703fd51a39a7eba3ce022ab43c497d3730fa2bb4edc",
+      "observation": "質疑の進行"
+    },
+    {
+      "file": "slides-iz/slide-056.jpg",
+      "timeSeconds": 3676.0,
+      "sha256": "5eb769101a7b86ee1166d21e4a602500f7800bf032b10052f0a6625f1c54ec81",
+      "observation": "TypeScriptの採用理由の質問"
+    },
+    {
+      "file": "slides-iz/slide-057.jpg",
+      "timeSeconds": 3781.0,
+      "sha256": "c7c6930fe7af855edc9c95470d835802f46fac3d1e1eb97708dc901932768a4e",
+      "observation": "質問表示の切替途中"
+    },
+    {
+      "file": "slides-iz/slide-058.jpg",
+      "timeSeconds": 3878.0,
+      "sha256": "53e96a53914181a71aeba24091303b43160185ba189879e8f13c6f28ac2feff4",
+      "observation": "質疑の進行"
+    },
+    {
+      "file": "slides-iz/slide-059.jpg",
+      "timeSeconds": 3884.0,
+      "sha256": "db626bcedd46f54b0248ec2d9506e64dcee55806fb1fe42a6b49dab448d6be32",
+      "observation": "登録とメール連携の質問"
+    },
+    {
+      "file": "slides-iz/slide-060.jpg",
+      "timeSeconds": 3986.0,
+      "sha256": "7165e271aae07b1bb2fe66f508ac5c2baff02405ee56437717ba705f4e941446",
+      "observation": "人の操作もイベントとする質疑"
+    },
+    {
+      "file": "slides-iz/slide-061.jpg",
+      "timeSeconds": 3992.0,
+      "sha256": "e1dfb969ad7d5a497936cfc83fd9fc5f24aac1ac2a7d1689c8db326c46b6ea1b",
+      "observation": "チーム導入の質問"
+    },
+    {
+      "file": "slides-iz/slide-062.jpg",
+      "timeSeconds": 4052.0,
+      "sha256": "2973fb68f30834d0b9bf0dcc9c3ea97e8d2852d98f419d2b52eddf3a940364b0",
+      "observation": "チーム導入の回答字幕"
+    },
+    {
+      "file": "slides-iz/slide-063.jpg",
+      "timeSeconds": 4056.0,
+      "sha256": "de357d07d13b37099efb48776f50ef824c05198c30423febdf0aa2c96225c0e1",
+      "observation": "Resultの採用理由の質問"
+    },
+    {
+      "file": "slides-iz/slide-064.jpg",
+      "timeSeconds": 4368.0,
+      "sha256": "7376057797d3188aaab3497215df29ac12df7f5d713fb3403e2ef19939bfaa90",
+      "observation": "質疑の進行"
+    },
+    {
+      "file": "slides-iz/slide-065.jpg",
+      "timeSeconds": 4375.0,
+      "sha256": "139c9b9f2670d4f727e1cd75bac9fb878ece16774909f4b4ed8298e8c346ec21",
+      "observation": "検証エラー集約の質問"
+    },
+    {
+      "file": "slides-iz/slide-066.jpg",
+      "timeSeconds": 4427.0,
+      "sha256": "57655c6946014ae5efe8ebf9f936881ad323aa369fa95551eb4d4fef38d362fb",
+      "observation": "検証エラー集約の回答字幕"
+    },
+    {
+      "file": "slides-iz/slide-067.jpg",
+      "timeSeconds": 4685.0,
+      "sha256": "ce113fcddf33383f2f722684c2d29e92a0300bcf4eabe54884c02c4702b863f6",
+      "observation": "フロントとバックのコード共有の質問"
+    },
+    {
+      "file": "slides-iz/slide-068.jpg",
+      "timeSeconds": 4796.0,
+      "sha256": "fd4e73f7c0baf41ea76c303df51505e811f73b9b63ead9ebcb61986ca82c083c",
+      "observation": "当時の採用案内"
+    },
+    {
+      "file": "slides-iz/slide-069.jpg",
+      "timeSeconds": 4826.0,
+      "sha256": "dc7f77b9cfb23f8dead36b8202cb7f9113190568290ffeeaa3446ab016246180",
+      "observation": "終了案内"
+    },
+    {
+      "file": "slides-iz/slide-070.jpg",
+      "timeSeconds": 4838.0,
+      "sha256": "a36b4d9d84767628ad5158d1656fd0bf3dca03168d4a334484badb59aec03641",
+      "observation": "終了案内"
+    },
+    {
+      "file": "slides-iz/slide-071.jpg",
+      "timeSeconds": 4867.0,
+      "sha256": "6e9f6c997ae6b6010f3d24a6f98a1c35b6dc67a5e8591de58f79c7f78c9ae03d",
+      "observation": "挨拶"
+    },
+    {
+      "file": "slides-iz/slide-072.jpg",
+      "timeSeconds": 4880.0,
+      "sha256": "9ca81e7a242e4bf30d477fc12fd6cb99ebef5d91e0603e069124b5d065dd7e78",
+      "observation": "終了映像への切替"
+    },
+    {
+      "file": "slides-iz/slide-073.jpg",
+      "timeSeconds": 4881.0,
+      "sha256": "9d912b199ed5e58fae140827b4c395d02dfc28d2608eb4de386ddaa2e8ed7f93",
+      "observation": "終了ロゴ"
+    },
+    {
+      "file": "slides-iz/extra-3100.jpg",
+      "timeSeconds": 3100,
+      "sha256": "a49cdca8ea22ba3878257bf934426b37d0a34e2b9aeecf01dc7731b8e649276b",
+      "observation": "定型的な接続をフレームワークへ委ねたいという構想。ユーザー提示の箇条書きに対応。"
+    },
+    {
+      "file": "slides-iz/extra-3170.jpg",
+      "timeSeconds": 3170,
+      "sha256": "f4a6bd307ff2f1e61494df12c0efad9dfd0e92782c9dd7fac8c3716799df12cc",
+      "observation": "全体のアーキテクチャは維持し、内部の実装パラダイムを変える。"
+    },
+    {
+      "file": "slides-iz/extra-3210.jpg",
+      "timeSeconds": 3210,
+      "sha256": "d142e01a98ee1752a0163b6c971120cdddd73f74f17ead60fc885787d412731a",
+      "observation": "plain dataと記述量に関する登壇者の評価。"
+    },
+    {
+      "file": "slides-iz/extra-3260.jpg",
+      "timeSeconds": 3260,
+      "sha256": "a7ec4dfdf441293080c3c10528c518f2a5037a9a7435a56cf1509236ded10fc4",
+      "observation": "andThen等や入れ子の負担、do記法への言及。"
+    }
+  ]
+}
