@@ -34,7 +34,7 @@ inputの取得が失敗すればそのRuleは未実行、resultの取得で失�
 純粋な計算の検査APIであり、この失敗を業務エラーへ自動変換しない。
 Ruleの想定外のthrowにはResultがないため、完了した観測reportは返らない。
 
-Workflowとtransitionのinspectに加え、businessのrunDetailedにも同じ選択設定を渡せる（後述）。
+Workflowとtransitionのinspectに加え、businessのrunDetailed（後述）と[Process.runDetailed](process-observation.md)にも同じ選択設定を渡せる。
 独自にnew Workflowでevaluateを実装する場合は、
 内部のStageObserverを使わない独自段階までは自動で観測できない。
 

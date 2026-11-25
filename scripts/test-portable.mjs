@@ -83,6 +83,8 @@ export const result = (async () => {
   if (insufficient.ok || insufficient.error.index !== 1 || budgetFold([6, 4]).value !== 0) throw new Error('Dependent fold failed');
   const collected = collectEach(n => n > 0 ? ok(n) : err('Invalid'))([1, -2, 3, -4]);
   if (collected.ok || collected.error.length !== 2 || collected.error[0].index !== 1 || collected.error[1].index !== 3) throw new Error('Collection validation failed');
+  const capturedProcess = await effectProcess().effect('load', async input => ok(input + 1)).through(workflow('double', n => ok(n * 2))).runDetailed(3, { input: value => value, result: result => result.ok ? result.value : null });
+  if (!capturedProcess.result.ok || capturedProcess.result.value !== 8 || capturedProcess.observations.length !== 2 || capturedProcess.observations[0].input !== 3 || capturedProcess.observations[1].result !== 8 || capturedProcess.observationErrors.length) throw new Error('Process capture failed');
   const delivered = await effectProcess().effect('send', async input => ok(input + 1)).effect('ack', async value => ok(value * 2)).runDetailed(3);
   if (!delivered.result.ok || delivered.result.value !== 8 || delivered.plan !== null || delivered.trace.length !== 2) throw new Error('Direct process failed');
   const nested = await effectProcess().effect('command', { runDetailed: async value => ({ result: ok(value + 1), trace: [{ step: 'inside', status: 'ok' }], plan: null }) }).runDetailed(4);

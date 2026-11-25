@@ -23,6 +23,9 @@ through(workflow)で途中に純粋な計算を接続できる。
 最後に純粋な判断と保存が必要なら、既存のcommit(mutation)へ渡す。
 配送完了記録のような単なるI/Oのために、空のvalidate/evolveや架空のmutationを宣言する必要はない。
 
+[任意のcapture](process-observation.md)をrunDetailedの第2引数へ渡すと、
+I/Oとthrough内のRuleから選んだ値を記録できる。観測失敗は業務結果から分離する。
+
 直接のrunDetailedは実行した段階のtraceとResultを返し、planはnull。
 commitがある場合のplanは、最後のmutationが生成したplanとなる。
 traceはインプロセスの実行記録であり、永続監査ログや再開用チェックポイントではない。

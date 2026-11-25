@@ -79,3 +79,24 @@ if (false) {
   // @ts-expect-error unresolved Union is not sufficient to update an identified customer
   updateCustomer(identity);
 }
+
+for (const [customer, decision, writes, version] of [
+  [null, 'created', 1, 1], [existing, 'updated', 1, 4], [{ ...existing, name: 'New name' }, 'unchanged', 0, 3],
+] as const) test(`customer ${decision} captures selected pure/IO values without exposing name or email`, async () => {
+  const host = harness(customer);
+  const report = await customerImport(host.ports).runDetailed(input, {
+    input: (_value, step) => step,
+    result: (result, step) => {
+      if (!result.ok) return 'failed';
+      if (step === 'identify-customer') return (result.value as Identification).kind;
+      if (step === 'decide-customer') return (result.value as Decision).kind;
+      if (step === 'save-customer') return (result.value as Customer).version;
+      return 'valid';
+    },
+  });
+  assert(report.result.ok); assert.deepEqual(host.counts(), { lookups: 1, writes });
+  assert.deepEqual(report.observations.map(row => row.result), ['valid', customer ? 'identified' : 'not-identified', decision, version]);
+  assert.deepEqual(report.observationErrors, []);
+  assert(!JSON.stringify(report.observations).includes('example.com'));
+  assert(!JSON.stringify(report.observations).includes('New name'));
+});
