@@ -38,15 +38,32 @@ export type QuoteRequest = Readonly<QuoteContext & (
   | { request: RequestFor<'JP'>; service: 'domestic' }
   | { request: RequestFor<'US'>; service: 'international' }
 )>;
-export function selectService(command: LoadedShipping): Result<QuoteRequest, { kind: 'OrderClosed' } | { kind: 'OrderMismatch' }> {
+type PreparedShipping<C extends ValidShipping['country']> = Readonly<{ order: OpenOrder; request: RequestFor<C> }>;
+type DomesticShipping = PreparedShipping<'JP'>;
+type InternationalShipping = PreparedShipping<'US'>;
+type ReadyShipping = DomesticShipping | InternationalShipping;
+type ServiceError = { kind: 'OrderClosed' } | { kind: 'OrderMismatch' };
+function prepareService(command: LoadedShipping): Result<ReadyShipping, ServiceError> {
   if (command.request.orderId !== command.order.id) return err({ kind: 'OrderMismatch' });
   if (command.order.status !== 'open') return err({ kind: 'OrderClosed' });
   const order = Object.freeze({ ...command.order });
   // TS does not distribute a union-valued property into the containing object.
   if (command.request.country === 'JP') return ok(Object.freeze({ order,
-    request: Object.freeze({ ...command.request, country: 'JP' as const }), service: 'domestic' as const }) as QuoteRequest);
+    request: Object.freeze({ ...command.request, country: 'JP' as const }) }));
   return ok(Object.freeze({ order,
-    request: Object.freeze({ ...command.request, country: 'US' as const }), service: 'international' as const }) as QuoteRequest);
+    request: Object.freeze({ ...command.request, country: 'US' as const }) }));
+}
+function isDomestic(command: ReadyShipping): command is DomesticShipping { return command.request.country === 'JP'; }
+function domesticService(command: DomesticShipping): Result<QuoteRequest & { readonly service: 'domestic' }, never> {
+  return ok(Object.freeze({ ...command, service: 'domestic' as const }) as QuoteRequest & { readonly service: 'domestic' });
+}
+function internationalService(command: InternationalShipping): Result<QuoteRequest & { readonly service: 'international' }, never> {
+  return ok(Object.freeze({ ...command, service: 'international' as const }) as QuoteRequest & { readonly service: 'international' });
+}
+/** Ordinary domain-function facade; the plain comparison does not call a Workflow. */
+export function selectService(command: LoadedShipping): Result<QuoteRequest, ServiceError> {
+  const prepared = prepareService(command); if (!prepared.ok) return prepared;
+  return isDomestic(prepared.value) ? domesticService(prepared.value) : internationalService(prepared.value);
 }
 export interface QuotedShipping { readonly command: QuoteRequest; readonly feeYen: number }
 export type ShippingDecision = Readonly<{ orderId: string; expectedVersion: number; feeYen: number; service: QuoteRequest['service'] }> & { readonly [proof]: 'decision' };
@@ -56,5 +73,8 @@ export function acceptQuote(value: QuotedShipping): Result<ShippingDecision, { k
   return ok(Object.freeze({ orderId: value.command.order.id, expectedVersion: value.command.order.version, feeYen: value.feeYen, service: value.command.service }) as ShippingDecision);
 }
 export const inputWorkflow = workflow('validate-shipping', validateShipping);
-export const serviceWorkflow = workflow('select-shipping-service', selectService);
+export const serviceWorkflow = workflow('ensure-shipping-order', prepareService).branch('shipping-service', isDomestic, {
+  yes: workflow('select-domestic-service', domesticService),
+  no: workflow('select-international-service', internationalService),
+});
 export const quoteWorkflow = workflow('accept-shipping-quote', acceptQuote);

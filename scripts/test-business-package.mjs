@@ -58,6 +58,11 @@ try {
     writeFileSync(join(consumer, file), readFileSync(join(root, 'src', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'"));
   }
   writeFileSync(join(consumer, 'expense-replay-version.test.ts'), readFileSync(join(root, 'src/expense-replay-version.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  mkdirSync(join(consumer, 'shipping'));
+  for (const file of ['domain.ts', 'feature.ts']) writeFileSync(join(consumer, 'shipping', file),
+    readFileSync(join(root, 'src/shipping', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'"));
+  for (const file of ['shipping.test.ts', 'flow-examples.test.ts', 'model-unions.test.ts']) writeFileSync(join(consumer, file),
+    readFileSync(join(root, 'src', file), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'declaration-ownership.test.ts'), readFileSync(join(root, 'src/declaration-ownership.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'flow-structure.test.ts'), readFileSync(join(root, 'src/flow-structure.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'application-input-contract.test.ts'), readFileSync(join(root, 'src/application-input-contract.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));

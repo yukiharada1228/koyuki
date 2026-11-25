@@ -6,14 +6,14 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 ここにある将来案すべてが講演で要求された機能という意味でもない。
 
 2026-11-26（日本時間）に、公開Issue #1〜#8の本文とopen状態を再取得した。
-#1・#2・#4・#5については、本文の完了条件と下記のコード・検査を個別に照合した。
+#1〜#5については、本文の完了条件と下記のコード・検査を個別に照合した。
 他DB・分散相関・保持運用の追加実装を、元の完了条件へ暗黙に追加しない。
 
 | Issue | 現在使える根拠 | 満たしたと扱えない条件 |
 | --- | --- | --- |
 | [#1 共通transaction](https://github.com/yukiharada1228/koyuki/issues/1) | [同期共通境界](transactions.md)をタグ・経費・経費receiptへ接続し、本文の4完了条件を実例で検証。callback型の非同期契約もPrismaへ接続済み | 任意driverの原子性や分散transactionは保証しない。他driverやTarget全体の相関観察は追加範囲であり、本文の4条件の未充足とは分ける |
 | [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)、[Program](program-execution.md)、live timing・親子spanで本文の4完了条件を検証 | opaque関数内部・分散相関・永続履歴は未提供。本文が要求する対応coreの実行相関と、全関数・全システムの観察を区別する |
-| [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。既存Traceの名前を重ねる | 送料例のサービス選択は関数内部のifで、分岐としての図示は未充足。別の明示branch例で両経路を検査していることとは分ける。状態図・完全なnode実行対応も未提供 |
+| [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。送料を国内/海外の明示分岐へ変更し、本文の4条件をタグ・送料の実例で検証 | Traceとの対応は名前による照合。任意の関数内部のifの解析、業務状態図の自動導出、完全なnode/span対応は提供しない |
 | [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)、[retryEffect](retry.md)に加え、経費adapterのhost指定versionと既存形式・version衝突の検査を追加。本文の4完了条件を指定した実例と方針で確認 | withReplay単体は再試行しない。未適用・冪等性はhostの保証。経費例はreceiptを自動削除せず保持し、異なる定義versionの同じ要求IDは拒否。期限削除・自動移行の運用機構は未提供 |
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続し、本文の5完了条件を実例と契約文書で検証 | 保持・削除と改ざん耐性の保証範囲を文書化する条件は、全運用機能を内蔵する条件とは異なる。他DB adapter・実運用・改ざん検出・拒否ログは未提供 |
 | [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例。[非実行のソース診断CLI](declaration-diagnostics.md)で明示/既定ID・段階名・Application予約名を位置付きで報告 | 独自resolver・動的定義は未解決として残す。全参照の解決、分岐・状態の網羅性、エディター診断、任意の変更解析は未提供。型・構文・メタデータ検査を業務規則の証明とは扱わない |
@@ -37,9 +37,9 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 共通境界の存在だけで監査・retry・構成図・モデル検査の条件まで満たしたとは判断しない。
 また、これらを実装しても独立利用者の開発体験や全編音声との照合は別途残る。
 
-## #1・#2・#4・#5の完了条件別の再点検
+## #1〜#5の完了条件別の再点検
 
-参照する本文の最終更新は、#1が2026-11-24T08:47:19Z、#2が同08:47:20Z、
+参照する本文の最終更新は、#1が2026-11-24T08:47:19Z、#2が同08:47:20Z、#3が同08:47:21Z、
 #4が同08:47:23Z、#5が同08:47:24Z。下表の充足は指定した実例と契約の範囲での判定であり、
 GitHub上のIssue状態、全講演の完全実現、任意のadapterや利用者への保証とは別である。
 
@@ -63,6 +63,17 @@ Target専用の新しい設定欄ではなく、既存のsave adapter内で共�
 通常のResult関数が内部段階を公開しない場合まで観察できる保証ではない。
 任意の業務関数を解析する能力を、この条件の達成から導かない。
 
+| #3の条件 | 確認した根拠 |
+| --- | --- |
+| 図の取得で業務関数やI/Oを実行しない | [構成検査](../src/flow-structure.test.ts)でpredicate・Rule・portの呼出しゼロ。[実例検査](../src/flow-examples.test.ts)と[demo](../src/examples/flow-structure.ts)でもRepository・送料portを呼ばずに取得 |
+| タグの直列処理と送料の分岐・I/Oを図示 | タグのvalidate/require/evolveと、送料のshipping-serviceのyes/no両経路・見積I/O・保存を同じ構成APIで取得 |
+| 宣言した構成と実行した経路を区別する | 送料の国内/海外を一回ずつ実行し、対応するサービス生成の名前だけがok、他方がnoneとなることを検査。図の取得で再実行しない |
+| 型・関数名だけで完全な業務状態図を導出したとしない | [図の契約](flow-structure.md)はdeclared-compositionを明示。関数本体はopaque、同名はambiguous、不明な記録はunmatchedTraceに保持 |
+
+この送料例は元の単一関数を反射して図を作る方式ではなく、通常の業務関数を明示的なbranchへ接続した。
+通常TSの比較版はWorkflowを呼ばず、同じ業務関数・portsを手続き的につなぎ、結果とI/O順序を比較する。
+診断の段階名は変更したが、入力・保存結果・失敗の型と操作IDは維持している。
+
 | #4の条件 | 確認した根拠 |
 | --- | --- |
 | 応答喪失後も更新と履歴を一度に保つ | [経費再送検査](../src/expense-replay.test.ts)のcommit応答・receipt照会喪失、[retry契約](retry.md)の明示的な冪等性指定 |
@@ -82,8 +93,8 @@ Target専用の新しい設定欄ではなく、既存のsave adapter内で共�
 | 機微項目・保持削除・改ざん耐性の範囲を明記 | [監査契約](audit.md)は許可したmetadataのみ、自動削除なし、hostの保持責任、直接SQLへの改ざん耐性なしを明記。運用済みという証拠ではない |
 | 再送で成功監査を増やさない | タグreceiptと経費receiptの再取得、2つのOSプロセスの同時再送で非重複を確認 |
 
-この4件について、元の完了条件を実例で満たす根拠があることと、より広い運用拡張が未提供なことを分ける。
-#3・#6〜#8を同じ理由で完了へ変更する再判定は行っていない。
+この5件について、元の完了条件を実例で満たす根拠があることと、より広い運用拡張が未提供なことを分ける。
+#6〜#8を同じ理由で完了へ変更する再判定は行っていない。
 
 ## 同期境界の実装後の差分
 

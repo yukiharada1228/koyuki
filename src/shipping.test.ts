@@ -4,13 +4,14 @@ import { collect, process, workflow, bindMutation, ok, err, type Result } from '
 import { validateShipping, inputWorkflow, serviceWorkflow, quoteWorkflow, type ShippingInput, type ShippingDecision } from './shipping/domain.js';
 import { createShippingAction, shippingPlain, type ShippingPorts } from './shipping/feature.js';
 const input: ShippingInput = { orderId: 'o1', country: 'JP', weightGrams: 1000 };
-function fixture(options: { closed?: boolean; missing?: boolean; fee?: number; unavailable?: boolean; conflict?: boolean } = {}) {
+function fixture(options: { closed?: boolean; missing?: boolean; corrupt?: boolean; mismatch?: boolean; fee?: number; unavailable?: boolean; conflict?: boolean } = {}) {
   const calls: string[] = [];
   let version = 1;
   const ports: ShippingPorts = {
     async loadOrder(request) {
       calls.push('load');
-      return options.missing ? err({ kind: 'OrderNotFound' }) : ok({ request, order: { id: request.orderId, version, status: options.closed ? 'shipped' : 'open', totalYen: 10000 } });
+      return options.missing ? err({ kind: 'OrderNotFound' }) : options.corrupt ? err({ kind: 'CorruptOrder' })
+        : ok({ request, order: { id: options.mismatch ? 'other' : request.orderId, version, status: options.closed ? 'shipped' : 'open', totalYen: 10000 } });
     },
     async quote(command) {
       calls.push('quote:' + command.service);
@@ -59,7 +60,7 @@ test('construction performs no IO; a run crosses two explicit IO boundaries then
   const report = await action.runDetailed(input);
   assert.deepEqual(report.result, ok({ orderId: 'o1', version: 2 }));
   assert.deepEqual(f.calls, ['load', 'quote:domestic', 'save']);
-  assert.deepEqual(report.trace.map(t => t.step), ['validate-shipping', 'load-order', 'select-shipping-service', 'fetch-shipping-quote', 'accept-shipping-quote', 'shipping.save.v1']);
+  assert.deepEqual(report.trace.map(t => t.step), ['validate-shipping', 'load-order', 'ensure-shipping-order', 'shipping-service:yes', 'select-domestic-service', 'fetch-shipping-quote', 'accept-shipping-quote', 'shipping.save.v1']);
   assert(report.trace.every(t => t.status === 'ok'));
 });
 test('pure decision selects international service before quote lookup', async () => {
@@ -69,6 +70,8 @@ test('pure decision selects international service before quote lookup', async ()
 });
 for (const [options, expected, calls] of [
   [{ missing: true }, 'OrderNotFound', ['load']],
+  [{ corrupt: true }, 'CorruptOrder', ['load']],
+  [{ mismatch: true }, 'OrderMismatch', ['load']],
   [{ closed: true }, 'OrderClosed', ['load']],
   [{ unavailable: true }, 'QuoteUnavailable', ['load', 'quote:domestic']],
   [{ fee: -1 }, 'InvalidQuote', ['load', 'quote:domestic']],
@@ -103,8 +106,8 @@ test('interleaved runs do not hide stale data or auto-retry a conflict', async (
   assert.deepEqual(results.find(r => !r.ok), err({ kind: 'SaveConflict' }));
   assert.equal(f.calls.filter(c => c === 'save').length, 2);
 });
-test('plain baseline and process agree on successes and every failure', async () => {
-  for (const options of [{}, { missing: true }, { closed: true }, { unavailable: true }, { fee: -1 }, { fee: 10001 }, { conflict: true }]) {
+test('plain baseline and process agree on results and IO across both services and all modeled failure kinds', async () => {
+  for (const options of [{}, { missing: true }, { corrupt: true }, { mismatch: true }, { closed: true }, { unavailable: true }, { fee: -1 }, { fee: NaN }, { fee: 10001 }, { conflict: true }]) {
     for (const value of [input, { ...input, country: 'US' }, { ...input, weightGrams: 0 }]) {
       const a = fixture(options), b = fixture(options);
       assert.deepEqual(await createShippingAction(a.ports).run(value), await shippingPlain(b.ports, value));

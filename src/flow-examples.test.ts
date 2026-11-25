@@ -17,7 +17,7 @@ test('real tag creation diagram includes the declared roles and IO without touch
   assert(describeFlow(command, report.trace).nodes.every(node => node.match === 'ok'));
   assert.equal(repository.records.size, 1); assert.equal(repository.calls.length, 2);
 });
-test('real shipping diagram includes quote IO and save but keeps the function-internal service choice opaque', async () => {
+test('shipping declares both service paths without IO and overlays only the executed service', async () => {
   const calls: string[] = [];
   const ports: ShippingPorts = {
     async loadOrder(request) { calls.push('load'); return ok({ request, order: { id: request.orderId, version: 1, status: 'open', totalYen: 10000 } }); },
@@ -25,12 +25,22 @@ test('real shipping diagram includes quote IO and save but keeps the function-in
     async save(decision) { calls.push('save'); return ok({ orderId: decision.orderId, version: decision.expectedVersion + 1 }); },
   };
   const action = createShippingAction(ports), graph = describeFlow(action);
-  assert.deepEqual(graph.nodes.map(node => node.name), ['validate-shipping', 'load-order', 'select-shipping-service', 'fetch-shipping-quote', 'accept-shipping-quote', 'shipping.save.v1']);
-  assert.deepEqual(graph.nodes.map(node => node.role), ['rule', 'effect', 'rule', 'effect', 'rule', 'save']);
-  assert.equal(graph.nodes.find(node => node.name === 'select-shipping-service')?.implementation, 'opaque');
-  assert(!graph.nodes.some(node => node.kind === 'branch')); assert.deepEqual(calls, []);
+  assert.deepEqual(graph.nodes.map(node => node.name), ['validate-shipping', 'load-order', 'ensure-shipping-order', 'shipping-service',
+    'select-domestic-service', 'select-international-service', 'shipping-service:join', 'fetch-shipping-quote', 'accept-shipping-quote', 'shipping.save.v1']);
+  assert.deepEqual(graph.edges.filter(edge => edge.choice).map(edge => edge.choice), ['yes', 'no']);
+  assert.deepEqual(calls, []);
   const report = await action.runDetailed({ orderId: 'o1', country: 'US', weightGrams: 1000 }); assert(report.result.ok);
   assert.deepEqual(calls, ['load', 'quote', 'save']);
-  assert(describeFlow(action, report.trace).nodes.every(node => node.match === 'ok'));
+  const traced = describeFlow(action, report.trace);
+  assert.equal(traced.nodes.find(node => node.name === 'select-international-service')?.match, 'ok');
+  assert.equal(traced.nodes.find(node => node.name === 'select-domestic-service')?.match, 'none');
+  assert.equal(traced.nodes.find(node => node.name === 'shipping-service')?.match, 'ok');
+  assert.deepEqual(traced.unmatchedTrace, []);
+  calls.length = 0;
+  const domestic = await action.runDetailed({ orderId: 'o1', country: 'JP', weightGrams: 1000 }); assert(domestic.result.ok);
+  const domesticGraph = describeFlow(action, domestic.trace);
+  assert.equal(domesticGraph.nodes.find(node => node.name === 'select-domestic-service')?.match, 'ok');
+  assert.equal(domesticGraph.nodes.find(node => node.name === 'select-international-service')?.match, 'none');
+  assert.deepEqual(calls, ['load', 'quote', 'save']);
   assert(flowMermaid(action, report.trace).includes('class n0 matched'));
 });

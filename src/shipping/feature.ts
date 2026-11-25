@@ -1,5 +1,5 @@
 import { process, bindMutation, type Result } from '../framework/index.js';
-import { inputWorkflow, serviceWorkflow, quoteWorkflow, type ShippingInput, type ValidShipping, type LoadedShipping, type QuoteRequest, type QuotedShipping, type ShippingDecision } from './domain.js';
+import { inputWorkflow, serviceWorkflow, quoteWorkflow, validateShipping, selectService, acceptQuote, type ShippingInput, type ValidShipping, type LoadedShipping, type QuoteRequest, type QuotedShipping, type ShippingDecision } from './domain.js';
 export interface ShippingPorts {
   loadOrder(request: ValidShipping): Promise<Result<LoadedShipping, { kind: 'OrderNotFound' } | { kind: 'CorruptOrder' }>>;
   // Read-only quote lookup, after the pure workflow has chosen the shipping service.
@@ -18,10 +18,10 @@ export function createShippingAction(ports: ShippingPorts) {
 }
 // Same rules and ports, without orchestration helpers: a comparison baseline.
 export async function shippingPlain(ports: ShippingPorts, input: ShippingInput) {
-  const valid = inputWorkflow.run(input); if (!valid.ok) return valid;
+  const valid = validateShipping(input); if (!valid.ok) return valid;
   const loaded = await ports.loadOrder(valid.value); if (!loaded.ok) return loaded;
-  const service = serviceWorkflow.run(loaded.value); if (!service.ok) return service;
+  const service = selectService(loaded.value); if (!service.ok) return service;
   const quoted = await ports.quote(service.value); if (!quoted.ok) return quoted;
-  const decision = quoteWorkflow.run(quoted.value); if (!decision.ok) return decision;
+  const decision = acceptQuote(quoted.value); if (!decision.ok) return decision;
   return ports.save(decision.value);
 }

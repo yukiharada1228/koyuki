@@ -84,10 +84,19 @@ DBや配送APIを呼ばず、保存済みの業務データも不要。
 送料のportは呼ばれたらthrowするようにしてあり、タグrepositoryの呼出しもゼロであることを確認する。
 
 タグはload→validate→require→require→evolve→saveを表す。
-送料は入力検証→注文取得→サービス選択→見積IO→見積検証→saveを表す。
-**現行の送料のサービス選択は通常関数内部のifなので、そこにbranch nodeを捏造しない。**
-明示したWorkflow.branchの両経路は、同じdemoの別例で確認できる。
+送料は入力検証→注文取得→注文の事前条件確認→国内/海外サービスの分岐→見積IO→見積検証→saveを表す。
+serviceWorkflowはshipping-serviceというWorkflow.branchを明示し、国内/海外の両経路を記録する。
+図の取得では両経路を実行せず、実行後のtraceでは選択したselect-domestic-serviceまたは
+select-international-serviceにだけ一致する記録を重ねる。
+これは明示した宣言の取得であり、任意の通常関数内部のifを解析した結果ではない。
+注文の一致・未発送の確認と各サービスの生成は通常の純粋関数として分け、
+通常TSの比較版はこれらを直接呼ぶ。Workflowの実行を比較版から使わない。
+成功と各業務失敗を含む10条件×3入力の30ケースで、結果とI/O順序を比較する。
 業務の状態遷移や関数内の分岐まで図示したい場合は、別途明示した仕様・metadataが必要。
+
+この変更で送料例の診断traceは、従来のselect-shipping-service一段から、
+ensure-shipping-order、shipping-service:yes/no、選択したサービス生成の段階へ変わる。
+診断名に依存する比較・表示は更新が必要。操作ID shipping.save.v1、入力・結果・失敗の型とI/Oの順序は維持する。
 
 ## Mermaidと検査範囲
 
@@ -100,14 +109,15 @@ IDはframeworkの採番だけを使い、ラベルの構文文字・改行等は
 直列・branch・空のProcess・タグ・送料・特殊文字入りの6例がmermaid.parseを通ることを確認した。
 この一時検査は構文の検証であり、SVGの見た目やすべてのMermaid versionの保証ではない。
 検証用packageをcoreの依存やrepoの依存へ追加していない。
+これは送料を明示分岐へ変更する前の出力を対象とした構文検査の履歴である。
 
 [coreの検査](../src/flow-structure.test.ts)は関数/IOの非実行、両経路、役割、freeze、unknown、
 名前重複、入力trace、特殊文字、business/replayの構成を確認する。
 構成の走査は再帰呼出しを使わず、1001段の宣言を実行なしで取得できることも検査する。
-[実例の検査](../src/flow-examples.test.ts)はタグ・送料の構成と、一回の実行traceとの対応を確認する。
+[実例の検査](../src/flow-examples.test.ts)はタグ・送料の構成と、国内/海外それぞれ一回の実行traceとの対応を確認する。
 実tarballのconsumerとNode globalなしのbundleでもAPIを検査する。
 CIはこれらの意味・出力検査を継続するが、一時環境のMermaid parser検査を自動実行する構成ではない。
 
-[Issue #3](https://github.com/yukiharada1228/koyuki/issues/3)に対する構成図の実装。
+[Issue #3](https://github.com/yukiharada1228/koyuki/issues/3)に対する構成図の実装。送料の明示分岐も同じ例で確認できる。
 業務状態図の自動導出、関数内部の分岐解析、完全なnode/span対応、全条件での経路検証は未完了。
 [Issue #6](https://github.com/yukiharada1228/koyuki/issues/6)の[非実行のソース診断CLI](declaration-diagnostics.md)は別の開発ツールとして一部実装した。構成図やCLIの追加を、全宣言の診断・業務規則の証明の完成とは扱わない。
