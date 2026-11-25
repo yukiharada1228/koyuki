@@ -60,7 +60,10 @@
     "test:business:change": "node scripts/test-business-package.mjs --change",
     "test:lecture-records": "node --test scripts/lecture-records.test.mjs",
     "check:lecture-audit": "node scripts/check-lecture-audit.mjs",
-    "check:lecture-decks": "node scripts/check-lecture-decks.mjs"
+    "check:lecture-decks": "node scripts/check-lecture-decks.mjs",
+    "measure:procurement:changes": "node scripts/measure-procurement-changes.mjs",
+    "check:procurement:changes": "node scripts/measure-procurement-changes.mjs --check",
+    "test:procurement:changes": "node --test scripts/procurement-change-metrics.test.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",

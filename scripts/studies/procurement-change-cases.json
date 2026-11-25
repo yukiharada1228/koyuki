@@ -1,0 +1,14 @@
+[
+  {
+    "name": "two-stage-approval",
+    "before": "212a76fef171d91b6f4bd805ab02261596634a04",
+    "after": "db80172080b931dd7164df0a7abf0251a03cca12",
+    "unchanged": ["framework", "koyuki-orchestration", "plain-orchestration", "helper-orchestration", "persistence", "replay", "projection"]
+  },
+  {
+    "name": "receipt-depletion",
+    "before": "f6fd925244e0973349ef1b0cba6063759e0e5f0f",
+    "after": "e6cd5a98c8b743cfd9e5b840bc0cf5d76978565c",
+    "unchanged": ["framework", "koyuki-orchestration", "plain-orchestration", "helper-orchestration", "persistence", "replay", "projection"]
+  }
+]

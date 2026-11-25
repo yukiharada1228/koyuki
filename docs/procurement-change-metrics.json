@@ -1,0 +1,613 @@
+{
+  "schemaVersion": 1,
+  "scope": "Retrospective physical Git diff for two fixed specification changes. Includes every changed tracked file, with shared work counted once. Not total implementation cost, developer effort, semantic change count, productivity, or an OSS quality score.",
+  "counting": "Git numstat using Myers without the indent heuristic, external diff, text conversion, or rename detection; physical lines include blanks/comments. Regular tracked file fingerprints include mode, UTF-8 bytes and SHA-256. Missing files are null. No timestamps or working-tree content are measured.",
+  "studies": [
+    {
+      "name": "two-stage-approval",
+      "before": "212a76fef171d91b6f4bd805ab02261596634a04",
+      "after": "db80172080b931dd7164df0a7abf0251a03cca12",
+      "totals": [
+        {
+          "category": "framework",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "domain-rules",
+          "changedFiles": 1,
+          "added": 56,
+          "deleted": 12
+        },
+        {
+          "category": "host-context",
+          "changedFiles": 1,
+          "added": 2,
+          "deleted": 1
+        },
+        {
+          "category": "loader-experiment",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "koyuki-orchestration",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "plain-orchestration",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "helper-orchestration",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "persistence",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "replay",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "projection",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "tests",
+          "changedFiles": 3,
+          "added": 175,
+          "deleted": 5
+        },
+        {
+          "category": "tooling",
+          "changedFiles": 1,
+          "added": 2,
+          "deleted": 0
+        },
+        {
+          "category": "documentation",
+          "changedFiles": 5,
+          "added": 87,
+          "deleted": 5
+        }
+      ],
+      "unchanged": [
+        {
+          "category": "framework",
+          "files": 19,
+          "digest": "c68ddcd4ce7fa750b1b3f9ad03b5190de120380ab509ca0ca5f01304dee4c5d6"
+        },
+        {
+          "category": "koyuki-orchestration",
+          "files": 1,
+          "digest": "f5f80cd5c3059aabf7b10fe9bc6d9f1b02713a59f029ac38f3e52b63a5c9fd64"
+        },
+        {
+          "category": "plain-orchestration",
+          "files": 1,
+          "digest": "657a527c88296780bcda35b0aab57309cebae2ce1226ed0d879bd8ce3de6ed80"
+        },
+        {
+          "category": "helper-orchestration",
+          "files": 1,
+          "digest": "84ed5159ef02fabb95ea490a86171f4526a008d603f9d4ed67e5f2e689dd755a"
+        },
+        {
+          "category": "persistence",
+          "files": 2,
+          "digest": "1a41a3389c904c0ba2e23ed26055ed2fc31e09b63e656267ac0410c6d2196bb0"
+        },
+        {
+          "category": "replay",
+          "files": 3,
+          "digest": "290a0265bc8b293b91acdfebab8ea3ad599d2b78c9fbb9f9812407d7e98cdee4"
+        },
+        {
+          "category": "projection",
+          "files": 3,
+          "digest": "ab861168ef05122cc9f548d221e3b736f7a8f425219e226f99dfb6f3b8022c1b"
+        }
+      ],
+      "changes": [
+        {
+          "path": "docs/lecture-acceptance.md",
+          "category": "documentation",
+          "added": 1,
+          "deleted": 1,
+          "before": {
+            "mode": "100644",
+            "bytes": 8076,
+            "physicalLines": 76,
+            "sha256": "c3fa2e0a877d30ab2e1a22637d3816b3e74df72fd19d8ac6b48e338af9caf5c9"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 8183,
+            "physicalLines": 76,
+            "sha256": "cda684d805361b34d4328c841d9100f4d2eaa40615de46dab09827debbc880b7"
+          }
+        },
+        {
+          "path": "docs/procurement-approval-change.md",
+          "category": "documentation",
+          "added": 80,
+          "deleted": 0,
+          "before": null,
+          "after": {
+            "mode": "100644",
+            "bytes": 5603,
+            "physicalLines": 80,
+            "sha256": "fe8aef0990800344cef165aaa722faecaf35f09226b4a8e0b0b82499481e8f45"
+          }
+        },
+        {
+          "path": "docs/procurement-sqlite.md",
+          "category": "documentation",
+          "added": 2,
+          "deleted": 2,
+          "before": {
+            "mode": "100644",
+            "bytes": 7942,
+            "physicalLines": 93,
+            "sha256": "8ed5c1d95eab887a7fa37122286af29f1fb0abb2a3987186a60293707e9bb627"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 8148,
+            "physicalLines": 93,
+            "sha256": "b66a8cbaab57c56949a07aad89c8dc282cede6f6c98de9e2c950fde5ffd5c770"
+          }
+        },
+        {
+          "path": "docs/procurement-study.md",
+          "category": "documentation",
+          "added": 3,
+          "deleted": 1,
+          "before": {
+            "mode": "100644",
+            "bytes": 15951,
+            "physicalLines": 185,
+            "sha256": "b460ec962c444b9928dce48047a1f99fa5e73a13a315b7380dbeb72f37585710"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 16234,
+            "physicalLines": 187,
+            "sha256": "c3472e090a84d5099e876e2d78c4697af75441ff1271bec8a928e5f45982b9c6"
+          }
+        },
+        {
+          "path": "docs/team-development-study.md",
+          "category": "documentation",
+          "added": 1,
+          "deleted": 1,
+          "before": {
+            "mode": "100644",
+            "bytes": 9159,
+            "physicalLines": 114,
+            "sha256": "6934ca7bcb3a239abe174a6649336a8c118cc9787b9509faf8f95e9ea0a5ba4e"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 9281,
+            "physicalLines": 114,
+            "sha256": "877e5f67ab9b6bc4815213838b0d99332eb3af2c0e3ef9745e06fa5d88b8c24f"
+          }
+        },
+        {
+          "path": "scripts/test-business-package.mjs",
+          "category": "tooling",
+          "added": 2,
+          "deleted": 0,
+          "before": {
+            "mode": "100644",
+            "bytes": 11197,
+            "physicalLines": 112,
+            "sha256": "b8605c75ba994ebeb21519680ba6dd58195b67dc92ebff511b838c3b48d6dbbd"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 11458,
+            "physicalLines": 114,
+            "sha256": "cce8bb09847779e5cbe9e7d6146d4d096f59437d33ddf1e3cba22d2fc6d4e197"
+          }
+        },
+        {
+          "path": "src/experiments/procurement/context.ts",
+          "category": "host-context",
+          "added": 2,
+          "deleted": 1,
+          "before": {
+            "mode": "100644",
+            "bytes": 4799,
+            "physicalLines": 60,
+            "sha256": "e377fa766e639ce9eeb96447cf06ec60cc200102ae8c49d8e0afb1882f882bbe"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 4930,
+            "physicalLines": 61,
+            "sha256": "9df34a3c327f6d51a7915cca74169e711a4ecead35059ffe47dbbc10a09ceef6"
+          }
+        },
+        {
+          "path": "src/experiments/procurement/domain.ts",
+          "category": "domain-rules",
+          "added": 56,
+          "deleted": 12,
+          "before": {
+            "mode": "100644",
+            "bytes": 34375,
+            "physicalLines": 385,
+            "sha256": "935f34d08fd6c87893796c4a68a1d43df9a4a92ef7c7d437e27fddab50514628"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 38546,
+            "physicalLines": 429,
+            "sha256": "08c47c8fe47c9251d0465edf3bfec1f0c358dc955d75d0e61976d6d394b3473d"
+          }
+        },
+        {
+          "path": "src/procurement-approval-change.test.ts",
+          "category": "tests",
+          "added": 170,
+          "deleted": 0,
+          "before": null,
+          "after": {
+            "mode": "100644",
+            "bytes": 14315,
+            "physicalLines": 170,
+            "sha256": "f185dd8660bd0207340e58d067484e0dd3bea0c448dc9c12047e1d8707d3a00a"
+          }
+        },
+        {
+          "path": "src/procurement-comparison.test.ts",
+          "category": "tests",
+          "added": 3,
+          "deleted": 3,
+          "before": {
+            "mode": "100644",
+            "bytes": 9649,
+            "physicalLines": 105,
+            "sha256": "8b589f32f4dbc45f4efbc280318a743c6e5a5c5ecc2d1a494732180a20bd8a65"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 9690,
+            "physicalLines": 105,
+            "sha256": "d94a5e37252d8afaa50c4bdffa2f4cce537650d1d6258a1f491792285fd6e5e4"
+          }
+        },
+        {
+          "path": "src/procurement-trace-comparison.test.ts",
+          "category": "tests",
+          "added": 2,
+          "deleted": 2,
+          "before": {
+            "mode": "100644",
+            "bytes": 4363,
+            "physicalLines": 61,
+            "sha256": "c288f2dfec96b0df2ab8792a463b51bb184d6f4745e1bee9f4e44b483f82eaaf"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 4390,
+            "physicalLines": 61,
+            "sha256": "d6a14e93307f60bd8611573ba8e50375946579b329aa97eeab32254aa102b825"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt-depletion",
+      "before": "f6fd925244e0973349ef1b0cba6063759e0e5f0f",
+      "after": "e6cd5a98c8b743cfd9e5b840bc0cf5d76978565c",
+      "totals": [
+        {
+          "category": "framework",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "domain-rules",
+          "changedFiles": 2,
+          "added": 23,
+          "deleted": 5
+        },
+        {
+          "category": "host-context",
+          "changedFiles": 1,
+          "added": 2,
+          "deleted": 2
+        },
+        {
+          "category": "loader-experiment",
+          "changedFiles": 2,
+          "added": 7,
+          "deleted": 6
+        },
+        {
+          "category": "koyuki-orchestration",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "plain-orchestration",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "helper-orchestration",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "persistence",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "replay",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "projection",
+          "changedFiles": 0,
+          "added": 0,
+          "deleted": 0
+        },
+        {
+          "category": "tests",
+          "changedFiles": 1,
+          "added": 175,
+          "deleted": 0
+        },
+        {
+          "category": "tooling",
+          "changedFiles": 1,
+          "added": 2,
+          "deleted": 0
+        },
+        {
+          "category": "documentation",
+          "changedFiles": 3,
+          "added": 75,
+          "deleted": 2
+        }
+      ],
+      "unchanged": [
+        {
+          "category": "framework",
+          "files": 20,
+          "digest": "caf4499345d0f91c9b5cd609e3647504b98850c80fe5dffaa1da63317414b3a2"
+        },
+        {
+          "category": "koyuki-orchestration",
+          "files": 1,
+          "digest": "2335befa7772339470eb92f392c37a1c747b1a187202a9b33dda07af55833a24"
+        },
+        {
+          "category": "plain-orchestration",
+          "files": 1,
+          "digest": "657a527c88296780bcda35b0aab57309cebae2ce1226ed0d879bd8ce3de6ed80"
+        },
+        {
+          "category": "helper-orchestration",
+          "files": 1,
+          "digest": "84ed5159ef02fabb95ea490a86171f4526a008d603f9d4ed67e5f2e689dd755a"
+        },
+        {
+          "category": "persistence",
+          "files": 2,
+          "digest": "1a41a3389c904c0ba2e23ed26055ed2fc31e09b63e656267ac0410c6d2196bb0"
+        },
+        {
+          "category": "replay",
+          "files": 3,
+          "digest": "0a15ec0ba81e77f46e3d856bc2bc0760d7cb5cac35d83560dde228aaa326f938"
+        },
+        {
+          "category": "projection",
+          "files": 3,
+          "digest": "ab861168ef05122cc9f548d221e3b736f7a8f425219e226f99dfb6f3b8022c1b"
+        }
+      ],
+      "changes": [
+        {
+          "path": "docs/lecture-acceptance.md",
+          "category": "documentation",
+          "added": 1,
+          "deleted": 1,
+          "before": {
+            "mode": "100644",
+            "bytes": 9025,
+            "physicalLines": 77,
+            "sha256": "d2c2943babe202e37cbfda98c6218b0e54e1af86ebf1021fe690c36b7915ccb1"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 9096,
+            "physicalLines": 77,
+            "sha256": "dd59a3b5803b230396f5da1a716182792080bcfe17ab6395a61292edfca40e1e"
+          }
+        },
+        {
+          "path": "docs/procurement-approval-change.md",
+          "category": "documentation",
+          "added": 1,
+          "deleted": 1,
+          "before": {
+            "mode": "100644",
+            "bytes": 5851,
+            "physicalLines": 83,
+            "sha256": "ab2fd13b95ab1246e880f0f5574474050e0f4d930be4c1e657cd4f1720b77d09"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 5925,
+            "physicalLines": 83,
+            "sha256": "3ca5648830478fcbe8f59ba42ab252c453605516c04fa871be1d321d99cef668"
+          }
+        },
+        {
+          "path": "docs/procurement-return-change.md",
+          "category": "documentation",
+          "added": 73,
+          "deleted": 0,
+          "before": null,
+          "after": {
+            "mode": "100644",
+            "bytes": 5420,
+            "physicalLines": 73,
+            "sha256": "2ab49492443225a7331b477501987a21687b70ec135cd00a22cf57b770472ed9"
+          }
+        },
+        {
+          "path": "scripts/test-business-package.mjs",
+          "category": "tooling",
+          "added": 2,
+          "deleted": 0,
+          "before": {
+            "mode": "100644",
+            "bytes": 12659,
+            "physicalLines": 121,
+            "sha256": "b3e1e9b3fc39c6d1e39a3956889be0eaa09f8c240d05172537f878f6a9531301"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 12913,
+            "physicalLines": 123,
+            "sha256": "2a2a785691e7767dfa8548702fde6be45320a3cf738aff3342ae98cc05909f6c"
+          }
+        },
+        {
+          "path": "src/experiments/procurement/context-application.ts",
+          "category": "loader-experiment",
+          "added": 3,
+          "deleted": 3,
+          "before": {
+            "mode": "100644",
+            "bytes": 1684,
+            "physicalLines": 26,
+            "sha256": "9b31f3b0071ed5e1e0fe86c91e4b00849fb64f96e796783ffe46de5226477082"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 1753,
+            "physicalLines": 26,
+            "sha256": "d8d3a0f1809998f10ba0957e38977d45e3276484403384cdff905b41dd16fe82"
+          }
+        },
+        {
+          "path": "src/experiments/procurement/context-process.ts",
+          "category": "loader-experiment",
+          "added": 4,
+          "deleted": 3,
+          "before": {
+            "mode": "100644",
+            "bytes": 2793,
+            "physicalLines": 41,
+            "sha256": "18e760d92f33ec2144d4cab670494eddd609ecda46859f4d929d0c2110afe790"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 2932,
+            "physicalLines": 42,
+            "sha256": "f16567f42d2419f10f1dd0a8715080a0a5129a6b2fdca38c2c0d4e66cb55fe98"
+          }
+        },
+        {
+          "path": "src/experiments/procurement/context.ts",
+          "category": "host-context",
+          "added": 2,
+          "deleted": 2,
+          "before": {
+            "mode": "100644",
+            "bytes": 4930,
+            "physicalLines": 61,
+            "sha256": "9df34a3c327f6d51a7915cca74169e711a4ecead35059ffe47dbbc10a09ceef6"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 5023,
+            "physicalLines": 61,
+            "sha256": "04d3d8bdd2316c643063f9d2673f7268b3209ed022375b7ac586e9942d8cc4c8"
+          }
+        },
+        {
+          "path": "src/experiments/procurement/domain.ts",
+          "category": "domain-rules",
+          "added": 2,
+          "deleted": 1,
+          "before": {
+            "mode": "100644",
+            "bytes": 38546,
+            "physicalLines": 429,
+            "sha256": "08c47c8fe47c9251d0465edf3bfec1f0c358dc955d75d0e61976d6d394b3473d"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 38656,
+            "physicalLines": 430,
+            "sha256": "effda19748552aac0939bb52e1193b55efbb06c2897a91c3688952aab09d3c4b"
+          }
+        },
+        {
+          "path": "src/experiments/procurement/inventory.ts",
+          "category": "domain-rules",
+          "added": 21,
+          "deleted": 4,
+          "before": {
+            "mode": "100644",
+            "bytes": 6613,
+            "physicalLines": 74,
+            "sha256": "4e33fd265e3697f4a96739c1be639953b098fb37e25bb271228de30e30dae5a2"
+          },
+          "after": {
+            "mode": "100644",
+            "bytes": 7944,
+            "physicalLines": 91,
+            "sha256": "c6158de1b8c3ad22e8d264076934b8ccaa645d7c986bb8dd40e8cfa6bd2a00dd"
+          }
+        },
+        {
+          "path": "src/procurement-return-change.test.ts",
+          "category": "tests",
+          "added": 175,
+          "deleted": 0,
+          "before": null,
+          "after": {
+            "mode": "100644",
+            "bytes": 14869,
+            "physicalLines": 175,
+            "sha256": "dbb1a1e0c911511c3b78f8a5b94757788bfaec6ba8a743d0aa08499582147dee"
+          }
+        }
+      ]
+    }
+  ]
+}
