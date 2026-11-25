@@ -65,7 +65,8 @@
     "check:procurement:changes": "node scripts/measure-procurement-changes.mjs --check",
     "test:procurement:changes": "node --test scripts/procurement-change-metrics.test.mjs",
     "test:onboarding:package": "node scripts/test-onboarding.mjs --verify",
-    "prepare:onboarding": "node scripts/test-onboarding.mjs --prepare"
+    "prepare:onboarding": "node scripts/test-onboarding.mjs --prepare",
+    "demo:flow": "tsx src/examples/flow-structure.ts"
   },
   "devDependencies": {
     "@types/node": "latest",

@@ -1,3 +1,4 @@
+import { registerStructure, structureOf } from './structure.js';
 import type { ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import type { Workflow } from './workflow.js';
@@ -14,5 +15,5 @@ export function defineCommand<I, C, LE, O, DE, S, SE>(definition: {
   const mutation = bindMutation({ workflow: definition.decide, operation: definition.operation, save: definition.save });
   const action = defineAction({ loadName: definition.loadName ?? `${definition.operation}:load`, load: definition.load, mutation });
   // The mutation escape hatch supports existing prepare/plan and comparison experiments.
-  return { ...action, mutation };
+  return registerStructure({ ...action, mutation }, structureOf(action));
 }

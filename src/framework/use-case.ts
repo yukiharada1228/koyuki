@@ -1,3 +1,4 @@
+import { registerStructure, structureOf } from './structure.js';
 import type { ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import type { ActionReport } from './action.js';
@@ -44,7 +45,7 @@ export function defineUseCase<I, C, LE, V, VE, const T extends readonly AnyStep[
     replay?: ReplayBoundary<I, unknown, Errors<LE, VE, T, E, SE>, RE>;
   }): unknown {
   const command = defineRequestTarget({ operation: definition.operation, loadName: definition.loadName, load: definition.load, save: definition.save }).on(definition.transition);
-  if (!definition.replay) return { run: command.run, runDetailed: command.runDetailed };
+  if (!definition.replay) return registerStructure({ run: command.run, runDetailed: command.runDetailed }, structureOf(command));
   // The public signature proves S is Execution<Output>. Erase that envelope only at composition.
   return withReplay(command as unknown as {
     run(input: I): Promise<Result<Execution<unknown>, Errors<LE, VE, T, E, SE>>>;

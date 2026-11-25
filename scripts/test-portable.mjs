@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
+import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   const transactionCalls = [];
@@ -24,6 +24,8 @@ export const result = (async () => {
   const executionSession = await executionApp.start({ sessionId: 'portable', clock: () => 0, observeExecution: event => { executionEvents.push(event); } });
   const executionResult = await executionSession.dispatch({ type: 'go', input: 3 });
   if (!executionResult.ok || executionResult.value.state.data !== 3 || executionEvents.map(event => event.kind).join(',') !== 'queued,started,step,completed' || executionEvents.some(event => event.executionId !== 'portable/1')) throw new Error('Portable execution observation failed');
+  const describedFlow = workflow('portable-rule', n => ok(n)).then('portable-next', n => ok(n + 1));
+  if (describeFlow(describedFlow).nodes.length !== 2 || !flowMermaid(describedFlow).startsWith('flowchart TD')) throw new Error('Portable static flow description failed');
   const firstFailure = err('Invalid');
   if (combine([ok(1), firstFailure, err('Later')]) !== firstFailure) throw new Error('Tuple failure changed');
   const tuple = combine([ok('label'), ok(2)]);

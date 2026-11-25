@@ -1,3 +1,4 @@
+import { registerStructure, structureOf, structureSequence, structureStep, emptyStructure } from './structure.js';
 import { ok, type Result } from './result.js';
 import { observeEvaluation, type Workflow, type Trace, type StageObserver, type WorkflowCapture } from './workflow.js';
 import { createObservation, type ObservationReport } from './observation.js';
@@ -23,16 +24,16 @@ class Process<I, O, E> {
   readonly runDetailed: ReturnType<typeof detailed<I, O, E>>;
   readonly run = async (input: I): Promise<Result<O, E>> => (await this.runDetailed(input)).result;
   through<N, F>(flow: Workflow<O, N, F> & { readonly run: (value: O) => Result<N, F> }): Process<I, N, E | F> {
-    return new Process<I, N, E | F>(async (input, observe) => {
+    return registerStructure(new Process<I, N, E | F>(async (input, observe) => {
       const prior = await this.evaluate(input, observe);
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace };
       const next = observe ? flow[observeEvaluation](prior.result.value, observe) : flow.inspect(prior.result.value);
       return { result: next.result, trace: [...prior.trace, ...next.trace] };
-    });
+    }), structureSequence(structureOf(this), structureOf(flow)));
   }
   /** An explicit IO boundary; the adapter returns the next workflow's complete input. */
   effect<N, F>(name: string, perform: ((value: O) => Promise<Result<N, F>>) | { readonly runDetailed: (value: O) => Promise<ActionReport<N, F>> }): Process<I, N, E | F> {
-    return new Process<I, N, E | F>(async (input, observe) => {
+    return registerStructure(new Process<I, N, E | F>(async (input, observe) => {
       const prior = await this.evaluate(input, observe);
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace };
       const receive = observe?.(name, prior.result.value);
@@ -43,7 +44,7 @@ class Process<I, O, E> {
       const { result } = detail;
       receive?.(result);
       return { result, trace: [...prior.trace, ...detail.trace, { step: name, status: result.ok ? 'ok' : 'error' }] };
-    });
+    }), structureSequence(structureOf(this), ...(typeof perform === 'function' ? [] : [structureOf(perform)]), structureStep(name, 'effect')));
   }
   /** The bound mutation owns its pure final decision and single save. */
   commit<S, F>(mutation: { readonly runDetailed: (input: NoInfer<O>) => Promise<ActionReport<S, F>> }) {
@@ -57,10 +58,10 @@ class Process<I, O, E> {
       return { ...next, trace: [...prior.trace, ...next.trace] };
     });
     async function run(input: I): Promise<Result<S, E | F>> { return (await runDetailed(input)).result; }
-    return { run, runDetailed };
+    return registerStructure({ run, runDetailed }, structureSequence(structureOf(this), structureOf(mutation)));
   }
 }
 /** A process executes effects on run; it has no pretend-pure prepare/inspect API. */
 export function process<I>() {
-  return new Process<I, I, never>(async input => ({ result: ok(input), trace: [] }));
+  return registerStructure(new Process<I, I, never>(async input => ({ result: ok(input), trace: [] })), emptyStructure);
 }

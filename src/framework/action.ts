@@ -1,3 +1,4 @@
+import { registerStructure, structureOf, structureSequence, loadStructure } from './structure.js';
 import type { Result } from './result.js';
 import type { Trace } from './workflow.js';
 export interface ActionReport<O, E> {
@@ -53,5 +54,5 @@ export function defineAction<I, C, LE, O, ME>(config: {
     return { ...detail, trace: [...trace, ...detail.trace] };
   }
   async function run(input: I): Promise<Result<O, LE | ME>> { return (await runDetailed(input)).result; }
-  return { run, runDetailed };
+  return registerStructure({ run, runDetailed }, structureSequence(loadStructure(config.load, config.loadName), structureOf(config.mutation)));
 }

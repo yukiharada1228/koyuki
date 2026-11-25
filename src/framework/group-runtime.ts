@@ -1,3 +1,4 @@
+import { registerStructure, structureOf, structureSequence, structureStep, loadStructure } from './structure.js';
 import type { ActionLoad } from './action.js';
 // Internal composition shared by declared transitions and the unpublished API study.
 import type { Result } from './result.js';
@@ -31,10 +32,10 @@ export function createGroupRuntime<N extends string, I, O, S, SE, RE, const D ex
       const context = (request: J): GroupExecution<N, J> => Object.freeze({ name, operation: id, request });
       const forRequest = (request: J) => defineCommand({ operation: id, loadName: entry.loadName, load: entry.load,
         decide: entry.decide, save: (change: O) => save(change, context(request)) });
-      const command = {
+      const command = registerStructure({
         run: (request: J) => forRequest(request).run(request),
         runDetailed: (request: J) => forRequest(request).runDetailed(request),
-      };
+      }, structureSequence(loadStructure(entry.load, entry.loadName ?? `${id}:load`), structureOf(entry.decide), structureStep(id, 'save')));
       // The public definition checks the persisted Execution envelope when replay is enabled.
       const result = lookup ? withReplay(command as unknown as {
         run(input: J): Promise<Result<Execution<Value<S>>, LE | DE | SE>>;

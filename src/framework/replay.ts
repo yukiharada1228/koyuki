@@ -1,3 +1,4 @@
+import { registerStructure, structureOf, structureSequence, structureStep, structureBranch, emptyStructure } from './structure.js';
 import type { OperationReport, CheckedDetails } from './execution.js';
 import { snapshotData } from './snapshot.js';
 import { err, ok, type Result } from './result.js';
@@ -68,10 +69,12 @@ export function withReplay<I, O, E, RE>(command: {
     if (!raced.ok) return report(raced);
     return report(raced.value.kind === 'found' ? ok({ kind: 'replayed', value: raced.value.value }) : result);
   }
-  return {
+  return registerStructure({
     run: async (input: I): Promise<Result<Execution<O>, E | RE | ReplayInputError>> => (await execute(input, false)).result,
     runDetailed: (input: I): Promise<ReplayReport<O, E, RE>> => execute(input, true),
-  };
+  }, structureSequence(structureStep('replay.snapshot'), structureStep('replay.lookup:before', 'effect'),
+    structureBranch('replay.cached', emptyStructure, structureSequence(structureOf(command),
+      structureBranch('replay.command-failed', structureBranch('replay.resolve-after', structureStep('replay.lookup:after-error', 'effect'), emptyStructure), emptyStructure)))));
 }
 
 /** Preserve the current projection on replay. Refreshing stale projections is host-owned. */

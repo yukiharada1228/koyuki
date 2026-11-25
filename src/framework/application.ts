@@ -1,3 +1,4 @@
+import { registerStructure, structureOf } from './structure.js';
 import { executionSession, type OperationReport, type ExecutionContext, type ExecutionOptions, type CheckedDetails } from './execution.js';
 import { snapshotData } from './snapshot.js';
 import { defineProgram, next, effect } from './program.js';
@@ -9,7 +10,7 @@ export interface Operation<S, I, O, E> {
 }
 export function operation<S, I, O, E>(command: { readonly run: (input: I) => Promise<Result<O, E>>; readonly runDetailed?: (input: NoInfer<I>) => Promise<OperationReport<NoInfer<O>, NoInfer<E>>> }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, O, E> {
   const detailed = command.runDetailed;
-  return { run: command.run.bind(command), reduce, ...(detailed ? { runDetailed: detailed.bind(command) } : {}) };
+  return registerStructure({ run: command.run.bind(command), reduce, ...(detailed ? { runDetailed: detailed.bind(command) } : {}) }, structureOf(command));
 }
 type RunCall<T> = T extends { run: infer F } ? F : never;
 // A runtime-selected union command must accept the request in every branch.

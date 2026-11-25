@@ -1,3 +1,4 @@
+import { registerStructure, structureOf } from './structure.js';
 import type { ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
 import { workflow, evaluateRule, type WorkflowCapture, type Rule, type StageObserver } from './workflow.js';
@@ -151,7 +152,7 @@ export function business(definition: object) {
     };
     const run = (input: unknown) => command.run(input);
     // Works both as expense.approve(input) and as a command for operations(...).
-    Object.defineProperty(commands, name, { value: Object.freeze(Object.assign(run, command, { runDetailed })), enumerable: true });
+    Object.defineProperty(commands, name, { value: registerStructure(Object.freeze(Object.assign(run, command, { runDetailed })), structureOf(command)), enumerable: true });
   }
   return Object.freeze(commands);
 }

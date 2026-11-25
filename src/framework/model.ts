@@ -1,3 +1,4 @@
+import { registerStructure, structureOf, structureSequence, structureStep, loadStructure } from './structure.js';
 import type { ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import { Workflow, evaluateRule, type Rule } from './workflow.js';
@@ -27,7 +28,7 @@ export function transition<I, V, VE, const T extends readonly AnyStep[], O, E>(d
 }): Workflow<I, O, VE | Failure<T[number]> | E> {
   // Type checking above proves adjacency. Runtime iteration erases only heterogeneous intermediate states.
   const stages: readonly AnyStep[] = [definition.validate, ...definition.require, definition.evolve];
-  return new Workflow(definition.validate.name, stages.map(stage => stage.name), (input, observe) => {
+  return registerStructure(new Workflow(definition.validate.name, stages.map(stage => stage.name), (input, observe) => {
     let value: unknown = input;
     const trace: { step: string; status: 'ok' | 'error' }[] = [];
     for (const stage of stages) {
@@ -38,7 +39,7 @@ export function transition<I, V, VE, const T extends readonly AnyStep[], O, E>(d
       value = result.value;
     }
     return { result: { ok: true, value: value as O }, trace };
-  });
+  }), structureSequence(...stages.map((stage, index) => structureStep(stage.name, index === 0 ? 'validate' : index === stages.length - 1 ? 'evolve' : 'require'))));
 }
 /** Register an operation's IO at the model boundary, then attach pure event behavior. */
 export function defineTarget<I, C, LE, O, S, SE>(adapter: {
@@ -54,7 +55,7 @@ export function defineTarget<I, C, LE, O, S, SE>(adapter: {
     }) {
       const decide = transition(definition);
       const command = defineCommand({ ...adapter, decide });
-      return { ...command, decision: decide };
+      return registerStructure({ ...command, decision: decide }, structureOf(command));
     },
   };
 }
@@ -85,11 +86,11 @@ export function defineRequestTarget<I, C, LE, O, S, SE>(adapter: {
         return defineCommand({ operation, loadName, load, decide: decision,
           save: (value: O) => save(value, execution) });
       }
-      return {
+      return registerStructure({
         decision,
         run: (request: I) => forRequest(request).run(request),
         runDetailed: (request: I) => forRequest(request).runDetailed(request),
-      };
+      }, structureSequence(loadStructure(load, loadName ?? `${operation}:load`), structureOf(decision), structureStep(operation, 'save')));
     },
   };
 }
