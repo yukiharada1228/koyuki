@@ -50,6 +50,7 @@ try {
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
   writeFileSync(join(consumer, 'branch-narrowing.test.ts'), readFileSync(join(root, 'src/branch-narrowing.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'workflow-input.test.ts'), readFileSync(join(root, 'src/workflow-input.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'application-receiver.test.ts'), readFileSync(join(root, 'src/application-receiver.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);

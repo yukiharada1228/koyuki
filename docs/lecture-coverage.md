@@ -192,3 +192,7 @@ hostの永続化責任・予約取込全仕様の未検証を残している。
 型検査が宣言ファイルで弱まるケースを確認・修正した。Workflow、commandのload→decide、
 mutation binding、Application操作、通常/再送commandの戻り値で、
 入力範囲の不正な拡大を検査する。これを業務仕様・純粋性の証明とは扱わない。
+
+Applicationへの操作登録では、通常のオブジェクトメソッドのreceiverを保持するよう修正した。
+[登録時の契約](application-development.md)を明記し、単体・一括、通常・再送の4経路で
+実行・失敗停止・投影を確認する。業務関数を登録するためだけのラッパーを利用者に要求しない。

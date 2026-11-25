@@ -90,3 +90,16 @@ NodeグローバルなしのVMでも入力の所有権を検証する。
 認可、状態の不変条件、DBトランザクション、receiptとの原子保存、要求IDの意味は利用者の業務・adapterの責務。
 HonoはHTTP境界に置ける。永続的な長期処理やサービス間のexactly-onceをこのインプロセスloopで保証しない。
 これはReact/Elmの実行管理に着想した業務向け設計で、UIレンダリングや任意の副作用の自動化を行うものではない。
+
+## オブジェクトメソッドをそのまま登録する
+
+operation / operations / replayOperation / replayOperationsは、登録したcommandを
+元のreceiverに結び付けて呼び出す。例えば`run`が`this.repository`を参照するオブジェクトでも、
+利用者が`input => command.run(input)`のラッパーを書く必要はない。
+登録時にはrunを実行しない。メソッドの参照は登録時に保持し、呼出し時のthisは元のcommandとなる。
+command自体をcloneやfreezeする契約ではない。
+
+[src/application-receiver.test.ts](../src/application-receiver.test.ts)で単体・一括の通常操作と
+再送対応操作を検査する。成功時の投影、業務失敗時に投影しないこと、
+replayed時に過去の成功値で投影を進めないことを保つ。
+この修正は外部オブジェクトの純粋性・永続化・再試行方針を保証するものではない。

@@ -904,7 +904,8 @@
         "docs/business.md",
         "src/framework/program.ts",
         "src/framework/application.ts",
-        "docs/business-change-study.md"
+        "docs/business-change-study.md",
+        "src/application-receiver.test.ts"
       ],
       "remaining": [
         "React/Elmと同等の自然な開発体験・独立利用者の学習負担は未測定。一部generic推論の制限とhost側I/O設定は残る。"

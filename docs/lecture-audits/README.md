@@ -222,3 +222,10 @@ false側はExcludeによる型であり、任意の集合の厳密な補集合�
 load→decide・mutation binding・Application操作の入力も検査対象にした。
 readonly関数プロパティで契約を保持し、実tarballの宣言で不正接続の拒否を検査する。
 anyや虚偽の型ガード、外部データ・業務仕様の正しさまでは証明しない。
+
+## Applicationへの通常メソッドの接続
+
+登録時にcommand.runだけを切り離すことでthisが失われ、通常メソッドが失敗する不具合を再現・修正した。
+[Applicationの登録契約](../application-development.md)と
+[4経路の回帰検査](../../src/application-receiver.test.ts)に記録する。
+成功時の投影・期待失敗時の状態保持・再送時の投影抑止は維持する。

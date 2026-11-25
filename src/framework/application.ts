@@ -5,7 +5,7 @@ export interface Operation<S, I, O, E> {
   readonly reduce: (state: S, output: O) => S;
 }
 export function operation<S, I, O, E>(command: { readonly run: (input: I) => Promise<Result<O, E>> }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, O, E> {
-  return { run: command.run, reduce };
+  return { run: command.run.bind(command), reduce };
 }
 type CommandInput<T> = T extends { run(input: infer I): unknown } ? I : never;
 type CommandOutput<T> = T extends { run(input: never): Promise<Result<infer O, unknown>> } ? O : never;
