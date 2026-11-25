@@ -1,10 +1,15 @@
 import { DatabaseSync, type SQLOutputValue } from 'node:sqlite';
-import { ok, err, type Result } from '../framework/index.js';
+import { createSyncTransaction, ok, err, type Result } from '../framework/index.js';
 import { restoreExpense, validExpenseChange, type Actor, type Change, type Draft, type ExpenseState, type Input, type Loaded, type RejectInput } from './domain.js';
 import type { ExpenseRepository, LoadError, SaveError, StorageError } from './repository.js';
 type Row = Record<string, SQLOutputValue>;
 export class SqliteExpenses implements ExpenseRepository {
   protected readonly db: DatabaseSync;
+  protected readonly transaction = createSyncTransaction({
+    begin: () => { this.db.exec('BEGIN IMMEDIATE'); },
+    commit: () => { this.db.exec('COMMIT'); },
+    rollback: () => { this.db.exec('ROLLBACK'); },
+  });
   constructor(path: string) {
     this.db = new DatabaseSync(path);
     try {
@@ -52,15 +57,10 @@ export class SqliteExpenses implements ExpenseRepository {
   async loadReject(input: RejectInput, actor: Actor) { return this.loadInput(input, actor); }
   async save(change: Change): Promise<Result<ExpenseState, SaveError>> {
     try {
-      this.db.exec('BEGIN IMMEDIATE');
-      const result = this.commit(change);
-      if (result.ok) this.db.exec('COMMIT'); else this.db.exec('ROLLBACK');
-      return result;
-    } catch {
-      try { this.db.exec('ROLLBACK'); } catch { /* BEGIN may have failed. */ }
-      return err({ kind: 'RepositoryUnavailable' });
-    }
+      return this.transaction.run(() => this.commit(change));
+    } catch { return err({ kind: 'RepositoryUnavailable' }); }
   }
+
   protected commit(change: Change): Result<ExpenseState, SaveError> {
     const current = this.read(change.next.id); if (!current.ok) return current.error.kind === 'NotFound' ? err({ kind: 'SaveConflict' }) : err(current.error);
     const next = restoreExpense(change.next); if (!next.ok) return next;

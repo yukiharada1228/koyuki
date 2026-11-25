@@ -57,14 +57,10 @@ export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseRepla
   }
   async saveRequest(request: ExpenseRequest, change: Change): Promise<Result<Execution<ExpenseState>, ReplayStorageError>> {
     try {
-      this.db.exec('BEGIN IMMEDIATE');
-      const result = this.commitRequest(request, change);
-      this.db.exec(result.ok ? 'COMMIT' : 'ROLLBACK'); return result;
-    } catch {
-      try { this.db.exec('ROLLBACK'); } catch { /* BEGIN itself may fail. */ }
-      return err({ kind: 'RepositoryUnavailable' });
-    }
+      return this.transaction.run(() => this.commitRequest(request, change));
+    } catch { return err({ kind: 'RepositoryUnavailable' }); }
   }
+
   private commitRequest(request: ExpenseRequest, change: Change): Result<Execution<ExpenseState>, ReplayStorageError> {
     const cached = this.receipt(request); if (!cached.ok) return cached;
     if (cached.value.kind === 'found') return ok({ kind: 'replayed', value: cached.value.value });

@@ -1,6 +1,6 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { ok, err, type Result } from '../framework/result.js';
+import { createSyncTransaction, TransactionFailure, ok, err, type Result } from '../framework/index.js';
 import { fingerprint } from './identity.js';
 import { normalizeLabel, restoreTag, type TagData, type RawTag, type TagInput, type UpdateInput, type CreateCommand, type UpdateCommand, type CreatedTag, type UpdatedTag, type PersistedTag } from './domain.js';
 import type { TagRepository, CreateLoadError, UpdateLoadError, SaveError } from './repository.js';
@@ -9,6 +9,11 @@ import type { QuotaError } from './domain.js';
 type Row = Record<string, unknown>;
 export class SqliteTagRepository implements TagRepository, LifecycleRepository {
   private readonly db: DatabaseSync;
+  private readonly transaction = createSyncTransaction<'DEFERRED' | 'IMMEDIATE'>({
+    begin: mode => { this.db.exec(`BEGIN ${mode ?? 'IMMEDIATE'}`); },
+    commit: () => { this.db.exec('COMMIT'); },
+    rollback: () => { this.db.exec('ROLLBACK'); },
+  });
   constructor(path: string, options: { maxTags?: number } = {}) {
     this.db = new DatabaseSync(path);
     this.db.exec(`PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 1000;
@@ -25,6 +30,7 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
       const columns = this.all('PRAGMA table_info(tags)');
       if (!columns.some(column => column.name === 'archived')) this.db.exec('ALTER TABLE tags ADD COLUMN archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0,1))');
       this.db.exec('PRAGMA user_version = 2');
+      return ok(undefined);
     });
     const max = options.maxTags ?? 3;
     if (!Number.isSafeInteger(max) || max <= 0) { this.db.close(); throw new Error('InvalidMaxTags'); }
@@ -34,10 +40,8 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
   close(): void { this.db.close(); }
   private one(sql: string, ...params: SQLInputValue[]): Row | undefined { return this.db.prepare(sql).get(...params) as Row | undefined; }
   private all(sql: string, ...params: SQLInputValue[]): Row[] { return this.db.prepare(sql).all(...params) as Row[]; }
-  private tx<T>(work: () => T, mode: 'DEFERRED' | 'IMMEDIATE' = 'IMMEDIATE'): T {
-    this.db.exec(`BEGIN ${mode}`);
-    try { const result = work(); this.db.exec('COMMIT'); return result; }
-    catch (error) { this.db.exec('ROLLBACK'); throw error; }
+  private tx<R extends Result<unknown, unknown>>(work: () => R, mode: 'DEFERRED' | 'IMMEDIATE' = 'IMMEDIATE'): R {
+    return this.transaction.run(work, mode);
   }
   private hydrate(row: Row | undefined) {
     if (!row || (row.archived !== 0 && row.archived !== 1)) return err({ kind: 'CorruptStoredTag' as const });
@@ -105,6 +109,7 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
     this.db.prepare('INSERT INTO mutation_receipts(operation_id,signature,output_json) VALUES(?,?,?)').run(key, fingerprint(value), JSON.stringify(value.data));
   }
   private failure(error: unknown, label: string): Result<never, SaveError> {
+    if (error instanceof TransactionFailure && error.phase === 'work') return this.failure(error.cause, label);
     if (error instanceof Error && error.message.includes('UNIQUE constraint failed: tags.group_id, tags.label_key')) return err({ kind: 'DuplicateLabel', label });
     return err({ kind: 'RepositoryUnavailable' });
   }

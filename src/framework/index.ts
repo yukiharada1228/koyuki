@@ -22,3 +22,5 @@ export type { GroupExecution } from './use-case-group.js';
 export { business } from './business.js';
 export { collectEffects } from './collection-effects.js';
 export type { CaptureFailure, ObservationReport } from './observation.js';
+export { createSyncTransaction, TransactionFailure } from './transaction.js';
+export type { SyncTransactionDriver, TransactionEvent } from './transaction.js';

@@ -6,9 +6,14 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
+import { createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
+  const transactionCalls = [];
+  const transaction = createSyncTransaction({ begin() { transactionCalls.push('begin'); }, commit() { transactionCalls.push('commit'); }, rollback() { transactionCalls.push('rollback'); } });
+  const transactionResult = transaction.run(() => ok(7));
+  transaction.run(() => err('Denied'));
+  if (!transactionResult.ok || transactionResult.value !== 7 || transactionCalls.join(',') !== 'begin,commit,begin,rollback') throw new Error('Portable transaction failed');
   const firstFailure = err('Invalid');
   if (combine([ok(1), firstFailure, err('Later')]) !== firstFailure) throw new Error('Tuple failure changed');
   const tuple = combine([ok('label'), ok(2)]);
