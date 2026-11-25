@@ -168,14 +168,17 @@
       "page": 16,
       "topic": "非同期照合と状態分岐",
       "status": "partial",
-      "assessment": "途中I/OはProcess、型の分岐は通常TSのswitchまたはWorkflow.branchで接続する。businessの同期列へPromiseを混ぜない。",
+      "assessment": "非同期の照合後、状態Unionを通常TSのswitchで分解して作成・更新・変更なしを選ぶ統合例を既存Process/Workflowで検証した。businessの同期列へPromiseは混ぜない。",
       "evidence": [
         "src/framework/process.ts",
         "src/framework/workflow.ts",
-        "src/branch.test.ts"
+        "src/branch.test.ts",
+        "src/examples/customer-import/application.ts",
+        "src/customer-import.test.ts",
+        "docs/customer-import-study.md"
       ],
       "remaining": [
-        "資料の予約取込の全業務仕様を再現した実例ではない。異なる設計での型の分岐と途中I/Oの統合例をさらに検証する。"
+        "名寄せの永続DB競合と、資料の予約取込・テーブル割当・影響スロット探索の全仕様は未検証。一般的なDX優位の測定はない。"
       ]
     },
     {
@@ -350,6 +353,16 @@
         "docs/lecture-decks.json"
       ],
       "remaining": []
+    }
+  ],
+  "followUps": [
+    {
+      "topic": "非同期照合後のUnion分岐",
+      "evidence": [
+        "docs/customer-import-study.md",
+        "src/customer-import.test.ts"
+      ],
+      "scope": "Original PDF review base is unchanged; integration example added subsequently, without reproducing the full reservation product."
     }
   ]
 }

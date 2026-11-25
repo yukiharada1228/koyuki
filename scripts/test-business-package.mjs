@@ -43,6 +43,11 @@ try {
   writeFileSync(join(consumer, 'collection-effects.test.ts'), readFileSync(join(root, 'src/collection-effects.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'workflow-observation.test.ts'), readFileSync(join(root, 'src/workflow-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-observation.test.ts'), readFileSync(join(root, 'src/business-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  mkdirSync(join(consumer, 'customer-import'));
+  for (const file of ['domain.ts', 'application.ts']) writeFileSync(join(consumer, 'customer-import', file),
+    readFileSync(join(root, 'src/examples/customer-import', file), 'utf8').replace("'../../framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'customer-import.test.ts'), readFileSync(join(root, 'src/customer-import.test.ts'), 'utf8')
+    .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);
