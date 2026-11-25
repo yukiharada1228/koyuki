@@ -9,6 +9,45 @@ import { analyzeDeclarations } from './check-declarations.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const analyze = source => analyzeDeclarations([{ file: 'sample.ts', source }]);
 
+test('Process diagnostics connect explicit IO, through Workflow and bound commit labels', () => {
+  const result = analyze(`import {process, workflow, bindMutation} from 'koyuki';
+const flow = workflow('validate', rule);
+const mutation = bindMutation({workflow: flow, operation:'save.v1', save});
+const command = process().through(flow).effect('validate', io).effect('save.v1', io).commit(mutation);`);
+  assert.deepEqual(result.diagnostics.map(item => item.code), Array(3).fill('AMBIGUOUS_PROCESS_LABEL'));
+  assert(result.diagnostics.every(item => item.related.length === 1 && item.severity === 'warning'));
+  assert.deepEqual(result.unresolved, []);
+});
+
+test('reused Workflow references identify distinct Process connection sites', () => {
+  const result = analyze(`import {process as io, workflow} from 'koyuki';
+const flow = workflow('validate', rule);
+const command = io().through(flow)
+  .through(flow);`);
+  assert.equal(result.diagnostics.length, 1);
+  const item = result.diagnostics[0];
+  assert.equal(item.code, 'AMBIGUOUS_PROCESS_LABEL');
+  assert.equal(item.line, 4); assert.equal(item.related[0].line, 3);
+});
+
+test('Process diagnostics do not guess imported metadata, dynamic labels or unrelated methods', () => {
+  const result = analyze(`import * as k from 'koyuki';
+const flow = k.process().through(imported).effect(dynamic(), io).commit(importedCommand);
+const unrelated = other.process().effect('same', io).effect('same', io);
+function hidden(k) { return k.process().effect('same', io).effect('same', io); }`);
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.unresolved.length, 3);
+});
+
+test('shipping Process declarations retain unresolved imported Workflow metadata without executing ports', async () => {
+  const file = 'src/shipping/feature.ts';
+  const result = analyzeDeclarations([{ file, source: await readFile(join(root, file), 'utf8') }]);
+  assert.equal(result.checkedDeclarations, 2); assert.equal(result.checkedOperationIds, 1);
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.unresolved.length, 3);
+  assert(result.unresolved.every(item => /Workflow/.test(item.reason)));
+});
+
 test('workflow chains diagnose ambiguous trace labels through const references and explicit branches', () => {
   const result = analyze(`import {workflow as flow} from 'koyuki';
 const base = flow('load', neverExecute);
@@ -186,17 +225,18 @@ test('CLI never evaluates imports, top-level effects, or getters; JSON and stric
   try {
     const source = join(temporary, 'source.ts'), marker = join(temporary, 'executed');
     await writeFile(source, `import {writeFileSync} from 'node:fs';
-import {defineTarget,defineApplication,workflow} from 'koyuki';
+import {defineTarget,defineApplication,workflow,process as io} from 'koyuki';
 import './does-not-exist.js';
 writeFileSync(${JSON.stringify(marker)}, 'executed');
 throw new Error('must not run');
 const a=defineTarget({operation:'same'}); const b=defineTarget({operation:'same'});
 const flow=workflow('stage', () => { throw Error('rule must not execute'); })
   .then('stage', (() => { writeFileSync(${JSON.stringify(marker)}, 'argument'); throw Error('argument must not execute'); })());
+const effect=io().effect('io', (() => { writeFileSync(${JSON.stringify(marker)}, 'port'); throw Error('port must not execute'); })()).effect('io', neverRun);
 defineApplication({get operations(){writeFileSync(${JSON.stringify(marker)}, 'getter');return {};}});`);
     const run = flags => spawnSync(process.execPath, ['scripts/check-declarations.mjs', ...flags, source], { cwd: root, encoding: 'utf8' });
     const plain = run(['--json']); assert.equal(plain.status, 0, plain.stderr);
-    const report = JSON.parse(plain.stdout); assert.equal(report.diagnostics.length, 2); assert.equal(report.unresolved.length, 1);
+    const report = JSON.parse(plain.stdout); assert.equal(report.diagnostics.length, 3); assert.equal(report.unresolved.length, 1);
     assert.equal(run(['--strict']).status, 1);
     await assert.rejects(access(marker));
     await writeFile(source, 'const broken = (');

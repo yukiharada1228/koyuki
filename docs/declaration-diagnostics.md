@@ -9,6 +9,7 @@ npm run check:declarations -- src/tags/model.ts src/tags/events.ts src/expenses/
 npm run check:declarations -- --json src/expenses/application.ts
 npm run check:declarations -- --json src/experiments/procurement/application.ts
 npm run check:declarations -- --json src/shipping/domain.ts
+npm run check:declarations -- --json src/shipping/feature.ts
 npm run test:declarations
 ```
 
@@ -24,6 +25,7 @@ CLI自体はリポジトリの開発ツールであり、公開npm packageのbin
 | --- | --- | --- |
 | AMBIGUOUS_STEP_LABEL | warning | 同じdefineTransition内で同名の段階がある。traceの名前の対応が曖昧になる。業務処理の誤りという証明ではない |
 | AMBIGUOUS_WORKFLOW_LABEL | warning | 静的に接続したWorkflowの段階名が重複する。分岐の別経路も含むため、同じ実行で両方が走るという意味ではない |
+| AMBIGUOUS_PROCESS_LABEL | warning | 静的なProcess内で、effect・接続したWorkflow・bindMutationの保存操作IDのtrace名が重複する |
 | REPEATED_OPERATION_ID | warning | 選択したファイル集合の別宣言で同じ明示operation IDを使う。共有する保存境界なら意図的な場合もある |
 | RESERVED_APPLICATION_OPERATION | error | 静的に読めるApplication操作テーブルがdismissや@始まりの予約名を使う |
 | PARSE_ERROR | error | ソースを構文解析できない。TypeScriptによる型チェックの代わりではない |
@@ -65,8 +67,19 @@ Workflowでは、既知のimportの`workflow(name, rule)`を起点とする`then
 動的な名前・importされた分岐の実体・循環参照・展開上限は未解決として残す。
 展開は一つの構成につき1024個のconstruction callまでで、無制限な全展開ではない。
 未知のオブジェクトのthen/branchを、メソッド名だけでWorkflowと取り違えない。
-任意のメソッド・Process・関数内部・live spanの名前全体を検査する機能ではない。
+任意のメソッド・関数内部・live spanの名前全体を検査する機能ではない。
 送料の3つのWorkflowでも、業務関数やpredicateを実行せず診断・未解決とも0を確認する。
+
+Processは既知のimportの`process()`を起点として、`through`・`effect`・`commit`を読む。
+`through`へ渡すローカルWorkflowの名前と、`effect`自身の明示名を接続する。
+`commit`はローカルの`bindMutation`のWorkflowと保存操作IDを読む。
+同じWorkflowを再利用する場合、二つのthroughの参照位置を報告する。
+WorkflowとProcessで共通の展開予算を使い、一つの構成につき1024 construction callで制限する。
+import先のWorkflow・不明なcommit・動的effect名は、位置付きの未解決として残す。
+effect・save・projectorは実行せず、その内部traceや任意の詳細loaderは解析しない。
+Processのlive観測で使うcommit scope名を、返却traceの段階名と混ぜない。
+送料のfeatureでは保存操作IDを検査し、importされた3つのWorkflowは未解決として報告する。
+domainを別途検査しても、ファイル間の接続まで解決できたという意味にはしない。
 
 検査はソース上に書いた定義と静的なconst参照の展開であり、実際に到達するコードや、
 オブジェクトの後続変更・任意の別名経由の変更を解析した結果ではない。
@@ -76,7 +89,7 @@ Workflowでは、既知のimportの`workflow(name, rule)`を起点とする`then
 分岐・状態の網羅性、関数本体の純粋性や業務ルールの正しさは証明しない。
 このためIssue #6全体の完了とはしない。
 
-[18件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
+[22件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
 未解決、実例に加え、対象ファイルへ副作用・throw・存在しないimport・getterを置いても
 それらを実行しないことを確認する。CIのcore jobでも継続する。
 購買の25操作には、独立した期待ID一覧と重複する宣言をテスト用に追加し、

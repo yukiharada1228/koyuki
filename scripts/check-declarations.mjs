@@ -54,24 +54,63 @@ function fields(path) {
   return result;
 }
 
-// Only explicit Workflow construction is recognized. Never infer method ownership
+// Only explicit framework construction is recognized. Never infer method ownership
 // from a method name alone, or inspect a predicate/rule body.
-function rootedWorkflow(candidate) {
+function rootedComposition(candidate, factory = 'workflow', methods = ['then', 'branch']) {
   const seen = new Set();
   for (let path = resolveValue(candidate); path?.isCallExpression() && !seen.has(path.node);) {
     seen.add(path.node);
     const callee = unwrap(path.get('callee'));
-    if (api(callee) === 'workflow') return true;
+    if (api(callee) === factory) return true;
     if (!callee?.isMemberExpression()) return false;
     const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
-    if (method !== 'then' && method !== 'branch') return false;
+    if (!methods.includes(method)) return false;
     path = resolveValue(callee.get('object'));
   }
   return false;
 }
+
+function processLabels(candidate, ancestors = new Set(), budget = { left: 1024 }, provenRoot = false) {
+  const path = resolveValue(candidate);
+  if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedComposition(path, 'process', ['through', 'effect', 'commit'])) return;
+  if (--budget.left < 0) return { labels: [], nodes: [path.node], unresolved: [{ path, reason: 'Process exceeds the static expansion limit of 1024 construction calls' }] };
+  if (api(path.get('callee')) === 'process') return { labels: [], nodes: [path.node], unresolved: [] };
+  const next = new Set(ancestors); next.add(path.node);
+  const callee = unwrap(path.get('callee')), args = path.get('arguments');
+  const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
+  const result = processLabels(callee.get('object'), next, budget, true);
+  if (!result) return;
+  const appendWorkflow = (flow, site) => {
+    const metadata = flow && workflowLabels(flow, next, budget);
+    if (!metadata) result.unresolved.push({ path: site, reason: 'Process Workflow is not a statically resolved local declaration' });
+    else {
+      // A reused local Workflow must identify the two connection sites, rather
+      // than report the same original label literal as both locations.
+      result.labels.push(...metadata.labels.map(item => ({ ...item, path: unwrap(site)?.isIdentifier() ? site : item.path })));
+      result.unresolved.push(...metadata.unresolved); result.nodes.push(...metadata.nodes);
+    }
+  };
+  if (method === 'through') appendWorkflow(args[0], args[0] ?? path);
+  else if (method === 'effect') {
+    const label = literal(resolveValue(args[0]));
+    if (label === undefined) result.unresolved.push({ path, reason: 'Process effect label is dynamic' });
+    else result.labels.push({ label, path: args[0] });
+  } else if (method === 'commit') {
+    const mutation = resolveValue(args[0]);
+    const definition = mutation?.isCallExpression() && api(mutation.get('callee')) === 'bindMutation' && fields(mutation.get('arguments')[0]);
+    if (!definition) result.unresolved.push({ path: args[0] ?? path, reason: 'Process commit is not a statically resolved bindMutation declaration' });
+    else {
+      appendWorkflow(definition.get('workflow'), args[0] ?? path);
+      const operation = definition.get('operation'), label = operation && literal(resolveValue(operation));
+      if (label === undefined) result.unresolved.push({ path: operation ?? path, reason: 'Process commit operation label is dynamic or absent' });
+      else result.labels.push({ label, path: operation });
+    }
+  }
+  result.nodes.push(path.node); return result;
+}
 function workflowLabels(candidate, ancestors = new Set(), budget = { left: 1024 }, provenRoot = false) {
   const path = resolveValue(candidate);
-  if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedWorkflow(path)) return;
+  if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedComposition(path)) return;
   if (--budget.left < 0) return { labels: [], nodes: [path.node], unresolved: [{ path, reason: 'Workflow exceeds the static expansion limit of 1024 construction calls' }] };
   const next = new Set(ancestors); next.add(path.node);
   const callee = unwrap(path.get('callee'));
@@ -120,23 +159,24 @@ export function analyzeDeclarations(files) {
     let ast;
     try { ast = parse(source, { sourceType: 'module', sourceFilename: file, plugins: ['typescript', ...(/\.[jt]sx$/i.test(file) ? ['jsx'] : [])], attachComment: false }); }
     catch (error) { diagnostics.push({ code: 'PARSE_ERROR', severity: 'error', file, line: error.loc?.line ?? 1, column: (error.loc?.column ?? 0) + 1, message: error.message, related: [] }); continue; }
-    const coveredWorkflows = new Set(), reportedWorkflowPairs = new Set();
+    const coveredCompositions = new Set(), reportedLabelPairs = new Set();
     traverse(ast, { CallExpression(path) {
-      if (!coveredWorkflows.has(path.node)) {
-        const workflow = workflowLabels(path);
+      if (!coveredCompositions.has(path.node)) {
+        const processMetadata = processLabels(path);
+        const workflow = processMetadata ?? workflowLabels(path);
         if (workflow) {
           checkedDeclarations++;
-          workflow.nodes.forEach(node => coveredWorkflows.add(node));
+          workflow.nodes.forEach(node => coveredCompositions.add(node));
           for (const item of workflow.unresolved) skip(file, item.path, item.reason);
           const labels = new Map();
           for (const item of workflow.labels) {
             const previous = labels.get(item.label);
             if (previous) {
               const pair = `${previous.node.start}:${item.path.node.start}:${item.label}`;
-              if (!reportedWorkflowPairs.has(pair)) {
-                report('AMBIGUOUS_WORKFLOW_LABEL', 'warning', file, item.path,
-                  `Workflow trace label ${JSON.stringify(item.label)} repeats in this declared composition; use distinct labels if traces must identify the stage. This includes alternative branches and does not prove repeated execution or an invalid business rule.`, [position(file, previous)]);
-                reportedWorkflowPairs.add(pair);
+              if (!reportedLabelPairs.has(pair)) {
+                report(processMetadata ? 'AMBIGUOUS_PROCESS_LABEL' : 'AMBIGUOUS_WORKFLOW_LABEL', 'warning', file, item.path,
+                  `${processMetadata ? 'Process' : 'Workflow'} trace label ${JSON.stringify(item.label)} repeats in this declared composition; use distinct labels if traces must identify the stage. This includes alternative branches and does not prove repeated execution or an invalid business rule.`, [position(file, previous)]);
+                reportedLabelPairs.add(pair);
               }
             } else labels.set(item.label, item.path);
           }
