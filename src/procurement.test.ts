@@ -339,3 +339,69 @@ test('payment commands enforce finance identity, scope, versions, reference and 
   assert.deepEqual(await f.finance.payments.cancel({ id: 'pay', expectedVersion: 1, reason: ' ' }), err({ kind: 'InvalidInput' }));
   assert.equal(f.repository.commits, before);
 });
+
+test('returning a receipt invalidates invoice matching and allows replacement receipt quantities', async () => {
+  const f = setup(); await invoiced(f);
+  const returned = await f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: ' Defective goods ' }); assert(returned.ok);
+  assert.equal(returned.value.state, 'returned');
+  const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok);
+  assert.equal(invoice.value.state, 'registered'); assert.equal(invoice.value.version, 3); assert.equal('receiptIds' in invoice.value, false);
+  assert.deepEqual(await f.finance.invoices.match({ id: 'inv', expectedVersion: 3 }), err({ kind: 'InvoiceMismatch' }));
+  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 4, receiptId: 'replacement', quantities: lines.map(({ sku, quantity }) => ({ sku, quantity })) })).ok);
+  const matched = await f.finance.invoices.match({ id: 'inv', expectedVersion: 3 }); assert(matched.ok);
+  if (matched.value.state === 'matched') assert.deepEqual(matched.value.receiptIds, ['replacement']);
+  assert((await f.buyer.orders.complete({ id: 'po', expectedVersion: 5 })).ok);
+});
+test('receipt corrections replace quantities and revalidate cumulative order limits before saving', async () => {
+  const f = setup(); await invoiced(f);
+  const before = f.repository.commits;
+  assert.deepEqual(await f.warehouse.receipts.correct({ id: 'rc', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 3 }] }), err({ kind: 'QuantityExceeded' }));
+  assert.deepEqual(await f.warehouse.receipts.correct({ id: 'rc', expectedVersion: 1, quantities: [] }), err({ kind: 'InvalidInput' }));
+  assert.equal(f.repository.commits, before);
+  const corrected = await f.warehouse.receipts.correct({ id: 'rc', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 1 }] }); assert(corrected.ok);
+  assert.equal(corrected.value.version, 2);
+  assert.deepEqual(await f.finance.invoices.approve({ id: 'inv', expectedVersion: 3 }), err({ kind: 'WrongState' }));
+  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 4, receiptId: 'additional', quantities: [{ sku: 'a', quantity: 1 }, { sku: 'b', quantity: 1 }] })).ok);
+  assert.deepEqual(await f.warehouse.receipts.correct({ id: 'rc', expectedVersion: 2, quantities: [{ sku: 'a', quantity: 2 }] }), err({ kind: 'QuantityExceeded' }));
+  assert((await f.finance.invoices.match({ id: 'inv', expectedVersion: 3 })).ok);
+});
+test('approved invoices, completed orders, wrong actors and returned receipts reject quantity changes', async () => {
+  const f = setup(); await invoiced(f);
+  assert.deepEqual(await f.buyer.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'no' }), err({ kind: 'Denied' }));
+  assert.deepEqual(await f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: ' ' }), err({ kind: 'InvalidInput' }));
+  assert((await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 })).ok);
+  assert.deepEqual(await f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'no' }), err({ kind: 'WrongState' }));
+  assert.deepEqual(await f.warehouse.receipts.correct({ id: 'rc', expectedVersion: 1, quantities: lines }), err({ kind: 'WrongState' }));
+  const g = setup(); await invoiced(g); assert((await g.buyer.orders.complete({ id: 'po', expectedVersion: 3 })).ok);
+  assert.deepEqual(await g.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'no' }), err({ kind: 'WrongState' }));
+  const h = setup(); await invoiced(h); assert((await h.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'no' })).ok);
+  assert.deepEqual(await h.warehouse.receipts.correct({ id: 'rc', expectedVersion: 2, quantities: lines }), err({ kind: 'WrongState' }));
+});
+test('quantity changes race invoice approval and order completion without preserving obsolete matching', async () => {
+  for (const rival of ['approve', 'complete']) for (const changeFirst of [true, false]) {
+    const f = setup(); await invoiced(f);
+    const change = () => f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' });
+    const other = () => rival === 'approve' ? f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 }) : f.buyer.orders.complete({ id: 'po', expectedVersion: 3 });
+    const results = await Promise.all(changeFirst ? [change(), other()] : [other(), change()]);
+    assert.equal(results.filter(result => result.ok).length, 1);
+    const receipt = f.repository.read('receipt', 'rc', actor('warehouse')); assert(receipt.ok);
+    const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok);
+    const order = f.repository.read('order', 'po', actor('buyer')); assert(order.ok);
+    if (receipt.value.state === 'returned') { assert.equal(invoice.value.state, 'registered'); assert.equal(order.value.state, 'placed'); }
+    else assert(invoice.value.state === 'approved' || order.value.state === 'completed');
+  }
+});
+
+test('concurrent return and correction save exactly one composite change', async () => {
+  const f = setup(); await invoiced(f);
+  const before = f.repository.commits;
+  const results = await Promise.all([
+    f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' }),
+    f.warehouse.receipts.correct({ id: 'rc', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 1 }] }),
+  ]);
+  assert.equal(results.filter(result => result.ok).length, 1);
+  assert.deepEqual(results.find(result => !result.ok), err({ kind: 'Conflict' }));
+  assert.equal(f.repository.commits, before + 1);
+  const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok); assert.equal(invoice.value.state, 'registered'); assert.equal(invoice.value.version, 3);
+  const order = f.repository.read('order', 'po', actor('buyer')); assert(order.ok); assert.equal(order.value.version, 4);
+});

@@ -16,7 +16,8 @@ export type Approved = RequestBase & Readonly<{ state: 'approved'; approverId: s
 export type Rejected = RequestBase & Readonly<{ state: 'rejected'; rejectedBy: string; reason: string }> & Opaque<'request-rejected'>;
 export type Request = Draft | Submitted | Approved | Rejected;
 export type Order = Base & Readonly<{ kind: 'order'; state: 'placed' | 'cancelled' | 'completed'; requestId: string; ownerId: string; supplier: string; lines: readonly Line[]; totalCents: number }>;
-export type Receipt = Base & Readonly<{ kind: 'receipt'; state: 'accepted'; orderId: string; quantities: readonly Quantity[] }>;
+type ReceiptBase = Base & Readonly<{ kind: 'receipt'; orderId: string; quantities: readonly Quantity[] }>;
+export type Receipt = ReceiptBase & (Readonly<{ state: 'accepted' }> | Readonly<{ state: 'returned'; reason: string; returnedBy: string }>);
 type InvoiceBase = Base & Readonly<{ kind: 'invoice'; orderId: string; amountCents: number }>;
 export type Invoice = InvoiceBase & (Readonly<{ state: 'registered' }> | Readonly<{ state: 'matched'; receiptIds: readonly string[] }> | Readonly<{ state: 'approved'; receiptIds: readonly string[]; approvedBy: string }> | Readonly<{ state: 'voided'; reason: string; voidedBy: string }>);
 type PaymentBase = Base & Readonly<{ kind: 'payment'; invoiceId: string; amountCents: number; reference: string; recordedBy: string }>;
@@ -33,6 +34,7 @@ export type SubmitInput = VersionInput & Readonly<{ approverId: string }>;
 export type PlaceInput = VersionInput & Readonly<{ orderId: string; supplier: string }>;
 export type AmendInput = VersionInput & Readonly<{ supplier: string }>;
 export type ReceiveInput = VersionInput & Readonly<{ receiptId: string; quantities: unknown }>;
+export type CorrectInput = VersionInput & Readonly<{ quantities: unknown }>;
 export type RegisterInput = VersionInput & Readonly<{ invoiceId: string; amountCents: number }>;
 export type PaymentInput = VersionInput & Readonly<{ paymentId: string; reference: string }>;
 export type Loaded<I, T> = Readonly<{ input: I; actor: Actor; current: T }>;
@@ -115,7 +117,7 @@ export function receiveOrder(value: Loaded<ReceiveInput, Order> & Readonly<{ rec
     const row = raw as Record<string, unknown>;
     if (!id(row.sku) || typeof row.quantity !== 'number' || !integer(row.quantity) || seen.has(row.sku)) return failure('InvalidInput');
     const ordered = current.lines.find(line => line.sku === row.sku);
-    const received = receipts.flatMap(receipt => receipt.quantities).filter(line => line.sku === row.sku).reduce((sum, line) => sum + line.quantity, 0);
+    const received = receipts.filter(receipt => receipt.state === 'accepted').flatMap(receipt => receipt.quantities).filter(line => line.sku === row.sku).reduce((sum, line) => sum + line.quantity, 0);
     if (!ordered || !Number.isSafeInteger(received + row.quantity) || received + row.quantity > ordered.quantity) return failure('QuantityExceeded');
     seen.add(row.sku); quantities.push(Object.freeze({ sku: row.sku, quantity: row.quantity }));
   }
@@ -142,8 +144,8 @@ export function matchInvoice(value: Loaded<VersionInput, Invoice> & Readonly<{ o
   if (current.version !== input.expectedVersion) return failure('Conflict');
   if (current.state !== 'registered') return failure('WrongState');
   if (order.id !== current.orderId || order.groupId !== current.groupId || receipts.some(receipt => receipt.orderId !== order.id || receipt.groupId !== current.groupId)) return failure('TargetMismatch');
-  if (current.amountCents !== order.totalCents || order.lines.some(line => receipts.flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
-  return ok(plan({ ...current, state: 'matched', receiptIds: receipts.map(receipt => receipt.id), version: current.version + 1 }, [check(current), check(order)]));
+  if (current.amountCents !== order.totalCents || order.lines.some(line => receipts.filter(receipt => receipt.state === 'accepted').flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
+  return ok(plan({ ...current, state: 'matched', receiptIds: receipts.filter(receipt => receipt.state === 'accepted').map(receipt => receipt.id), version: current.version + 1 }, [check(current), check(order)]));
 }
 
 // Shared checks describe this domain's ownership and version rules, not runtime orchestration.
@@ -220,7 +222,7 @@ export function cancelOrder(value: Loaded<VersionInput, Order> & OrderFacts): Re
 export function completeOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
   const checked = orderGuard(value); if (!checked.ok) return checked;
   const current = checked.value;
-  if (value.invoices.length !== 1 || (value.invoices[0]?.state !== 'matched' && value.invoices[0]?.state !== 'approved') || value.invoices[0].amountCents !== current.totalCents || current.lines.some(line => value.receipts.flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
+  if (value.invoices.length !== 1 || (value.invoices[0]?.state !== 'matched' && value.invoices[0]?.state !== 'approved') || value.invoices[0].amountCents !== current.totalCents || current.lines.some(line => value.receipts.filter(receipt => receipt.state === 'accepted').flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
   return ok(plan({ ...current, state: 'completed', version: current.version + 1 }, [check(current), ...value.invoices.map(check)]));
 }
 
@@ -270,4 +272,35 @@ export function cancelPayment(value: Loaded<ReasonInput, Payment>): Result<Chang
   if (current.state !== 'recorded') return failure('WrongState');
   if (typeof input.reason !== 'string' || !input.reason.trim() || input.reason.trim().length > 1000) return failure('InvalidInput');
   return ok(plan({ ...current, state: 'cancelled', reason: input.reason.trim(), cancelledBy: actor.id, version: current.version + 1 }, [check(current)]));
+}
+
+export type ReceiptFacts = Readonly<{ order: Order; receipts: readonly Receipt[]; invoices: readonly Invoice[] }>;
+function receiptGuard(value: Loaded<VersionInput, Receipt> & ReceiptFacts): Result<Receipt, RuleError> {
+  const { input, actor, current, order, receipts, invoices } = value;
+  if (!allowed(actor, 'warehouse', current.groupId)) return failure('Denied');
+  if (input.id !== current.id || order.id !== current.orderId || order.groupId !== current.groupId || [...receipts, ...invoices].some(row => row.groupId !== current.groupId || row.orderId !== order.id)) return failure('TargetMismatch');
+  if (!integer(input.expectedVersion)) return failure('InvalidInput');
+  if (input.expectedVersion !== current.version) return failure('Conflict');
+  if (current.state !== 'accepted' || order.state !== 'placed' || invoices.some(invoice => invoice.state === 'approved')) return failure('WrongState');
+  return ok(current);
+}
+function receiptChange(result: Receipt, current: Receipt, facts: ReceiptFacts): Change<Receipt> {
+  const reset: Invoice[] = facts.invoices.filter(invoice => invoice.state === 'matched').map(invoice => ({ kind: 'invoice', state: 'registered',
+    id: invoice.id, groupId: invoice.groupId, orderId: invoice.orderId, amountCents: invoice.amountCents, version: invoice.version + 1 }));
+  return plan(result, [check(current), check(facts.order), ...facts.invoices.map(check)],
+    [{ ...facts.order, version: facts.order.version + 1 }, result, ...reset]);
+}
+export function returnReceipt(value: Loaded<ReasonInput, Receipt> & ReceiptFacts): Result<Change<Receipt>, RuleError> {
+  const checked = receiptGuard(value); if (!checked.ok) return checked;
+  if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
+  return ok(receiptChange({ ...checked.value, state: 'returned', returnedBy: value.actor.id, reason: value.input.reason.trim(), version: checked.value.version + 1 }, checked.value, value));
+}
+export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFacts): Result<Change<Receipt>, RuleError> {
+  const checked = receiptGuard(value); if (!checked.ok) return checked;
+  // Use the same quantity rule as receiving, excluding the record being replaced.
+  const parsed = receiveOrder({ input: { id: value.order.id, expectedVersion: value.order.version, receiptId: checked.value.id, quantities: value.input.quantities },
+    actor: value.actor, current: value.order, receipts: value.receipts.filter(receipt => receipt.id !== checked.value.id) });
+  if (!parsed.ok) return parsed;
+  const result: Receipt = { ...parsed.value.result, version: checked.value.version + 1 };
+  return ok(receiptChange(result, checked.value, value));
 }

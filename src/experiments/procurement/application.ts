@@ -1,6 +1,6 @@
 import { business, ok } from '../../framework/index.js';
-import { recordPayment, cancelPayment, approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, receiveOrder, registerInvoice, matchInvoice,
-  type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
+import { returnReceipt, correctReceipt, recordPayment, cancelPayment, approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, receiveOrder, registerInvoice, matchInvoice,
+  type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export function procurement(repository: ProcurementRepository, identity: Actor, configuration: Policy) {
   const actor = Object.freeze({ ...identity });
@@ -21,6 +21,13 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
     const current = await repository.read('invoice', input.id, actor); if (!current.ok) return current;
     const order = await repository.read('order', current.value.orderId, actor); if (!order.ok) return order;
     return ok({ input, actor, current: current.value, order: order.value });
+  };
+  const loadReceipt = async <I extends VersionInput>(input: I) => {
+    const current = await repository.read('receipt', input.id, actor); if (!current.ok) return current;
+    const order = await repository.read('order', current.value.orderId, actor); if (!order.ok) return order;
+    return ok({ input, actor, current: current.value, order: order.value,
+      receipts: (await repository.list('receipt', actor)).filter(row => row.orderId === order.value.id),
+      invoices: (await repository.list('invoice', actor)).filter(row => row.orderId === order.value.id && row.state !== 'voided') });
   };
   const requests = business({ name: 'procurement.request.v1', load: async (input: CreateInput) => ok({ input, actor }),
     save: (change: Change<Request>) => repository.commit(change, actor), operations: {
@@ -45,7 +52,11 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
   const receipts = business({ name: 'procurement.receipt.v1', load: async (input: ReceiveInput) => {
     const loaded = await loadOrder(input);
     return loaded.ok ? ok({ ...loaded.value, receipts: (await repository.list('receipt', actor)).filter(receipt => receipt.orderId === input.id) }) : loaded;
-  }, save: (change: Change<Receipt>) => repository.commit(change, actor), operations: { receive: [receiveOrder] } });
+  }, save: (change: Change<Receipt>) => repository.commit(change, actor), operations: {
+    receive: [receiveOrder],
+    return: { load: (input: ReasonInput) => loadReceipt(input), run: [returnReceipt] },
+    correct: { load: (input: CorrectInput) => loadReceipt(input), run: [correctReceipt] },
+  } });
   const invoices = business({ name: 'procurement.invoice.v1', load: async (input: RegisterInput) => {
     const loaded = await loadOrder(input);
     return loaded.ok ? ok({ ...loaded.value, alreadyInvoiced: (await repository.list('invoice', actor)).some(invoice => invoice.orderId === input.id && invoice.state !== 'voided') }) : loaded;
