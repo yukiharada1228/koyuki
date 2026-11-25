@@ -76,5 +76,6 @@ callback間や元の入力に変更を漏らさず、getterやclass等の非対�
 Issue #8の部分実装。[タグの共通生成契約](tag-model-sequences.md)では重複・上限・古いversionを
 メモリ/SQLiteで比較する。生成後のasync比較はhostテスト側の処理で、sampleModelの非同期checkではない。
 [sampleModelAsync](async-model-sequences.md)は、隔離した非同期比較でも同じ反例削除を行える。
-[payload候補の縮小](event-payload-shrinking.md)も追加した。テスト雛形の出力や全候補での最短列は未提供・未検証。
+[payload候補の縮小](event-payload-shrinking.md)と[テスト雛形の出力](model-test-template.md)も追加した。
+雛形の期待仕様・生成器・実装比較は利用者が埋める。全候補での最短列は未検証。
 講演の純粋な業務関数・明示的な状態を検査へ使う具体化であり、講演がこのAPIを指定した意味ではない。

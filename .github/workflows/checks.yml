@@ -29,6 +29,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run test:declarations
+      - run: npm run test:model-template
       - run: npm test
       - run: npm run check:package
       - run: npm run test:portable

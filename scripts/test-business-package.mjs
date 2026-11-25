@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { studyApprovalChange } from './studies/leave-approval-change.mjs';
 import { studyAuthorizationChange } from './studies/leave-authorization-change.mjs';
+import { generateModelTest } from './generate-model-test.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 function run(command, args, cwd) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8' });
@@ -16,6 +17,9 @@ const dir = mkdtempSync(join(tmpdir(), 'koyuki-business-consumer-'));
 try {
   const consumer = join(dir, 'consumer');
   mkdirSync(consumer);
+  // Compile the unfilled scaffold against installed declarations; it must not
+  // enter the passing runtime suite until its independent specification exists.
+  writeFileSync(join(consumer, 'model-template.ts'), generateModelTest());
   run('npm', ['run', 'build'], root);
   const packed = JSON.parse(run('npm', ['pack', '--pack-destination', dir, '--ignore-scripts', '--json'], root))[0].filename;
   const source = join(root, 'examples/leave-http');

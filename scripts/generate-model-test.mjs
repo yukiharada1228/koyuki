@@ -1,0 +1,53 @@
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+/** Source generation only: never import or execute the business being tested. */
+export function generateModelTest() {
+  return `import test from 'node:test';
+import assert from 'node:assert/strict';
+import { inspect } from 'node:util';
+import { sampleModelAsync, type AsyncSequenceModel } from 'koyuki/testing';
+
+// Replace these example shapes and initial states with your business specification.
+type State = { readonly value: number };
+type Event = { readonly amount: number };
+type Output = number;
+
+const model: Omit<AsyncSequenceModel<State, Event, Output>, 'seed'> = {
+  initial: [{ value: 0 }],
+  limits: { cases: 20, length: 20, shrinkAttempts: 200 },
+  events: (_state, _random) => {
+    // Include boundaries, invalid inputs, permissions and stale versions as appropriate.
+    // Use only _random for random generation; do not exclude legitimate rejections.
+    throw new Error('TODO: independent event generator');
+  },
+  step: (_before, _event) => {
+    // Calculate expected state AND output from an independent business specification.
+    // Do not call the implementation, its validators or its state transitions here.
+    throw new Error('TODO: independent reference specification');
+  },
+  check: async (_before, _event, _expected) => {
+    // Reconstruct isolated implementation state from _before on EVERY call.
+    // Execute the operation and compare its output AND saved state to _expected.
+    // Close/rollback the fixture in finally. Shrinking also invokes this callback.
+    throw new Error('TODO: implementation comparison');
+  },
+  // Optional: invariant, shrinkEvent and shrinkInitial must come from the specification.
+};
+
+for (const seed of [0, 42, 0xffffffff]) test('business model, seed ' + seed, async () => {
+  const report = await sampleModelAsync({ ...model, seed });
+  // Explicit test diagnostics can contain business data. Keep fixtures synthetic.
+  assert.equal(report.kind, 'sampled', inspect(report, { depth: null }));
+  assert(report.transitions > 0, 'No implementation comparison ran; check the generator');
+  // sampled means no counterexample in this bounded run, not exhaustive correctness.
+});
+`;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  if (process.argv.length !== 2) {
+    console.error('Usage: node scripts/generate-model-test.mjs > business-model.test.ts');
+    process.exitCode = 2;
+  } else process.stdout.write(generateModelTest());
+}

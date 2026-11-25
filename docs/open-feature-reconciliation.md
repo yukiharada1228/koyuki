@@ -18,7 +18,7 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続し、本文の5完了条件を実例と契約文書で検証 | 保持・削除と改ざん耐性の保証範囲を文書化する条件は、全運用機能を内蔵する条件とは異なる。他DB adapter・実運用・改ざん検出・拒否ログは未提供 |
 | [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例。[非実行のソース診断CLI](declaration-diagnostics.md)で明示/既定ID・段階名・Application予約名を位置付きで報告 | 独自resolver・動的定義は未解決として残す。全参照の解決、分岐・状態の網羅性、エディター診断、任意の変更解析は未提供。型・構文・メタデータ検査を業務規則の証明とは扱わない |
 | [#7 有限モデル検査](https://github.com/yukiharada1228/koyuki/issues/7) | [明示モデルの有限探索](finite-model.md)で上限・反例・実装比較を指定。[経費](expense-state-exploration.md)は最大7操作で照合 | 実験用の検査入口。モデルの同値性・抽象化・実装対応は利用者の契約。チームの保守コスト・導入効果は未測定 |
-| [#8 テスト生成](https://github.com/yukiharada1228/koyuki/issues/8) | [seed付き操作列と反例削除](model-sequences.md)で経費を独立仕様と照合。[タグ](tag-model-sequences.md)はメモリ・SQLite各320操作を比較。[非同期比較](async-model-sequences.md)と[指定payload候補の縮小](event-payload-shrinking.md)も両adapterで検査。[初期状態候補](initial-state-shrinking.md)は経費の反例でも縮小 | DB等の隔離・簡略化候補はhostの契約。雛形出力、全候補での最短列は未提供・未検証。sampledを完成・全状態の証明としない |
+| [#8 テスト生成](https://github.com/yukiharada1228/koyuki/issues/8) | [seed付き操作列と反例削除](model-sequences.md)で経費を独立仕様と照合。[タグ](tag-model-sequences.md)はメモリ・SQLite各320操作を比較。[非同期比較](async-model-sequences.md)と[指定payload候補の縮小](event-payload-shrinking.md)も両adapterで検査。[初期状態候補](initial-state-shrinking.md)は経費の反例でも縮小 | DB等の隔離・簡略化候補はhostの契約。[雛形出力](model-test-template.md)を追加。期待仕様・生成器・比較は利用者が記述する。全候補での最短列は未検証。sampledを完成・全状態の証明としない |
 
 ## 共通境界の実装前に固定した契約
 

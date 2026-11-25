@@ -70,6 +70,8 @@
     "demo:flow": "tsx src/examples/flow-structure.ts",
     "check:declarations": "node scripts/check-declarations.mjs",
     "test:declarations": "node --test scripts/declarations.test.mjs",
+    "generate:model-test": "node scripts/generate-model-test.mjs",
+    "test:model-template": "node --test scripts/model-test-template.test.mjs",
     "benchmark:procurement": "tsx src/experiments/procurement/benchmark.ts"
   },
   "devDependencies": {
