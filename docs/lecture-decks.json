@@ -31,13 +31,45 @@
       "pageCount": 32
     },
     "review": {
-      "allPagesReviewed": false,
+      "allPagesReviewed": true,
       "textExtracted": true,
       "visuallyReviewedPages": [
-        28
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
       ],
-      "basis": "Original author PDF downloaded via its public download link; selected pages rendered and inspected.",
-      "remaining": "Page-by-page semantic and visual audit, plus continuous audio/video review, is not complete."
+      "basis": "Read extracted text for pages 1–32 and inspected all rendered pages in eight four-page contact sheets.",
+      "remaining": "Not all code executed; not proof of the original product specification, reference links, or continuous audio/video review.",
+      "auditFile": "docs/lecture-deck-audits/qBf910_YiqA.json"
     }
   },
   {

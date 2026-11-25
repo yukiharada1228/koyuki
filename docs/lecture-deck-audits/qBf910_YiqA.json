@@ -1,0 +1,355 @@
+{
+  "videoId": "qBf910_YiqA",
+  "sourceManifest": "docs/lecture-decks.json",
+  "sourceSha256": "fd4efc3c021bab4cc9863f65bc68ba2094b510b2ae975411dbc37a3791a58a03",
+  "implementationBaseCommit": "b22a325",
+  "review": {
+    "allPagesRead": true,
+    "allPagesVisuallyInspected": true,
+    "method": "Read extracted text for pages 1–32 and inspected all rendered pages in eight four-page contact sheets.",
+    "allCodeExecuted": false,
+    "continuousAudioVideoReviewed": false,
+    "meaning": "Each published PDF page is assigned an implementation/design assessment, not proof of all product specifications or talk speech."
+  },
+  "pages": [
+    {
+      "page": 1,
+      "topic": "開始",
+      "status": "context",
+      "assessment": "発表の識別情報。機能へ変換しない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 2,
+      "topic": "既存設計との関係",
+      "status": "design-choice",
+      "assessment": "全層を別のパラダイムへ置換する要求ではない。",
+      "evidence": [
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 3,
+      "topic": "参考書籍",
+      "status": "context",
+      "assessment": "参考書の紹介。書籍全体の実装要求ではない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 4,
+      "topic": "カードの型による説明",
+      "status": "design-choice",
+      "assessment": "業務語彙を型と関数に表す教育例。ゲーム自体を内蔵しない。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 5,
+      "topic": "採用する原則の選別",
+      "status": "design-choice",
+      "assessment": "Repository・集約と関数型表現を併用する。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 6,
+      "topic": "実装スタイルの中心",
+      "status": "supported",
+      "assessment": "状態型・新しい状態を返す関数・失敗合成を通常TSで表す。",
+      "evidence": [
+        "src/framework/business.ts",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 7,
+      "topic": "集約のデータ型",
+      "status": "supported",
+      "assessment": "状態と業務データをplain dataで表す。Customerの製品仕様全体を再現した証拠ではない。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 8,
+      "topic": "区別できる状態のUnion",
+      "status": "supported",
+      "assessment": "discriminantで状態を分け、型とJSON境界を区別して検証する。",
+      "evidence": [
+        "src/sum-model.test.ts",
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 9,
+      "topic": "名目的な識別",
+      "status": "supported",
+      "assessment": "非公開symbolの証拠型で区別する。assertionを通じた偽造は防がない。",
+      "evidence": [
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 10,
+      "topic": "検証付き生成",
+      "status": "supported",
+      "assessment": "Resultを返す生成関数で不変条件を守る。検証処理そのものは利用者の仕様。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/registration/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 11,
+      "topic": "変更前後を値で表す",
+      "status": "supported",
+      "assessment": "入力を保持し新しい状態を返す通常関数で実装する。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 12,
+      "topic": "呼出しと状態変化の明示",
+      "status": "design-choice",
+      "assessment": "内部更新より引数と戻り値へ状態を表す方針。全メソッドの禁止ではない。",
+      "evidence": [
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 13,
+      "topic": "失敗を含む一本道",
+      "status": "supported",
+      "assessment": "最初の失敗で後続を止める共有エンジン。図からtransactionは保証されない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/framework/process.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 14,
+      "topic": "小さな段階の合成",
+      "status": "supported",
+      "assessment": "普通の同期Result関数を業務操作へ接続する。",
+      "evidence": [
+        "src/framework/business.ts",
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 15,
+      "topic": "状態別Commandの型",
+      "status": "supported",
+      "assessment": "入力と取得済みモデルを一緒に渡し、検証前後の証拠を型で表す。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 16,
+      "topic": "非同期照合と状態分岐",
+      "status": "partial",
+      "assessment": "途中I/OはProcess、型の分岐は通常TSのswitchまたはWorkflow.branchで接続する。businessの同期列へPromiseを混ぜない。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/framework/workflow.ts",
+        "src/branch.test.ts"
+      ],
+      "remaining": [
+        "資料の予約取込の全業務仕様を再現した実例ではない。異なる設計での型の分岐と途中I/Oの統合例をさらに検証する。"
+      ]
+    },
+    {
+      "page": 17,
+      "topic": "transportの外側で取得と保存",
+      "status": "supported",
+      "assessment": "Hono/GraphQLから同じ操作を実行。境界でのthrow変換はドメインのResultと区別。",
+      "evidence": [
+        "examples/leave-http/GRAPHQL.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 18,
+      "topic": "Repositoryの取得・復元・保存",
+      "status": "supported",
+      "assessment": "外部値の復元、見つからない値、Promiseの失敗をadapterで表す。",
+      "evidence": [
+        "src/registration/repository.ts",
+        "docs/result-boundaries.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 19,
+      "topic": "ドメインとI/Oの境界",
+      "status": "supported",
+      "assessment": "同期Ruleと非同期I/Oの実行を分離する。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/framework/command.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 20,
+      "topic": "業務計算を内側へ置く図",
+      "status": "design-choice",
+      "assessment": "依存方向と責務の説明。特定のディレクトリ構造を強制しない。",
+      "evidence": [
+        "docs/application-development.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 21,
+      "topic": "Commandから結果へ",
+      "status": "supported",
+      "assessment": "入力とモデルをloadでまとめ、遷移結果のsaveを共通実行する。",
+      "evidence": [
+        "src/framework/business.ts",
+        "src/experiments/expense-business.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 22,
+      "topic": "モジュール化の維持",
+      "status": "design-choice",
+      "assessment": "型と関連する業務関数を近くへ置き、workflowへ全ルールを集中させない。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 23,
+      "topic": "目的は静的な制約",
+      "status": "design-choice",
+      "assessment": "型検査は接続を検証するが、業務仕様の正しさの証明ではない。",
+      "evidence": [
+        "src/command-connection-types.test.ts",
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 24,
+      "topic": "注入と実際のI/O",
+      "status": "design-choice",
+      "assessment": "DB型の露出を抑えることと数学的純粋性は別。実際の非同期処理は明示する。",
+      "evidence": [
+        "docs/process.md",
+        "src/registration/delivery.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 25,
+      "topic": "複数の値生成Result",
+      "status": "partial",
+      "assessment": "collectで固定フィールドを全失敗集約できる。資料のcombineと同じ失敗形式・短絡規則とは限らない。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "docs/collection-validation.md"
+      ],
+      "remaining": [
+        "業務上必要な失敗停止/集約を利用者が選ぶ。言語レベルの暗黙unwrapではない。"
+      ]
+    },
+    {
+      "page": 26,
+      "topic": "言語組込みとの比較",
+      "status": "design-choice",
+      "assessment": "do記法の効用を示す例。TypeScriptへ構文追加はせず普通の関数と宣言で接続を減らす。",
+      "evidence": [
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 27,
+      "topic": "非同期タスクの失敗集約",
+      "status": "supported",
+      "assessment": "collectEffectsで独立I/Oを位置付き全失敗集約。並列上限を明示する設計はKoyuki側の判断。",
+      "evidence": [
+        "src/framework/collection-effects.ts",
+        "src/collection-effects.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 28,
+      "topic": "通常の手続きと例外境界",
+      "status": "supported",
+      "assessment": "fromPromise/fromThrowableでSDKを明示的にResultへ接続する。NodeのBufferをコアへ持ち込まない。",
+      "evidence": [
+        "docs/result-boundaries.md",
+        "scripts/check-runtime-package.mjs"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 29,
+      "topic": "開発経験と教育",
+      "status": "experience",
+      "assessment": "登壇者の実績・評価。Koyukiの生産性や障害率の数値へ置き換えない。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 30,
+      "topic": "plain dataと記述簡素化",
+      "status": "partial",
+      "assessment": "公開項目の選別は維持し、型を広げず通常関数列へ簡素化する。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": [
+        "genericのinline推論と誤定義時の診断には制限。独立利用者の学習負担は未測定。"
+      ]
+    },
+    {
+      "page": 31,
+      "topic": "実践からの整理",
+      "status": "design-choice",
+      "assessment": "必要な範囲で型とI/O分離を採用する。全面的なFP化の要件ではない。",
+      "evidence": [
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 32,
+      "topic": "参考資料への導線",
+      "status": "context",
+      "assessment": "参照先の全内容までこの資料のレビュー完了に含めない。",
+      "evidence": [
+        "docs/lecture-decks.json"
+      ],
+      "remaining": []
+    }
+  ]
+}
