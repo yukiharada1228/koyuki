@@ -86,9 +86,11 @@ npm run check
 npm exec -- tsx --test src/business-api-study.test.ts src/business-api-migration.test.ts
 npm test
 npm run check:package
+npm run test:business:package
 ```
 
-型拒否はこのリポジトリのTypeScript 7.0.2での確認。新APIの配布型として独立consumerで検証したものではない。
+型拒否はTypeScript 7.0.2で確認。下記の一時的な候補パッケージでも配布型を検証する。
+通常のnpm公開物には試作APIを含めていない。
 共通の実行接続を担う内部モジュールを追加したため、開発版は15モジュールになる。
 試作API・経費の試作宣言は配布入口とdistに含めず、公開APIは増やしていない。
 
@@ -120,7 +122,8 @@ npm run check:package
 57番目の誤接続は、operations全体ではなく、その関数の位置で診断される。
 入力型と保存後の成功・失敗型の厳密な一致も回帰試験へ含める。
 64段は型検査の回帰試験であり、推奨する業務分割の粒度でも、無制限長の保証でもない。
-この追加検証も未公開の試作に対するもので、npm配布型の検証ではない。
+同じ型回帰試験を、後述の未公開の候補パッケージをインストールしたconsumerでも実行する。
+公開npmのAPIであるとは主張しない。
 
 ## 実行記録と既存宣言からの移行
 
@@ -152,3 +155,32 @@ business({
 この変更時の検証は、root型チェック・全380テスト、配布consumerでの休暇HTTP/GraphQL/Applicationの30テストと8件の不正宣言拒否、
 15モジュールの依存ゼロ・Node型なしconsumer検査、およびNodeのglobalを与えないブラウザbundle実行。
 配布consumerの検証対象は既存公開APIの内部共通化であり、未公開business APIを配布検証したという意味ではない。
+
+## 休暇業務と独立した候補パッケージ
+
+経費に続き、[休暇3操作の宣言](../scripts/fixtures/leave-business-application.ts)を同じbusiness APIで検証した。
+申請は`[validateSubmission, requireDays, submit]`、承認は`[validateApproval, approve]`、
+取り下げは`[validateWithdrawal, withdraw]`と書く。
+申請だけに必要なdaysをoptionalへ落とさず、その操作のloadへSubmitInputを明示する。
+ApplicationはこれらのcommandをそのままreplayOperationsへ渡す。
+
+`npm run test:business:package`は、現在の実装を一時ディレクトリでビルドし、privateな候補パッケージを作る。
+その候補だけに`koyuki/study`という実験用exportを設け、tarballとしてリポジトリ外へインストールする。
+実際のpackage.jsonのexports、dist、公開npmは変更しない。利用者向けにサポートするimportではない。
+候補にも実行時の外部依存は追加せず、Node型なしのconsumerで入力・成功・エラーの厳密な型推論と64段inline接続を確認する。
+
+確認できた結果は次の通り。
+
+- HTTP・GraphQLの既存27テストを実行。通信・認可・入力検証・不明commit・競合・再送の処理は差し替えない。
+  trace名を直接比較する2箇所だけ、require-days→run:2、submit→run:3へ期待値を変える。
+- 旧宣言との詳細report比較1件、Applicationの購読・失敗・queue・古い画面の拒否2件、双方向移行1件を含め計31テストが成功。
+  report比較ではtraceの段階名だけを対応付け、result・plan・replay状態を含む他の値を比較する。
+- SQLiteを閉じて再接続した後、旧APIの申請を新APIのRESTでreplayし、新APIのGraphQL承認と直接呼び出しの取り下げを旧APIでもreplayする。
+  古い申請の再送で最新状態・履歴・receiptが増減しないことも確認する。
+- インストールされた宣言型で、不足するdays・version、必要な証拠を作る段階の省略、async関数、空配列、保存envelopeなしのreplayという6件を拒否する。
+- rootの接続型回帰試験も候補の配布型へ向けて実行し、Node型なしで成功する。
+
+この比較から、経費・休暇では役割別の宣言を外しても、既存の実行契約と操作別入力を維持できると判断する。
+一方、共通load/save・replayのadapter契約や認証済みactorの注入は引き続き必要であり、配列だけから自動推測してはいない。
+独立した開発者の学習負担、複雑な仕様変更、複数集約の協調に対する使いやすさは未評価。
+購買アプリの大規模比較はまだ着手しておらず、この31テストをチーム生産性の証明に置き換えない。

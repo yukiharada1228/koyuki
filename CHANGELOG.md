@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- business試作を休暇3操作へ適用。一時的なprivate候補tarballを独立consumerへインストールし、既存HTTP/GraphQL・Application・旧宣言比較・SQLite移行の31テスト、6件の不正定義拒否、Node型なしでの型推論を検証。通常の配布exportは変更なし。
+
 - 非公開business試作を既存Workflowへ直接接続し、単一関数の空のcomplete段階を除去。共有context/replay接続を内部へ抽出し公開groupの型・挙動を維持。操作ID resolverと経費SQLiteの旧→新（別プロセス）・新→旧replayを検証。
 
 - Strengthen the unpublished business API study with authorization-proof, exact inference, and 64-stage connection checks; use accumulator-based type recursion. Mapped adjacency checks now preserve 64-stage inline tuple inference for shared and per-operation loaders, with errors located at the mismatched stage.
