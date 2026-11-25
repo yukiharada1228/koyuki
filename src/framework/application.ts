@@ -79,7 +79,7 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
               context.steps(report);
               return { type: '@complete', operation: event.operation, result: report.result, executionId: event.executionId };
             }
-            return { type: '@complete', operation: event.operation, result: await run(input), executionId: event.executionId };
+            return { type: '@complete', operation: event.operation, result: await run.call(entry, input), executionId: event.executionId };
           } catch (cause) { return { type: '@crash', operation: event.operation, error: unexpectedException(cause) }; }
         }, message => message);
         return ok(next<State, InternalEvent>({ kind: 'running', operation: event.operation, data: state.data }, command(event.input)));
@@ -100,7 +100,7 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
         const reduce = operations[event.operation]!.reduce as (state: S, output: unknown) => S;
         const finish = event.executionId === undefined ? undefined : contexts?.get(event.executionId)?.observe.scope?.('application.project');
         try {
-          const data = snapshotData(reduce(snapshotData(state.data), event.result.value));
+          const data = snapshotData(reduce.call(operations[event.operation], snapshotData(state.data), event.result.value));
           finish?.('ok');
           return ok(next<State, InternalEvent>({ kind: 'ready', data }));
         } catch (cause) {

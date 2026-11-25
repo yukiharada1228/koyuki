@@ -26,6 +26,9 @@ await session.dispatch({ type: '0', input });
 
 この制約は操作を格納するテーブルへの制約である。command本体のclassやreceiverを
 禁止するものではない。既存のoperation/replayOperationによるreceiver保存も継続する。
+直接登録した操作のrun・runDetailed・reduceも、その操作オブジェクトをreceiverとして
+呼び出す。private fieldを持つclassのメソッドを使うためだけにwrapperを追加する必要はない。
+状態・イベントのsnapshotは引き続き別の所有境界であり、操作インスタンス自体をcloneしない。
 構造的なTypeScript型ではプロパティの所有権・prototype・descriptorを表せないので、
 構築時にも検査する。genericなテーブル変換関数を壊さないよう、Symbolキーの静的な
 拒否は今回の変更には含めていない。型を通っても構築時に拒否される場合がある。
@@ -35,6 +38,9 @@ await session.dispatch({ type: '0', input });
 [回帰検査](../src/application-operation-table.test.ts)は、非列挙操作の通常・再送・直接登録、
 数値名と入力・失敗型の対応、getter非実行、Symbolとprototypeの拒否、予約名と
 prototypeに似た名前を確認する。同じ検査を実tarballの独立consumerでも実行する。
+[receiverの回帰検査](../src/application-receiver.test.ts)では、直接登録したclassを
+通常・観察付きで実行し、失敗時にreduceしないこと、投影がthrowしても前の状態を保持し、
+操作を再実行しないことも確認する。
 
 変更前の988eeb8では、非列挙goをoperationsへ渡すと登録結果から消え、直接Applicationへ
 渡してもdispatchがUnexpectedMessageとなることを再現した。

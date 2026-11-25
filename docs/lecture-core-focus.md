@@ -57,3 +57,14 @@ truncatedを見落として窓全体を取得済みとは扱わない。
 購買loaderのローカルattachと内部の型アサーションを除き、失敗のResult接続をruntimeへ移した。
 同名フィールドの置換も戻り値の型として表し、不可能なrecord交差型にはしない。
 これは実装の追加照合であり、この文書の字幕再確認や独立利用者のDX実証の範囲を増やすものではない。
+
+## 後続の通常オブジェクトとの接続改善
+
+[再送callbackの推論](replay-context-inference-study.md)では、文字列・数値の操作名と
+要求・成功・失敗型を維持したまま、検査したinline例の型注釈を省けるようにした。
+[Applicationの登録](application-operation-table.md)では、宣言した非列挙操作を落とさず、
+数値名を実際の文字列イベントへ対応させた。
+続いて直接登録した操作のrunとreduceでreceiverが失われるケースを再現し、
+classのprivate fieldを持つ操作でも通常・観察付きの呼び出しを維持するよう修正した。
+これらは普通のTypeScriptで記述できる範囲の修正であり、generic requireの推論制限、
+独立利用者の評価、全編音声との照合が解消したという意味ではない。
