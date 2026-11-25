@@ -10,7 +10,7 @@ const flow = start.branch('ready', guard, { yes: update, no: create });
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 const exact: Equal<ReturnType<typeof flow.run>, Result<string | number, 'Corrupt' | 'UpdateFailed' | 'CreateFailed'>> = true;
 void exact;
-const inline = start.branch('inline', (value: State): value is Ready => value.kind === 'ready', { yes: update, no: create });
+const inline = start.branch('inline', (value): value is Ready => value.kind === 'ready', { yes: update, no: create });
 void inline;
 // @ts-expect-error branches cannot be swapped
 start.branch('swapped', guard, { yes: create, no: update });
@@ -70,3 +70,13 @@ const restrictedReplayCommand: typeof narrowReplayCommand = wideReplayCommand;
 operation<number, 'one', number, never>({ run: async (value: string) => ok(value.length) }, (state, value) => state + value);
 replayOperation<number, 'one', number, never>({ run: async (value: string) => ok({ kind: 'committed' as const, value: value.length }) }, (state, value) => state + value);
 void restrictedWorkflow; void restrictedCommand; void restrictedReplayCommand;
+
+// @ts-expect-error a broad yes consumer must not widen the predicate's proven type
+start.branch('bad-no', guard, { yes: workflow('wide', (value: State) => ok(value.kind)), no: update });
+const inferredInline = start.branch('inferred-inline', value => value.kind === 'ready', { yes: update, no: create });
+void inferredInline;
+
+const exactInline: Equal<ReturnType<typeof inferredInline.run>, Result<string | number, 'Corrupt' | 'UpdateFailed' | 'CreateFailed'>> = true;
+void exactInline;
+// @ts-expect-error a constant boolean callback establishes no state refinement
+start.branch('constant', _value => true, { yes: update, no: create });

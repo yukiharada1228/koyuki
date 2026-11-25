@@ -27,7 +27,7 @@ test('narrowed branch failure stops subsequent I/O and keeps the original failur
 });
 test('capture evaluates the predicate once and records only the selected typed rule', () => {
   let calls = 0;
-  const flow = workflow('lookup', (value: Lookup) => ok(value)).branch('found', (value: Lookup): value is Found => { calls++; return isFound(value); }, {
+  const flow = workflow('lookup', (value: Lookup) => ok(value)).branch('found', (value): value is Found => { calls++; return isFound(value); }, {
     yes: workflow('update', found), no: workflow('create', missing),
   });
   const report = flow.inspect({ kind: 'missing', newId: 'c1' }, { input: (_value, step) => step, result: value => value.ok });
@@ -36,7 +36,7 @@ test('capture evaluates the predicate once and records only the selected typed r
 });
 test('a failed prior rule evaluates neither guard nor branch', () => {
   let calls = 0;
-  const flow = workflow('lookup', (_input: string): Result<Lookup, 'LookupFailed'> => err('LookupFailed')).branch('found', (value: Lookup): value is Found => { calls++; return isFound(value); }, {
+  const flow = workflow('lookup', (_input: string): Result<Lookup, 'LookupFailed'> => err('LookupFailed')).branch('found', (value): value is Found => { calls++; return isFound(value); }, {
     yes: workflow('update', found), no: workflow('create', missing),
   });
   assert.deepEqual(flow.inspect('x'), { result: err('LookupFailed'), trace: [{ step: 'lookup', status: 'error' }] });
@@ -49,6 +49,10 @@ if (false) {
   const start = workflow('start', (value: Lookup) => ok(value));
   // @ts-expect-error the preceding Union output has not been narrowed for a single-variant workflow
   process<Lookup>().through(workflow('update', found));
+  // @ts-expect-error a wider yes consumer must not widen the guard and erase the false branch input
+  start.branch('bad-no', isFound, { yes: workflow('wide', (value: Lookup) => ok(value.kind)), no: workflow('wrong', found) });
+  // @ts-expect-error an unannotated constant boolean does not prove any state refinement
+  start.branch('constant', _value => true, { yes: workflow('update', found), no: workflow('create', missing) });
   // @ts-expect-error the yes branch cannot consume the opposite variant
   start.branch('wrong', isFound, { yes: workflow('create', missing), no: workflow('update', found) });
   // @ts-expect-error a boolean predicate does not prove that either branch receives a narrowed value

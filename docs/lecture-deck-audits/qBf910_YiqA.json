@@ -331,10 +331,12 @@
       "assessment": "公開項目の選別は維持し、型を広げず通常関数列へ簡素化する。",
       "evidence": [
         "docs/business-api-study.md",
-        "src/business-api-types.test.ts"
+        "src/business-api-types.test.ts",
+        "docs/typed-branch.md",
+        "scripts/fixtures/branch-narrowing-types.ts"
       ],
       "remaining": [
-        "genericのinline推論と誤定義時の診断には制限。独立利用者の学習負担は未測定。"
+        "defineTransitionでgenericヘルパー呼出しと未注釈evolveを同時に書く場合などの推論制限、および誤定義時の診断・独立利用者の学習負担の評価が残る。Workflow.branchのinline predicate入力型は推論可能になった。"
       ]
     },
     {
@@ -374,6 +376,14 @@
         "src/combine.test.ts"
       ],
       "scope": "Added after the initial PDF review. Distinguishes first-failure combination of already-evaluated results from collecting all failures; not a neverthrow API compatibility claim."
+    },
+    {
+      "topic": "inline型ガードの入力推論",
+      "evidence": [
+        "docs/typed-branch.md",
+        "src/branch-narrowing.test.ts"
+      ],
+      "scope": "Removed the need to annotate inline predicate inputs for supported branch declarations; not a claim that all generic inference limitations or user-experience measurements are resolved."
     }
   ]
 }

@@ -35,7 +35,7 @@ export class Workflow<I, O, E> {
     return { ...evaluation, observations: Object.freeze(observations) };
   }
   branch<N extends O, A, B, F, G>(name: string, predicate: (value: O) => value is N,
-    paths: { yes: WorkflowConsumer<NoInfer<N>, A, F>; no: WorkflowConsumer<Exclude<O, NoInfer<N>>, B, G> }): Workflow<I, A | B, E | F | G>;
+    paths: { yes: WorkflowConsumer<N, A, F>; no: WorkflowConsumer<Exclude<O, N>, B, G> }): Workflow<I, A | B, E | F | G>;
   branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,
     paths: { yes: WorkflowConsumer<O, A, F>; no: WorkflowConsumer<O, B, G> }): Workflow<I, A | B, E | F | G>;
   branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,

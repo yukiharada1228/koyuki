@@ -501,10 +501,12 @@
       "assessment": "業務語彙を型に表し、businessから操作APIを推論する。",
       "evidence": [
         "docs/business.md",
-        "docs/business-api-study.md"
+        "docs/business-api-study.md",
+        "docs/typed-branch.md",
+        "scripts/fixtures/branch-narrowing-types.ts"
       ],
       "remaining": [
-        "genericな関数と未注釈callbackの一部推論制限、独立利用者の学習・補完・診断評価が残る。"
+        "defineTransitionでgenericヘルパー呼出しと未注釈evolveを同時に書く場合などの推論制限、および誤定義時の診断・独立利用者の学習負担の評価が残る。Workflow.branchのinline predicate入力型は推論可能になった。"
       ]
     },
     {
@@ -778,6 +780,16 @@
       "assessment": "参考文献の一覧。全書籍・リンク先の監査や実装完了は含まない。",
       "evidence": [],
       "remaining": []
+    }
+  ],
+  "followUps": [
+    {
+      "topic": "inline型ガードの入力推論",
+      "evidence": [
+        "docs/typed-branch.md",
+        "src/branch-narrowing.test.ts"
+      ],
+      "scope": "Removed the need to annotate inline predicate inputs for supported branch declarations; not a claim that all generic inference limitations or user-experience measurements are resolved."
     }
   ]
 }
