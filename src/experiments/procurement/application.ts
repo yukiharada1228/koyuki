@@ -1,7 +1,7 @@
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
 import { reserveStock, releaseStock, moveStock, adjustStock, receiveIntoStock, returnFromStock, correctInStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, ok, type Result } from '../../framework/index.js';
-import { checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, approveInvoice, voidInvoice, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice,
+import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
@@ -20,11 +20,11 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   const requests = business({ name: 'procurement.request.v1', load: context.create,
     save: <T extends Request>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       create: [createRequest],
-      edit: { load: context.request<EditInput>, run: [editRequest] },
-      withdraw: { load: context.request<VersionInput>, run: [withdrawRequest] },
-      reject: { load: context.request<ReasonInput>, run: [rejectRequest] },
-      return: { load: context.request<VersionInput>, run: [returnRequest] },
-      reassign: { load: context.approval, run: [reassignRequest] },
+      edit: { load: context.request<EditInput>, run: [checkBuyerRequest, editCheckedRequest] },
+      withdraw: { load: context.request<VersionInput>, run: [checkBuyerRequest, withdrawCheckedRequest] },
+      reject: { load: context.request<ReasonInput>, run: [checkApproverRequest, rejectCheckedRequest] },
+      return: { load: context.request<VersionInput>, run: [checkApproverRequest, returnCheckedRequest] },
+      reassign: { load: context.approval, run: [checkApproverRequest, reassignCheckedRequest] },
       submit: { load: context.approval, run: [submitRequest] },
       approve: { load: context.request<VersionInput>, run: [approveRequest] },
     } });
@@ -44,8 +44,8 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   const invoices = business({ name: 'procurement.invoice.v1', load: context.register,
     save: <T extends Invoice>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       register: [registerInvoice],
-      approve: { load: context.invoice<VersionInput>, run: [approveInvoice] },
-      void: { load: context.invoice<ReasonInput>, run: [voidInvoice] },
+      approve: { load: context.invoice<VersionInput>, run: [checkInvoice, approveCheckedInvoice] },
+      void: { load: context.invoice<ReasonInput>, run: [checkInvoice, voidCheckedInvoice] },
       match: { load: context.match, run: [matchInvoice] },
     } });
   const payments = business({ name: 'procurement.payment.v1', load: context.record,

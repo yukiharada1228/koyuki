@@ -177,34 +177,48 @@ export function matchInvoice(value: Loaded<VersionInput, Invoice> & Readonly<{ o
 }
 
 // Shared checks describe this domain's ownership and version rules, not runtime orchestration.
-function requestGuard(value: Loaded<VersionInput, Request>, role: 'buyer' | 'approver'): Result<Request, RuleError> {
+declare const requestCheck: unique symbol;
+export type CheckedRequest<T, R extends 'buyer' | 'approver'> = T & Readonly<{ [requestCheck]: R }>;
+function checkRequest<T extends Loaded<VersionInput, Request>, R extends 'buyer' | 'approver'>(value: T, role: R): Result<CheckedRequest<T, R>, RuleError> {
   const { input, actor, current } = value;
   if (!allowed(actor, role, current.groupId) || (role === 'buyer' ? actor.id !== current.ownerId : actor.id === current.ownerId)) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
   if (!integer(input.expectedVersion)) return failure('InvalidInput');
   if (current.version !== input.expectedVersion) return failure('Conflict');
   if (role === 'approver' && pendingApproval(current) && current.approverId !== actor.id) return failure('Denied');
-  return ok(current);
+  return ok(value as CheckedRequest<T, R>);
 }
+export const checkBuyerRequest = <T extends Loaded<VersionInput, Request>>(value: T) => checkRequest(value, 'buyer');
+export const checkApproverRequest = <T extends Loaded<VersionInput, Request>>(value: T) => checkRequest(value, 'approver');
+
 function draftFrom(current: Request): Draft {
   return stamp('request-draft', { kind: 'request', state: 'draft', id: current.id, groupId: current.groupId,
     ownerId: current.ownerId, lines: current.lines, totalCents: current.totalCents, version: current.version + 1 });
 }
 export function editRequest(value: Loaded<EditInput, Request>): Result<Change<Draft>, RuleError> {
-  const checked = requestGuard(value, 'buyer'); if (!checked.ok) return checked;
-  if (checked.value.state !== 'draft') return failure('WrongState');
+  const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
+  return editCheckedRequest(checked.value);
+}
+export function editCheckedRequest(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>): Result<Change<Draft>, RuleError> {
+  if (value.current.state !== 'draft') return failure('WrongState');
   const parsed = lines(value.input.lines); if (!parsed.ok) return parsed;
-  const result: Draft = { ...draftFrom(checked.value), lines: parsed.value, totalCents: parsed.value.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) };
-  return ok(plan(result, [check(checked.value)]));
+  const result: Draft = { ...draftFrom(value.current), lines: parsed.value, totalCents: parsed.value.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) };
+  return ok(plan(result, [check(value.current)]));
 }
 export function withdrawRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
-  const checked = requestGuard(value, 'buyer'); if (!checked.ok) return checked;
-  if (!pendingApproval(checked.value)) return failure('WrongState');
-  return ok(plan(draftFrom(checked.value), [check(checked.value)]));
+  const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
+  return withdrawCheckedRequest(checked.value);
+}
+export function withdrawCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'buyer'>): Result<Change<Draft>, RuleError> {
+  if (!pendingApproval(value.current)) return failure('WrongState');
+  return ok(plan(draftFrom(value.current), [check(value.current)]));
 }
 export function rejectRequest(value: Loaded<ReasonInput, Request>): Result<Change<Rejected>, RuleError> {
-  const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
-  const current = checked.value;
+  const checked = checkApproverRequest(value); if (!checked.ok) return checked;
+  return rejectCheckedRequest(checked.value);
+}
+export function rejectCheckedRequest(value: CheckedRequest<Loaded<ReasonInput, Request>, 'approver'>): Result<Change<Rejected>, RuleError> {
+  const current = value.current;
   if (!pendingApproval(current)) return failure('WrongState');
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
   const result: Rejected = stamp('request-rejected', { kind: 'request', state: 'rejected', id: current.id, groupId: current.groupId,
@@ -213,13 +227,19 @@ export function rejectRequest(value: Loaded<ReasonInput, Request>): Result<Chang
   return ok(plan(result, [check(current)]));
 }
 export function returnRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
-  const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
-  if (!pendingApproval(checked.value)) return failure('WrongState');
-  return ok(plan(draftFrom(checked.value), [check(checked.value)]));
+  const checked = checkApproverRequest(value); if (!checked.ok) return checked;
+  return returnCheckedRequest(checked.value);
+}
+export function returnCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'approver'>): Result<Change<Draft>, RuleError> {
+  if (!pendingApproval(value.current)) return failure('WrongState');
+  return ok(plan(draftFrom(value.current), [check(value.current)]));
 }
 export function reassignRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<PendingApproval>, RuleError> {
-  const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
-  const current = checked.value, next = value.input.approverId;
+  const checked = checkApproverRequest(value); if (!checked.ok) return checked;
+  return reassignCheckedRequest(checked.value);
+}
+export function reassignCheckedRequest(value: CheckedRequest<Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>, 'approver'>): Result<Change<PendingApproval>, RuleError> {
+  const current = value.current, next = value.input.approverId;
   if (!pendingApproval(current)) return failure('WrongState');
   if (!id(next) || next === current.ownerId || next === current.approverId || !value.policy.approverIds.includes(next)) return failure('InvalidInput');
   if (current.state === 'first-review') {
@@ -274,23 +294,31 @@ export function completeCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Or
   return ok(plan({ ...current, state: 'completed', version: current.version + 1 }, [check(current), ...value.invoices.map(check)]));
 }
 
-function invoiceGuard(value: Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>): Result<Invoice, RuleError> {
+declare const invoiceCheck: unique symbol;
+export type CheckedInvoice<T> = T & Readonly<{ [invoiceCheck]: true }>;
+export function checkInvoice<T extends Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>>(value: T): Result<CheckedInvoice<T>, RuleError> {
   const { input, actor, current, order } = value;
   if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
   if (input.id !== current.id || order.id !== current.orderId || order.groupId !== current.groupId) return failure('TargetMismatch');
   if (!integer(input.expectedVersion)) return failure('InvalidInput');
   if (input.expectedVersion !== current.version) return failure('Conflict');
-  return ok(current);
+  return ok(value as CheckedInvoice<T>);
 }
 export function approveInvoice(value: Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>): Result<Change<Invoice>, RuleError> {
-  const checked = invoiceGuard(value); if (!checked.ok) return checked;
-  const current = checked.value;
+  const checked = checkInvoice(value); if (!checked.ok) return checked;
+  return approveCheckedInvoice(checked.value);
+}
+export function approveCheckedInvoice(value: CheckedInvoice<Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>>): Result<Change<Invoice>, RuleError> {
+  const current = value.current;
   if (current.state !== 'matched' || value.order.state === 'cancelled') return failure('WrongState');
   return ok(plan({ ...current, state: 'approved', approvedBy: value.actor.id, version: current.version + 1 }, [check(current), check(value.order)]));
 }
 export function voidInvoice(value: Loaded<ReasonInput, Invoice> & Readonly<{ order: Order }>): Result<Change<Invoice>, RuleError> {
-  const checked = invoiceGuard(value); if (!checked.ok) return checked;
-  const current = checked.value, order = value.order;
+  const checked = checkInvoice(value); if (!checked.ok) return checked;
+  return voidCheckedInvoice(checked.value);
+}
+export function voidCheckedInvoice(value: CheckedInvoice<Loaded<ReasonInput, Invoice> & Readonly<{ order: Order }>>): Result<Change<Invoice>, RuleError> {
+  const current = value.current, order = value.order;
   if ((current.state !== 'registered' && current.state !== 'matched') || order.state !== 'placed') return failure('WrongState');
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
   const result: Invoice = { kind: 'invoice', state: 'voided', id: current.id, groupId: current.groupId, orderId: current.orderId,

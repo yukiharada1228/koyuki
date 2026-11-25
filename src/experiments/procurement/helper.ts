@@ -5,7 +5,7 @@ import type { ProcurementRepository, StorageError } from './repository.js';
 import type { Result } from '../../framework/index.js';
 import type { Actor, Policy, Entity, Change, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
-import { checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, createRequest, editRequest, submitRequest, withdrawRequest, approveRequest, rejectRequest, returnRequest, reassignRequest, placeOrder, registerInvoice, matchInvoice, approveInvoice, voidInvoice, recordPayment, cancelPayment } from './domain.js';
+import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
 import { receiveIntoStock, returnFromStock, correctInStock, reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
@@ -38,13 +38,13 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
   return {
     requests: {
       create: action(context.create, createRequest),
-      edit: action(context.request<EditInput>, editRequest),
+      edit: checkedAction(context.request<EditInput>, checkBuyerRequest, editCheckedRequest),
       submit: action(context.approval, submitRequest),
-      withdraw: action(context.request<VersionInput>, withdrawRequest),
+      withdraw: checkedAction(context.request<VersionInput>, checkBuyerRequest, withdrawCheckedRequest),
       approve: action(context.request<VersionInput>, approveRequest),
-      reject: action(context.request<ReasonInput>, rejectRequest),
-      return: action(context.request<VersionInput>, returnRequest),
-      reassign: action(context.approval, reassignRequest),
+      reject: checkedAction(context.request<ReasonInput>, checkApproverRequest, rejectCheckedRequest),
+      return: checkedAction(context.request<VersionInput>, checkApproverRequest, returnCheckedRequest),
+      reassign: checkedAction(context.approval, checkApproverRequest, reassignCheckedRequest),
     },
     orders: {
       place: action(context.place, placeOrder),
@@ -60,8 +60,8 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
     invoices: {
       register: action(context.register, registerInvoice),
       match: action(context.match, matchInvoice),
-      approve: action(context.invoice<VersionInput>, approveInvoice),
-      void: action(context.invoice<ReasonInput>, voidInvoice),
+      approve: checkedAction(context.invoice<VersionInput>, checkInvoice, approveCheckedInvoice),
+      void: checkedAction(context.invoice<ReasonInput>, checkInvoice, voidCheckedInvoice),
     },
     payments: {
       record: action(context.record, recordPayment),

@@ -1,6 +1,6 @@
 import { business } from '../../framework/index.js';
 import { procurementProcessContext } from './context-process.js';
-import { approveInvoice, voidInvoice, type Actor, type ReceiptDepletion, type Change, type Invoice, type Receipt, type VersionInput, type ReasonInput, type CorrectInput } from './domain.js';
+import { checkInvoice, approveCheckedInvoice, voidCheckedInvoice, type Actor, type ReceiptDepletion, type Change, type Invoice, type Receipt, type VersionInput, type ReasonInput, type CorrectInput } from './domain.js';
 import { returnFromStock, correctInStock } from './inventory.js';
 import type { ProcurementRepository } from './repository.js';
 
@@ -13,8 +13,8 @@ export function procurementComposedReads<E>(repository: ProcurementRepository<E>
   const invoices = business({ name: 'procurement.invoice.v1', load: invoiceLoad<VersionInput>(),
     save: <T extends Invoice>(change: Change<T>) => repository.commit(change, actor),
     operations: {
-      approve: [approveInvoice],
-      void: { load: invoiceLoad<ReasonInput>(), run: [voidInvoice] },
+      approve: [checkInvoice, approveCheckedInvoice],
+      void: { load: invoiceLoad<ReasonInput>(), run: [checkInvoice, voidCheckedInvoice] },
     } });
   const receipts = business({ name: 'procurement.receipt.v1', load: receiptLoad<ReasonInput>(),
     save: <T extends Receipt>(change: Change<T>) => repository.commit(change, actor),
