@@ -1,0 +1,23 @@
+{
+  "name": "koyuki-leave-http-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "tsx --test http.test.ts",
+    "start": "tsx server.ts"
+  },
+  "dependencies": {
+    "koyuki": "file:../..",
+    "hono": "4.13.21",
+    "@hono/node-server": "2.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

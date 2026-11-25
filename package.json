@@ -46,7 +46,11 @@
     "test:use-case:package": "node scripts/test-leave-package.mjs --declarative",
     "test:portable": "npm run build && node scripts/test-portable.mjs",
     "check:package": "npm run build && node scripts/check-runtime-package.mjs",
-    "check:package:registry": "node scripts/check-runtime-package.mjs --registry"
+    "check:package:registry": "node scripts/check-runtime-package.mjs --registry",
+    "check:leave:http": "npm --prefix examples/leave-http run check",
+    "test:leave:http": "npm --prefix examples/leave-http test",
+    "demo:leave:http": "npm --prefix examples/leave-http start",
+    "test:leave:http:package": "node scripts/test-leave-http-package.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",

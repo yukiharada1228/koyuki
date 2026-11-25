@@ -149,3 +149,9 @@ alpha.3では[defineUseCaseによる接続の集約](docs/use-case.md)も利用�
 
 [全体例と責任範囲](docs/use-case-group.md)、[講演との対応と達成条件](docs/framework-goal.md)。
 これらの追加APIは未公開の開発版。既存APIは引き続き利用できる。
+
+
+[休暇申請のHTTP API](examples/leave-http/README.md)では、開発版の新APIをHonoへ接続しています。
+認証→入力検証→業務操作→SQLite保存・再送→HTTP応答を、実TCPとサーバー再起動まで検証します。
+`npm run test:leave:http:package`で、配布パッケージだけを使う独立consumerとして再現できます。
+[開発体験の評価](examples/leave-http/FINDINGS.md)も記録しています。
