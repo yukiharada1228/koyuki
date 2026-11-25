@@ -1,0 +1,30 @@
+{
+  "compiler": "Version 7.0.2",
+  "baselineBusinessCommit": "cf8ccf20e6fde43544aa37bd6951accc92efe28d",
+  "contractScope": "Current src copy with only business.ts replaced; not an immutable whole-repository comparison.",
+  "sourceSha256": "8b1688e1951565c56848662b2013356722c8ba860a1f3d36ae197451cb6c4a69",
+  "results": [
+    {
+      "name": "baseline",
+      "existingContractsPass": true,
+      "contractDiagnostics": "",
+      "invalidProbeRejected": true,
+      "diagnosticCharacters": 2277,
+      "operationMarkersVisible": [],
+      "diagnostics": "<temporary>/src/business-diagnostic-probe.ts(9,16): error TS2769: No overload matches this call.\n  The last overload gave the following error.\n    Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type '((_value: Valid) => Result<Authorized, \"Denied\">) & Rule<Raw, Authorized, \"Denied\">'.\n      Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type 'Rule<Raw, Authorized, \"Denied\">'.\n        Types of parameters '_value' and 'input' are incompatible.\n          Type 'Raw' is not assignable to type 'Valid'.\n            Types of property 'kind' are incompatible.\n              Type '\"raw\"' is not assignable to type '\"valid\"'.\n<temporary>/src/business-diagnostic-probe.ts(10,33): error TS2769: No overload matches this call.\n  The last overload gave the following error.\n    Type '(_value: Authorized) => Result<Approved, never>' is not assignable to type '((_value: Authorized) => Result<Approved, never>) & Rule<Valid, Approved, never>'.\n      Type '(_value: Authorized) => Result<Approved, never>' is not assignable to type 'Rule<Valid, Approved, never>'.\n        Types of parameters '_value' and 'input' are incompatible.\n          Type 'Valid' is not assignable to type 'Authorized'.\n            Types of property 'kind' are incompatible.\n              Type '\"valid\"' is not assignable to type '\"authorized\"'.\n<temporary>/src/business-diagnostic-probe.ts(11,25): error TS2769: No overload matches this call.\n  The last overload gave the following error.\n    Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type '((_value: Valid) => Result<Authorized, \"Denied\">) & Rule<Valid, Approved, \"Denied\">'.\n      Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type 'Rule<Valid, Approved, \"Denied\">'.\n        Type 'Result<Authorized, \"Denied\">' is not assignable to type 'Result<Approved, \"Denied\">'.\n          Type '{ ok: true; value: Authorized; }' is not assignable to type 'Result<Approved, \"Denied\">'.\n            Type '{ ok: true; value: Authorized; }' is not assignable to type '{ ok: true; value: Approved; }'.\n              The types of 'value.kind' are incompatible between these types.\n                Type '\"authorized\"' is not assignable to type '\"approved\"'.\n"
+    },
+    {
+      "name": "stage-location-marker",
+      "existingContractsPass": true,
+      "contractDiagnostics": "",
+      "invalidProbeRejected": true,
+      "diagnosticCharacters": 1672,
+      "operationMarkersVisible": [
+        "wrongFirst",
+        "omittedPermission",
+        "wrongSave"
+      ],
+      "diagnostics": "<temporary>/src/business-diagnostic-probe.ts(9,16): error TS2769: No overload matches this call.\n  The last overload gave the following error.\n    Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type '((_value: Valid) => Result<Authorized, \"Denied\">) & { readonly \"Koyuki: wrongFirst[0] input must accept prior output\": never; } & Rule<Raw, Authorized, \"Denied\">'.\n      Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type '{ readonly \"Koyuki: wrongFirst[0] input must accept prior output\": never; }'.\n<temporary>/src/business-diagnostic-probe.ts(10,33): error TS2769: No overload matches this call.\n  The last overload gave the following error.\n    Type '(_value: Authorized) => Result<Approved, never>' is not assignable to type '((_value: Authorized) => Result<Approved, never>) & { readonly \"Koyuki: omittedPermission[1] input must accept prior output\": never; } & Rule<Valid, Approved, never>'.\n      Type '(_value: Authorized) => Result<Approved, never>' is not assignable to type '{ readonly \"Koyuki: omittedPermission[1] input must accept prior output\": never; }'.\n<temporary>/src/business-diagnostic-probe.ts(11,25): error TS2769: No overload matches this call.\n  The last overload gave the following error.\n    Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type '((_value: Valid) => Result<Authorized, \"Denied\">) & { readonly \"Koyuki: wrongSave[1] output must match save\": never; } & Rule<Valid, Approved, \"Denied\">'.\n      Type '(_value: Valid) => Result<Authorized, 'Denied'>' is not assignable to type '{ readonly \"Koyuki: wrongSave[1] output must match save\": never; }'.\n"
+    }
+  ]
+}

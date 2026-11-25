@@ -74,6 +74,7 @@ Process自体は全体transactionや永続的な再開を提供しない。
 
 新規の共通load/saveを持つ業務操作群にはbusinessを推奨する。
 業務の中心は通常の関数と型であり、validate/require/evolveの分類を必須にしない。
+[接続の診断](business-diagnostics.md)は、操作名と関数配列の位置を示す。診断用の属性を関数へ付ける必要はない。
 既存のdefineUseCaseGroup / defineTransitionは互換のため維持し、既存宣言の即時移行は要求しない。
 純粋な計算だけの合成にはworkflow、I/Oの区間にはProcessを使う。
 

@@ -21,3 +21,18 @@ business({ name: 'async', load: async (n: number) => ok(n), save: async (n: numb
 business({ name: 'empty', load: async (n: number) => ok(n), save: async (n: number) => ok(n), operations: { change: [] } });
 // reject-next-line: a replay save must return an atomic Execution envelope
 business({ name: 'replay', load: async (n: number) => ok(n), save: async (n: number) => ok(n), operations: { change: [(n: number) => ok(n)] }, replay: { lookup: () => ok({ kind: 'missing' as const }), resolveAfter: [] } });
+
+type RawState = { kind: 'raw' }; type CheckedState = { kind: 'checked' }; type AllowedState = { kind: 'allowed' }; type DoneState = { kind: 'done' };
+const readState = async (_id: string): Promise<Result<RawState, never>> => ok({ kind: 'raw' });
+const checkState = (_value: RawState): Result<CheckedState, 'Invalid'> => ok({ kind: 'checked' });
+const allowState = (_value: CheckedState): Result<AllowedState, 'Denied'> => ok({ kind: 'allowed' });
+const finishState = (_value: AllowedState): Result<DoneState, never> => ok({ kind: 'done' });
+const saveState = async (value: DoneState) => ok(value);
+// reject-next-line: operation and first-stage input must be identifiable
+business({ name: 'first', load: readState, save: saveState, operations: { wrongFirst: [allowState, finishState] } });
+// reject-next-line: operation and missing intermediate proof must be identifiable
+business({ name: 'proof', load: readState, save: saveState, operations: { omittedPermission: [checkState, finishState] } });
+// reject-next-line: operation and last-stage save mismatch must be identifiable
+business({ name: 'save', load: readState, save: saveState, operations: { wrongSave: [checkState, allowState] } });
+// reject-next-line: operation-specific load must be used when diagnosing its first stage
+business({ name: 'override', load: async (_id: string) => ok(1), save: saveState, operations: { overridden: { load: readState, run: [allowState, finishState] } } });

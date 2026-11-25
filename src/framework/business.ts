@@ -31,11 +31,17 @@ type Loader<L extends Load, E extends Entry> = E extends { load: infer P extends
 type Outputs<P extends readonly Fn[]> = { readonly [K in keyof P]: Out<P[K]> };
 type Inputs<C, P extends readonly Fn[]> = readonly [C, ...Outputs<P>];
 type Tail<P extends readonly Fn[]> = P extends readonly [Fn, ...infer T extends readonly Fn[]] ? T : readonly [];
-type Connect<C, P extends readonly Fn[], O> = {
-  readonly [K in keyof P]: Rule<Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Out<P[K]> : O, ErrorOf<P[K]>>
+// Keep the actual function contract even in the error branch. The marker is
+// diagnostic-only: adding a property cannot make an incompatible rule valid.
+type DiagnosticRule<F extends Fn, I, O, Operation extends string, Index extends PropertyKey> =
+  ([F] extends [Rule<I, O, ErrorOf<F>>] ? unknown : {
+    readonly [K in `Koyuki: ${Operation}[${Extract<Index, string | number>}] ${[F] extends [Rule<I, Out<F>, ErrorOf<F>>] ? 'output must match save' : 'input must accept prior output'}`]: never
+  }) & Rule<I, O, ErrorOf<F>>;
+type Connect<C, P extends readonly Fn[], O, Operation extends string> = {
+  readonly [K in keyof P]: DiagnosticRule<P[K], Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Out<P[K]> : O, Operation, K>
 };
-type Checked<L extends Load, E extends Entry, O> = E extends Pipeline ? Connect<Loaded<L>, E, O> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
-  ? { readonly load: A; readonly run: Connect<Loaded<A>, P, O> } : never;
+type Checked<L extends Load, E extends Entry, O, Operation extends string> = E extends Pipeline ? Connect<Loaded<L>, E, O, Operation> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
+  ? { readonly load: A; readonly run: Connect<Loaded<A>, P, O, Operation> } : never;
 type Requests<L extends Load, T extends Record<string, Entry>> = { [K in keyof T]: Input<Loader<L, T[K]>> }[keyof T];
 type ReplayValue<S> = S extends Execution<infer O> ? O : never;
 type ObservedDetailed<I, R> = {
@@ -78,7 +84,7 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
   load: L;
   save: (value: O, context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Promise<Result<S, SE>>;
   // Infer the user tuple first; the compatibility check must not widen it.
-  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], O> }>;
+  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], O, Extract<K, string>> }>;
   replay?: {
     lookup: (context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
@@ -90,7 +96,7 @@ export function business<L extends Load, const A extends object, RE, const T ext
   operation?: (name: Extract<keyof T, string>) => string;
   load: L;
   save: A & NoInfer<A extends (value: SaveInput<A>, context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Promise<Result<unknown, unknown>> ? unknown : never>;
-  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], SaveInput<A>> }>;
+  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], SaveInput<A>, Extract<K, string>> }>;
   replay?: {
     lookup: (context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE> | Promise<Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);

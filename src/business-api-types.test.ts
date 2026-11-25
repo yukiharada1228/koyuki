@@ -14,6 +14,7 @@ declare const load: (input: Request) => Promise<Result<Request, 'NotFound'>>;
 declare const validate: (value: Request) => Result<Validated, 'Invalid'>;
 declare const permit: (value: Validated) => Result<Authorized, 'Forbidden'>;
 declare const approve: (value: Authorized) => Result<Approved, 'Closed'>;
+declare const misleadingDiagnostic: typeof approve & { readonly 'Koyuki: approve[1] input must accept prior output': never };
 declare const save: (value: Approved) => Promise<Result<Approved, 'Conflict'>>;
 // Never called: declared proof constructors are intentionally type-only.
 function contracts() {
@@ -36,6 +37,15 @@ function contracts() {
   business({ name: 'bad', load, save, operations: {
     // @ts-expect-error permission needs validated input before it can produce authorization
     approve: [permit, validate, approve],
+  } });
+  const decoratedWrong = Object.assign(approve, { 'Koyuki: approve[1] input must accept prior output': undefined });
+  business({ name: 'bad', load, save, operations: {
+    // @ts-expect-error a diagnostic-looking property cannot replace the missing authorization proof
+    approve: [validate, decoratedWrong],
+  } });
+  business({ name: 'bad', load, save, operations: {
+    // @ts-expect-error even an exact diagnostic marker must still satisfy the actual function input contract
+    approve: [validate, misleadingDiagnostic],
   } });
   // Each stage has a distinct literal state; this is not a homogeneous repetition.
   type State<N extends number> = { stage: N };

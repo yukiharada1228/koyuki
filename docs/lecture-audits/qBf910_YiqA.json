@@ -47,6 +47,13 @@
       "sections": [
         "qbf-19"
       ]
+    },
+    "businessDiagnosticFollowUp": {
+      "implementationBaseCommit": "cf8ccf20e6fde43544aa37bd6951accc92efe28d",
+      "scope": "Declaration-only improvement of operation and stage diagnostics, tested in installed consumers. No new source/audio review.",
+      "sections": [
+        "qbf-19"
+      ]
     }
   },
   "sections": [
@@ -309,7 +316,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続とgeneric saveの成功型を検査する。動的に選ぶcommand/validateでは全候補が受け取れる入力を要求し、型を緩めた接続を避ける。宣言の参照保持も追加したが、generic requireと未注釈evolveの推論制限・診断品質・独立利用者のDXは未解決。",
+      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続とgeneric saveの成功型を検査する。動的に選ぶcommand/validateでは全候補が受け取れる入力を要求し、型を緩めた接続を避ける。宣言の参照保持に加え、接続ミスの操作名・段階位置・入力/保存出力の不一致を配布宣言で示すよう改善した。generic requireと未注釈evolveの推論制限、任意の複雑な型の診断品質、独立利用者のDXは未解決。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -328,7 +335,10 @@
         "docs/effect-projection.md",
         "src/process-projection.test.ts",
         "docs/procurement-framework-context.md",
-        "src/procurement-framework-context.test.ts"
+        "src/procurement-framework-context.test.ts",
+        "docs/business-diagnostics.md",
+        "docs/business-diagnostic-study.json",
+        "scripts/fixtures/leave-business-diagnostics.ts"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"

@@ -135,6 +135,12 @@ try {
   const expected = lines.flatMap((line, index) => line.includes('// reject-next-line') ? [index + 2] : []);
   for (const line of expected) if (!diagnostics.includes(`business-diagnostics.ts(${line},`)) throw new Error(diagnostics);
   if (diagnostics.includes('TS7006') || diagnostics.includes('TS2305') || diagnostics.includes('TS2307')) throw new Error(diagnostics);
+  for (const marker of [
+    'Koyuki: wrongFirst[0] input must accept prior output',
+    'Koyuki: omittedPermission[1] input must accept prior output',
+    'Koyuki: wrongSave[1] output must match save',
+    'Koyuki: overridden[0] input must accept prior output',
+  ]) if (!diagnostics.includes(marker)) throw new Error(`Missing stage-location diagnostic: ${marker}\n${diagnostics}`);
   console.log(`Verified ${expected.length} invalid business definitions rejected by installed development declarations.`);
   if (process.argv.includes('--change')) {
     rmSync(join(consumer, 'business-diagnostics.ts'));
