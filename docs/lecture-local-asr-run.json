@@ -1,0 +1,84 @@
+{
+  "schema": "koyuki.lecture-local-asr.v1",
+  "startedAt": "2026-11-25T17:23:55.997Z",
+  "status": "completed",
+  "phase": "done",
+  "collectorSha256": "1e97fb607d52d4e00a9663eff1df685950d5dfe0784fea12a6a39b76bea6e869",
+  "node": "v26.12.0",
+  "whisperVersion": "whisper.cpp version: 1.9.5",
+  "ffmpegVersion": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+  "model": {
+    "file": "ggml-large-v3-turbo-q5_0.bin",
+    "sha1": "e050f7970618a659205450ad97eb95a18d69c9ee",
+    "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+    "reference": "https://github.com/ggml-org/whisper.cpp/blob/master/models/README.md",
+    "download": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
+  },
+  "language": "ja",
+  "captionsSuppliedToAsr": false,
+  "initialPromptSupplied": false,
+  "audioUploaded": false,
+  "audioDirectlyReviewed": false,
+  "allFramesReviewed": false,
+  "scope": "Separate local ASR path from saved MP4 audio. Recognition is not verified speech, direct listening, frame review or implementation completeness. Training-data overlap is unknown.",
+  "videos": [
+    {
+      "videoId": "izV1h6o3hgQ",
+      "sourceFile": "izV1h6o3hgQ.mp4",
+      "sourceSha256": "32e6077237d786b6ed6344dedde15e5190c71923b227c79c10539757b53b5e63",
+      "audioFile": "izV1h6o3hgQ.wav",
+      "audioSha256": "e5ff234c91458ca43c7a82fbb90547ad4569fd24b0dad138daa4511f265b3a7d",
+      "audioSeconds": 4889.473,
+      "streams": [
+        {
+          "sample_rate": "16000",
+          "channels": 1
+        }
+      ],
+      "transcriptionMs": 398765.63474999997,
+      "transcriptFile": "izV1h6o3hgQ.json",
+      "transcriptSha256": "f63df89af552d49184861f8a90fe262fdc7d2b15609baa39de942880263e523a",
+      "segments": 1766,
+      "lastRecognizedOffsetMs": 4877660
+    },
+    {
+      "videoId": "qBf910_YiqA",
+      "sourceFile": "qBf910_YiqA.mp4",
+      "sourceSha256": "45ad216b7386ea4dbfdeb1eda2d8243d21362877c9795cbf3cb7e33368a3dbb5",
+      "audioFile": "qBf910_YiqA.wav",
+      "audioSha256": "e42f1efb909962501f82ac88627fd46a05b734a048475fec621fdd7b2165f875",
+      "audioSeconds": 2019.173,
+      "streams": [
+        {
+          "sample_rate": "16000",
+          "channels": 1
+        }
+      ],
+      "transcriptionMs": 163985.12945799995,
+      "transcriptFile": "qBf910_YiqA.json",
+      "transcriptSha256": "8d8fec45b2a885013e2d53082ca1d6afdb84a762908b2096036b439abcbe5baf",
+      "segments": 1214,
+      "lastRecognizedOffsetMs": 2012740
+    },
+    {
+      "videoId": "w0oLNoGsGLc",
+      "sourceFile": "w0oLNoGsGLc.mp4",
+      "sourceSha256": "573bd4f8aa6457afb2d198f0bc905a3a67481c2be6c69ca3a1388ff2f8de2f92",
+      "audioFile": "w0oLNoGsGLc.wav",
+      "audioSha256": "7e792f513b4fe65e1d325b43dbb217d08798611a8d04206493edeac9bfe57ecd",
+      "audioSeconds": 2512.953,
+      "streams": [
+        {
+          "sample_rate": "16000",
+          "channels": 1
+        }
+      ],
+      "transcriptionMs": 204737.146083,
+      "transcriptFile": "w0oLNoGsGLc.json",
+      "transcriptSha256": "cb5e8dca39645944b6802aff2e18078105f0136c40610d9252e70e2ab535d98f",
+      "segments": 959,
+      "lastRecognizedOffsetMs": 2509500
+    }
+  ],
+  "updatedAt": "2026-11-25T17:36:57.419Z"
+}

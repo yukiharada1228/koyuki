@@ -58,8 +58,14 @@
       "sections": [
         "w0o-13"
       ],
-      "scope": "Separate local ASR of 21:55-23:55 from saved MP4 without captions or prompt. Read ASR text against saved captions; not direct listening or verified speech. Full three-video ASR is in progress, not complete. Training-data overlap is unknown.",
+      "scope": "Separate local ASR pilot of 21:55-23:55 from saved MP4 without captions or prompt. Read text against saved captions; not direct listening. At pilot record time the full job was incomplete; the subsequent completed run is separately recorded. Training-data overlap is unknown.",
       "record": "docs/lecture-local-asr-pilot.json",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
+    },
+    "localAsrFullRun": {
+      "scope": "All three saved MP4 audio streams processed by a separate local ASR path, without captions or prompt. Recognition completion is not paired-text review, verified speech, direct listening or implementation completeness.",
+      "record": "docs/lecture-local-asr-run.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
     }

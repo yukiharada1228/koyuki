@@ -1,0 +1,100 @@
+{
+  "schema": "koyuki.lecture-local-asr-followup.v1",
+  "videoId": "qBf910_YiqA",
+  "reviewedAt": "2026-11-25T17:35:00.344Z",
+  "method": "Read two paired saved-caption/local-ASR windows with ten-second context. Not direct listening or whole-video text review.",
+  "asrRun": {
+    "videoId": "qBf910_YiqA",
+    "sourceFile": "qBf910_YiqA.mp4",
+    "sourceSha256": "45ad216b7386ea4dbfdeb1eda2d8243d21362877c9795cbf3cb7e33368a3dbb5",
+    "audioFile": "qBf910_YiqA.wav",
+    "audioSha256": "e42f1efb909962501f82ac88627fd46a05b734a048475fec621fdd7b2165f875",
+    "audioSeconds": 2019.173,
+    "streams": [
+      {
+        "sample_rate": "16000",
+        "channels": 1
+      }
+    ],
+    "transcriptionMs": 163985.12945799995,
+    "transcriptFile": "qBf910_YiqA.json",
+    "transcriptSha256": "8d8fec45b2a885013e2d53082ca1d6afdb84a762908b2096036b439abcbe5baf",
+    "segments": 1214,
+    "lastRecognizedOffsetMs": 2012740
+  },
+  "model": {
+    "file": "ggml-large-v3-turbo-q5_0.bin",
+    "sha1": "e050f7970618a659205450ad97eb95a18d69c9ee",
+    "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
+    "reference": "https://github.com/ggml-org/whisper.cpp/blob/master/models/README.md",
+    "download": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
+  },
+  "whisperVersion": "whisper.cpp version: 1.9.5",
+  "asrCollectorSha256": "1e97fb607d52d4e00a9663eff1df685950d5dfe0784fea12a6a39b76bea6e869",
+  "preparationCollectorSha256": "d14c01421ce2bfeaf4676f22121abe2bd09f2539027f6b9d883b8250d7945286",
+  "asrManifestSnapshotSha256": "2e673351e862b466c30f43d69e6bb0a291053b6edc1f7b9756aa2443e3263f05",
+  "fullThreeVideoJobCompletedAtReview": false,
+  "preparedSections": 21,
+  "reviewedSections": [
+    {
+      "videoId": "qBf910_YiqA",
+      "sectionId": "qbf-12",
+      "startSeconds": 1562,
+      "endSeconds": 1681,
+      "captionLines": 59,
+      "asrSegments": 78,
+      "reviewFile": "qbf-12.md",
+      "reviewFileSha256": "b6ccf596020ad5a115c0ac49f51a32265ef1eb3ba38e7e32d64ff4a5162853ed",
+      "captionSourceSha256": "9d991ad2ee339c76806a9bd180dd70d7198da98152c06739abe68a48e527987b",
+      "asrSourceSha256": "8d8fec45b2a885013e2d53082ca1d6afdb84a762908b2096036b439abcbe5baf",
+      "auditSourceSha256": "68018731ac5740e78639af0894033927fd6e986ff49f62e6e0a29a676dc4cf42",
+      "textComparisonReviewed": true,
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "conclusion": "existing-interpretation-retained",
+      "needsDirectAudio": []
+    },
+    {
+      "videoId": "qBf910_YiqA",
+      "sectionId": "qbf-19",
+      "startSeconds": 1956,
+      "endSeconds": 1978,
+      "captionLines": 19,
+      "asrSegments": 38,
+      "reviewFile": "qbf-19.md",
+      "reviewFileSha256": "7769d946a8ece80bbed5cbfff63ec023b6bf1510e8e2a1a59acbd33ef1e73221",
+      "captionSourceSha256": "9d991ad2ee339c76806a9bd180dd70d7198da98152c06739abe68a48e527987b",
+      "asrSourceSha256": "8d8fec45b2a885013e2d53082ca1d6afdb84a762908b2096036b439abcbe5baf",
+      "auditSourceSha256": "68018731ac5740e78639af0894033927fd6e986ff49f62e6e0a29a676dc4cf42",
+      "textComparisonReviewed": true,
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "conclusion": "existing-interpretation-retained",
+      "needsDirectAudio": []
+    }
+  ],
+  "notYetReviewedSectionIds": [
+    "qbf-01",
+    "qbf-02",
+    "qbf-03",
+    "qbf-04",
+    "qbf-05",
+    "qbf-06",
+    "qbf-07",
+    "qbf-08",
+    "qbf-09",
+    "qbf-10",
+    "qbf-11",
+    "qbf-13",
+    "qbf-14",
+    "qbf-15",
+    "qbf-16",
+    "qbf-17",
+    "qbf-18",
+    "qbf-20",
+    "qbf-21"
+  ],
+  "audioDirectlyReviewed": false,
+  "allFramesReviewed": false,
+  "scope": "Partial paired-text review only. ASR/caption agreement is not recognition accuracy, direct audio evidence or implementation completeness."
+}

@@ -93,6 +93,12 @@
       "record": "docs/lecture-local-asr-iz-followup.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "localAsrFullRun": {
+      "scope": "All three saved MP4 audio streams processed by a separate local ASR path, without captions or prompt. Recognition completion is not paired-text review, verified speech, direct listening or implementation completeness.",
+      "record": "docs/lecture-local-asr-run.json",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
