@@ -78,9 +78,25 @@
         "w0o-05",
         "w0o-06",
         "w0o-07",
-        "w0o-08"
+        "w0o-08",
+        "w0o-09",
+        "w0o-10",
+        "w0o-11",
+        "w0o-12",
+        "w0o-13",
+        "w0o-14",
+        "w0o-15",
+        "w0o-16",
+        "w0o-17",
+        "w0o-18",
+        "w0o-19",
+        "w0o-20",
+        "w0o-21",
+        "w0o-22",
+        "w0o-23",
+        "w0o-24"
       ],
-      "scope": "Read the first eight paired caption/ASR windows. Sixteen other paired windows remain unreviewed. Retain previous interpretations; a subscriber-rejection contract bug was reproduced and corrected separately. Not direct listening.",
+      "scope": "All 24 paired caption/ASR windows read. Previous interpretations retained. Negation errors at 2428.28-2432.8 and 2492.46-2499.18 seconds still need direct audio verification. Not direct listening or complete implementation.",
       "record": "docs/lecture-local-asr-w0o-followup.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
@@ -213,7 +229,9 @@
       "assessment": "計算モデルの比較のための総和の例。フレームワーク内部のループやローカル変数の利用を禁止する要求ではない。",
       "evidence": [
         "src/framework/validation.ts",
-        "src/examples/order-lines.ts"
+        "src/examples/order-lines.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -226,7 +244,9 @@
       "assessment": "値へ関数を繰り返し適用する説明。TypeScriptのreduceや通常関数を利用でき、新しい言語・無限の再帰実行系は実装しない。",
       "evidence": [
         "src/examples/order-lines.ts",
-        "src/framework/workflow.ts"
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -239,7 +259,9 @@
       "assessment": "言語構文そのものの変更ではなく、業務計算を値を返す関数として構成する。式の形でも副作用があり得るため、形だけで純粋と判定しない。",
       "evidence": [
         "src/framework/workflow.ts",
-        "src/framework/process.ts"
+        "src/framework/process.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -253,7 +275,9 @@
       "evidence": [
         "src/expenses/domain.ts",
         "src/collection-validation.test.ts",
-        "src/with-input.test.ts"
+        "src/with-input.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -289,7 +313,9 @@
         "docs/procurement-observation-comparison.md",
         "src/procurement-observation-scenario.test.ts",
         "docs/lecture-local-asr.md",
-        "docs/lecture-local-asr-pilot.json"
+        "docs/lecture-local-asr-pilot.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": [
         "persistent-history-policy"
@@ -305,7 +331,9 @@
       "evidence": [
         "src/framework/command.ts",
         "src/shipping/feature.ts",
-        "src/registration/delivery.ts"
+        "src/registration/delivery.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -318,7 +346,9 @@
       "assessment": "業務をI/Oから独立させる目的に対応する。テスト容易性だけが目的とも、すべての業務を関数型にしなければならないとも解釈しない。",
       "evidence": [
         "docs/process.md",
-        "src/expenses/repository.ts"
+        "src/expenses/repository.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -330,7 +360,9 @@
       "status": "design-choice",
       "assessment": "UIと業務の中心に計算を置く考え方の整理。認知負担の削減率をKoyukiの実測値へ読み替えない。",
       "evidence": [
-        "docs/team-development-study.md"
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -342,7 +374,9 @@
       "status": "partial",
       "assessment": "追加の静止画でforM_と可変・不変Union-Findの比較を確認。命令的実装が適する例も認める内容。全ての省略画面やコードの動作を検証したわけではない。",
       "evidence": [
-        "docs/lecture-visual-w0o.json"
+        "docs/lecture-visual-w0o.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": [
         "continuous-omitted-slide-verification"
@@ -357,7 +391,9 @@
       "assessment": "入出力の集合を型で制限し、brandやUnionを実例で使用する。number型だけでは安全な整数や業務上の範囲まで表せず実行時検証も必要。",
       "evidence": [
         "src/business-api-types.test.ts",
-        "src/examples/order-lines.ts"
+        "src/examples/order-lines.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -371,7 +407,9 @@
       "evidence": [
         "src/transition-inference.test.ts",
         "scripts/check-runtime-package.mjs",
-        "scripts/fixtures/leave-business-diagnostics.ts"
+        "scripts/fixtures/leave-business-diagnostics.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -386,7 +424,9 @@
         "src/framework/result.ts",
         "src/result-boundary.test.ts",
         "src/process.test.ts",
-        "src/application.test.ts"
+        "src/application.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -399,7 +439,9 @@
       "assessment": "状態ごとの必須フィールドとUnionで不正な組み合わせを減らす。任意の利用者モデルの正しさは自動生成・保証しない。",
       "evidence": [
         "src/registration/domain.ts",
-        "src/expenses/domain.ts"
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -412,7 +454,9 @@
       "assessment": "違う役割をUnionでまとめる例。継承そのものの禁止ではなく、差分だけを目的とする安易な階層化を避ける判断として扱う。",
       "evidence": [
         "src/expenses/domain.ts",
-        "src/framework/workflow.ts"
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -427,7 +471,9 @@
         "src/registration/domain.ts",
         "src/expenses/domain.ts",
         "src/sum-model.test.ts",
-        "docs/lecture-visual-w0o.json"
+        "docs/lecture-visual-w0o.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": [
         "omitted-slide-content-unverified"
@@ -441,7 +487,9 @@
       "status": "design-choice",
       "assessment": "静止画でMaybeのパターンマッチ、GraphQL Union、Maybe/Either/IO/Listの文脈、ナップサック問題の比較を確認。計算の捉え方の補足であり、各アルゴリズム・言語機能をKoyukiへ内蔵する要件とは扱わない。Koyukiの完全性・優越性の実証ではない。",
       "evidence": [
-        "docs/lecture-visual-w0o.json"
+        "docs/lecture-visual-w0o.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     }
