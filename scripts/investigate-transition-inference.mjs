@@ -91,6 +91,7 @@ function restConnectionCandidate(constraint) {
 }
 const candidates = [
   ['current', original],
+  ['deferred-with-input-return', deferredWithInputReturn()],
   ['raw-object-tuple-constraint', tupleConstraintCandidate('object')],
   ['raw-unknown-tuple-constraint', tupleConstraintCandidate('unknown')],
   ['stage-tuple-constraint', original.replace('const T extends readonly AnyStage[] = readonly []', 'const T extends readonly [AnyStage, ...AnyStage[]] | readonly [] = readonly []')],
@@ -148,6 +149,16 @@ function indexedStageEnd() {
 }
 function withInputReturn(type) {
   return original.replace('): Rule<I, Readonly<{ input: I; value: O }>, E> {', `): ${type} {`);
+}
+// A non-distributive conditional can defer the contextual return signature of
+// the nested call. Check the full generic contracts before adopting it: a fixed
+// monomorphic probe alone cannot establish higher-order correlation.
+function deferredWithInputReturn() {
+  const signature = 'export function withInput<I, O, E>(rule: Rule<I, O, E>): Rule<I, Readonly<{ input: I; value: O }>, E>';
+  const deferred = '[I] extends [I] ? Rule<I, Readonly<{ input: I; value: O }>, E> : never';
+  return original.replace(signature, `export function withInput<I, O, E>(rule: Rule<I, O, E>): ${deferred}`)
+    .replace('  return input => {\n    const result = rule(input);', '  const carried: Rule<I, Readonly<{ input: I; value: O }>, E> = input => {\n    const result = rule(input);')
+    .replace('value: result.value }) } : result;\n  };\n}', `value: result.value }) } : result;\n  };\n  return carried as ${deferred};\n}`);
 }
 function mappedAdjacency(noInfer) {
   const helper = `type PriorStages<I, T extends readonly AnyStage[]> = readonly [I, ...{ readonly [K in keyof T]: StageOutput<T[K]> }];
