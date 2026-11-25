@@ -11,6 +11,7 @@ npm run --silent benchmark:procurement -- --backend both --rounds 15 --iteration
 
 stdoutはkoyuki.procurement-runtime.v1のJSON。結果を保存する場合は呼出し側でリダイレクトする。
 通常TypeScript、最小helper、Koyukiの3方式をそれぞれ測る。
+[2回の計測結果](procurement-runtime-results.md)を別に保存した。特定commit・環境の履歴として扱う。
 
 ## 区間
 

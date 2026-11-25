@@ -56,6 +56,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | Applicationから業務段階を同じ実行として観察する | [実行IDと詳細traceの接続](application-execution.md)、失敗・再送・分岐・並行sessionの検査。[Program単体](program-execution.md)も待機・更新・副作用・完了を観察できる | 対応するcoreは処理中の段階時間・親子spanも通知。opaque関数内部・分散相関・永続履歴は未提供 |
 | 成功変更の共通監査を保存する | [共通形式・SQLite原子保存](audit.md)、タグと経費でのrollback・再送・競合検査 | SQLiteサンプルの範囲。保持・削除の運用、改ざん耐性、拒否ログ、他DBは未提供 |
 | Web標準API・実行時依存ゼロで動く | [配布物の依存検査](runtime.md)、Node型なしの宣言検査・Node globalなし実行 | SQLite・Prisma等のhost依存は各サンプル側にある |
+| 通常の接続実装と実行負担を比較する | [25操作・32回の専用計測](procurement-runtime-results.md)で構築・実行を分け、2試行を来歴付きで記録 | 限定例の実行区間はplain比memory約3.65倍・SQLite約1.25倍。性能の優位は未達。実運用・全機能・独立利用者の生産性の測定ではない |
 
 ## 完了扱いにしていないこと
 
