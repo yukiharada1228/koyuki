@@ -184,3 +184,7 @@ ApplicationはこれらのcommandをそのままreplayOperationsへ渡す。
 一方、共通load/save・replayのadapter契約や認証済みactorの注入は引き続き必要であり、配列だけから自動推測してはいない。
 独立した開発者の学習負担、複雑な仕様変更、複数集約の協調に対する使いやすさは未評価。
 購買アプリの大規模比較はまだ着手しておらず、この31テストをチーム生産性の証明に置き換えない。
+
+[承認ルール追加の比較](business-change-study.md)では、通常TS・helper TS・既存遷移・businessの4方式を検証した。
+すべてが証拠型の追加に伴う接続漏れを検出し、新APIだけの優位とは評価していない。
+独立consumerの既存31テストに加え、新仕様の5テストで制限検査・transport・Application・過去receiptを確認する。

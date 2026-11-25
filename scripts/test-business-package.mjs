@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { studyApprovalChange } from './studies/leave-approval-change.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 function run(command, args, cwd) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8' });
@@ -69,5 +70,9 @@ try {
   for (const line of expected) if (!diagnostics.includes(`business-diagnostics.ts(${line},`)) throw new Error(diagnostics);
   if (diagnostics.includes('TS7006') || diagnostics.includes('TS2305') || diagnostics.includes('TS2307')) throw new Error(diagnostics);
   console.log(`Verified ${expected.length} invalid business definitions rejected by installed candidate declarations.`);
+  if (process.argv.includes('--change')) {
+    rmSync(join(consumer, 'business-diagnostics.ts'));
+    studyApprovalChange(consumer, root, run);
+  }
   console.log('Verified unpublished business study: installed PRIVATE local candidate, leave HTTP/GraphQL/Application, parity and migration. No npm publication or supported public study export.');
 } finally { rmSync(dir, { recursive: true, force: true }); }

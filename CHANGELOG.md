@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 未公開APIの仕様変更実験を追加。承認の新たな証拠型・制限ルールを通常TS/helper/既存遷移/businessで比較し、4方式の接続漏れとHTTPエラー対応漏れを型検査で検出。新仕様5テストで境界・失敗停止・Application・過去receiptの契約を検証し、実際の変更diffを出力。
+
 - business試作を休暇3操作へ適用。一時的なprivate候補tarballを独立consumerへインストールし、既存HTTP/GraphQL・Application・旧宣言比較・SQLite移行の31テスト、6件の不正定義拒否、Node型なしでの型推論を検証。通常の配布exportは変更なし。
 
 - 非公開business試作を既存Workflowへ直接接続し、単一関数の空のcomplete段階を除去。共有context/replay接続を内部へ抽出し公開groupの型・挙動を維持。操作ID resolverと経費SQLiteの旧→新（別プロセス）・新→旧replayを検証。
