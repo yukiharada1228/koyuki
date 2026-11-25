@@ -43,6 +43,7 @@ try {
   writeFileSync(join(consumer, 'live-execution.test.ts'), readFileSync(join(root, 'src/live-execution.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'finite-model.test.ts'), readFileSync(join(root, 'src/finite-model.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));
   writeFileSync(join(consumer, 'retry.test.ts'), readFileSync(join(root, 'src/retry.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-operation-table.test.ts'), readFileSync(join(root, 'src/business-operation-table.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'expense-state-exploration.test.ts'), readFileSync(join(root, 'src/expense-state-exploration.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'").replace("'./framework/index.js'", "'koyuki'"));
   mkdirSync(join(consumer, 'expenses'));
   mkdirSync(join(consumer, 'examples'), { recursive: true });
@@ -140,6 +141,7 @@ try {
     'Koyuki: omittedPermission[1] input must accept prior output',
     'Koyuki: wrongSave[1] output must match save',
     'Koyuki: overridden[0] input must accept prior output',
+    'Koyuki: 0[0] input must accept prior output',
   ]) if (!diagnostics.includes(marker)) throw new Error(`Missing stage-location diagnostic: ${marker}\n${diagnostics}`);
   console.log(`Verified ${expected.length} invalid business definitions rejected by installed development declarations.`);
   if (process.argv.includes('--change')) {

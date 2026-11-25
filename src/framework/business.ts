@@ -1,4 +1,5 @@
 import { inheritDetailed } from './instrumentation.js';
+import { isPlainRecord } from './snapshot.js';
 import { registerStructure, structureOf } from './structure.js';
 import { captureLoad, type ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
@@ -26,6 +27,8 @@ type Out<F extends Fn> = Value<ReturnType<F>>;
 type ErrorOf<F extends Fn> = Failure<ReturnType<F>>;
 type Stages<E extends Entry> = E extends Pipeline ? E : E extends { run: infer P extends Pipeline } ? P : never;
 type Loader<L extends Load, E extends Entry> = E extends { load: infer P extends Load } ? P : L;
+type OperationName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
+type OperationNames<T> = OperationName<keyof T>;
 // Shift stage outputs by one position to check every input without recursive expansion.
 // Only the final output is constrained by save; intermediate outputs remain exact.
 type Outputs<P extends readonly Fn[]> = { readonly [K in keyof P]: Out<P[K]> };
@@ -63,7 +66,7 @@ type Saved<D, O, S, SE, C> = [DirectCandidate<O, S>] extends [never] ? ShapeSave
   : D extends { save: (value: O, context: C) => Promise<Result<DirectCandidate<O, S>, SE>> } ? DirectCandidate<O, S> : ShapeSaved<D, O, S, SE, C>;
 type Commands<L extends Load, T extends Record<string, Entry>, S, SE, RE, D extends object> = {
   readonly [K in keyof T]: Callable<SelectCommand<D,
-    PlainCommand<Input<Loader<L, T[K]>>, Saved<D, DecisionOutput<T[K]>, S, SE, GroupExecution<Extract<keyof T, string>, Requests<L, T>>>, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE>,
+    PlainCommand<Input<Loader<L, T[K]>>, Saved<D, DecisionOutput<T[K]>, S, SE, GroupExecution<OperationNames<T>, Requests<L, T>>>, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE>,
     ReplayCommand<Input<Loader<L, T[K]>>, S, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE, RE>
   >>
 };
@@ -78,33 +81,48 @@ interface RuntimeDefinition {
 type SaveFn = (...args: never[]) => Promise<Result<unknown, unknown>>;
 type SaveInput<A> = Parameters<Extract<A, SaveFn>>[0];
 type SaveResult<A> = Awaited<ReturnType<Extract<A, SaveFn>>>;
+/** Operations are own data entries of a plain record. Numeric names use JavaScript
+ * string keys; Symbols, accessors and custom-prototype operation tables are rejected.
+ */
 export function business<L extends Load, O, S, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
-  operation?: (name: Extract<keyof T, string>) => string;
+  operation?: (name: OperationNames<T>) => string;
   load: L;
-  save: (value: O, context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Promise<Result<S, SE>>;
+  save: (value: O, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<S, SE>>;
   // Infer the user tuple first; the compatibility check must not widen it.
-  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], O, Extract<K, string>> }>;
+  operations: T & NoInfer<{ readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], O, OperationName<K>> : never }>;
   replay?: {
-    lookup: (context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
+    lookup: (context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
   } & ReplaySaveCheck<NoInfer<S>>;
 }): Commands<L, T, S, SE, RE, D>;
 /** Infer an ordinary or generic save before checking its shared boundary contract. */
 export function business<L extends Load, const A extends object, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
-  operation?: (name: Extract<keyof T, string>) => string;
+  operation?: (name: OperationNames<T>) => string;
   load: L;
-  save: A & NoInfer<A extends (value: SaveInput<A>, context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Promise<Result<unknown, unknown>> ? unknown : never>;
-  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], SaveInput<A>, Extract<K, string>> }>;
+  save: A & NoInfer<A extends (value: SaveInput<A>, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<unknown, unknown>> ? unknown : never>;
+  operations: T & NoInfer<{ readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], SaveInput<A>, OperationName<K>> : never }>;
   replay?: {
-    lookup: (context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE> | Promise<Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE>>;
+    lookup: (context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE> | Promise<Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
   } & ReplaySaveCheck<Value<SaveResult<A>>>;
 }): Commands<L, T, Value<SaveResult<A>>, Failure<SaveResult<A>>, RE, D>;
 export function business(definition: object) {
   // Public checks prove adjacency. Only heterogeneous tuple positions are erased here.
   const source = definition as unknown as RuntimeDefinition;
+  // TypeScript cannot describe property ownership, enumerability or accessors.
+  // Capture data descriptors once, and never silently omit a declared own key.
+  const table = source.operations;
+  if (!isPlainRecord(table)) throw new TypeError('BusinessOperationsRequirePlainRecord');
+  const descriptors = Object.getOwnPropertyDescriptors(table);
+  const entries: [string, RuntimeDefinition['operations'][string]][] = [];
+  for (const key of Reflect.ownKeys(descriptors)) {
+    const descriptor = Object.getOwnPropertyDescriptor(descriptors, key)!.value as PropertyDescriptor;
+    if (typeof key !== 'string' || !Object.hasOwn(descriptor, 'value')) throw new TypeError('BusinessOperationsRequireStringDataKeys');
+    if (key === 'then') throw new Error('ReservedBusinessOperation:then');
+    entries.push([key, descriptor.value]);
+  }
   const resolveOperation = source.operation ?? ((name: string) => `${source.name}.${name}`);
   const ids = new Map<string, string>();
   const save = source.save;
@@ -126,8 +144,7 @@ export function business(definition: object) {
   };
   const group = runtime();
   const commands: Record<string, unknown> = {};
-  for (const [name, entry] of Object.entries(source.operations)) {
-    if (name === 'then') throw new Error('ReservedBusinessOperation:then');
+  for (const [name, entry] of entries) {
     const custom = 'run' in entry;
     const rules = [...(custom ? entry.run : entry)];
     if (!rules.length) throw new Error('BusinessRequiresRule');

@@ -47,6 +47,13 @@
         "iz-22",
         "iz-24"
       ]
+    },
+    "operationTableFollowUp": {
+      "implementationBaseCommit": "640ef6cc8a7d594d639160fcfeed5b8740c42a37",
+      "scope": "Implementation follow-up of declared operation keys and numeric name contracts. No new source/audio review.",
+      "sections": [
+        "iz-22"
+      ]
     }
   },
   "sections": [
@@ -343,7 +350,9 @@
         "docs/effect-projection.md",
         "src/process-projection.test.ts",
         "docs/procurement-framework-context.md",
-        "src/procurement-framework-context.test.ts"
+        "src/procurement-framework-context.test.ts",
+        "docs/business-operation-table.md",
+        "src/business-operation-table.test.ts"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"

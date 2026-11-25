@@ -1,7 +1,7 @@
 {
   "compiler": "Version 7.0.2",
   "baselineBusinessCommit": "cf8ccf20e6fde43544aa37bd6951accc92efe28d",
-  "contractScope": "Current src copy with only business.ts replaced; not an immutable whole-repository comparison.",
+  "contractScope": "Tracked src and tsconfig at baselineBusinessCommit; only business.ts differs between candidates. Uses the locally installed compiler, not a whole-repository cost comparison.",
   "sourceSha256": "8b1688e1951565c56848662b2013356722c8ba860a1f3d36ae197451cb6c4a69",
   "results": [
     {

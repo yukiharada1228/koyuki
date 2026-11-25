@@ -36,3 +36,8 @@ business({ name: 'proof', load: readState, save: saveState, operations: { omitte
 business({ name: 'save', load: readState, save: saveState, operations: { wrongSave: [checkState, allowState] } });
 // reject-next-line: operation-specific load must be used when diagnosing its first stage
 business({ name: 'override', load: async (_id: string) => ok(1), save: saveState, operations: { overridden: { load: readState, run: [allowState, finishState] } } });
+const symbolOperation = Symbol('unsupported');
+// reject-next-line: Symbol operation keys cannot produce callable commands
+business({ name: 'symbol', load: readState, save: saveState, operations: { [symbolOperation]: [checkState, allowState, finishState] } });
+// reject-next-line: numeric operation names also retain the stage-location diagnostic
+business({ name: 'numeric', load: readState, save: saveState, operations: { 0: [allowState, finishState] } });

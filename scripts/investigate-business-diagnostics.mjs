@@ -1,4 +1,4 @@
-import { cp, mkdtemp, writeFile, symlink, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, symlink, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { relative, join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 // Pin the pre-change declaration; rerunning after adoption must not silently
-// turn the improved declaration into its own baseline. Other src files are current.
+// turn the improved declaration into its own baseline. Contract sources are pinned
+// too: later fixes may intentionally require contracts the old declaration lacked.
 const baselineBusinessCommit = 'cf8ccf20e6fde43544aa37bd6951accc92efe28d';
 const saved = spawnSync('git', ['show', `${baselineBusinessCommit}:src/framework/business.ts`], { cwd: root, encoding: 'utf8' });
 if (saved.error || saved.status !== 0) throw saved.error ?? Error(saved.stderr);
@@ -43,8 +44,10 @@ business({name:'expense',load,save,operations:{
 `;
 const temporary = await mkdtemp(join(tmpdir(), 'koyuki-business-diagnostics-'));
 try {
-  await cp(join(root, 'src'), join(temporary, 'src'), { recursive: true });
-  await cp(join(root, 'tsconfig.json'), join(temporary, 'tsconfig.json'));
+  const archive = spawnSync('git', ['archive', '--format=tar', baselineBusinessCommit, 'src', 'tsconfig.json'], { cwd: root, maxBuffer: 64 * 1024 * 1024 });
+  if (archive.error || archive.status !== 0) throw archive.error ?? Error(String(archive.stderr));
+  const extracted = spawnSync('tar', ['-xf', '-', '-C', temporary], { input: archive.stdout, encoding: 'utf8' });
+  if (extracted.error || extracted.status !== 0) throw extracted.error ?? Error(extracted.stderr);
   await writeFile(join(temporary, 'package.json'), '{"type":"module"}');
   await symlink(join(root, 'node_modules'), join(temporary, 'node_modules'), 'dir');
   const normalize = text => text.replaceAll(relative(root, temporary), '<temporary>').replaceAll(temporary, '<temporary>');
@@ -73,6 +76,6 @@ try {
   const version = spawnSync(join(root, 'node_modules/.bin/tsc'), ['--version'], { encoding: 'utf8' });
   if (version.status !== 0) throw Error('Compiler version unavailable');
   console.log(JSON.stringify({ compiler: version.stdout.trim(), baselineBusinessCommit,
-    contractScope: 'Current src copy with only business.ts replaced; not an immutable whole-repository comparison.',
+    contractScope: 'Tracked src and tsconfig at baselineBusinessCommit; only business.ts differs between candidates. Uses the locally installed compiler, not a whole-repository cost comparison.',
     sourceSha256: createHash('sha256').update(original).digest('hex'), results }, null, 2));
 } finally { await rm(temporary, { recursive: true, force: true }); }

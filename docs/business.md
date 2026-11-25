@@ -53,6 +53,8 @@ voidの検証結果から元の入力を暗黙に復元しない。必要な値�
 通常実行では業務の成功値をそのままsaveへ渡し、Symbol属性やクラスを診断のために拒否しない。
 計画へsnapshotできない場合はinputStatus: unavailableを示す。[業務値と診断の分離](opaque-decisions.md)を参照。
 `then`という操作名はthenableとの衝突を避けるため予約する。
+operationsはownなデータ項目を持つ通常のレコードとして宣言する。
+[操作テーブルの契約](business-operation-table.md)では、数値名の文字列化、非列挙データ項目、Symbol/getterの扱いを説明する。
 
 ## 状態・再送・複数集約
 

@@ -54,6 +54,13 @@
       "sections": [
         "qbf-19"
       ]
+    },
+    "operationTableFollowUp": {
+      "implementationBaseCommit": "640ef6cc8a7d594d639160fcfeed5b8740c42a37",
+      "scope": "Implementation follow-up of declared operation keys and numeric name contracts. No new source/audio review.",
+      "sections": [
+        "qbf-19"
+      ]
     }
   },
   "sections": [
@@ -338,7 +345,9 @@
         "src/procurement-framework-context.test.ts",
         "docs/business-diagnostics.md",
         "docs/business-diagnostic-study.json",
-        "scripts/fixtures/leave-business-diagnostics.ts"
+        "scripts/fixtures/leave-business-diagnostics.ts",
+        "docs/business-operation-table.md",
+        "src/business-operation-table.test.ts"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"

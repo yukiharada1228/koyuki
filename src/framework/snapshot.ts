@@ -11,6 +11,12 @@ function unsupported(): Error {
 export function snapshotData<I>(input: I): I {
   try { return copyData(input); } catch { throw unsupported(); }
 }
+/** Internal declaration-table check; accepts native plain records across realms. */
+export function isPlainRecord(value: unknown): value is Record<PropertyKey, unknown> {
+  if (value === null || typeof value !== 'object') return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === null || samePrototype(prototype, Object.prototype);
+}
 function sameValue(actual: unknown, standard: unknown): boolean {
   if (Object.is(actual, standard)) return true;
   if (typeof actual === 'function' && typeof standard === 'function')

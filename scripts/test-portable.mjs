@@ -18,6 +18,10 @@ export const result = (async () => {
   if (!retried.ok || retried.value !== 3 || retryCalls !== 2) throw new Error('Portable bounded retry failed');
   const projectedRead = await effectProcess().effect('read', async input => ok(input.id + 1), (context, row) => ({ ...context, row })).run({ id: 2, label: 'kept' });
   if (!projectedRead.ok || projectedRead.value.row !== 3 || projectedRead.value.label !== 'kept') throw new Error('Portable effect projection failed');
+  const hiddenOperations = { go: [n => ok(n + 1)] }; Object.defineProperty(hiddenOperations, 'go', { enumerable: false });
+  const hiddenCommand = business({ name: 'hidden', load: async n => ok(n), save: async n => ok(n), operations: hiddenOperations });
+  const hiddenResult = await hiddenCommand.go(2);
+  if (!hiddenResult.ok || hiddenResult.value !== 3) throw new Error('Portable operation table failed');
   const transactionCalls = [];
   const transaction = createSyncTransaction({ begin() { transactionCalls.push('begin'); }, commit() { transactionCalls.push('commit'); }, rollback() { transactionCalls.push('rollback'); } });
   const transactionResult = transaction.run(() => ok(7));
