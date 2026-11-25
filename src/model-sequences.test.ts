@@ -46,6 +46,37 @@ test('zero shrink budget retains the original witness and reports limited, not m
   assert.equal(result.shrink, 'limited'); assert.equal(result.shrinkAttempts, 0); assert.deepEqual(result.witness, result.original);
 });
 
+test('payload shrinking rechecks deletion minimality and owns candidate values in sync and async comparisons', async () => {
+  type Action = { kind: 'add' | 'check'; value: number };
+  const model: SequenceModel<number, Action, number> = {
+    initial: [0], seed: 0, limits: { cases: 1, length: 4, shrinkAttempts: 100 },
+    events: state => [{ kind: state === 0 ? 'add' : 'check', value: 1 }],
+    accepts: (_state, event) => event.value >= 0,
+    step: (state, event) => { assert(event.value >= 0); const next = state + (event.kind === 'add' ? event.value : 0); return { state: next, output: next }; },
+    check: (state, event) => event.kind !== 'check' || state < event.value,
+    shrinkEvent: event => {
+      const { kind, value } = event; event.value = 999;
+      return kind === 'check' && value > 0 ? [{ kind, value: -1 }, { kind, value: 0 }] : [];
+    },
+  };
+  const sync = sampleModel(model); assert(sync.kind === 'counterexample');
+  assert.deepEqual(sync.original.events, [{ kind: 'add', value: 1 }, { kind: 'check', value: 1 }]);
+  assert.deepEqual(sync.witness.events, [{ kind: 'check', value: 0 }]); assert.equal(sync.shrink, 'one-deletion-minimal');
+  assert.deepEqual(await sampleModelAsync({ ...model, check: async (...args) => model.check(...args) }), sync);
+  const cyclic = sampleModel({ ...model, limits: { ...model.limits, shrinkAttempts: 12 }, shrinkEvent: event => [event] });
+  assert(cyclic.kind === 'counterexample'); assert.equal(cyclic.shrink, 'limited'); assert.equal(cyclic.shrinkAttempts, 12);
+  const cause = new Error('shrinker defect');
+  const defect = sampleModel({ ...model, shrinkEvent: () => { throw cause; } });
+  assert(defect.kind === 'defect'); assert.equal(defect.phase, 'shrink-event'); assert.equal(defect.cause, cause);
+  let getters = 0;
+  const invalid = sampleModel({ ...model, shrinkEvent: event => [Object.defineProperty({ ...event }, 'value', { get() { getters++; return 0; }, enumerable: true })] });
+  assert(invalid.kind === 'defect'); assert.equal(invalid.phase, 'snapshot'); assert.equal(getters, 0);
+  if (false) {
+    // @ts-expect-error payload simplification is a synchronous reference-model callback
+    sampleModel({ ...model, shrinkEvent: async event => [event] });
+  }
+});
+
 test('async comparisons use the identical shrinking engine and preserve rejected defects', async () => {
   const model = broken(100); let active = 0, maximum = 0;
   const result = await sampleModelAsync({ ...model, check: async (before, event, expected) => {

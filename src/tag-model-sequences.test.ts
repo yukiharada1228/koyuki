@@ -149,5 +149,12 @@ for (const [name, createFixture] of Object.entries(fixtures)) test(`async shrink
   assert(broken.kind === 'counterexample' && broken.reason === 'implementation', JSON.stringify(broken));
   assert.equal(broken.shrink, 'one-deletion-minimal');
   assert.deepEqual(broken.witness.events.map(event => event.type), ['create', 'rename']); assert(broken.witness.events[1]!.stale);
+  const simplified = await sampleModelAsync({ ...model,
+    shrinkEvent: (event: Event) => event.type === 'rename' && event.label ? [{ ...event, label: '' }] : [],
+    check: (before, event, expected) => compare(before, event, expected, true) });
+  assert(simplified.kind === 'counterexample' && simplified.reason === 'implementation', JSON.stringify(simplified));
+  assert.equal(simplified.shrink, 'one-deletion-minimal');
+  assert.deepEqual(simplified.witness.events.map(event => event.type), ['create', 'rename']);
+  assert.equal(simplified.original.events[1]!.label, 'B'); assert.equal(simplified.witness.events[1]!.label, '');
   assert.equal(opened, closed); assert(opened > 10);
 });

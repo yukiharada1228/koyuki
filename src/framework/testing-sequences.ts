@@ -10,13 +10,15 @@ export interface SequenceModel<S, E, O> {
   readonly invariant?: (state: S) => boolean;
   /** Reference-model admissibility after deleting earlier events; not business authorization. */
   readonly accepts?: (state: S, event: E) => boolean;
+  /** Domain-provided simpler payload candidates, in deterministic preference order. */
+  readonly shrinkEvent?: (event: E) => readonly E[];
   readonly seed: number;
   readonly limits: { readonly cases: number; readonly length: number; readonly shrinkAttempts: number };
 }
 export type AsyncSequenceModel<S, E, O> = Omit<SequenceModel<S, E, O>, 'check'> & {
   readonly check: (before: S, event: E, expected: ModelStep<S, O>) => boolean | Promise<boolean>;
 };
-type Phase = 'snapshot' | 'events' | 'accepts' | 'step' | 'check' | 'invariant';
+type Phase = 'snapshot' | 'events' | 'accepts' | 'step' | 'check' | 'invariant' | 'shrink-event';
 type Reason = 'invariant' | 'implementation';
 interface SequenceWitness<S, E> { readonly initial: S; readonly events: readonly E[] }
 interface SamplingCounts { readonly seed: number; readonly cases: number; readonly transitions: number; readonly shrinkAttempts: number }
@@ -53,7 +55,7 @@ export async function sampleModelAsync<S, E, O>(definition: AsyncSequenceModel<S
 interface CheckRequest<S, E, O> { readonly before: S; readonly event: E; readonly expected: ModelStep<S, O> }
 type SamplingEngine<S, E, O, R = SequenceSampling<S, E>> = Generator<CheckRequest<S, E, O>, R, boolean>;
 function* samplingEngine<S, E, O>(definition: Omit<SequenceModel<S, E, O>, 'check'>): SamplingEngine<S, E, O> {
-  const { events, step, invariant, accepts, seed } = definition;
+  const { events, step, invariant, accepts, shrinkEvent, seed } = definition;
   const limits = { ...definition.limits };
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff ||
     !Number.isSafeInteger(limits.cases) || limits.cases < 1 ||
@@ -102,17 +104,39 @@ function* samplingEngine<S, E, O>(definition: Omit<SequenceModel<S, E, O>, 'chec
     let witness = snapshotData(original), limited = false;
     // Descending chunks, then individual deletions. A successful deletion starts
     // the same pass again; the final pass certifies only one-deletion minimality.
-    for (let chunk = witness.events.length; chunk >= 1; chunk = Math.floor(chunk / 2)) {
-      let index = 0;
-      while (index < witness.events.length) {
-        if (shrinkAttempts >= limits.shrinkAttempts) { limited = true; break; }
-        const candidate = { initial: witness.initial, events: [...witness.events.slice(0, index), ...witness.events.slice(index + chunk)] };
-        shrinkAttempts++;
-        const result = yield* replay(candidate);
-        if (result?.reason === failure.reason) { phase = 'snapshot'; witness = snapshotData(result.witness); index = 0; }
-        else index++;
+    while (true) {
+      for (let chunk = witness.events.length; chunk >= 1; chunk = Math.floor(chunk / 2)) {
+        let index = 0;
+        while (index < witness.events.length) {
+          if (shrinkAttempts >= limits.shrinkAttempts) { limited = true; break; }
+          const candidate = { initial: witness.initial, events: [...witness.events.slice(0, index), ...witness.events.slice(index + chunk)] };
+          shrinkAttempts++;
+          const result = yield* replay(candidate);
+          if (result?.reason === failure.reason) { phase = 'snapshot'; witness = snapshotData(result.witness); index = 0; }
+          else index++;
+        }
+        if (limited) break;
       }
-      if (limited) break;
+      if (limited || !shrinkEvent) break;
+      let changed = false;
+      for (let index = 0; index < witness.events.length && !changed && !limited; index++) {
+        current = { initial: witness.initial, events: witness.events.slice(0, index + 1) };
+        phase = 'shrink-event'; const generated = shrinkEvent(snapshotData(witness.events[index]!));
+        if (!Array.isArray(generated)) throw new TypeError('EventShrinkCandidatesMustBeArray');
+        phase = 'snapshot'; const candidates: readonly E[] = snapshotData(generated);
+        for (const event of candidates) {
+          if (shrinkAttempts >= limits.shrinkAttempts) { limited = true; break; }
+          const candidate = { initial: witness.initial, events: witness.events.map((original, position) => position === index ? event : original) };
+          shrinkAttempts++;
+          const result = yield* replay(candidate);
+          if (result?.reason === failure.reason) {
+            phase = 'snapshot'; witness = snapshotData(result.witness); changed = true; break;
+          }
+        }
+      }
+      if (limited || !changed) break;
+      // Changing a payload can make an earlier operation removable. Recheck
+      // deletions before reporting one-deletion minimality for the new witness.
     }
     return { kind: 'counterexample', reason: failure.reason, ...counts(), original, witness, shrink: limited ? 'limited' : 'one-deletion-minimal' };
   }

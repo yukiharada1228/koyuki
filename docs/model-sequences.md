@@ -51,7 +51,8 @@ step・invariantは純粋な参照仕様とする。checkは同じbefore状態�
 - one-deletion-minimal：受け付ける各1操作の削除では、同じ種類の反例が残らなかった。
 - limited：明示した縮小回数へ到達した。最小と扱わず、その時点の反例を返す。
 
-これは全候補における最短列の証明ではなく、初期状態や操作payloadの値自体も縮めない。
+これは全候補における最短列の証明ではない。任意の[shrinkEvent](event-payload-shrinking.md)を指定すれば、
+業務が与えるpayload候補も再検査する。初期状態は縮めない。
 別の理由の失敗を見つけても、元の理由の反例を縮めたことにはしない。
 モデルの例外を「無効な候補」として黙って捨てず、defectとして停止する。
 
@@ -75,5 +76,5 @@ callback間や元の入力に変更を漏らさず、getterやclass等の非対�
 Issue #8の部分実装。[タグの共通生成契約](tag-model-sequences.md)では重複・上限・古いversionを
 メモリ/SQLiteで比較する。生成後のasync比較はhostテスト側の処理で、sampleModelの非同期checkではない。
 [sampleModelAsync](async-model-sequences.md)は、隔離した非同期比較でも同じ反例削除を行える。
-payloadの縮小、テスト雛形の出力、全候補での最短列は未提供・未検証。
+[payload候補の縮小](event-payload-shrinking.md)も追加した。テスト雛形の出力や全候補での最短列は未提供・未検証。
 講演の純粋な業務関数・明示的な状態を検査へ使う具体化であり、講演がこのAPIを指定した意味ではない。

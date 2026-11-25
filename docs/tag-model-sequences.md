@@ -54,5 +54,5 @@ Issue #8のタグ・共通adapter契約の具体例。全グループ、icon、a
 [非同期反例縮小](async-model-sequences.md)も追加した。各比較でfixtureとbefore状態を再構築し、
 古いversionを無視する故意のwrapperを両adapterで検出してcreate→stale renameへ縮める。
 sampler自体がDBを自動でrollbackするものではなく、隔離と後片付けはhostの比較関数が行う。
-payloadの縮小、全候補での最短列、テスト雛形の出力も引き続き残る。
+[payload候補の縮小](event-payload-shrinking.md)も追加し、故意のwrapperに対してlabelをBから空文字へ簡略化しても不一致を保てることを確認した。全候補での最短列やテスト雛形の出力は残る。
 講演の全内容を完全実現したという根拠や、生成検査だけでの普遍的な正しさの証明にはしない。
