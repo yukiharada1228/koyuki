@@ -182,3 +182,39 @@ test('an unrelated corrupt row is not read during a point-checked save, while a 
     const persisted = repository.read('request', 'independent', actor('buyer')); assert(persisted.ok); assert.equal(persisted.value.version, 1);
   } finally { repository.close(); store.clean(); }
 });
+
+test('related SQLite reads isolate parents and groups and keep unrelated corrupt models out of operation loads', async () => {
+  const store = file(), repository = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(repository); await matched(f);
+    const admin = new DatabaseSync(store.path);
+    try {
+      const insert = admin.prepare('INSERT INTO procurement(group_id,kind,id,version,payload) VALUES(?,?,?,?,?)');
+      for (const entity of [
+        { kind: 'order', id: 'bad-order', groupId: 'g1', version: 1, state: 'placed', requestId: 'other-request' },
+        { kind: 'receipt', id: 'bad-receipt', groupId: 'g1', version: 1, state: 'accepted', orderId: 'other-order', quantities: [{ sku: 'a', quantity: -1 }] },
+        { kind: 'invoice', id: 'bad-invoice', groupId: 'g1', version: 1, state: 'registered', orderId: 'other-order', amountCents: -1 },
+        { kind: 'payment', id: 'bad-payment', groupId: 'g1', version: 1, state: 'recorded', invoiceId: 'other-invoice', reference: 'other-bank', amountCents: -1 },
+      ]) insert.run(entity.groupId, entity.kind, entity.id, entity.version, JSON.stringify(entity));
+    } finally { admin.close(); }
+    for (const kind of ['order', 'receipt', 'invoice', 'payment'] as const) {
+      assert.throws(() => repository.list(kind, actor('finance')), /CorruptProcurementStorage/);
+      assert.deepEqual(repository.related(kind, "' OR 1=1 --", actor('finance')), []);
+      assert.deepEqual(repository.related(kind, 'po', actor('finance', 'foreign')), []);
+    }
+    assert.equal(repository.related('receipt', 'po', actor('warehouse')).length, 1);
+    assert.equal(repository.related('invoice', 'po', actor('finance')).length, 1);
+    assert.throws(() => repository.related('receipt', 'other-order', actor('warehouse')), /CorruptProcurementStorage/);
+    // Every relation-based loader runs without reading corrupt rows owned by other parents.
+    assert((await f.buyer.requests.create({ id: 'rq2', lines })).ok);
+    assert((await f.buyer.requests.submit({ id: 'rq2', expectedVersion: 1, approverId: 'approver' })).ok);
+    assert((await f.boss.requests.approve({ id: 'rq2', expectedVersion: 2 })).ok);
+    assert((await f.buyer.orders.place({ id: 'rq2', expectedVersion: 3, orderId: 'po2', supplier: 'supplier' })).ok);
+    assert((await f.warehouse.receipts.receive({ id: 'po2', expectedVersion: 1, receiptId: 'rc2', quantities: [{ sku: 'a', quantity: 2 }] })).ok);
+    assert((await f.finance.invoices.register({ id: 'po2', expectedVersion: 2, invoiceId: 'inv2', amountCents: 1000 })).ok);
+    assert((await f.finance.invoices.match({ id: 'inv2', expectedVersion: 1 })).ok);
+    assert((await f.finance.invoices.approve({ id: 'inv2', expectedVersion: 2 })).ok);
+    assert((await f.finance.payments.record({ id: 'inv2', expectedVersion: 3, paymentId: 'pay2', reference: 'bank-2' })).ok);
+    assert((await f.buyer.orders.complete({ id: 'po2', expectedVersion: 3 })).ok);
+  } finally { repository.close(); store.clean(); }
+});

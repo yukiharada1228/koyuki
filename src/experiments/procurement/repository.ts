@@ -1,9 +1,10 @@
 import { ok, err, type Result } from '../../framework/index.js';
 import { type Actor, type Entity, type Change } from './domain.js';
 export type StorageError = Readonly<{ kind: 'NotFound' | 'Conflict' }>;
+export type RelatedKind = 'order' | 'receipt' | 'invoice' | 'payment';
 export interface ProcurementRepository {
   readonly read: <K extends Entity['kind']>(kind: K, id: string, actor: Actor) => Result<Extract<Entity, { kind: K }>, StorageError> | Promise<Result<Extract<Entity, { kind: K }>, StorageError>>;
-  readonly list: <K extends Entity['kind']>(kind: K, actor: Actor) => readonly Extract<Entity, { kind: K }>[] | Promise<readonly Extract<Entity, { kind: K }>[]>;
+  readonly related: <K extends RelatedKind>(kind: K, parentId: string, actor: Actor) => readonly Extract<Entity, { kind: K }>[] | Promise<readonly Extract<Entity, { kind: K }>[]>;
   readonly commit: <T extends Entity>(change: Change<T>, actor: Actor) => Promise<Result<T, StorageError>>;
 }
 const key = (kind: Entity['kind'], group: string, id: string) => JSON.stringify([kind, group, id]);
@@ -20,6 +21,11 @@ export class MemoryProcurement implements ProcurementRepository {
   }
   list<K extends Entity['kind']>(kind: K, actor: Actor): readonly Extract<Entity, { kind: K }>[] {
     return [...this.records.values()].filter(entity => entity.kind === kind && entity.groupId === actor.groupId).map(entity => structuredClone(entity) as Extract<Entity, { kind: K }>);
+  }
+  related<K extends RelatedKind>(kind: K, parentId: string, actor: Actor): readonly Extract<Entity, { kind: K }>[] {
+    return [...this.records.values()].filter(entity => entity.kind === kind && entity.groupId === actor.groupId &&
+      (entity.kind === 'order' ? entity.requestId === parentId : entity.kind === 'receipt' || entity.kind === 'invoice' ? entity.orderId === parentId : entity.kind === 'payment' && entity.invoiceId === parentId))
+      .map(entity => structuredClone(entity) as Extract<Entity, { kind: K }>);
   }
   async commit<T extends Entity>(change: Change<T>, actor: Actor): Promise<Result<T, StorageError>> {
     return this.apply(change, actor);

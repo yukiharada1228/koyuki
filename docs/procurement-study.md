@@ -49,7 +49,7 @@ ReceiptだけでOrderの画面状態まで自動更新できるとは扱わな�
 
 ## 検証と次の範囲
 
-`npx tsx --test src/procurement.test.ts`で34シナリオを検証する。
+`npx tsx --test src/procurement.test.ts`で35シナリオを検証する。
 同じテストを`npm run test:business:package`の独立consumerへコピーし、実際にpackしたルート公開APIで検査する。
 競合は同一プロセスの並行呼出しであり、負荷試験ではない。
 
@@ -104,7 +104,7 @@ approved/voidedからの無効化は拒否する。無効化は照合情報を�
 無効化時は請求と発注versionを同時に更新し、発注完了と競合させる。
 有効請求だけを一意制約と完了条件の対象にする。無効請求を除いた後は、入荷がなければ発注変更・取消も可能。
 
-複数回のread/listはスナップショット読取りではない。無効化と完了の競合では、後者がConflictで止まる場合と、
+複数回のread/relatedはスナップショット読取りではない。無効化と完了の競合では、後者がConflictで止まる場合と、
 新しい請求一覧を読みInvoiceMismatchで止まる場合がある。どちらも保存しない。
 さらに無効化前に作った完了Changeを直接保存し、CASが古い計画を拒否することを検証した。
 SQLite hostでも在庫と請求の複合rollbackを検証するが、任意のDB adapterへの保証ではない。
@@ -174,3 +174,7 @@ SQLite版で保存値復元・同時保存・一意制約を実装した。集�
 申請4、承認4、発注4、入荷3、在庫4、請求4、支払記録2を同じアプリで登録した。
 操作数を満たしたことは、大規模開発での優位性や講演全内容の完全実現の証拠ではない。
 SQLiteの検証を踏まえ、次の評価対象は実行要求による再送・Applicationの複合結果投影と、同条件のTS/helper比較である。
+
+
+SQLiteの保存は宣言されたcheckの行だけを取得し、業務のloadは親IDに限定したrelated照会へ変更した。
+全件listは診断用に残すが、業務宣言は必要としない。詳細と残る取得量の制約は[SQLite host](procurement-sqlite.md)を参照。

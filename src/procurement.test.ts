@@ -111,7 +111,7 @@ test('the host can supply asynchronous repository reads without changing domain 
   const memory = new MemoryProcurement();
   const repository: ProcurementRepository = {
     read: async (kind, id, identity) => memory.read(kind, id, identity),
-    list: async (kind, identity) => memory.list(kind, identity),
+    related: async (kind, parentId, identity) => memory.related(kind, parentId, identity),
     commit: (change, identity) => memory.commit(change, identity),
   };
   const as = (identity: Actor) => procurement(repository, identity, policy);
@@ -498,3 +498,21 @@ if (false) {
   // @ts-expect-error adjustment requires its own reason
   inventory.adjust({ id: 'warehouse', expectedVersion: 1, sku: 'a', location: 'receiving', quantity: 0 });
 }
+
+test('the procurement application needs related queries rather than whole-kind listings', async () => {
+  const memory = new MemoryProcurement();
+  const repository: ProcurementRepository = {
+    read: (kind, id, identity) => memory.read(kind, id, identity),
+    related: (kind, parentId, identity) => memory.related(kind, parentId, identity),
+    commit: (change, identity) => memory.commit(change, identity),
+  };
+  const as = (identity: Actor) => procurement(repository, identity, policy);
+  const f = { repository: memory, as, buyer: as(actor('buyer')), boss: as(actor('approver')), warehouse: as(actor('warehouse')), finance: as(actor('finance')) };
+  await invoiced(f);
+  assert.equal(memory.related('order', 'rq', actor('buyer')).length, 1);
+  assert.equal(memory.related('order', 'other', actor('buyer')).length, 0);
+  assert.equal(memory.related('receipt', 'po', actor('warehouse', 'warehouse', 'foreign')).length, 0);
+  assert((await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 })).ok);
+  assert((await f.finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId: 'pay', reference: 'bank-1' })).ok);
+  assert.equal(memory.related('payment', 'inv', actor('finance')).length, 1);
+});

@@ -2,7 +2,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { ok, err, type Result } from '../../framework/index.js';
 import { restoreEntity, type Actor, type Entity, type Change } from './domain.js';
-import { MemoryProcurement, type ProcurementRepository, type StorageError } from './repository.js';
+import { MemoryProcurement, type ProcurementRepository, type RelatedKind, type StorageError } from './repository.js';
 const conflict = (cause: unknown) => cause !== null && typeof cause === 'object' && 'errcode' in cause &&
   typeof cause.errcode === 'number' && [5, 6, 1555, 2067].includes(cause.errcode);
 export class SqliteProcurement implements ProcurementRepository {
@@ -18,6 +18,10 @@ export class SqliteProcurement implements ProcurementRepository {
         CHECK(json_extract(payload, '$.version') = version),
         CHECK(json_extract(payload, '$.kind') = kind AND json_extract(payload, '$.id') = id AND json_extract(payload, '$.groupId') = group_id)
       ) STRICT;
+      CREATE INDEX IF NOT EXISTS procurement_order_parent ON procurement(group_id, json_extract(payload, '$.requestId')) WHERE kind = 'order';
+      CREATE INDEX IF NOT EXISTS procurement_receipt_parent ON procurement(group_id, json_extract(payload, '$.orderId')) WHERE kind = 'receipt';
+      CREATE INDEX IF NOT EXISTS procurement_invoice_parent ON procurement(group_id, json_extract(payload, '$.orderId')) WHERE kind = 'invoice';
+      CREATE INDEX IF NOT EXISTS procurement_payment_parent ON procurement(group_id, json_extract(payload, '$.invoiceId')) WHERE kind = 'payment';
       CREATE UNIQUE INDEX IF NOT EXISTS procurement_order_unique ON procurement(group_id, json_extract(payload, '$.requestId')) WHERE kind = 'order' AND json_extract(payload, '$.state') != 'cancelled';
       CREATE UNIQUE INDEX IF NOT EXISTS procurement_invoice_unique ON procurement(group_id, json_extract(payload, '$.orderId')) WHERE kind = 'invoice' AND json_extract(payload, '$.state') != 'voided';
       CREATE UNIQUE INDEX IF NOT EXISTS procurement_payment_unique ON procurement(group_id, json_extract(payload, '$.invoiceId')) WHERE kind = 'payment' AND json_extract(payload, '$.state') = 'recorded';
@@ -42,6 +46,18 @@ export class SqliteProcurement implements ProcurementRepository {
   list<K extends Entity['kind']>(kind: K, actor: Actor): readonly Extract<Entity, { kind: K }>[] {
     if (actor.groupId !== this.groupId) return [];
     return this.db.prepare('SELECT * FROM procurement WHERE group_id = ? AND kind = ? ORDER BY rowid').all(this.groupId, kind)
+      .map(row => this.decode(row) as Extract<Entity, { kind: K }>);
+  }
+  related<K extends RelatedKind>(kind: K, parentId: string, actor: Actor): readonly Extract<Entity, { kind: K }>[] {
+    if (actor.groupId !== this.groupId) return [];
+    const predicates = {
+      order: "kind = 'order' AND json_extract(payload, '$.requestId') = ?",
+      receipt: "kind = 'receipt' AND json_extract(payload, '$.orderId') = ?",
+      invoice: "kind = 'invoice' AND json_extract(payload, '$.orderId') = ?",
+      payment: "kind = 'payment' AND json_extract(payload, '$.invoiceId') = ?",
+    };
+    const predicate = predicates[kind]; if (!predicate) throw new Error('InvalidProcurementRelation');
+    return this.db.prepare(`SELECT * FROM procurement WHERE group_id = ? AND ${predicate} ORDER BY rowid`).all(this.groupId, parentId)
       .map(row => this.decode(row) as Extract<Entity, { kind: K }>);
   }
   async commit<T extends Entity>(change: Change<T>, actor: Actor): Promise<Result<T, StorageError>> {

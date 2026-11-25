@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買の業務loadを親IDに限定するrelated portへ変更。SQLiteでgroupと親IDを絞るindexを追加し、kind全件listを業務契約から除外。別親の破損行を復元せず対象業務を完了できること、対象行の破損拒否とgroup分離を配布consumerで検証。
+
 - 購買SQLite保存のgroup全件読込みを廃止し、宣言されたcheckの主キー照会とDB一意indexへ分担。未取得の重複行による保存拒否・複合rollbackと、無関係／対象行の破損の区別を配布consumerで検証。load側listの全件取得と性能測定は未改善として明記。
 
 - 購買評価へSQLite hostと状態別の保存値復元を追加。全6モデルの再起動後・別OS読込み、2接続の在庫CAS、最終在庫書込み失敗時の複合rollback、破損データ拒否とgroup分離を配布consumerで検証。再送・永続履歴・取得効率の未検証範囲を明記。
