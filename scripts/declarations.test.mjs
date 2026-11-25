@@ -9,6 +9,53 @@ import { analyzeDeclarations } from './check-declarations.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const analyze = source => analyzeDeclarations([{ file: 'sample.ts', source }]);
 
+test('workflow chains diagnose ambiguous trace labels through const references and explicit branches', () => {
+  const result = analyze(`import {workflow as flow} from 'koyuki';
+const base = flow('load', neverExecute);
+const branch = base.then('check', neverExecute).branch('choice', neverExecute, {
+ yes: flow('load', neverExecute), no: flow('check', neverExecute)
+}).then('choice:yes', neverExecute);`);
+  assert.deepEqual(result.diagnostics.map(item => item.code), Array(3).fill('AMBIGUOUS_WORKFLOW_LABEL'));
+  assert(result.diagnostics.every(item => item.severity === 'warning' && item.related.length === 1 && item.line > 0 && item.column > 0));
+  assert.deepEqual(result.unresolved, []);
+});
+
+test('workflow diagnostics preserve independent scopes and do not duplicate prefix warnings', () => {
+  const result = analyze(`import * as k from 'koyuki';
+const first = k.workflow('same', rule).then('same', rule);
+const second = first.then('end', rule);
+const independent = k.workflow('same', rule);
+function hidden(k) { return k.workflow('same', rule).then('same', rule); }
+const unrelated = other.workflow('same', rule).then('same', rule);`);
+  assert.equal(result.diagnostics.length, 1);
+  assert.equal(result.diagnostics[0].code, 'AMBIGUOUS_WORKFLOW_LABEL');
+  assert.deepEqual(result.unresolved, []);
+});
+
+test('dynamic workflow labels and imported branch bodies remain unresolved without guessing', () => {
+  const result = analyze(`import {workflow} from 'koyuki';
+const path = workflow(dynamicName(), rule).then('known', rule).branch('choice', predicate, {yes: importedPath, no: workflow('other',rule)});`);
+  assert.deepEqual(result.diagnostics, []);
+  assert.equal(result.unresolved.length, 2);
+  assert(result.unresolved.every(item => item.line > 0 && item.reason));
+});
+
+test('workflow expansion is bounded and cyclic references remain unresolved', () => {
+  const names = ['const base = workflow("first", rule);'];
+  for (let index = 0; index < 11; index++) names.push(`const branch${index} = base.branch('branch${index}', predicate, {yes:${index ? `branch${index - 1}` : 'base'},no:${index ? `branch${index - 1}` : 'base'}});`);
+  const result = analyze(`import {workflow} from 'koyuki';\n${names.join('\n')}`);
+  assert(result.unresolved.some(item => /expansion limit/.test(item.reason)));
+  const cycle = analyze(`import {workflow} from 'koyuki'; const tree = workflow('start',rule).branch('choose', predicate, {yes: tree, no: workflow('end',rule)});`);
+  assert(cycle.unresolved.some(item => /cyclic/.test(item.reason)));
+});
+
+test('shipping workflow metadata is checked without executing its validation or branch predicate', async () => {
+  const file = 'src/shipping/domain.ts';
+  const result = analyzeDeclarations([{ file, source: await readFile(join(root, file), 'utf8') }]);
+  assert.equal(result.checkedDeclarations, 3);
+  assert.deepEqual(result.diagnostics, []); assert.deepEqual(result.unresolved, []);
+});
+
 test('transition diagnostics report both source locations and do not confuse independent flows', () => {
   const result = analyze(`import {defineTransition as transition, step as named} from 'koyuki';
 const requirement = named('same', value => value);
@@ -139,15 +186,17 @@ test('CLI never evaluates imports, top-level effects, or getters; JSON and stric
   try {
     const source = join(temporary, 'source.ts'), marker = join(temporary, 'executed');
     await writeFile(source, `import {writeFileSync} from 'node:fs';
-import {defineTarget,defineApplication} from 'koyuki';
+import {defineTarget,defineApplication,workflow} from 'koyuki';
 import './does-not-exist.js';
 writeFileSync(${JSON.stringify(marker)}, 'executed');
 throw new Error('must not run');
 const a=defineTarget({operation:'same'}); const b=defineTarget({operation:'same'});
+const flow=workflow('stage', () => { throw Error('rule must not execute'); })
+  .then('stage', (() => { writeFileSync(${JSON.stringify(marker)}, 'argument'); throw Error('argument must not execute'); })());
 defineApplication({get operations(){writeFileSync(${JSON.stringify(marker)}, 'getter');return {};}});`);
     const run = flags => spawnSync(process.execPath, ['scripts/check-declarations.mjs', ...flags, source], { cwd: root, encoding: 'utf8' });
     const plain = run(['--json']); assert.equal(plain.status, 0, plain.stderr);
-    const report = JSON.parse(plain.stdout); assert.equal(report.diagnostics.length, 1); assert.equal(report.unresolved.length, 1);
+    const report = JSON.parse(plain.stdout); assert.equal(report.diagnostics.length, 2); assert.equal(report.unresolved.length, 1);
     assert.equal(run(['--strict']).status, 1);
     await assert.rejects(access(marker));
     await writeFile(source, 'const broken = (');

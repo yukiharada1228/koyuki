@@ -8,6 +8,7 @@
 npm run check:declarations -- src/tags/model.ts src/tags/events.ts src/expenses/application.ts
 npm run check:declarations -- --json src/expenses/application.ts
 npm run check:declarations -- --json src/experiments/procurement/application.ts
+npm run check:declarations -- --json src/shipping/domain.ts
 npm run test:declarations
 ```
 
@@ -22,6 +23,7 @@ CLI自体はリポジトリの開発ツールであり、公開npm packageのbin
 | code | 判定 | 範囲 |
 | --- | --- | --- |
 | AMBIGUOUS_STEP_LABEL | warning | 同じdefineTransition内で同名の段階がある。traceの名前の対応が曖昧になる。業務処理の誤りという証明ではない |
+| AMBIGUOUS_WORKFLOW_LABEL | warning | 静的に接続したWorkflowの段階名が重複する。分岐の別経路も含むため、同じ実行で両方が走るという意味ではない |
 | REPEATED_OPERATION_ID | warning | 選択したファイル集合の別宣言で同じ明示operation IDを使う。共有する保存境界なら意図的な場合もある |
 | RESERVED_APPLICATION_OPERATION | error | 静的に読めるApplication操作テーブルがdismissや@始まりの予約名を使う |
 | PARSE_ERROR | error | ソースを構文解析できない。TypeScriptによる型チェックの代わりではない |
@@ -29,6 +31,7 @@ CLI自体はリポジトリの開発ツールであり、公開npm packageのbin
 すべてファイル名・1始まりの行/列・説明を持ち、重複には先の位置も付ける。
 警告は名前変更や共有意図の確認に使い、共有save関数を使ったこと自体は診断しない。
 別のtransitionの同名段階も、それだけでは警告しない。
+独立したWorkflow同士の同名段階も警告しない。
 businessのthen等、公開型で既に拒否されるものの重複診断を今回追加する目的ではない。
 
 通常の終了コードは、errorがあれば1、なければ0。--strictを付けるとwarningも1となる。
@@ -53,6 +56,18 @@ Object literalの__proto__ setterをownデータキーと見なさず、その�
 通常関数か名前付きStepか判別できない値に、推測で自動ラベルを付けない。
 defineApplicationやbusinessに動的な操作テーブルを渡すこと自体は正当なので、未解決をエラーにはしない。
 
+Workflowでは、既知のimportの`workflow(name, rule)`を起点とする`then`と`branch`を読む。
+ローカルconst経由の接続と、静的なyes/noのWorkflowを展開し、同じ構成内でtrace名が
+重複すれば両位置を報告する。branch自身のtrace名は実装と同じ`name:yes`/`name:no`とする。
+別経路に同名段階があっても名前だけでは図へ一意に対応できないため警告するが、
+その両方が実際に実行された、または業務規則が誤っているという判定ではない。
+共通prefixを再利用しても、同じソース位置の組への警告は重ねない。
+動的な名前・importされた分岐の実体・循環参照・展開上限は未解決として残す。
+展開は一つの構成につき1024個のconstruction callまでで、無制限な全展開ではない。
+未知のオブジェクトのthen/branchを、メソッド名だけでWorkflowと取り違えない。
+任意のメソッド・Process・関数内部・live spanの名前全体を検査する機能ではない。
+送料の3つのWorkflowでも、業務関数やpredicateを実行せず診断・未解決とも0を確認する。
+
 検査はソース上に書いた定義と静的なconst参照の展開であり、実際に到達するコードや、
 オブジェクトの後続変更・任意の別名経由の変更を解析した結果ではない。
 複数の選択ファイルを一つの検査範囲として扱うため、独立したアプリの共通operation IDは
@@ -61,7 +76,7 @@ defineApplicationやbusinessに動的な操作テーブルを渡すこと自体�
 分岐・状態の網羅性、関数本体の純粋性や業務ルールの正しさは証明しない。
 このためIssue #6全体の完了とはしない。
 
-[13件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
+[18件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
 未解決、実例に加え、対象ファイルへ副作用・throw・存在しないimport・getterを置いても
 それらを実行しないことを確認する。CIのcore jobでも継続する。
 購買の25操作には、独立した期待ID一覧と重複する宣言をテスト用に追加し、

@@ -54,6 +54,58 @@ function fields(path) {
   return result;
 }
 
+// Only explicit Workflow construction is recognized. Never infer method ownership
+// from a method name alone, or inspect a predicate/rule body.
+function rootedWorkflow(candidate) {
+  const seen = new Set();
+  for (let path = resolveValue(candidate); path?.isCallExpression() && !seen.has(path.node);) {
+    seen.add(path.node);
+    const callee = unwrap(path.get('callee'));
+    if (api(callee) === 'workflow') return true;
+    if (!callee?.isMemberExpression()) return false;
+    const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
+    if (method !== 'then' && method !== 'branch') return false;
+    path = resolveValue(callee.get('object'));
+  }
+  return false;
+}
+function workflowLabels(candidate, ancestors = new Set(), budget = { left: 1024 }, provenRoot = false) {
+  const path = resolveValue(candidate);
+  if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedWorkflow(path)) return;
+  if (--budget.left < 0) return { labels: [], nodes: [path.node], unresolved: [{ path, reason: 'Workflow exceeds the static expansion limit of 1024 construction calls' }] };
+  const next = new Set(ancestors); next.add(path.node);
+  const callee = unwrap(path.get('callee'));
+  const args = path.get('arguments');
+  let result;
+  if (api(callee) === 'workflow') result = { labels: [], unresolved: [], nodes: [] };
+  else if (callee?.isMemberExpression()) {
+    const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
+    if (method !== 'then' && method !== 'branch') return;
+    result = workflowLabels(callee.get('object'), next, budget, true);
+    if (!result) return;
+    if (method === 'branch') {
+      const name = literal(resolveValue(args[0]));
+      if (name === undefined) result.unresolved.push({ path, reason: 'Workflow branch label is dynamic' });
+      else for (const choice of ['yes', 'no']) result.labels.push({ label: `${name}:${choice}`, path: args[0] });
+      const paths = fields(args[2]);
+      if (!paths) result.unresolved.push({ path, reason: 'Workflow branches are not a statically resolved data object' });
+      else for (const choice of ['yes', 'no']) {
+        const child = paths.get(choice);
+        const branch = child && workflowLabels(child, next, budget);
+        if (!branch) result.unresolved.push({ path: child ?? path, reason: 'Workflow branch body is unresolved, cyclic, or exceeds the static expansion limit' });
+        else {
+          result.labels.push(...branch.labels); result.unresolved.push(...branch.unresolved); result.nodes.push(...branch.nodes);
+        }
+      }
+      result.nodes.push(path.node); return result;
+    }
+  } else return;
+  const label = literal(resolveValue(args[0]));
+  if (label === undefined) result.unresolved.push({ path, reason: 'Workflow step label is dynamic' });
+  else result.labels.push({ label, path: args[0] });
+  result.nodes.push(path.node); return result;
+}
+
 /** Parse declarations only. Never import a target module, resolve imports, or evaluate an expression. */
 export function analyzeDeclarations(files) {
   const diagnostics = [], unresolved = [], ids = new Map(); let checkedDeclarations = 0, checkedOperationIds = 0;
@@ -68,7 +120,28 @@ export function analyzeDeclarations(files) {
     let ast;
     try { ast = parse(source, { sourceType: 'module', sourceFilename: file, plugins: ['typescript', ...(/\.[jt]sx$/i.test(file) ? ['jsx'] : [])], attachComment: false }); }
     catch (error) { diagnostics.push({ code: 'PARSE_ERROR', severity: 'error', file, line: error.loc?.line ?? 1, column: (error.loc?.column ?? 0) + 1, message: error.message, related: [] }); continue; }
+    const coveredWorkflows = new Set(), reportedWorkflowPairs = new Set();
     traverse(ast, { CallExpression(path) {
+      if (!coveredWorkflows.has(path.node)) {
+        const workflow = workflowLabels(path);
+        if (workflow) {
+          checkedDeclarations++;
+          workflow.nodes.forEach(node => coveredWorkflows.add(node));
+          for (const item of workflow.unresolved) skip(file, item.path, item.reason);
+          const labels = new Map();
+          for (const item of workflow.labels) {
+            const previous = labels.get(item.label);
+            if (previous) {
+              const pair = `${previous.node.start}:${item.path.node.start}:${item.label}`;
+              if (!reportedWorkflowPairs.has(pair)) {
+                report('AMBIGUOUS_WORKFLOW_LABEL', 'warning', file, item.path,
+                  `Workflow trace label ${JSON.stringify(item.label)} repeats in this declared composition; use distinct labels if traces must identify the stage. This includes alternative branches and does not prove repeated execution or an invalid business rule.`, [position(file, previous)]);
+                reportedWorkflowPairs.add(pair);
+              }
+            } else labels.set(item.label, item.path);
+          }
+        }
+      }
       const name = api(path.get('callee'));
       if (!factories.has(name) && name !== 'defineTransition' && name !== 'defineApplication' && name !== 'business') return;
       const definition = fields(path.get('arguments')[0]);
