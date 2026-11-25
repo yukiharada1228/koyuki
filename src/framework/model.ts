@@ -1,5 +1,5 @@
 import { registerStructure, structureOf, structureSequence, structureStep, loadStructure } from './structure.js';
-import type { ActionLoad } from './action.js';
+import { captureLoad, type ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import { Workflow, evaluateRule, type Rule } from './workflow.js';
 import { defineCommand } from './command.js';
@@ -27,8 +27,8 @@ export function transition<I, V, VE, const T extends readonly AnyStep[], O, E>(d
   evolve: Step<NoInfer<End<V, T>>, O, E>;
 }): Workflow<I, O, VE | Failure<T[number]> | E> {
   // Type checking above proves adjacency. Runtime iteration erases only heterogeneous intermediate states.
-  const stages: readonly AnyStep[] = [definition.validate, ...definition.require, definition.evolve];
-  return registerStructure(new Workflow(definition.validate.name, stages.map(stage => stage.name), (input, observe) => {
+  const stages: readonly AnyStep[] = Object.freeze([definition.validate, ...definition.require, definition.evolve].map(stage => Object.freeze({ name: stage.name, rule: stage.rule })));
+  return registerStructure(new Workflow(stages[0]!.name, stages.map(stage => stage.name), (input, observe) => {
     let value: unknown = input;
     const trace: { step: string; status: 'ok' | 'error' }[] = [];
     for (const stage of stages) {
@@ -73,7 +73,8 @@ export function defineRequestTarget<I, C, LE, O, S, SE>(adapter: {
   load: ActionLoad<I, C, LE>;
   save: (value: O, execution: RequestExecution<NoInfer<I>>) => Promise<Result<S, SE>>;
 }) {
-  const { operation, loadName, load, save } = adapter;
+  const { operation, loadName, save } = adapter;
+  const load = captureLoad(adapter.load);
   return {
     on<VE, V, const T extends readonly AnyStep[], E>(definition: {
       validate: Step<C, V, VE>;

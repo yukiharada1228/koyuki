@@ -1,5 +1,5 @@
 import { registerStructure, structureOf } from './structure.js';
-import type { ActionLoad } from './action.js';
+import { captureLoad, type ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
 import { workflow, evaluateRule, type WorkflowCapture, type Rule, type StageObserver } from './workflow.js';
 import type { Result } from './result.js';
@@ -124,7 +124,7 @@ export function business(definition: object) {
     const custom = 'run' in entry;
     const rules = [...(custom ? entry.run : entry)];
     if (!rules.length) throw new Error('BusinessRequiresRule');
-    const load = custom ? entry.load : source.load;
+    const load = captureLoad(custom ? entry.load : source.load);
     const decide = (observe?: StageObserver) => {
       const rule = (index: number): Rule<unknown, unknown, unknown> => observe
         ? input => evaluateRule(`run:${index + 1}`, rules[index]!, input, observe) : rules[index]!;

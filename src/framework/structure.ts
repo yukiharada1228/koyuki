@@ -5,19 +5,35 @@ export type Structure =
   | { readonly kind: 'step'; readonly name: string; readonly role: Role }
   | { readonly kind: 'sequence'; readonly children: readonly Structure[] }
   | { readonly kind: 'branch'; readonly name: string; readonly yes: Structure; readonly no: Structure };
-const structures = new WeakMap<object, Structure>();
+interface Reference { readonly key: string; readonly present: boolean; readonly value: unknown; readonly data: boolean }
+interface Registration { readonly structure: Structure; readonly references: readonly Reference[] }
+const structures = new WeakMap<object, Registration>();
+const references = (target: object): readonly Reference[] => ['run', 'runDetailed'].map(key => {
+  const field = Object.getOwnPropertyDescriptor(target, key);
+  return { key, present: !!field, value: field && 'value' in field ? field.value : undefined, data: !field || 'value' in field };
+});
 export const structureStep = (name: string, role: Role = 'rule'): Structure => Object.freeze({ kind: 'step', name, role });
 export const structureSequence = (...children: Structure[]): Structure => Object.freeze({ kind: 'sequence', children: Object.freeze(children) });
 export const structureBranch = (name: string, yes: Structure, no: Structure): Structure => Object.freeze({ kind: 'branch', name, yes, no });
 export const loadStructure = (load: object, name: string): Structure => structureSequence(...(typeof load === 'function' ? [] : [structureOf(load)]), structureStep(name, 'effect'));
 export const emptyStructure: Structure = Object.freeze({ kind: 'empty' });
-export const structureOf = (target: object): Structure => structures.get(target) ?? structureStep('unknown', 'unknown');
-/** Internal metadata registration: never inspects functions or calls host methods. */
+export function structureOf(target: object): Structure {
+  const entry = structures.get(target);
+  if (entry) {
+    const current = references(target);
+    if (current.every((field, index) => field.data && field.present === entry.references[index]!.present && field.value === entry.references[index]!.value)) return entry.structure;
+  }
+  return structureStep('unknown', 'unknown');
+}
+/** Internal registration inspects owned capability references, never function bodies or getters. */
 export function registerStructure<T extends object>(target: T, structure: Structure): T {
-  structures.set(target, structure);
-  for (const key of ['run', 'runDetailed']) {
-    const field = Object.getOwnPropertyDescriptor(target, key);
-    if (field && 'value' in field && typeof field.value === 'function') structures.set(field.value, structure);
+  const fields = references(target);
+  structures.set(target, { structure, references: fields });
+  for (const field of fields) {
+    if (field.data && typeof field.value === 'function') {
+      const existing = structures.get(field.value);
+      structures.set(field.value, { structure: existing && existing.structure !== structure ? structureStep('ambiguous-alias', 'unknown') : structure, references: references(field.value) });
+    }
   }
   return target;
 }

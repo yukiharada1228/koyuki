@@ -45,15 +45,16 @@ export class Workflow<I, O, E> {
     paths: { yes: WorkflowConsumer<O, A, F>; no: WorkflowConsumer<O, B, G> }): Workflow<I, A | B, E | F | G>;
   branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,
     paths: { yes: Workflow<never, A, F>; no: Workflow<never, B, G> }): Workflow<I, A | B, E | F | G> {
+    const branches = Object.freeze({ yes: paths.yes, no: paths.no });
     return registerStructure(new Workflow<I, A | B, E | F | G>(this.name, [...this.steps, name], (input, observe) => {
       const previous = this.evaluate(input, observe);
       if (!previous.result.ok) return { result: previous.result, trace: previous.trace };
       const selected = predicate(previous.result.value) ? 'yes' : 'no';
       // Public overloads check the branch inputs. Dispatch erases those distinct inputs only
       // after the predicate has selected the path; a user-written type guard is trusted as in TS.
-      const next = paths[selected].evaluate(previous.result.value as never, observe);
+      const next = branches[selected].evaluate(previous.result.value as never, observe);
       return { result: next.result, trace: [...previous.trace, { step: `${name}:${selected}`, status: 'ok' }, ...next.trace] };
-    }), structureSequence(structureOf(this), structureBranch(name, structureOf(paths.yes), structureOf(paths.no))));
+    }), structureSequence(structureOf(this), structureBranch(name, structureOf(branches.yes), structureOf(branches.no))));
   }
   then<N, F>(name: string, rule: Rule<O, N, F>): Workflow<I, N, E | F> {
     return registerStructure(new Workflow<I, N, E | F>(this.name, [...this.steps, name], (input, observe) => {
@@ -129,23 +130,26 @@ export function bindMutation<I, O, E, S, F>(config: {
   save: (value: NoInfer<O>) => Promise<Result<S, F>>;
   render?: (value: NoInfer<O>) => View;
 }) {
-  const identity = Symbol(config.operation);
+  const flow = config.workflow, operation = config.operation;
+  const save = config.save.bind(config), render = config.render?.bind(config);
+  const inspect: (input: I) => Evaluation<O, E> = flow.inspect.bind(flow);
+  const identity = Symbol(operation);
   function Save({ value }: { value: O }): View {
     // Snapshot the visible decision; the domain's opaque immutable value goes to the adapter.
-    const node: WriteNode = Object.freeze({ kind: 'write', operation: config.operation, input: structuredClone(value) });
-    tasks.set(node, { identity, execute: () => config.save(value) });
+    const node: WriteNode = Object.freeze({ kind: 'write', operation, input: structuredClone(value) });
+    tasks.set(node, { identity, execute: () => save(value) });
     return node;
   }
-  function view(value: O): View { return config.render ? config.render(value) : Save({ value }); }
+  function view(value: O): View { return render ? render(value) : Save({ value }); }
   async function runDetailed(input: I): Promise<{ result: Result<S, E | F>; trace: readonly Trace[]; plan: unknown }> {
-    const evaluated = config.workflow.inspect(input), decision = evaluated.result;
+    const evaluated = inspect(input), decision = evaluated.result;
     if (!decision.ok) return { result: decision, trace: evaluated.trace, plan: null };
-    if (!config.render) {
+    if (!render) {
       // No renderer can substitute a different node. Execute the actual decision,
       // even when it cannot be represented in the diagnostic write plan.
-      const plan = describeDecision(config.operation, decision.value);
-      const result = await config.save(decision.value);
-      return { result, trace: [...evaluated.trace, { step: config.operation, status: result.ok ? 'ok' : 'error' }], plan };
+      const plan = describeDecision(operation, decision.value);
+      const result = await save(decision.value);
+      return { result, trace: [...evaluated.trace, { step: operation, status: result.ok ? 'ok' : 'error' }], plan };
     }
     const rendered = view(decision.value);
     let node = rendered;
@@ -155,8 +159,8 @@ export function bindMutation<I, O, E, S, F>(config: {
     if (!task || task.identity !== identity) throw new Error('WrongMutationBinding');
     if (canonicalIdentity(node.input) !== canonicalIdentity(decision.value)) throw new Error('ChangedDecision');
     const result = await task.execute() as Result<S, F>;
-    return { result, trace: [...evaluated.trace, { step: config.operation, status: result.ok ? 'ok' : 'error' }], plan: describeView(rendered) };
+    return { result, trace: [...evaluated.trace, { step: operation, status: result.ok ? 'ok' : 'error' }], plan: describeView(rendered) };
   }
   async function run(input: I): Promise<Result<S, E | F>> { return (await runDetailed(input)).result; }
-  return registerStructure({ Save, view, run, runDetailed, prepare: (input: I) => config.workflow.inspect(input), steps: config.workflow.steps }, structureSequence(structureOf(config.workflow), ...(config.render ? [structureStep('render-and-verify', 'unknown')] : []), structureStep(config.operation, 'save')));
+  return registerStructure({ Save, view, run, runDetailed, prepare: (input: I) => inspect(input), steps: flow.steps }, structureSequence(structureOf(flow), ...(render ? [structureStep('render-and-verify', 'unknown')] : []), structureStep(operation, 'save')));
 }

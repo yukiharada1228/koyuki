@@ -14,7 +14,8 @@ const diagram = flowMermaid(expense.approve);
 expenseはhostで宣言したbusiness等の操作群。通常の関数を並べる業務宣言へ図のための接続コードを追加する必要はない。
 coreが宣言を組み立てる際に、データだけの構成をprivateなWeakMapへ登録する。
 run/runDetailedの既知の関数参照にも同じ構成を保持する。
-関数本体の文字列、関数名、型の反射、hostオブジェクトのプロパティを走査して構造を推測しない。
+関数本体の文字列、関数名、型の反射、未登録hostオブジェクトのプロパティを走査して構造を推測しない。
+登録済みの実行参照を確認する際はrun/runDetailedのdata descriptorだけを照合し、getterを呼び出さない。
 
 ## 何が分かるか
 
@@ -34,7 +35,9 @@ run/runDetailedの既知の関数参照にも同じ構成を保持する。
 既知のrun関数を別の関数で包んだ場合、その新しい関数へ勝手に構成を引き継がない。
 明示したlegacy rendererはrender-and-verifyというunknown境界を含め、構成の取得では呼び出さない。
 
-metadataは宣言作成時の構成。宣言やadapterの関数を後から差し替える運用には対応しない。
+metadataは宣言作成時の構成。[宣言の所有権](declaration-ownership.md)として関数・名前・分岐先を保持する。
+元の設定recordを後から書き換えても、既存処理の接続先は変更しない。
+実行objectのrun/runDetailed自体を変更した場合は、元の構成を表示せずunknownへ戻す。
 同じmodule instanceに登録した構成だけを認識する。別のpackageコピー・workerの実行オブジェクトを反射して復元しない。
 
 ## JSONと構成の意味

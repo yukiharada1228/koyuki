@@ -9,6 +9,11 @@ export interface ActionReport<O, E> {
 export type ActionLoad<I, C, E> = ((input: I) => Promise<Result<C, E>>) | {
   readonly runDetailed: (input: I) => Promise<ActionReport<C, E>>;
 };
+/** Capture adapter methods once; function receivers are bound only when supplied. */
+export function captureLoad<I, C, E>(load: ActionLoad<I, C, E>, receiver?: object): ActionLoad<I, C, E> {
+  if (typeof load === 'function') return receiver ? load.bind(receiver) : load;
+  return registerStructure(Object.freeze({ runDetailed: load.runDetailed.bind(load) }), structureOf(load));
+}
 type Loader = ActionLoad<never, unknown, unknown>;
 type LoadResult<L> = L extends (input: never) => infer R ? Awaited<R>
   : L extends { runDetailed: (input: never) => infer D } ? Awaited<D> extends { result: infer R } ? R : never : never;
@@ -43,16 +48,18 @@ export function defineAction<I, C, LE, O, ME>(config: {
   load: ActionLoad<I, C, LE>;
   mutation: { runDetailed(input: C): Promise<ActionReport<O, ME>> };
 }) {
+  const load = captureLoad(config.load, config), loadName = config.loadName;
+  const mutation = config.mutation, runMutation = mutation.runDetailed.bind(mutation);
   async function runDetailed(input: I): Promise<ActionReport<O, LE | ME>> {
-    const detailLoad = typeof config.load === 'function'
-      ? { result: await config.load(input), trace: [] }
-      : await config.load.runDetailed(input);
+    const detailLoad = typeof load === 'function'
+      ? { result: await load(input), trace: [] }
+      : await load.runDetailed(input);
     const loaded = detailLoad.result;
-    const trace: readonly Trace[] = [...detailLoad.trace, { step: config.loadName, status: loaded.ok ? 'ok' : 'error' }];
+    const trace: readonly Trace[] = [...detailLoad.trace, { step: loadName, status: loaded.ok ? 'ok' : 'error' }];
     if (!loaded.ok) return { result: loaded, trace, plan: null };
-    const detail = await config.mutation.runDetailed(loaded.value);
+    const detail = await runMutation(loaded.value);
     return { ...detail, trace: [...trace, ...detail.trace] };
   }
   async function run(input: I): Promise<Result<O, LE | ME>> { return (await runDetailed(input)).result; }
-  return registerStructure({ run, runDetailed }, structureSequence(loadStructure(config.load, config.loadName), structureOf(config.mutation)));
+  return registerStructure({ run, runDetailed }, structureSequence(loadStructure(load, loadName), structureOf(mutation)));
 }
