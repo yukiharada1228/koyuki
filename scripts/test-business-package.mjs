@@ -57,6 +57,7 @@ try {
   writeFileSync(join(consumer, 'retry.test.ts'), readFileSync(join(root, 'src/retry.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-operation-table.test.ts'), readFileSync(join(root, 'src/business-operation-table.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'expense-state-exploration.test.ts'), readFileSync(join(root, 'src/expense-state-exploration.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'").replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'expense-model-adoption.test.ts'), readFileSync(join(root, 'src/expense-model-adoption.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));
   mkdirSync(join(consumer, 'expenses'));
   mkdirSync(join(consumer, 'examples'), { recursive: true });
   for (const file of ['expenses/domain.ts', 'expenses/application.ts', 'expenses/repository.ts', 'expenses/sqlite.ts', 'expenses/sqlite-replay.ts', 'expenses/replay.ts', 'expenses/model-testing.ts', 'examples/expense.ts']) {
