@@ -101,7 +101,64 @@ async function unknown(build: Builder) {
     return { result, trace: session.trace() };
   } finally { repository.close(); store.clean(); }
 }
+async function populatedFailure(build: Builder, afterCommit: boolean) {
+  const store = disk(), repository = new SqliteProcurement(store.path, 'g1');
+  let broken = false, commits = 0;
+  try {
+    const faulty: ReplayRepository = {
+      read: repository.read.bind(repository), related: repository.related.bind(repository),
+      commit: repository.commit.bind(repository), lookupExecution: repository.lookupExecution.bind(repository),
+      commitExecution: async (change, identity, request) => {
+        commits++;
+        if (broken && !afterCommit) throw new Error('BeforeCommit');
+        const result = await repository.commitExecution(change, identity, request);
+        if (broken) throw new Error('AfterCommit');
+        return result;
+      },
+    };
+    const session = await build(faulty).start();
+    await session.dispatch({ type: 'request.create', input: { requestId: 'seed', input } });
+    const original = session.snapshot().view.entities;
+    const notifications: unknown[] = [];
+    session.subscribe(snapshot => notifications.push(snapshot));
+    await session.dispatch({ type: 'request.submit', input: { requestId: 'invalid', input: { id: 'rq', expectedVersion: 0, approverId: 'approver' } } });
+    assert.equal(session.snapshot().state.kind, 'failed');
+    assert.equal(session.snapshot().view.error, 'InvalidInput');
+    assert.equal(session.snapshot().view.busy, false);
+    assert.deepEqual(session.snapshot().view.entities, original);
+    assert.equal(commits, 1);
+    await session.dispatch({ type: 'dismiss' });
+    broken = true;
+    const submit = { type: 'request.submit', input: { requestId: 'submit', input: { id: 'rq', expectedVersion: 1, approverId: 'approver' } } } as const;
+    await session.dispatch(submit);
+    assert.equal(session.snapshot().state.kind, 'crashed');
+    assert.equal(session.snapshot().view.error, 'UnexpectedException');
+    assert.equal(session.snapshot().view.busy, false);
+    assert.deepEqual(session.snapshot().view.entities, original);
+    assert.equal(repository.list('request', actor)[0]?.version, afterCommit ? 2 : 1);
+    const beforeBlocked = session.snapshot();
+    assert.deepEqual(await session.dispatch(submit), { ok: false, error: { kind: 'UnexpectedMessage' } });
+    assert.deepEqual(session.snapshot(), beforeBlocked);
+    assert.equal(commits, 2);
+    broken = false;
+    await session.dispatch({ type: 'dismiss' });
+    assert.equal(session.snapshot().view.error, null);
+    await session.dispatch(submit);
+    assert.equal(session.snapshot().state.kind, 'ready');
+    // Historical replay does not hydrate this application's existing projection.
+    assert.equal(session.snapshot().view.entities[0]?.version, afterCommit ? 1 : 2);
+    assert.equal(repository.list('request', actor)[0]?.version, 2);
+    assert.equal(commits, afterCommit ? 2 : 3);
+    await session.dispatch({ type: 'request.withdraw', input: { requestId: 'withdraw', input: { id: 'rq', expectedVersion: 2 } } });
+    assert.equal(session.snapshot().state.kind, 'ready');
+    assert.equal(session.snapshot().view.entities[0]?.version, 3);
+    assert.equal(repository.list('request', actor)[0]?.version, 3);
+    return { notifications, final: session.snapshot(), trace: session.trace() };
+  } finally { repository.close(); store.clean(); }
+}
 for (const [name, build] of Object.entries(builders)) {
+  for (const afterCommit of [false, true]) test(`populated Application failure, crash and recovery parity: ${name}, afterCommit=${afterCommit}`, async () =>
+    assert.deepEqual(await populatedFailure(build, afterCommit), await populatedFailure(builders.koyuki, afterCommit)));
   test(`independent Application lifecycle, snapshots, notifications and replay parity: ${name}`, async () => assert.deepEqual(await story(build), await story(builders.koyuki)));
   test(`independent Application queue ownership, stale revisions and subscriber isolation: ${name}`, { timeout: 5000 }, async () => assert.deepEqual(await queued(build), await queued(builders.koyuki)));
   test(`independent Application crash and explicit recovery: ${name}`, async () => assert.deepEqual(await defect(build), await defect(builders.koyuki)));
