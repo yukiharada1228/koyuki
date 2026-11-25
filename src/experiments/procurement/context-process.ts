@@ -1,5 +1,5 @@
 import { ok, process, type Result } from '../../framework/index.js';
-import type { Actor, VersionInput } from './domain.js';
+import type { Actor, VersionInput, Policy } from './domain.js';
 import { stockId } from './inventory.js';
 import type { ProcurementRepository } from './repository.js';
 
@@ -15,8 +15,9 @@ function attach<C, const K extends string, V, E>(key: K, read: (context: C) => R
 type Input<I> = { input: I; actor: Actor };
 
 /** Alternative loaders kept separate from the common baseline and all public APIs. */
-export function procurementProcessContext<E>(repository: ProcurementRepository<E>, identity: Actor) {
+export function procurementProcessContext<E>(repository: ProcurementRepository<E>, identity: Actor, configuration: Pick<Policy, 'receiptDepletion'> = {}) {
   const actor = Object.freeze({ ...identity });
+  const receiptDepletion = configuration.receiptDepletion;
   const initial = <I extends VersionInput>(input: I) => ({ input, actor });
   const invoiceFlow = <I extends VersionInput>() => process<Input<I>>()
     .effect('read-invoice', attach('current', context => repository.read('invoice', context.input.id, actor)))
@@ -29,7 +30,7 @@ export function procurementProcessContext<E>(repository: ProcurementRepository<E
       // Missing stock is a domain interpretation, not an automatic error recovery policy.
       return row.ok ? ok(row.value) : row.error.kind === 'NotFound' ? ok(null) : row;
     }))
-    .effect('read-related', async context => ok({ ...context,
+    .effect('read-related', async context => ok({ ...context, receiptDepletion,
       receipts: await repository.related('receipt', context.order.id, actor),
       invoices: (await repository.related('invoice', context.order.id, actor)).filter(row => row.state !== 'voided'),
     }));

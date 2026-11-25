@@ -5,7 +5,7 @@ import type { ProcurementRepository } from './repository.js';
 /** Shared host data preparation for all three orchestration implementations. */
 export function procurementContext<E>(repository: ProcurementRepository<E>, identity: Actor, configuration: Policy) {
   const actor = Object.freeze({ ...identity });
-  const policy = Object.freeze({ requestLimitCents: configuration.requestLimitCents, approverIds: Object.freeze([...configuration.approverIds]),
+  const policy = Object.freeze({ receiptDepletion: configuration.receiptDepletion, requestLimitCents: configuration.requestLimitCents, approverIds: Object.freeze([...configuration.approverIds]),
     ...(configuration.secondApproval === undefined ? {} : { secondApproval: Object.freeze({ ...configuration.secondApproval }) }) });
   const loadStock = async () => {
     const row = await repository.read('stock', stockId, actor);
@@ -35,7 +35,7 @@ export function procurementContext<E>(repository: ProcurementRepository<E>, iden
     const current = await repository.read('receipt', input.id, actor); if (!current.ok) return current;
     const order = await repository.read('order', current.value.orderId, actor); if (!order.ok) return order;
     const stock = await loadStock(); if (!stock.ok) return stock;
-    return ok({ stock: stock.value, input, actor, current: current.value, order: order.value,
+    return ok({ stock: stock.value, receiptDepletion: policy.receiptDepletion, input, actor, current: current.value, order: order.value,
       receipts: await repository.related('receipt', order.value.id, actor),
       invoices: (await repository.related('invoice', order.value.id, actor)).filter(row => row.state !== 'voided') });
   };

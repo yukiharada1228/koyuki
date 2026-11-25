@@ -1,6 +1,6 @@
 import { ok, err, type Result } from '../../framework/index.js';
 import { receiveOrder, returnReceipt, correctReceipt, type Actor, type Stock, type Position, type Change, type Receipt,
-  type Loaded, type ReceiveInput, type ReasonInput, type CorrectInput, type Order, type ReceiptFacts, type RuleError } from './domain.js';
+  type ReceiptDepletion, type Loaded, type ReceiveInput, type ReasonInput, type CorrectInput, type Order, type ReceiptFacts, type RuleError } from './domain.js';
 export const stockId = 'warehouse';
 export type StockInput = Readonly<{ id: string; expectedVersion: number; sku: string; location: string; quantity: number }>;
 export type MoveInput = StockInput & Readonly<{ destination: string }>;
@@ -51,14 +51,31 @@ export const reserveStock = (value: Context<StockInput>) => operate({ ...value, 
 export const releaseStock = (value: Context<StockInput>) => operate({ ...value, mode: 'release' });
 export const moveStock = (value: Context<MoveInput>) => operate({ ...value, mode: 'move', destination: value.input.destination });
 export const adjustStock = (value: Context<AdjustInput>) => operate({ ...value, mode: 'adjust', reason: value.input.reason });
-function withStock(result: Result<Change<Receipt>, RuleError>, stock: Stock | null, actor: Actor, before: readonly { sku: string; quantity: number }[]): Result<Change<Receipt>, RuleError> {
+function withStock(result: Result<Change<Receipt>, RuleError>, stock: Stock | null, actor: Actor, before: readonly { sku: string; quantity: number }[], depletion: ReceiptDepletion = 'receiving-only'): Result<Change<Receipt>, RuleError> {
   if (!result.ok) return result;
+  if (depletion !== 'receiving-only' && depletion !== 'available-locations') return fail('InvalidInput');
   if (stock && (stock.id !== stockId || stock.groupId !== actor.groupId)) return fail('TargetMismatch');
   const positions = (stock?.positions ?? []).map(row => ({ ...row }));
   const after = result.value.result.state === 'accepted' ? result.value.result.quantities : [];
   const skus = new Set([...before, ...after].map(row => row.sku));
   for (const sku of skus) {
     const delta = after.filter(row => row.sku === sku).reduce((sum, row) => sum + row.quantity, 0) - before.filter(row => row.sku === sku).reduce((sum, row) => sum + row.quantity, 0);
+    if (!Number.isSafeInteger(delta)) return fail('InvalidInput');
+    if (delta < 0 && depletion === 'available-locations') {
+      // Deterministic business policy: receiving first, then code-unit location order.
+      // Stock is fungible per SKU; this does not track receipt lots or serial numbers.
+      const eligible = positions.filter(row => row.sku === sku).sort((left, right) =>
+        left.location === right.location ? 0 : left.location === 'receiving' ? -1 : right.location === 'receiving' ? 1 : left.location < right.location ? -1 : 1);
+      let remaining = -delta;
+      for (const row of eligible) {
+        if (!Number.isSafeInteger(row.onHand) || !Number.isSafeInteger(row.reserved) || row.reserved < 0 || row.onHand < row.reserved) return fail('InvalidInput');
+        const removed = Math.min(remaining, row.onHand - row.reserved);
+        row.onHand -= removed; remaining -= removed;
+        if (remaining === 0) break;
+      }
+      if (remaining > 0) return fail('InsufficientStock');
+      continue;
+    }
     let row = positions.find(row => row.sku === sku && row.location === 'receiving');
     if (!row) { row = { sku, location: 'receiving', onHand: 0, reserved: 0 }; positions.push(row); }
     const next = row.onHand + delta;
@@ -70,5 +87,5 @@ function withStock(result: Result<Change<Receipt>, RuleError>, stock: Stock | nu
   return ok({ result: result.value.result, checks: [...result.value.checks, ...inventory.checks], writes: [...result.value.writes, ...inventory.writes] });
 }
 export const receiveIntoStock = (value: Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[]; stock: Stock | null }>) => withStock(receiveOrder(value), value.stock, value.actor, []);
-export const returnFromStock = (value: Loaded<ReasonInput, Receipt> & ReceiptFacts & Readonly<{ stock: Stock | null }>) => withStock(returnReceipt(value), value.stock, value.actor, value.current.quantities);
-export const correctInStock = (value: Loaded<CorrectInput, Receipt> & ReceiptFacts & Readonly<{ stock: Stock | null }>) => withStock(correctReceipt(value), value.stock, value.actor, value.current.quantities);
+export const returnFromStock = (value: Loaded<ReasonInput, Receipt> & ReceiptFacts & Readonly<{ stock: Stock | null; receiptDepletion?: ReceiptDepletion }>) => withStock(returnReceipt(value), value.stock, value.actor, value.current.quantities, value.receiptDepletion);
+export const correctInStock = (value: Loaded<CorrectInput, Receipt> & ReceiptFacts & Readonly<{ stock: Stock | null; receiptDepletion?: ReceiptDepletion }>) => withStock(correctReceipt(value), value.stock, value.actor, value.current.quantities, value.receiptDepletion);

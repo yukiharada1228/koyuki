@@ -1,7 +1,8 @@
 // Evaluation domain, not a specification of the lecture author's product.
 import { ok, err, type Result } from '../../framework/index.js';
 export type Actor = Readonly<{ id: string; groupId: string; role: 'buyer' | 'approver' | 'warehouse' | 'finance'; active: boolean }>;
-export type Policy = Readonly<{ requestLimitCents: number; approverIds: readonly string[]; secondApproval?: Readonly<{ aboveCents: number; approverId: string }> }>;
+export type ReceiptDepletion = 'receiving-only' | 'available-locations';
+export type Policy = Readonly<{ receiptDepletion?: ReceiptDepletion; requestLimitCents: number; approverIds: readonly string[]; secondApproval?: Readonly<{ aboveCents: number; approverId: string }> }>;
 declare const lineProof: unique symbol;
 export type Line = Readonly<{ sku: string; quantity: number; unitCents: number }> & { readonly [lineProof]: true };
 export type Quantity = Readonly<{ sku: string; quantity: number }>;
