@@ -120,3 +120,33 @@ npm run test:inventory:package
 最後のコマンドはnpmパッケージをpackし、作業ツリー外の一時ディレクトリへインストールして、
 型チェック・在庫18テスト・デモを実行します。ソースへの相対importに依存しないことを確認します。
 記録の有効期限・削除・フォーマット変更時の移行や、分散トランザクションは提供していません。
+
+## 経費サンプルの定義versionと保持方針
+
+開発版のReplaySqliteExpensesでは、要求payloadではなくホストが定義versionを選ぶ。
+
+```ts
+const repository = new ReplaySqliteExpenses(path, {
+  definitionVersion: 'expenses.v2',
+});
+```
+
+この設定は経費サンプルの保存adapterのもので、coreのwithReplayへ新しい引数を加えたものではない。
+既定値は従来と同じexpenses.v1。設定を省略した既存receiptのfingerprintはbyte単位で変わらない。
+versionは1〜200文字・前後空白なしの文字列で、DBを開く前に検査する。構築後の設定recordの変更は反映しない。
+
+定義versionは、操作・信頼された操作者・入力とともにfingerprintへ含める。
+異なるversionのホストが同じrequestIdを使うと、lookupでも保存時の再確認でもIdempotencyConflictとする。
+要求へdefinitionVersionを追加してもホストの設定は変わらない。同時に異なるversionが同じIDを保存しても、
+一方だけが変更とreceiptを保存し、他方は拒否する。新しい業務操作には新しいrequestIdを割り当てる。
+
+本例はreceiptを自動削除せず保持し、過去のrequestIdを再利用しない。
+定義versionを変えても過去の成功を書き換えたり、新versionの結果として返したりしない。
+互換性を検証した古いホストは、従来のversionで過去の成功を再取得できる。
+この設定自体が業務規則・操作名・監査metadataのdefinitionVersionを自動変更するわけではない。
+監査にも同じ定義versionを記録する場合は、信頼されたhostのaudit identity設定で明示する。
+
+削除や自動移行、旧ホストの認可・運用継続までは提供しない。
+既存receiptを削除してIDを再利用する運用では、本例の再送保証を維持できると仮定しない。
+[回帰検査](../src/expense-replay-version.test.ts)は既存形式の維持、再起動後の取得、version間の衝突、
+異なるversionの並行保存、入力による指定の無視、不正設定の早期拒否を対象にする。

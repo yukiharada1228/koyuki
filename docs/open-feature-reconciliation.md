@@ -6,15 +6,15 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 ここにある将来案すべてが講演で要求された機能という意味でもない。
 
 2026-11-26（日本時間）に、公開Issue #1〜#8の本文とopen状態を再取得した。
-#1・#2・#5については、本文の完了条件と下記のコード・検査を個別に照合した。
+#1・#2・#4・#5については、本文の完了条件と下記のコード・検査を個別に照合した。
 他DB・分散相関・保持運用の追加実装を、元の完了条件へ暗黙に追加しない。
 
 | Issue | 現在使える根拠 | 満たしたと扱えない条件 |
 | --- | --- | --- |
 | [#1 共通transaction](https://github.com/yukiharada1228/koyuki/issues/1) | [同期共通境界](transactions.md)をタグ・経費・経費receiptへ接続し、本文の4完了条件を実例で検証。callback型の非同期契約もPrismaへ接続済み | 任意driverの原子性や分散transactionは保証しない。他driverやTarget全体の相関観察は追加範囲であり、本文の4条件の未充足とは分ける |
 | [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)、[Program](program-execution.md)、live timing・親子spanで本文の4完了条件を検証 | opaque関数内部・分散相関・永続履歴は未提供。本文が要求する対応coreの実行相関と、全関数・全システムの観察を区別する |
-| [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。既存Traceの名前を重ねる | 送料関数内部のifはopaqueで、branchを捏造しない。状態図・完全なnode実行対応は未提供 |
-| [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)、[明示的なretryEffect](retry.md)で上限・待機・中断・失敗の安全条件を指定 | withReplay単体は再試行しない。未適用・冪等性はhostの保証。receiptの期限・削除・定義version移行の運用は未提供 |
+| [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。既存Traceの名前を重ねる | 送料例のサービス選択は関数内部のifで、分岐としての図示は未充足。別の明示branch例で両経路を検査していることとは分ける。状態図・完全なnode実行対応も未提供 |
+| [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)、[retryEffect](retry.md)に加え、経費adapterのhost指定versionと既存形式・version衝突の検査を追加。本文の4完了条件を指定した実例と方針で確認 | withReplay単体は再試行しない。未適用・冪等性はhostの保証。経費例はreceiptを自動削除せず保持し、異なる定義versionの同じ要求IDは拒否。期限削除・自動移行の運用機構は未提供 |
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続し、本文の5完了条件を実例と契約文書で検証 | 保持・削除と改ざん耐性の保証範囲を文書化する条件は、全運用機能を内蔵する条件とは異なる。他DB adapter・実運用・改ざん検出・拒否ログは未提供 |
 | [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例。[非実行のソース診断CLI](declaration-diagnostics.md)で明示/既定ID・段階名・Application予約名を位置付きで報告 | 独自resolver・動的定義は未解決として残す。全参照の解決、分岐・状態の網羅性、エディター診断、任意の変更解析は未提供。型・構文・メタデータ検査を業務規則の証明とは扱わない |
 | [#7 有限モデル検査](https://github.com/yukiharada1228/koyuki/issues/7) | [明示モデルの有限探索](finite-model.md)で上限・反例・実装比較を指定。[経費](expense-state-exploration.md)は最大7操作で照合 | 実験用の検査入口。モデルの同値性・抽象化・実装対応は利用者の契約。チームの保守コスト・導入効果は未測定 |
@@ -37,10 +37,10 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 共通境界の存在だけで監査・retry・構成図・モデル検査の条件まで満たしたとは判断しない。
 また、これらを実装しても独立利用者の開発体験や全編音声との照合は別途残る。
 
-## #1・#2・#5の完了条件別の再点検
+## #1・#2・#4・#5の完了条件別の再点検
 
 参照する本文の最終更新は、#1が2026-11-24T08:47:19Z、#2が同08:47:20Z、
-#5が同08:47:24Z。下表の充足は指定した実例と契約の範囲での判定であり、
+#4が同08:47:23Z、#5が同08:47:24Z。下表の充足は指定した実例と契約の範囲での判定であり、
 GitHub上のIssue状態、全講演の完全実現、任意のadapterや利用者への保証とは別である。
 
 | #1の条件 | 確認した根拠 |
@@ -63,6 +63,17 @@ Target専用の新しい設定欄ではなく、既存のsave adapter内で共�
 通常のResult関数が内部段階を公開しない場合まで観察できる保証ではない。
 任意の業務関数を解析する能力を、この条件の達成から導かない。
 
+| #4の条件 | 確認した根拠 |
+| --- | --- |
+| 応答喪失後も更新と履歴を一度に保つ | [経費再送検査](../src/expense-replay.test.ts)のcommit応答・receipt照会喪失、[retry契約](retry.md)の明示的な冪等性指定 |
+| 同時再送・入力違い・保存前後の障害 | 同検査の別接続、fingerprint不一致、receipt書込み障害と、[定義version検査](../src/expense-replay-version.test.ts)の異なるhost versionによる競合 |
+| 業務拒否・権限・version競合を無条件retryしない | 同検査の非再試行ポリシーと[retry検査](../src/retry.test.ts)のterminal Result・例外保持 |
+| 上限・待機・中断・保持・定義versionの扱い | retry検査の試行回数とAbortSignal、[経費の保持・定義version方針](replay.md)。既存形式を維持し、自動削除なし・ID再利用なし・version変更時の衝突拒否を具体化 |
+
+保持期間や定義versionの扱いを定めることと、削除ジョブや自動移行を実装することは異なる。
+今回のadapter設定は業務規則やcore APIを変更せず、ホストが選んだ定義versionを要求の同一性へ結び付ける。
+外部システムのexactly-onceは元のIssueでも範囲外であり、ここから保証しない。
+
 | #5の条件 | 確認した根拠 |
 | --- | --- |
 | タグと経費で同じ形式を使う | [共通記録器](../src/adapters/sqlite-audit.ts)、[core検査](../src/audit.test.ts)、監査SQLite検査でkoyuki.audit.v1を比較 |
@@ -71,8 +82,8 @@ Target専用の新しい設定欄ではなく、既存のsave adapter内で共�
 | 機微項目・保持削除・改ざん耐性の範囲を明記 | [監査契約](audit.md)は許可したmetadataのみ、自動削除なし、hostの保持責任、直接SQLへの改ざん耐性なしを明記。運用済みという証拠ではない |
 | 再送で成功監査を増やさない | タグreceiptと経費receiptの再取得、2つのOSプロセスの同時再送で非重複を確認 |
 
-この3件について、元の完了条件を実例で満たす根拠があることと、より広い運用拡張が未提供なことを分ける。
-#3・#4・#6〜#8を同じ理由で完了へ変更する再判定は行っていない。
+この4件について、元の完了条件を実例で満たす根拠があることと、より広い運用拡張が未提供なことを分ける。
+#3・#6〜#8を同じ理由で完了へ変更する再判定は行っていない。
 
 ## 同期境界の実装後の差分
 

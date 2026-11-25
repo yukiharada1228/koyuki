@@ -22,8 +22,8 @@ function validRequest(r: ExpenseRequest): boolean {
     (r.operation !== 'edit' || ('amount' in r.input && Number.isSafeInteger(r.input.amount) && 'receipt' in r.input && typeof r.input.receipt === 'boolean'));
 }
 // Scope successful replay to trusted host identity, not a role supplied by the event.
-function fingerprint(r: ExpenseRequest): string {
-  const fields: unknown[] = ['expenses.v1', r.operation, r.actor.id, r.actor.role, r.actor.active,
+function fingerprint(r: ExpenseRequest, definitionVersion: string): string {
+  const fields: unknown[] = [definitionVersion, r.operation, r.actor.id, r.actor.role, r.actor.active,
     r.input.id, r.input.expectedVersion, ['reject', 'return'].includes(r.operation) && 'reason' in r.input ? r.input.reason : null];
   // Preserve existing receipt fingerprints for the original three operations.
   if (r.operation === 'edit' && 'amount' in r.input && 'receipt' in r.input) fields.push(r.input.amount, r.input.receipt);
@@ -38,8 +38,15 @@ function matchesOperation(operation: ExpenseOperation, state: ExpenseState): boo
 }
 /** Optional receipt boundary sharing the ordinary expense storage transaction. */
 export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseReplayRepository {
-  constructor(path: string, options: { audit?: SqliteAuditOptions } = {}) {
+  private readonly definitionVersion: string;
+  constructor(path: string, options: { audit?: SqliteAuditOptions; definitionVersion?: string } = {}) {
+    // A host-owned version scopes replay; payloads cannot select an old policy.
+    // Keep the default byte-for-byte compatible with existing fingerprints.
+    const { definitionVersion = 'expenses.v1' } = options;
+    if (typeof definitionVersion !== 'string' || !definitionVersion || definitionVersion.length > 200 || definitionVersion.trim() !== definitionVersion)
+      throw new TypeError('InvalidExpenseDefinitionVersion');
     super(path, options);
+    this.definitionVersion = definitionVersion;
     try { this.db.exec('CREATE TABLE IF NOT EXISTS expense_receipts(request_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result_json TEXT NOT NULL)'); }
     catch (error) { this.close(); throw error; }
   }
@@ -48,7 +55,7 @@ export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseRepla
     try {
       const row = this.db.prepare('SELECT * FROM expense_receipts WHERE request_id=?').get(request.requestId);
       if (!row) return ok({ kind: 'missing' });
-      if (row.fingerprint !== fingerprint(request)) return err({ kind: 'IdempotencyConflict' });
+      if (row.fingerprint !== fingerprint(request, this.definitionVersion)) return err({ kind: 'IdempotencyConflict' });
       let raw: unknown; try { raw = JSON.parse(String(row.result_json)); } catch { return err({ kind: 'CorruptExpense' }); }
       const restored = restoreExpense(raw); if (!restored.ok) return restored;
       if (restored.value.id !== request.input.id || restored.value.version !== request.input.expectedVersion + 1 ||
@@ -72,7 +79,7 @@ export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseRepla
     if ((request.operation === 'return' || request.operation === 'reject') &&
         (!('reason' in request.input) || !('reason' in change.next) || change.next.reason !== request.input.reason.trim())) return err({ kind: 'InvalidRequest' });
     const saved = this.commit(change); if (!saved.ok) return saved;
-    this.db.prepare('INSERT INTO expense_receipts VALUES(?,?,?)').run(request.requestId, fingerprint(request), JSON.stringify(saved.value));
+    this.db.prepare('INSERT INTO expense_receipts VALUES(?,?,?)').run(request.requestId, fingerprint(request, this.definitionVersion), JSON.stringify(saved.value));
     return ok({ kind: 'committed', value: saved.value });
   }
 }
