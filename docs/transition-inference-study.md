@@ -242,3 +242,31 @@ node scripts/investigate-transition-inference.mjs --only current,with-input-retu
 これは調査対象のTypeScript 7.0.2でフレームワークの接続チェックを除いても再現するという証拠。
 TypeScriptの実装内部の原因・既知Issueとの同一性・将来版での挙動・解決不能を証明するものではない。
 公開APIは変更していない。以後の候補は、この最小例と既存のgeneric契約の両方で評価する。
+
+## TypeScript本体の記録との比較と追加候補
+
+2026-11-26に次の一次資料を確認した。
+
+- [PR #48538](https://github.com/microsoft/TypeScript/pull/48538)は、object/array literal内でも文脈依存関数の推論を左から右へ流す改善を説明している。
+- [Issue #47599](https://github.com/microsoft/TypeScript/issues/47599)は文脈依存の式の推論を扱う。参照するPRの改善があることと、全パターンが解決済みであることは同じではない。
+- [Issue #63380](https://github.com/microsoft/TypeScript/issues/63380)は、既定の型引数を持つ入れ子の呼び出しと名前付き変数で挙動が異なる例を扱う。今回の最小例と同一の不具合だという確証はない。
+
+これらは推論方法の調査材料であり、Koyukiの問題の原因や修正方法を確定する根拠にはしない。
+TypeScriptの内部を修正したり、上流へIssueやコメントを投稿したりはしていない。
+
+[追加の比較結果](transition-inference-indexed-checks.json)では、最終出力を再帰的な条件型から
+出力tupleと長さのindexで求める候補と、位置ごとの接続チェックも併用する候補を確認した。
+既存契約の追加診断は0だが、inline例はどちらも不受理だった。
+
+また、要件が一つの場合に中間成功型を直接推論するoverloadを追加し、従来の任意長宣言を
+fallbackとして維持する候補も比較した。既存契約は保ったが、inline例のevolveの入力は
+unknownとなり、期待する入力・出力の厳密一致は成立しなかった。
+単一要件のoverloadだけを公開して従来の宣言を隠す形では比較していない。
+任意長の処理を単一要件へ制限する代替案としても採用しない。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,direct-requirement-output,indexed-stage-end,indexed-stage-end-mapped-connection
+```
+
+今回の3候補も不採用。外側の文脈、関数生成、callbackの推論を、型の精度を維持しながら
+両立させる方法は引き続き未解決である。公開APIと実行エンジンは変更していない。

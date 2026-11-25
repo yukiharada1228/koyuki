@@ -1,0 +1,65 @@
+{
+  "compiler": "Version 7.0.2",
+  "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+  "existingContractsPass": true,
+  "minimal": {
+    "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+    "baselineAccepted": true,
+    "accepted": false,
+    "diagnostics": [
+      "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+      "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+      "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+      "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+    ]
+  },
+  "results": [
+    {
+      "name": "current",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "direct-requirement-output",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS18046",
+        "TS2322"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "indexed-stage-end",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "indexed-stage-end-mapped-connection",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    }
+  ]
+}

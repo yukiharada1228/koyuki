@@ -74,6 +74,9 @@ function restConnectionCandidate(constraint) {
 }
 const candidates = [
   ['current', original],
+  ['direct-requirement-output', directRequirementOutput()],
+  ['indexed-stage-end', indexedStageEnd()],
+  ['indexed-stage-end-mapped-connection', mappedAdjacency(true).replace('type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<StageOutput<H>, R> : I;', 'type StageEnd<I, T extends readonly AnyStage[]> = (readonly [I, ...{ readonly [K in keyof T]: StageOutput<T[K]> }])[T["length"]];')],
   ['with-input-return-no-infer', withInputReturn('Rule<NoInfer<I>, Readonly<{ input: NoInfer<I>; value: NoInfer<O> }>, NoInfer<E>>')],
   ['with-input-parameter-no-infer', withInputReturn('Rule<NoInfer<I>, Readonly<{ input: I; value: O }>, E>')],
   ['with-input-pair-no-infer', withInputReturn('Rule<I, Readonly<{ input: NoInfer<I>; value: NoInfer<O> }>, E>')],
@@ -104,6 +107,25 @@ const candidates = [
     '}): {\n  readonly validate: Step<StageInput<A>',
     '} & NoInfer<T extends ConnectedStages<StageOutput<A>, T> ? unknown : never>): {\n  readonly validate: Step<StageInput<A>')],
 ];
+function directRequirementOutput() {
+  const signature = `export function defineTransition<const A extends object, R, RE, O, E>(definition: {
+  validate: A & NoInfer<A extends AnyStage ? unknown : never>;
+  require: readonly [Stage<StageOutput<NoInfer<A>>, R, RE>];
+  evolve: Stage<NoInfer<R>, O, E>;
+}): {
+  readonly validate: Step<StageInput<A>, StageOutput<A>, StageFailure<A>>;
+  readonly require: readonly [Step<StageOutput<A>, R, RE>];
+  readonly evolve: Step<R, O, E>;
+};
+`;
+  const start = original.indexOf('export function defineTransition<');
+  const body = original.indexOf('  // Adjacency is proved', start);
+  const fallback = original.slice(start, body).replace(/ \{\n$/, ';\n');
+  return original.slice(0, start) + signature + fallback + original.slice(start);
+}
+function indexedStageEnd() {
+  return original.replace('type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<StageOutput<H>, R> : I;', 'type StageEnd<I, T extends readonly AnyStage[]> = (readonly [I, ...{ readonly [K in keyof T]: StageOutput<T[K]> }])[T["length"]];');
+}
 function withInputReturn(type) {
   return original.replace('): Rule<I, Readonly<{ input: I; value: O }>, E> {', `): ${type} {`);
 }
