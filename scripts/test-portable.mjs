@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { defineUseCaseGroup, replayOperations, defineApplication, operation, step, ok } from './dist/index.js';
+import { defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   let receipt = null, writes = 0;
@@ -17,7 +17,7 @@ export const result = (async () => {
   });
   const command = model.on('double', {
     load: async input => ok(input),
-    transition: { validate: step('validate', n => ok(n)), require: [], evolve: step('double', n => ok(n * 2)) },
+    transition: defineTransition({ validate: n => ok(n), require: [withInput(n => ok(n * 2))], evolve: pair => ok(pair.value) }),
   });
   const first = await command.runDetailed(2), replay = await command.runDetailed(2);
   const app = await defineApplication({ initial: () => 100,
@@ -37,5 +37,5 @@ assert.equal(Object.keys(bundled.metafile.outputs).flatMap(key => bundled.metafi
 const context = { structuredClone };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
-assert.deepEqual(result, { crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 4, replay: 'replayed', attempt: null, writes: 1 });
-console.log('Browser bundle executed without Node globals: group commit, detailed trace, replay, application registration and exception lifecycle verified.');
+assert.deepEqual(result, { crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
+console.log('Browser bundle executed without Node globals: function declarations, input-preserving composition, group commit, replay and application lifecycle verified.');

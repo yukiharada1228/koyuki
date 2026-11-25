@@ -1,5 +1,5 @@
-import { ok, err, type Result } from '../framework/index.js';
-import { expenseWorkflow } from '../examples/expense.js';
+import { ok, err, workflow, withInput, type Result } from '../framework/index.js';
+import { expenseWorkflow, type ExpenseDecision } from '../examples/expense.js';
 interface Data { readonly id: string; readonly owner: string; readonly amount: number; readonly receipt: boolean; readonly version: number; readonly draftVersion?: number }
 export type Draft = Readonly<Data & { kind: 'draft' }>;
 export type PendingManager = Readonly<Data & { kind: 'manager'; receipt: true }>;
@@ -21,6 +21,8 @@ export type Submission = Loaded & { readonly current: Draft; readonly [proof]: '
 export type AuthorizedApproval = Loaded & { readonly current: PendingManager | PendingFinance; readonly [proof]: 'approval' };
 export type AuthorizedRejection = Loaded<RejectInput> & { readonly current: PendingManager | PendingFinance; readonly [proof]: 'rejection' };
 export type AuthorizedEdit = Loaded<EditInput> & { readonly current: Returned; readonly [proof]: 'edit' };
+export type SubmissionRoute = ExpenseDecision & { readonly [proof]: 'submission-route' };
+export type RoutedSubmission = Readonly<{ input: Submission; value: SubmissionRoute }>;
 export type Change = Readonly<{ expectedVersion: number; next: ExpenseState }> & { readonly [proof]: 'change' };
 function change(current: ExpenseState, next: ExpenseState): Change {
   return Object.freeze({ expectedVersion: current.version, next: Object.freeze(next) }) as Change;
@@ -38,16 +40,23 @@ export function validateSubmission(command: Loaded): Result<Submission, RuleErro
   if (!command.actor.active || command.actor.id !== command.current.owner) return err({ kind: 'Forbidden' });
   return ok(Object.freeze({ ...command }) as Submission);
 }
-export function submit(command: Submission) {
+const verifiedSubmissionRoute = expenseWorkflow.then('prove-submission-route', decision => ok(decision as SubmissionRoute));
+/** The route calculation is independent of applying its successful result. */
+export function routeSubmission(command: Submission) {
   const current = command.current;
-  const decision = expenseWorkflow.run({ id: current.id, amount: current.amount, receipt: current.receipt, employeeActive: command.actor.active });
-  if (!decision.ok) return decision;
-  const data = evolvedData(current);
-  const next: ExpenseState = decision.value.route === 'automatic'
+  return verifiedSubmissionRoute.run({ id: current.id, amount: current.amount, receipt: current.receipt, employeeActive: command.actor.active });
+}
+export function submitRouted({ input: command, value: decision }: RoutedSubmission): Result<Change, never> {
+  const current = command.current, data = evolvedData(current);
+  const next: ExpenseState = decision.route === 'automatic'
     ? { ...data, kind: 'approved', approval: { kind: 'automatic' } }
     : { ...data, kind: 'manager', receipt: true };
   return ok(change(current, next));
 }
+// Compatibility entry for callers with an already validated Submission.
+const submissionDecision = workflow('route-submission', withInput(routeSubmission)).then('submit', submitRouted);
+export function submit(command: Submission) { return submissionDecision.run(command); }
+
 function authority(command: Loaded): Result<PendingManager | PendingFinance, RuleError> {
   const current = command.current;
   if (current.kind !== 'manager' && current.kind !== 'finance') return err({ kind: 'InvalidState' });

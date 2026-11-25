@@ -1,11 +1,11 @@
-import { defineTarget, defineApplication, operation, step } from '../framework/index.js';
-import { validateSubmission, submit, validateEdit, edit, returnForCorrection, validateApproval, approve, validateRejection, reject, type Actor, type Input, type RejectInput, type EditInput, type ExpenseState } from './domain.js';
+import { defineTarget, defineApplication, operation, step, defineTransition, withInput } from '../framework/index.js';
+import { validateSubmission, routeSubmission, submitRouted, validateEdit, edit, returnForCorrection, validateApproval, approve, validateRejection, reject, type Actor, type Input, type RejectInput, type EditInput, type ExpenseState } from './domain.js';
 import type { ExpenseRepository } from './repository.js';
-export const submitted = { validate: step('validate-submission', validateSubmission), require: [] as const, evolve: step('submit', submit) };
-export const approved = { validate: step('authorize-approval', validateApproval), require: [] as const, evolve: step('approve', approve) };
-export const rejected = { validate: step('authorize-rejection', validateRejection), require: [] as const, evolve: step('reject', reject) };
-export const returned = { validate: step('authorize-return', validateRejection), require: [] as const, evolve: step('return', returnForCorrection) };
-export const edited = { validate: step('validate-edit', validateEdit), require: [] as const, evolve: step('edit', edit) };
+export const submitted = defineTransition({ validate: step('validate-submission', validateSubmission), require: [step('route-submission', withInput(routeSubmission))], evolve: step('submit', submitRouted) });
+export const approved = defineTransition({ validate: step('authorize-approval', validateApproval), evolve: step('approve', approve) });
+export const rejected = defineTransition({ validate: step('authorize-rejection', validateRejection), evolve: step('reject', reject) });
+export const returned = defineTransition({ validate: step('authorize-return', validateRejection), evolve: step('return', returnForCorrection) });
+export const edited = defineTransition({ validate: step('validate-edit', validateEdit), evolve: step('edit', edit) });
 export function expenseModel(repository: ExpenseRepository, actor: Actor) {
   // Host injects the authenticated actor once; users cannot choose a role in each event.
   const identity = Object.freeze({ ...actor });

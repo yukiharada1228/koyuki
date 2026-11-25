@@ -12,10 +12,10 @@ import { draftExpense, validateEdit, edit, type Actor, type ExpenseState, type C
 function value<T, E>(result: Result<T, E>): T { assert(result.ok, JSON.stringify(result)); return result.value; }
 const employee: Actor = { id: 'owner', role: 'employee', active: true }, manager: Actor = { id: 'boss', role: 'manager', active: true }, finance: Actor = { id: 'accountant', role: 'finance', active: true };
 const call = (requestId: string, expectedVersion = 1) => ({ requestId, input: { id: 'e1', expectedVersion } });
-function fixture(t: { after(fn: () => void): void }, amount = 200000) {
+function fixture(t: { after(fn: () => void): void }, amount = 200000, receipt = true) {
   const dir = mkdtempSync(join(tmpdir(), 'koyuki-expense-replay-')), path = join(dir, 'db.sqlite');
   const repository = new ReplaySqliteExpenses(path);
-  value(repository.insertDraft(value(draftExpense({ id: 'e1', owner: 'owner', amount, receipt: true }))));
+  value(repository.insertDraft(value(draftExpense({ id: 'e1', owner: 'owner', amount, receipt }))));
   t.after(() => { repository.close(); rmSync(dir, { recursive: true, force: true }); });
   return { path, repository, employee: expenseReplayCommands(repository, employee), manager: expenseReplayCommands(repository, manager), finance: expenseReplayCommands(repository, finance) };
 }
@@ -199,7 +199,7 @@ test('expense detailed replay distinguishes executed workflow from receipt-only 
   const f = fixture(t);
   const first = await f.employee.submit.runDetailed(call('submit'));
   assert.equal(value(first.result).kind, 'committed');
-  assert.deepEqual(first.attempt?.trace?.map(x => x.step), ['expense.submit.v1:load', 'validate-submission', 'submit', 'expense.submit.v1']);
+  assert.deepEqual(first.attempt?.trace?.map(x => x.step), ['expense.submit.v1:load', 'validate-submission', 'route-submission', 'submit', 'expense.submit.v1']);
   const replay = await f.employee.submit.runDetailed(call('submit'));
   assert.equal(value(replay.result).kind, 'replayed'); assert.equal(replay.attempt, null);
   assert.deepEqual(replay.trace, [{ kind: 'snapshot', status: 'ok' }, { kind: 'lookup', phase: 'before', status: 'found' }]);
@@ -218,4 +218,16 @@ test('expense unknown commit report preserves failing save and successful resolu
   assert.deepEqual(detail.attempt?.result, err({ kind: 'RepositoryUnavailable' }));
   assert.equal(detail.attempt?.trace?.at(-1)?.status, 'error');
   assert.deepEqual(detail.trace.slice(-2), [{ kind: 'resolution', status: 'lookup' }, { kind: 'lookup', phase: 'after-error', status: 'found' }]);
+});
+
+test('submission route failure is visible as a requirement and stops evolution and save', async t => {
+  const f = fixture(t, 5000, false);
+  const report = await f.employee.submit.runDetailed(call('no-receipt'));
+  assert.deepEqual(report.result, err({ kind: 'ReceiptRequired' }));
+  assert.deepEqual(report.attempt?.trace, [
+    { step: 'expense.submit.v1:load', status: 'ok' },
+    { step: 'validate-submission', status: 'ok' },
+    { step: 'route-submission', status: 'error' },
+  ]);
+  assert.equal(value(f.repository.read('e1')).version, 1);
 });

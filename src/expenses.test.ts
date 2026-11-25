@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ok, transition } from './framework/index.js';
-import { draftExpense, validateSubmission, submit, validateApproval, approve, validateRejection, reject, type Actor, type Draft, type PendingFinance, type Change, type Loaded, type Rejected } from './expenses/domain.js';
+import { draftExpense, validateSubmission, submit, submitRouted, validateApproval, approve, validateRejection, reject, type Actor, type Submission, type Draft, type PendingFinance, type Change, type Loaded, type Rejected } from './expenses/domain.js';
 import { MemoryExpenses } from './expenses/repository.js';
 import { expenseApplication, expenseModel, submitted, approved, rejected } from './expenses/application.js';
 const employee: Actor = { id: 'owner', role: 'employee', active: true };
@@ -127,3 +127,9 @@ function invalidDefinitions(command: Loaded, denied: Rejected, model: ReturnType
   void [missingEvidence, forged];
 }
 void invalidDefinitions;
+
+function invalidRouting(submission: Submission, decision: import('./examples/expense.js').ExpenseDecision) {
+  // @ts-expect-error a structural routing object is not evidence that routing validation ran
+  submitRouted({ input: submission, value: decision });
+}
+void invalidRouting;

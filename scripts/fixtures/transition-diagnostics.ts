@@ -1,0 +1,15 @@
+import { defineTransition, defineTarget, transition, ok, type Result } from 'koyuki';
+import { validateSubmission, requireDays, submit, validateApproval, approve, type Submission } from './domain.js';
+import type { leaveCommands } from './application.js';
+const approved = defineTransition({ validate: validateApproval, evolve: approve });
+defineTransition({ validate: validateSubmission, evolve: submit });
+defineTransition({ validate: validateSubmission, require: [(s: string) => ok(s)], evolve: submit });
+defineTransition({ validate: validateSubmission, require: [(s: Submission) => ok(s.input.days)], evolve: submit });
+defineTransition({ validate: async (n: number) => ok(n), evolve: (n: number) => ok(n) });
+defineTransition({ validate: (n: number) => ok(n), evolve: (s: string) => ok(s) });
+declare const commands: ReturnType<typeof leaveCommands>;
+commands.submit.run({ requestId: 'bad', input: { employee: 'owner', leaveId: 'leave', expectedVersion: 1 } });
+const target = defineTarget({ operation: 'bad', load: async (n: number) => ok(n), save: async (_s: string) => ok(1) });
+target.on(defineTransition({ validate: (n: number) => ok(n), evolve: (n: number) => ok(n * 2) }));
+const exact: Result<number, 'other'> = transition(defineTransition({ validate: (n: number): Result<number, 'Invalid'> => n > 0 ? ok(n) : { ok: false, error: 'Invalid' }, evolve: (n: number) => ok(n) })).run(1);
+void approved; void requireDays; void exact;

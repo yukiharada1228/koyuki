@@ -1,5 +1,12 @@
 # Changes
 
+## Unreleased
+
+- defineTransition：通常の業務関数から遷移を宣言。requireは任意で、依存する型と失敗を保持し、既存Step定義へ正規化する。宣言は不変、名前は役割ラベルまたは明示した業務名。
+- withInput：成功した計算結果と元の入力を保持し、Resultの接続を共通化。経費申請の承認経路を独立したrequireとして宣言し、失敗箇所をtraceへ表示。
+- 休暇の生関数宣言を独立したHTTP consumerで検証し、明示名の版と結果・状態を比較。既定のtrace名は異なる。
+- [追加APIの使い方と制限](docs/declarative-transitions.md)。公開alpha.5との区別を維持。
+
 ## 0.1.0-alpha.5
 
 - Honoの休暇申請HTTPサンプルを追加。認証前提の再送、入力検証、業務エラー→HTTP、同時競合、保存後の応答不明、実サーバー再起動を15テストで検証。コアへのHTTP依存追加なし。

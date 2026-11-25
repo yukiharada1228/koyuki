@@ -155,3 +155,18 @@ alpha.3では[defineUseCaseによる接続の集約](docs/use-case.md)も利用�
 認証→入力検証→業務操作→SQLite保存・再送→HTTP応答を、実TCPとサーバー再起動まで検証します。
 `npm run test:leave:http:package`で、配布パッケージだけを使う独立consumerとして再現できます。
 [開発体験の評価](examples/leave-http/FINDINGS.md)も記録しています。
+
+
+## 開発中：通常の関数をそのまま遷移へ
+
+```ts
+const approved = defineTransition({
+  validate: validateApproval,
+  evolve: approve,
+});
+```
+
+空のrequireや各関数のstep包装を必須にせず、必要な前提条件だけを追加する。
+withInputは計算結果と元の入力を保持し、業務内のResultの受け渡しも共通化する。
+[設計・例・型推論の範囲](docs/declarative-transitions.md)。
+**この追加APIは未公開。npmのalpha.5には含まれない。**

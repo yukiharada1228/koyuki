@@ -8,7 +8,7 @@ export type { ActionReport } from './action.js';
 export { collect } from './validation.js';
 export { process } from './process.js';
 export { defineCommand } from './command.js';
-export { defineTarget, defineRequestTarget, transition, step } from './model.js';
+export { defineTarget, defineRequestTarget, transition, step, defineTransition, withInput } from './model.js';
 export { defineProgram, effect, next } from './program.js';
 export type { Command, Update, ProgramSnapshot, ProgramTrace } from './program.js';
 export { defineApplication, operation, operations } from './application.js';
