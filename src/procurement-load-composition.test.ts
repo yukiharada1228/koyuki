@@ -4,9 +4,9 @@ import { err } from './framework/index.js';
 import { procurement } from './experiments/procurement/application.js';
 import { procurementContext } from './experiments/procurement/context.js';
 import { procurementProcessContext } from './experiments/procurement/context-process.js';
-import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
+import { MemoryProcurement, type ProcurementRepository, type StorageError } from './experiments/procurement/repository.js';
 import { returnFromStock } from './experiments/procurement/inventory.js';
-import type { Actor, VersionInput } from './experiments/procurement/domain.js';
+import type { Actor, VersionInput, Invoice, Receipt, Order, Stock } from './experiments/procurement/domain.js';
 
 const actor = (role: Actor['role']): Actor => ({ role, id: role, groupId: 'g', active: true });
 const policy = { requestLimitCents: 1000, approverIds: ['approver'] };
@@ -122,3 +122,37 @@ declare const composedTypes: Composed;
 const sameInvoice: SameContract<Awaited<ReturnType<typeof baselineTypes.invoice<Refined>>>, Awaited<ReturnType<typeof composedTypes.invoice<Refined>>>> = true;
 const sameReceipt: SameContract<Awaited<ReturnType<typeof baselineTypes.receipt<Refined>>>, Awaited<ReturnType<typeof composedTypes.receipt<Refined>>>> = true;
 void sameInvoice; void sameReceipt;
+
+// Contextual typing must retain each fact, rather than merely accept the callbacks as any.
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Value<R> = R extends { ok: true; value: infer V } ? V : never;
+type InvoiceFacts = Value<Awaited<ReturnType<typeof composedTypes.invoice<Refined>>>>;
+type ReceiptFacts = Value<Awaited<ReturnType<typeof composedTypes.receipt<Refined>>>>;
+type Failure<R> = R extends { ok: false; error: infer E } ? E : never;
+const exactInvoiceError: Equal<Failure<Awaited<ReturnType<typeof composedTypes.invoice<Refined>>>>, StorageError> = true;
+const exactReceiptError: Equal<Failure<Awaited<ReturnType<typeof composedTypes.receipt<Refined>>>>, StorageError> = true;
+void exactInvoiceError; void exactReceiptError;
+const exactInvoice: Equal<InvoiceFacts['current'], Invoice> = true;
+const exactInvoiceOrder: Equal<InvoiceFacts['order'], Order> = true;
+const exactReceipt: Equal<ReceiptFacts['current'], Receipt> = true;
+const exactReceiptOrder: Equal<ReceiptFacts['order'], Order> = true;
+const exactStock: Equal<ReceiptFacts['stock'], Stock | null> = true;
+const exactInput: Equal<ReceiptFacts['input'], Refined> = true;
+const exactInvoices: Equal<ReceiptFacts['invoices'], Exclude<Invoice, { state: 'voided' }>[]> = true;
+const exactReceipts: Equal<ReceiptFacts['receipts'], readonly Receipt[]> = true;
+void exactInvoice; void exactInvoiceOrder; void exactReceipt; void exactReceiptOrder;
+void exactStock; void exactInput; void exactInvoices; void exactReceipts;
+if (false) {
+  // @ts-expect-error fetching a receipt still requires the original version input
+  void composedTypes.receipt({ id: 'rc' });
+  void composedTypes.receipt({ id: 'rc', expectedVersion: 1, reason: 'damaged' }).then(result => {
+    if (result.ok) {
+      const reason: string = result.value.input.reason;
+      // @ts-expect-error receipt facts do not turn into invoice facts
+      const wrong: Invoice = result.value.current;
+      // @ts-expect-error inferred facts must not silently gain arbitrary keys
+      const missing = result.value.nonexistent;
+      void reason; void wrong; void missing;
+    }
+  });
+}

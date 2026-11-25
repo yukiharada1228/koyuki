@@ -1,5 +1,5 @@
 import { ok, process, type Result } from '../../framework/index.js';
-import type { Actor, VersionInput, Receipt, Invoice } from './domain.js';
+import type { Actor, VersionInput } from './domain.js';
 import { stockId } from './inventory.js';
 import type { ProcurementRepository } from './repository.js';
 
@@ -13,19 +13,18 @@ function attach<C, const K extends string, V, E>(key: K, read: (context: C) => R
   };
 }
 type Input<I> = { input: I; actor: Actor };
-type Current<I, T> = Input<I> & { current: T };
 
 /** Alternative loaders kept separate from the common baseline and all public APIs. */
 export function procurementProcessContext<E>(repository: ProcurementRepository<E>, identity: Actor) {
   const actor = Object.freeze({ ...identity });
   const initial = <I extends VersionInput>(input: I) => ({ input, actor });
   const invoice = <I extends VersionInput>(input: I) => process<Input<I>>()
-    .effect('read-invoice', attach('current', (context: Input<I>) => repository.read('invoice', context.input.id, actor)))
-    .effect('read-order', attach('order', (context: Current<I, Invoice>) => repository.read('order', context.current.orderId, actor)))
+    .effect('read-invoice', attach('current', context => repository.read('invoice', context.input.id, actor)))
+    .effect('read-order', attach('order', context => repository.read('order', context.current.orderId, actor)))
     .run(initial(input));
   const receipt = <I extends VersionInput>(input: I) => process<Input<I>>()
-    .effect('read-receipt', attach('current', (context: Input<I>) => repository.read('receipt', context.input.id, actor)))
-    .effect('read-order', attach('order', (context: Current<I, Receipt>) => repository.read('order', context.current.orderId, actor)))
+    .effect('read-receipt', attach('current', context => repository.read('receipt', context.input.id, actor)))
+    .effect('read-order', attach('order', context => repository.read('order', context.current.orderId, actor)))
     .effect('read-stock', attach('stock', async () => {
       const row = await repository.read('stock', stockId, actor);
       // Missing stock is a domain interpretation, not an automatic error recovery policy.
