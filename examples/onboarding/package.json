@@ -1,0 +1,9 @@
+{
+  "name": "koyuki-onboarding-exercise",
+  "private": true,
+  "type": "module",
+  "scripts": { "check": "tsc --noEmit", "test": "tsx --test application.test.ts" },
+  "dependencies": { "koyuki": "file:./koyuki-development.tgz" },
+  "devDependencies": { "@types/node": "26.6.6", "tsx": "4.23.15", "typescript": "7.0.2" },
+  "engines": { "node": ">=26" }
+}

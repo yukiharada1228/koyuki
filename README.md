@@ -27,6 +27,7 @@ SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用�
 と宣言し、`await expense.approve(input)`で実行します。
 公開済みnpm alpha.5にはまだ含まれません。以下の例・チュートリアルはalpha.5でも利用できる既存APIです。
 [移行・型検査・書き心地の評価記録](docs/business-api-study.md)も参照できます。
+[利用者評価用の課題](examples/onboarding/README.md)は、開発版tarballと未実装の開始ファイルを独立フォルダーへ準備できます。利用者による評価結果はまだありません。
 
 ## 最初の状態遷移
 

@@ -46,6 +46,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:business:change
+      - run: npm run test:onboarding:package
 
   adapters:
     name: Installed ${{ matrix.adapter }} adapter

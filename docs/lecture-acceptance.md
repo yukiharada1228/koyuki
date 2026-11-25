@@ -44,7 +44,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 ## 完了扱いにしていないこと
 
 - 全編の連続音声映像と自動字幕の照合。
-- 独立利用者による開発体験・学習負担の評価、実業務での運用実績。
+- 独立利用者による開発体験・学習負担の評価、実業務での運用実績。[評価用課題](../examples/onboarding/README.md)と開発版配布物での成立性検査は用意したが、実際の参加者による結果は未取得。
 - genericな要件計算と未注釈callbackの推論制限。
 - [opaque値の通常保存](opaque-decisions.md)は改善済み。[Application・captureの情報を失うコピー](application-ownership.md)も拒否するよう改善済み。明示的なView rendererのJSON照合や、任意のopaque値を状態・永続adapterで扱う保証は残る課題。
 - hostをまたぐ永続実行・再試行・監査保持の共通方針と、他DB/driverでの追加検証。
