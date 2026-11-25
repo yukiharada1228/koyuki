@@ -1,3 +1,4 @@
+import type { SqliteAuditOptions } from '../adapters/sqlite-audit.js';
 import { createHash } from 'node:crypto';
 import { ok, err, type Result, type Receipt, type Execution } from '../framework/index.js';
 import { SqliteExpenses } from './sqlite.js';
@@ -37,8 +38,8 @@ function matchesOperation(operation: ExpenseOperation, state: ExpenseState): boo
 }
 /** Optional receipt boundary sharing the ordinary expense storage transaction. */
 export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseReplayRepository {
-  constructor(path: string) {
-    super(path);
+  constructor(path: string, options: { audit?: SqliteAuditOptions } = {}) {
+    super(path, options);
     try { this.db.exec('CREATE TABLE IF NOT EXISTS expense_receipts(request_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result_json TEXT NOT NULL)'); }
     catch (error) { this.close(); throw error; }
   }

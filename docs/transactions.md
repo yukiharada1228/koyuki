@@ -73,7 +73,7 @@ observeは同期通知であり、永続監査や非同期subscriber管理では
 ブラウザー向けbundleではNode globalなしのfake driverで実行し、実行時依存と公開宣言を別途検査する。
 
 [Issue #1](https://github.com/yukiharada1228/koyuki/issues/1)の同期adapter向け部分を実装した段階。
-callback型の非同期DB向け共通境界は下記に追加した。Target全体の開始・確定・失敗の相関観察、共通監査形式、
+callback型の非同期DB向け共通境界は下記に追加した。Target全体の開始・確定・失敗の相関観察、
 保持・削除、限定retry、自動的な分散transactionは実装していない。
 これらの完成や、あらゆるDBの原子性を主張しない。
 
@@ -114,7 +114,7 @@ coreからdriverのrollback完了を外部検証することはできないた�
 
 [core検査](../src/async-transaction.test.ts)は中止・障害・並行実行の分離・型を検査する。
 Prismaの実driverでは途中のCAS失敗、履歴書込み失敗、callback例外、遅延制約によるcommit失敗等を検査する。
-共通の実行相関・永続監査・retry方針は依然として未提供。
+[共通の成功監査](audit.md)はSQLiteサンプルへ接続した。全実行の相関・監査保持の運用・retry方針は依然として未提供。
 
 ### callback契約の違反検出
 

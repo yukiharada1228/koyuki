@@ -1,3 +1,4 @@
+import { SqliteAudit, type SqliteAuditOptions } from '../adapters/sqlite-audit.js';
 import { DatabaseSync, type SQLOutputValue } from 'node:sqlite';
 import { createSyncTransaction, ok, err, type Result } from '../framework/index.js';
 import { restoreExpense, validExpenseChange, type Actor, type Change, type Draft, type ExpenseState, type Input, type Loaded, type RejectInput } from './domain.js';
@@ -10,7 +11,8 @@ export class SqliteExpenses implements ExpenseRepository {
     commit: () => { this.db.exec('COMMIT'); },
     rollback: () => { this.db.exec('ROLLBACK'); },
   });
-  constructor(path: string) {
+  private readonly audit: SqliteAudit;
+  constructor(path: string, options: { audit?: SqliteAuditOptions } = {}) {
     this.db = new DatabaseSync(path);
     try {
       this.db.exec('PRAGMA busy_timeout=2000; PRAGMA foreign_keys=ON');
@@ -20,6 +22,7 @@ export class SqliteExpenses implements ExpenseRepository {
         CREATE TABLE IF NOT EXISTS expenses(id TEXT PRIMARY KEY, version INTEGER NOT NULL CHECK(version>0), state_json TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS expense_changes(expense_id TEXT NOT NULL REFERENCES expenses(id), version INTEGER NOT NULL, state_json TEXT NOT NULL, PRIMARY KEY(expense_id,version));
         PRAGMA user_version=1; COMMIT;`);
+      this.audit = new SqliteAudit(this.db, options.audit);
     } catch (error) { this.db.close(); throw error; }
   }
   close() { this.db.close(); }
@@ -43,9 +46,14 @@ export class SqliteExpenses implements ExpenseRepository {
   insertDraft(draft: Draft): Result<Draft, SaveError> {
     const valid = restoreExpense(draft); if (!valid.ok) return valid;
     if (valid.value.kind !== 'draft' || valid.value.version !== 1 || valid.value.draftVersion !== undefined) return err({ kind: 'CorruptExpense' });
+    const state = valid.value;
     try {
-      const result = this.db.prepare('INSERT OR IGNORE INTO expenses(id,version,state_json) VALUES(?,?,?)').run(draft.id, 1, JSON.stringify(valid.value));
-      return result.changes === 1 ? ok(valid.value) : err({ kind: 'SaveConflict' });
+      return this.transaction.run(() => {
+        const result = this.db.prepare('INSERT OR IGNORE INTO expenses(id,version,state_json) VALUES(?,?,?)').run(draft.id, 1, JSON.stringify(state));
+        if (result.changes !== 1) return err({ kind: 'SaveConflict' as const });
+        this.audit.append('expense.create.v1', { targetType: 'expense', targetId: draft.id, beforeVersion: null, afterVersion: 1 });
+        return ok(state);
+      });
     } catch { return err({ kind: 'RepositoryUnavailable' }); }
   }
   private loadInput<I extends Input>(input: I, actor: Actor): Result<Loaded<I>, LoadError> {
@@ -70,6 +78,8 @@ export class SqliteExpenses implements ExpenseRepository {
     const update = this.db.prepare('UPDATE expenses SET version=?,state_json=? WHERE id=? AND version=?').run(after.version, json, after.id, change.expectedVersion);
     if (update.changes !== 1) return err({ kind: 'SaveConflict' });
     this.db.prepare('INSERT INTO expense_changes(expense_id,version,state_json) VALUES(?,?,?)').run(after.id, after.version, json);
+    const operation = before.kind === 'draft' ? 'submit' : after.kind === 'returned' ? 'return' : after.kind === 'draft' ? 'edit' : after.kind === 'rejected' ? 'reject' : 'approve';
+    this.audit.append(`expense.${operation}.v1`, { targetType: 'expense', targetId: after.id, beforeVersion: before.version, afterVersion: after.version });
     return ok(after);
   }
 }

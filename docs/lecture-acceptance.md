@@ -39,6 +39,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | 再送と過去の成功の再取得を扱う | receipt境界、要求一致、[要求snapshotの検査](replay-request-snapshot.md)、保存との原子性、投影を巻き戻さない検査 | 外部副作用のexactly-onceや自動再試行は保証しない |
 | 人の確認を挟むイベントを接続する | [登録・メール・確認](registration-events.md)、永続outbox・lease・別OSプロセス | fake配送先での検証。scheduler・dead letter等はhostの方針が必要 |
 | 途中の値を再実行なしで観測する | [選択値のcapture](workflow-observation.md)、businessのload/Rule/save/receiptと[ProcessのI/O・through](process-observation.md)の観測 | [詳細形式のloader](detailed-load.md)は内部traceを接続する。通常のResult関数は内部traceを公開しない。全値の自動永続監査・保持期間・機密項目の選択は未提供 |
+| 成功変更の共通監査を保存する | [共通形式・SQLite原子保存](audit.md)、タグと経費でのrollback・再送・競合検査 | SQLiteサンプルの範囲。保持・削除の運用、改ざん耐性、拒否ログ、他DBは未提供 |
 | Web標準API・実行時依存ゼロで動く | [配布物の依存検査](runtime.md)、Node型なしの宣言検査・Node globalなし実行 | SQLite・Prisma等のhost依存は各サンプル側にある |
 
 ## 完了扱いにしていないこと

@@ -1,3 +1,4 @@
+import { SqliteAudit, type SqliteAuditOptions } from '../adapters/sqlite-audit.js';
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { createSyncTransaction, TransactionFailure, ok, err, type Result } from '../framework/index.js';
@@ -14,7 +15,8 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
     commit: () => { this.db.exec('COMMIT'); },
     rollback: () => { this.db.exec('ROLLBACK'); },
   });
-  constructor(path: string, options: { maxTags?: number } = {}) {
+  private readonly audit: SqliteAudit;
+  constructor(path: string, options: { maxTags?: number; audit?: SqliteAuditOptions } = {}) {
     this.db = new DatabaseSync(path);
     this.db.exec(`PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 1000;
       CREATE TABLE IF NOT EXISTS groups (id TEXT PRIMARY KEY, name TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 0, max_tags INTEGER NOT NULL CHECK(max_tags > 0));
@@ -34,6 +36,8 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
     });
     const max = options.maxTags ?? 3;
     if (!Number.isSafeInteger(max) || max <= 0) { this.db.close(); throw new Error('InvalidMaxTags'); }
+    try { this.audit = new SqliteAudit(this.db, options.audit); }
+    catch (error) { this.db.close(); throw error; }
     this.db.prepare('INSERT OR IGNORE INTO groups(id,name,max_tags) VALUES(?,?,?)').run('g', 'メイン', max);
     this.db.prepare('INSERT OR IGNORE INTO groups(id,name,max_tags) VALUES(?,?,?)').run('other', '別グループ', max);
   }
@@ -105,8 +109,9 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
   private duplicate(value: { readonly data: TagData }): boolean {
     return Boolean(this.one('SELECT id FROM tags WHERE group_id=? AND label_key=? AND id<>?', value.data.groupId, normalizeLabel(value.data.label), value.data.id));
   }
-  private savedReceipt(key: string, value: { readonly data: TagData }): void {
+  private savedReceipt(key: string, value: { readonly data: TagData }, operation: string, beforeVersion: number | null): void {
     this.db.prepare('INSERT INTO mutation_receipts(operation_id,signature,output_json) VALUES(?,?,?)').run(key, fingerprint(value), JSON.stringify(value.data));
+    this.audit.append(operation, { targetType: 'tag', targetId: value.data.id, beforeVersion, afterVersion: value.data.version });
   }
   private failure(error: unknown, label: string): Result<never, SaveError> {
     if (error instanceof TransactionFailure && error.phase === 'work') return this.failure(error.cause, label);
@@ -126,7 +131,7 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
         this.db.prepare('INSERT INTO tags(id,group_id,label,label_key,icon_json,sort_order,version) VALUES(?,?,?,?,?,?,?)')
           .run(value.data.id, value.data.groupId, value.data.label, normalizeLabel(value.data.label), JSON.stringify(value.data.icon), value.data.sortOrder, value.data.version);
         this.db.prepare('UPDATE groups SET version=version+1 WHERE id=?').run(value.data.groupId);
-        this.savedReceipt(key, value); return restored;
+        this.savedReceipt(key, value, 'tag.create.v1', null); return restored;
       });
     } catch (error) { return this.failure(error, value.data.label); }
   }
@@ -143,7 +148,7 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
         this.db.prepare('UPDATE tags SET label=?,label_key=?,icon_json=?,version=? WHERE id=? AND version=?')
           .run(value.data.label, normalizeLabel(value.data.label), JSON.stringify(value.data.icon), value.data.version, value.data.id, value.expectedVersion);
         this.db.prepare('UPDATE groups SET version=version+1 WHERE id=?').run(value.data.groupId);
-        this.savedReceipt(key, value); return restored;
+        this.savedReceipt(key, value, 'tag.update.v1', value.expectedVersion); return restored;
       });
     } catch (error) { return this.failure(error, value.data.label); }
   }
@@ -182,7 +187,7 @@ export class SqliteTagRepository implements TagRepository, LifecycleRepository {
         const restored = restoreTag(value.data); if (!restored.ok) return restored;
         this.db.prepare('UPDATE tags SET archived=?,version=? WHERE id=? AND version=?').run(target, value.data.version, value.data.id, value.expectedVersion);
         this.db.prepare('UPDATE groups SET version=version+1 WHERE id=?').run(value.data.groupId);
-        this.savedReceipt(key, value);
+        this.savedReceipt(key, value, `tag.${value.kind}.v1`, value.expectedVersion);
         return ok({ kind: target ? 'archived' as const : 'active' as const, tag: restored.value });
       });
     } catch { return err({ kind: 'RepositoryUnavailable' }); }

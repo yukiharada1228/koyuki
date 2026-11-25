@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
+import { auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   const transactionCalls = [];
@@ -17,6 +17,8 @@ export const result = (async () => {
   const deniedTransaction = err('Denied');
   const asyncOutcome = await inTransaction({ transaction: async work => work({ id: 1 }) }, () => deniedTransaction);
   if (asyncOutcome !== deniedTransaction) throw new Error('Portable callback transaction failed');
+  const audit = auditRecord({ actorId: 'host', operationId: 'request-1', definitionVersion: 'v1', occurredAt: '2026-11-25T00:00:00.000Z' }, 'submit', { targetType: 'expense', targetId: 'e1', beforeVersion: 1, afterVersion: 2 });
+  if (!Object.isFrozen(audit) || audit.schema !== 'koyuki.audit.v1' || audit.afterVersion !== 2) throw new Error('Portable audit failed');
   const firstFailure = err('Invalid');
   if (combine([ok(1), firstFailure, err('Later')]) !== firstFailure) throw new Error('Tuple failure changed');
   const tuple = combine([ok('label'), ok(2)]);

@@ -26,3 +26,5 @@ export { createSyncTransaction, TransactionFailure } from './transaction.js';
 export type { SyncTransactionDriver, TransactionEvent } from './transaction.js';
 export { inTransaction, TransactionHostFailure } from './transaction.js';
 export type { TransactionHost } from './transaction.js';
+export { auditRecord } from './audit.js';
+export type { AuditIdentity, AuditChange, AuditRecord } from './audit.js';
