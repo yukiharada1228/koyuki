@@ -2,10 +2,10 @@ import { ok, err, type Result } from '../../framework/index.js';
 import { type Actor, type Entity, type Change } from './domain.js';
 export type StorageError = Readonly<{ kind: 'NotFound' | 'Conflict' }>;
 export type RelatedKind = 'order' | 'receipt' | 'invoice' | 'payment';
-export interface ProcurementRepository {
+export interface ProcurementRepository<CommitError = StorageError> {
   readonly read: <K extends Entity['kind']>(kind: K, id: string, actor: Actor) => Result<Extract<Entity, { kind: K }>, StorageError> | Promise<Result<Extract<Entity, { kind: K }>, StorageError>>;
   readonly related: <K extends RelatedKind>(kind: K, parentId: string, actor: Actor) => readonly Extract<Entity, { kind: K }>[] | Promise<readonly Extract<Entity, { kind: K }>[]>;
-  readonly commit: <T extends Entity>(change: Change<T>, actor: Actor) => Promise<Result<T, StorageError>>;
+  readonly commit: <T extends Entity>(change: Change<T>, actor: Actor) => Promise<Result<T, CommitError>>;
 }
 const key = (kind: Entity['kind'], group: string, id: string) => JSON.stringify([kind, group, id]);
 /** Deterministic evaluation adapter. Atomicity here is one synchronous JS commit, not a DB guarantee. */

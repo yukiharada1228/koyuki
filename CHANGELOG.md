@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買25操作へ既存withReplayによる共通再送境界を接続。Web Cryptoで要求・actor・操作を識別し、SQLiteで全writesと成功記録を同時保存。応答消失・記録挿入失敗・重複呼出し・過去結果による投影維持を配布consumerで検証。自動retry・外部副作用のexactly-once・全障害経路の網羅とは区別。
+
 - 購買の同じ25操作から通常結果と全writes付き結果を生成し、既存Applicationへ接続。返品時の発注・検収・請求・在庫を一度に投影し、型付きのモデル名付きdispatch、失敗時の投影保持、SQLite rollback後の再実行を実配布consumerで検証。初期読込み・別session同期・再送はhost側の未完了範囲として明記。
 
 - 購買の業務loadを親IDに限定するrelated portへ変更。SQLiteでgroupと親IDを絞るindexを追加し、kind全件listを業務契約から除外。別親の破損行を復元せず対象業務を完了できること、対象行の破損拒否とgroup分離を配布consumerで検証。

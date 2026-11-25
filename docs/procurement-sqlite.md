@@ -57,7 +57,7 @@ read/relatedの複数回呼出しはsnapshot transactionではない。保存時
 DBを開き直した全25操作の再実行や、別OSの同時writer・高負荷・停電復旧を網羅した試験ではない。
 全25操作の業務シナリオはメモリ版の35テストで検査し、このSQLite版では上記の永続化固有の境界を検査する。
 
-実行要求IDに対するreceiptはまだなく、保存成功後の応答消失を安全に再送できるという保証は追加していない。
+[実行要求の永続再送境界](procurement-replay.md)を追加し、成功記録と業務writesの同時保存・応答消失時の照会を検証した。
 [Applicationの複合結果投影](procurement-projection.md)は追加検証した。永続監査履歴・通常TS/helperとの同条件比較は引き続き対象とする。
 
 ## 全件読込みからの変更

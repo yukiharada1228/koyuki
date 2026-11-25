@@ -35,7 +35,7 @@ groupの違う値を拒否し、既知versionより古い値で状態を巻き�
 Applicationがrunning → ready/failed/crashed、通知、入力型、完了とView更新を管理する。
 業務失敗やadapter例外のときは前の投影を保持する。
 これは「DB保存が常に失敗している」という意味ではない。DB結果が不明な例外には再送照会などが必要で、
-このサンプルの再送receiptはまだ未実装。
+追加した[再送版](procurement-replay.md)では成功記録を照会する。任意の例外を不明commitへ自動変換しない。
 
 initialの読込みはhostが用意する。別sessionや別ユーザーの更新を自動購読しない。
 空のinitialなら、このsessionで保存したモデルだけがViewへ現れる。
@@ -53,4 +53,4 @@ actorはsessionに固定されるため、承認者・倉庫担当等の間で�
 
 `src/procurement-projection.test.ts`と`src/procurement-sqlite.test.ts`で実行し、
 `npm run test:business:package`でも実tarballの公開APIを使って検査する。
-大規模開発の認知負担や通常TS/helperとの差は未測定。再送・比較評価は継続する。
+大規模開発の認知負担や通常TS/helperとの差は未測定。再送シナリオの拡充・比較評価は継続する。

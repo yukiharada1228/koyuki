@@ -2,15 +2,15 @@ import { stockId, reserveStock, releaseStock, moveStock, adjustStock, receiveInt
 import { business, ok, type Result } from '../../framework/index.js';
 import { recordPayment, cancelPayment, approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
-import type { ProcurementRepository, StorageError } from './repository.js';
+import type { ProcurementRepository } from './repository.js';
 export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
 type Saved<T extends Entity, Detailed extends boolean> = Detailed extends true ? Committed<T> : T;
-export const procurement = (repository: ProcurementRepository, identity: Actor, configuration: Policy) => createProcurement(repository, identity, configuration, false);
-export const procurementChanges = (repository: ProcurementRepository, identity: Actor, configuration: Policy) => createProcurement(repository, identity, configuration, true);
-function createProcurement<const Detailed extends boolean>(repository: ProcurementRepository, identity: Actor, configuration: Policy, detailed: Detailed) {
+export const procurement = <E>(repository: ProcurementRepository<E>, identity: Actor, configuration: Policy) => createProcurement(repository, identity, configuration, false);
+export const procurementChanges = <E>(repository: ProcurementRepository<E>, identity: Actor, configuration: Policy) => createProcurement(repository, identity, configuration, true);
+function createProcurement<const Detailed extends boolean, E>(repository: ProcurementRepository<E>, identity: Actor, configuration: Policy, detailed: Detailed) {
   const actor = Object.freeze({ ...identity });
   const policy = Object.freeze({ requestLimitCents: configuration.requestLimitCents, approverIds: Object.freeze([...configuration.approverIds]) });
-  const save = async <T extends Entity>(change: Change<T>): Promise<Result<Saved<T, Detailed>, StorageError>> => {
+  const save = async <T extends Entity>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => {
     // Capture before the adapter receives mutable references; failed commits publish no delta.
     const writes = detailed ? structuredClone(change.writes) : [];
     const result = await repository.commit(change, actor); if (!result.ok) return result;
