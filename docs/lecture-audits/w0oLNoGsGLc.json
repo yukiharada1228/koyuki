@@ -26,6 +26,16 @@
         "w0o-13"
       ],
       "scope": "Targeted reread of saved captions and related published PDF text. Original full-review base is retained; no new continuous audio/video or all-page visual review is claimed."
+    },
+    "coreFocusFollowUp": {
+      "implementationBaseCommit": "349942ce567464760885c63f8060e3f215c289da",
+      "sections": [
+        "w0o-13"
+      ],
+      "scope": "Targeted connected-library subtitle windows and saved-caption reread. Returned texts match saved captions; not independent audio evidence. Two window responses were truncated; local captions supplied the remaining intervals.",
+      "record": "docs/lecture-core-focus.md",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -188,7 +198,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、全段階のlive timingは未提供。",
+      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や裸のProgram全体のlive timingは未提供。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -206,7 +216,9 @@
         "docs/application-execution.md",
         "src/application-execution.test.ts",
         "docs/audit.md",
-        "src/sqlite-audit.test.ts"
+        "src/sqlite-audit.test.ts",
+        "docs/lecture-core-focus.md",
+        "src/live-execution.test.ts"
       ],
       "remaining": [
         "persistent-history-policy"

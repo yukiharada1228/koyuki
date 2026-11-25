@@ -179,3 +179,20 @@ node scripts/investigate-transition-inference.mjs --only current,required-tuple-
 どちらも採用せず、公開宣言とruntimeは変更していない。
 「空tupleの既定値を除けば解消する」という仮説を支持する結果ではないが、
 TypeScriptで解決不能という証明でもない。
+
+## 接続検査をobjectの文脈から外した検証
+
+実装基準349942cでは、requireを裸のTとして推論させ、接続の妥当性だけを
+型上のrest引数へ移した。正しい呼出しは従来どおり1引数で、不正な接続には
+渡せないneverの引数が必要となる候補である。requireフィールドの交差型の中で
+NoInferを移す過去の候補とは、検査位置が異なる。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,raw-object-rest-check,raw-unknown-rest-check,unconstrained-rest-check
+```
+
+[compilerとsource hash付きの結果](transition-inference-rest-checks.json)では、
+raw object tuple・raw unknown tuple・Tの制約なしの3候補すべてで、既存契約の追加診断は0。
+しかしinline例はTS2322/TS2339/TS2551を伴って不受理で、入力・成功・失敗型の厳密一致も成立しなかった。
+withInputのgenericな戻り値を変更したり、公開APIへrest引数を追加したりはしていない。
+この検査位置の移動だけでは制限を解消できず、候補は不採用とする。

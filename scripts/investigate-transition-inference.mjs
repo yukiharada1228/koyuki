@@ -58,8 +58,25 @@ function explicitRequirementOverloads(raw = false) {
     .replaceAll('NamedStages<T>', 'readonly []');
   return original.slice(0, start) + required + absent + original.slice(start);
 }
+// Move only the adjacency diagnostic out of the contextually typed object.
+// Valid calls still take one argument; invalid chains require an impossible rest.
+function restConnectionCandidate(constraint) {
+  let source = original.replace('const T extends readonly AnyStage[] = readonly []',
+    constraint ? `const T extends readonly ${constraint}[] = readonly []` : 'const T = readonly []');
+  source = source.replace(requirement, 'require?: T;');
+  source = source.replace('export function defineTransition<', 'type RestStages<T> = Extract<T, readonly AnyStage[]>;\nexport function defineTransition<');
+  source = source.replace('}): {\n  readonly validate: Step<StageInput<A>',
+    '}, ...invalid: NoInfer<[T] extends [ConnectedStages<StageOutput<A>, RestStages<T>>] ? [] : [never]>): {\n  readonly validate: Step<StageInput<A>');
+  source = source.replaceAll('StageEnd<StageOutput<A>, T>', 'StageEnd<StageOutput<A>, RestStages<T>>')
+    .replaceAll('NamedStages<T>', 'NamedStages<RestStages<T>>')
+    .replace('const stages: readonly AnyStage[] = definition.require ?? [];', 'const stages = (definition.require ?? []) as readonly AnyStage[];');
+  return source;
+}
 const candidates = [
   ['current', original],
+  ['raw-object-rest-check', restConnectionCandidate('object')],
+  ['raw-unknown-rest-check', restConnectionCandidate('unknown')],
+  ['unconstrained-rest-check', restConnectionCandidate()],
   ['required-tuple-overloads', explicitRequirementOverloads()],
   ['required-raw-overloads', explicitRequirementOverloads(true)],
   ['callable-empty-intersection', original.replace('Rule<I, Readonly<{ input: I; value: O }>, E> {', 'Rule<I, Readonly<{ input: I; value: O }>, E> & {} {')],

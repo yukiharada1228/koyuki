@@ -23,6 +23,16 @@
         "qbf-19"
       ],
       "scope": "Targeted reread of saved captions and related published PDF text. Original full-review base is retained; no new continuous audio/video or all-page visual review is claimed."
+    },
+    "coreFocusFollowUp": {
+      "implementationBaseCommit": "349942ce567464760885c63f8060e3f215c289da",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Targeted connected-library subtitle windows and saved-caption reread. Returned texts match saved captions; not independent audio evidence. Two window responses were truncated; local captions supplied the remaining intervals.",
+      "record": "docs/lecture-core-focus.md",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -298,7 +308,9 @@
         "docs/application-input-contract.md",
         "src/application-input-contract.test.ts",
         "docs/declaration-ownership.md",
-        "src/declaration-ownership.test.ts"
+        "src/declaration-ownership.test.ts",
+        "docs/lecture-core-focus.md",
+        "docs/transition-inference-rest-checks.json"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"
