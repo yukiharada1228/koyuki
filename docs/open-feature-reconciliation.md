@@ -12,7 +12,7 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 | [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。既存Traceの名前を重ねる | 送料関数内部のifはopaqueで、branchを捏造しない。状態図・完全なnode実行対応は未提供 |
 | [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)、[明示的なretryEffect](retry.md)で上限・待機・中断・失敗の安全条件を指定 | withReplay単体は再試行しない。未適用・冪等性はhostの保証。receiptの期限・削除・定義version移行の運用は未提供 |
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続。監査障害のrollbackと再送非重複を検査 | 他DB adapter、保持・削除の実運用、改ざん耐性、拒否ログは未実装・未検証。診断traceを監査とは呼ばない |
-| [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例がある | 重複ID・未登録参照等の位置付き診断CLI。型の接続検査をメタデータの検査や業務規則の証明とは扱わない |
+| [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例。[非実行のソース診断CLI](declaration-diagnostics.md)で明示ID・段階名・Application予約名を位置付きで報告 | 動的定義は未解決として残す。全参照の解決、分岐・状態の網羅性、エディター診断、任意の変更解析は未提供。型・構文・メタデータ検査を業務規則の証明とは扱わない |
 | [#7 有限モデル検査](https://github.com/yukiharada1228/koyuki/issues/7) | [明示モデルの有限探索](finite-model.md)で上限・反例・実装比較を指定。[経費](expense-state-exploration.md)は最大7操作で照合 | 実験用の検査入口。モデルの同値性・抽象化・実装対応は利用者の契約。チームの保守コスト・導入効果は未測定 |
 | [#8 テスト生成](https://github.com/yukiharada1228/koyuki/issues/8) | [仕様変更比較](procurement-change-measurement.md)やメモリ/SQLiteの具体例検査がある | 独立した参照仕様に基づく生成、再現seed、失敗列の縮小。既存の手書きテスト数は生成器の完成を示さない |
 

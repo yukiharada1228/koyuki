@@ -28,6 +28,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npm run test:declarations
       - run: npm test
       - run: npm run check:package
       - run: npm run test:portable

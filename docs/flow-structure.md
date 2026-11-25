@@ -110,4 +110,4 @@ CIはこれらの意味・出力検査を継続するが、一時環境のMermai
 
 [Issue #3](https://github.com/yukiharada1228/koyuki/issues/3)に対する構成図の実装。
 業務状態図の自動導出、関数内部の分岐解析、完全なnode/span対応、全条件での経路検証は未完了。
-[Issue #6](https://github.com/yukiharada1228/koyuki/issues/6)の定義診断CLIの完成とも区別する。
+[Issue #6](https://github.com/yukiharada1228/koyuki/issues/6)の[非実行のソース診断CLI](declaration-diagnostics.md)は別の開発ツールとして一部実装した。構成図やCLIの追加を、全宣言の診断・業務規則の証明の完成とは扱わない。

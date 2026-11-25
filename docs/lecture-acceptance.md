@@ -41,6 +41,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | Applicationの実行状態・完了・viewを任せる | [Application](application-development.md)、[状態・イベントの所有](application-ownership.md)、成功・failed・crashed・再送投影の検査 | インプロセスのruntime。永続schedulerではない |
 | 通常の関数・オブジェクトを自然に接続する | [Workflow再利用](workflow-input-contract.md)、[command receiver](../src/application-receiver.test.ts) | あらゆるcallbackの型注釈を省けるわけではない |
 | 接続ミスの位置を診断する | [businessの段階診断](business-diagnostics.md)を実tarballの既定のcompiler表示で検査 | 操作名・配列位置・入力/保存出力の不一致を対象にする。全診断の表示保証・推論制限の解消・独立利用者の修正時間の実証ではない |
+| 明示した宣言メタデータの問題を実行せず確認する | [ソース診断CLI](declaration-diagnostics.md)で段階名・操作ID・Application予約名を位置付きで報告。タグ・経費の11宣言を検査 | Koyuki独自の具体化。動的定義等は未解決で残し、全参照・分岐・状態・純粋性を証明しない。解析packageは開発依存のみ |
 | 操作宣言と生成されるキーを揃える | [操作テーブルの回帰検査](business-operation-table.md)で非列挙データ、Symbol拒否、数値名の実行型と型宣言を照合 | 操作テーブルは通常のownデータrecord。構造的な型だけではprototype/getter等を表せないため構築時にも確認する。任意のJS objectの型宣言を証明しない |
 | 宣言した操作をApplicationのイベントへ接続する | [Application操作テーブル](application-operation-table.md)で通常・再送・直接登録、非列挙操作と数値名の型・実行を照合 | Symbol・accessor・custom prototypeのテーブルは構築時に拒否。generic変換関数との互換性を維持し、Symbolの静的拒否までは保証しない |
 | Queryと更新の関心を分ける | [HTTP/GraphQLの実統合](../examples/leave-http/GRAPHQL.md) | [失敗enum](../examples/leave-http/GRAPHQL.md)は対応表を型検査する。SDLからの全自動型生成・clientの再生成は未提供 |
