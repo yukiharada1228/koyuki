@@ -174,3 +174,41 @@ test('operation and request identity reach the existing replay boundary unchange
 test('an operation named then cannot accidentally make the business object a Promise thenable', () => {
   assert.throws(() => Reflect.apply(business, undefined, [{ name: 'reserved', load: async (n: number) => ok(n), save: async (n: number) => ok(n), operations: { then: [(n: number) => ok(n)] } }]), /ReservedBusinessOperation:then/);
 });
+
+test('a single rule records only the actual decision, while all failure boundaries remain visible', async () => {
+  for (const outcome of ['success', 'load', 'rule', 'save'] as const) {
+    const calls: string[] = [];
+    const commands = business({ name: 'one',
+      load: async (n: number): Promise<Result<number, 'LoadFailed'>> => { calls.push('load'); return outcome === 'load' ? err('LoadFailed') : ok(n); },
+      save: async (n: number): Promise<Result<number, 'SaveFailed'>> => { calls.push('save'); return outcome === 'save' ? err('SaveFailed') : ok(n); },
+      operations: { double: [(n: number): Result<number, 'Denied'> => { calls.push('rule'); return outcome === 'rule' ? err('Denied') : ok(n * 2); }] },
+    });
+    const report = await commands.double.runDetailed(2);
+    assert.deepEqual(report.trace, outcome === 'load' ? [{ step: 'one.double:load', status: 'error' }]
+      : outcome === 'rule' ? [{ step: 'one.double:load', status: 'ok' }, { step: 'run:1', status: 'error' }]
+        : [{ step: 'one.double:load', status: 'ok' }, { step: 'run:1', status: 'ok' }, { step: 'one.double', status: outcome === 'save' ? 'error' : 'ok' }]);
+    assert.deepEqual(calls, outcome === 'load' ? ['load'] : outcome === 'rule' ? ['load', 'rule'] : ['load', 'rule', 'save']);
+    assert.deepEqual(report.result, outcome === 'load' ? err('LoadFailed') : outcome === 'rule' ? err('Denied') : outcome === 'save' ? err('SaveFailed') : ok(4));
+  }
+});
+
+test('stable operation overrides preserve exact receipt identity independently of the namespace', async () => {
+  const receipts = new Map<string, { operation: string; output: number }>();
+  type Context = GroupExecution<'double', { key: string; value: number }>;
+  const compose = (name: string, operation?: (name: 'double') => string) => business({ name, operation,
+    load: async (input: Context['request']) => ok(input.value),
+    save: async (output: number, context: Context): Promise<Result<Execution<number>, never>> => {
+      receipts.set(context.request.key, { operation: context.operation, output }); return ok({ kind: 'committed', value: output });
+    },
+    replay: { lookup: (context: Context): Result<Receipt<number>, 'Conflict'> => {
+      const receipt = receipts.get(context.request.key);
+      return !receipt ? ok({ kind: 'missing' }) : receipt.operation === context.operation ? ok({ kind: 'found', value: receipt.output }) : err('Conflict');
+    }, resolveAfter: [] },
+    operations: { double: [(n: number) => ok(n * 2)] },
+  });
+  const input = { key: 'one', value: 2 };
+  assert.deepEqual(await compose('old', () => 'number.double.v1').double(input), ok({ kind: 'committed', value: 4 }));
+  assert.deepEqual(await compose('new').double(input), err('Conflict'));
+  assert.deepEqual(await compose('new', () => 'number.double.v1').double(input), ok({ kind: 'replayed', value: 4 }));
+  assert.equal(receipts.size, 1);
+});

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 非公開business試作を既存Workflowへ直接接続し、単一関数の空のcomplete段階を除去。共有context/replay接続を内部へ抽出し公開groupの型・挙動を維持。操作ID resolverと経費SQLiteの旧→新（別プロセス）・新→旧replayを検証。
+
 - Strengthen the unpublished business API study with authorization-proof, exact inference, and 64-stage connection checks; use accumulator-based type recursion. Mapped adjacency checks now preserve 64-stage inline tuple inference for shared and per-operation loaders, with errors located at the mismatched stage.
 
 - 非公開のAPI試作：通常関数の配列とbusiness.operation(input)で経費5操作を実行。入力・失敗型、既存の再送・詳細記録・Application連携を検証。配布入口へは追加せず、trace・操作ID互換性などの未決事項を記録。

@@ -23,6 +23,12 @@ function contracts() {
   type InputExact = Assert<Equal<Input, Request>>;
   type OutputExact = Assert<Equal<Output, Result<Approved, 'NotFound' | 'Invalid' | 'Forbidden' | 'Closed' | 'Conflict'>>>;
   type NoAny = Assert<Equal<IsAny<Output>, false>>;
+  business({ name: 'stable', load, save, operation: name => {
+    const exact: 'approve' = name;
+    // @ts-expect-error the resolver must not widen the known operation keys
+    const wrong: 'submit' = name;
+    return `expense.${exact}.v1`;
+  }, operations: { approve: [validate, permit, approve] } });
   business({ name: 'bad', load, save, operations: {
     // @ts-expect-error validation alone does not provide authorization proof
     approve: [validate, approve],

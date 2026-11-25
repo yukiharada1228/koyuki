@@ -3,7 +3,8 @@
 利用者から見える既定の単位を「役割ごとの段階」から「業務操作」へ寄せる試作。
 公開APIではない。npmにも配布入口にも含めず、既存APIを置き換えていない。
 [実装](../src/experiments/business.ts)と[実行・型テスト](../src/business-api-study.test.ts)・[接続型の回帰試験](../src/business-api-types.test.ts)で書き心地を検証する。
-新しい実行エンジンは作らず、defineUseCaseGroupと既存の遷移・再送・Applicationを使う。
+新しい実行エンジンは作らず、既存のWorkflow・Command・再送・Applicationを使う。
+defineUseCaseGroupとの要求context・再送の接続部分を内部モジュールへ共通化している。
 
 ## 試した形
 
@@ -67,7 +68,7 @@ traceは既存と同じ実行reportであり、永続監査ログではない。
 
 ## 確認したこと
 
-7件の実行テストと12件の型拒否を追加した。
+初期の7件の実行テスト・12件の型拒否に加え、単一関数の失敗境界・安定ID・SQLite移行と型推論の回帰試験を追加した。
 
 - 経費の申請・承認・却下・差し戻し・編集を同じ試作APIで実行。
 - 3段階の途中失敗で、残りの関数と保存を実行しない。
@@ -82,25 +83,22 @@ traceは既存と同じ実行reportであり、永続監査ログではない。
 
 ```sh
 npm run check
-npm exec -- tsx --test src/business-api-study.test.ts
+npm exec -- tsx --test src/business-api-study.test.ts src/business-api-migration.test.ts
 npm test
 npm run check:package
 ```
 
 型拒否はこのリポジトリのTypeScript 7.0.2での確認。新APIの配布型として独立consumerで検証したものではない。
-既存配布物は従来の14モジュールのままで、試作を混入していないことをpackage検証で確認する。
+共通の実行接続を担う内部モジュールを追加したため、開発版は15モジュールになる。
+試作API・経費の試作宣言は配布入口とdistに含めず、公開APIは増やしていない。
 
 ## 公開前に残る設計判断
 
-1. 単一関数の操作では、既存の遷移形式へ合わせるためcompleteというidentity段階がtraceに加わる。
-   業務関数だけが記録される自然なtraceへ整理したい。
-2. namespaceと操作名から生成するIDは既存宣言のIDと異なり得る。
-   保存済みreceipt・履歴の互換性を保つ移行方法は未検証。既存のIDを不用意に変更しない。
-3. generic関数を多段にinlineで書く場合の推論と、誤定義時の診断は改善の余地がある。
+1. generic関数を多段にinlineで書く場合の推論と、誤定義時の診断は改善の余地がある。
    特に空配列・async関数のエラーは、該当関数ではなくoperations全体へ出る場合がある。
-4. 操作ごとに成功値・保存先が違う集約を、ひとつのsaveへ無理に押し込まない。
+2. 操作ごとに成功値・保存先が違う集約を、ひとつのsaveへ無理に押し込まない。
    ひとつのbusinessの責務と、複数businessの接続を実例で確認する。
-5. 既存APIを置換する推奨入口なのか、補助記法なのかを決める。
+3. 既存APIを置換する推奨入口なのか、補助記法なのかを決める。
    同じ目的の公開APIを増やし続けない。購買アプリを作る前に、現在の経費・休暇で比較する。
 
 試作の成功は、根本的なAPI改善を検討できる証拠。
@@ -123,3 +121,34 @@ npm run check:package
 入力型と保存後の成功・失敗型の厳密な一致も回帰試験へ含める。
 64段は型検査の回帰試験であり、推奨する業務分割の粒度でも、無制限長の保証でもない。
 この追加検証も未公開の試作に対するもので、npm配布型の検証ではない。
+
+## 実行記録と既存宣言からの移行
+
+単一関数をWorkflowへ直接接続するため、以前追加していた`complete`という空の段階は不要になった。
+load失敗・唯一の業務関数の失敗・save失敗・成功をそれぞれ検証し、実行した段階だけを記録する。
+結果のtraceから後で段階を削除しているわけではない。
+
+既存IDを保つ場合は、namespaceからの既定値に代えてresolverを指定する。
+
+```ts
+business({
+  name: 'expense-api-study',
+  operation: (name: ExpenseOperation) => `expense.${name}.v1`,
+  // load, save, replay, operations ...
+});
+```
+
+[経費5操作の試作宣言](../src/experiments/expense-business.ts)は、既存のドメイン関数・SQLite adapter・要求形式をそのまま使う。
+旧APIが保存した申請を別OSプロセスの新APIでreplayし、新APIで保存した編集・却下も旧APIからreplayできた。
+差し戻し→編集→再申請→承認と、別申請の却下を実行し、古いreplayによって最新のDB状態が巻き戻らないこと、
+変更履歴・receiptの件数が増えないこと、同じ要求IDの内容・actor変更を拒否することも確認した。
+経費adapterのfingerprintは操作の業務名を使うため、外部IDの一致だけでは移行の証明にならない。
+要求形式・actor・fingerprintの意味を保つことも必要であり、これらはこの実例で維持している。
+別のreceipt fixtureでは外部IDそのものの一致を照合し、namespace変更だけでは競合し、resolverで旧IDを保つとreplayできることを検証する。
+
+既存のtrace名は役割名からrun:1等へ変わる。外部でtrace名を永続識別子に利用している場合の移行まで自動化したわけではない。
+異なる操作が同じIDを返さないことや、操作の意味を変えた際のversion管理はadapter/利用者側の契約である。
+
+この変更時の検証は、root型チェック・全380テスト、配布consumerでの休暇HTTP/GraphQL/Applicationの30テストと8件の不正宣言拒否、
+15モジュールの依存ゼロ・Node型なしconsumer検査、およびNodeのglobalを与えないブラウザbundle実行。
+配布consumerの検証対象は既存公開APIの内部共通化であり、未公開business APIを配布検証したという意味ではない。

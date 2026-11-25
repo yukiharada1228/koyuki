@@ -1,6 +1,7 @@
 import type { Result } from './result.js';
-import { defineRequestTarget, type RequestExecution, type Step, type TransitionDefinition } from './model.js';
-import { withReplay, type Execution, type Receipt } from './replay.js';
+import { transition, type RequestExecution, type Step, type TransitionDefinition } from './model.js';
+import type { Execution, Receipt } from './replay.js';
+import { createGroupRuntime } from './group-runtime.js';
 import type { Errors, PlainCommand, ReplayCommand, ReplaySaveCheck, SelectCommand } from './use-case.js';
 
 type AnyStep = Step<never, unknown, unknown>;
@@ -22,12 +23,7 @@ export function defineUseCaseGroup<N extends string, I, O, S, SE, RE, const D ex
     } & ReplaySaveCheck<NoInfer<S>>;
   }
 ) {
-  const { operation, save } = definition;
-  const lookup = definition.replay?.lookup;
-  const recovery = definition.replay?.resolveAfter;
-  const tags = Array.isArray(recovery) ? new Set<string>(recovery) : null;
-  const resolveAfter = (error: unknown): boolean => typeof recovery === 'function' ? recovery(error)
-    : !!tags && typeof error === 'object' && error !== null && 'kind' in error && typeof error.kind === 'string' && tags.has(error.kind);
+  const runtime = createGroupRuntime<N, I, O, S, SE, RE, D>(definition);
   return {
     on<J extends I, C, LE, V, VE, const T extends readonly AnyStep[], E>(name: N, entry: {
       loadName?: string;
@@ -37,24 +33,7 @@ export function defineUseCaseGroup<N extends string, I, O, S, SE, RE, const D ex
       PlainCommand<J, S, Errors<LE, VE, T, E, SE>>,
       ReplayCommand<J, S, Errors<LE, VE, T, E, SE>, RE>
     > {
-      const id = operation(name);
-      const context = (request: J): GroupExecution<N, J> => Object.freeze({ name, operation: id, request });
-      const command = defineRequestTarget({ operation: id, loadName: entry.loadName, load: entry.load,
-        save: (change: O, execution: RequestExecution<J>) => save(change, context(execution.request)),
-      }).on(entry.transition);
-      // The adapter chooses recovery by error tag; domain-specific failure unions remain on run.
-      const result = lookup ? withReplay(command as unknown as {
-        run(input: J): Promise<Result<Execution<Value<S>>, Errors<LE, VE, T, E, SE>>>;
-        runDetailed: (input: J) => Promise<import('./action.js').ActionReport<Execution<Value<S>>, Errors<LE, VE, T, E, SE>>>;
-      }, {
-        lookup: (request: J) => lookup(context(request)),
-        resolveAfter,
-      }) : { run: command.run, runDetailed: command.runDetailed };
-      // replay/save compatibility is checked on the public group definition.
-      return result as SelectCommand<D,
-        PlainCommand<J, S, Errors<LE, VE, T, E, SE>>,
-        ReplayCommand<J, S, Errors<LE, VE, T, E, SE>, RE>
-      >;
+      return runtime.on(name, { loadName: entry.loadName, load: entry.load, decide: transition<C, V, VE, T, O, E>(entry.transition) });
     },
   };
 }

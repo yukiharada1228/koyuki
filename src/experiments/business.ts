@@ -1,6 +1,6 @@
 // API study only. Not exported by the package and not a second execution engine.
-import { defineUseCaseGroup, step, ok, type Result, type Rule, type GroupExecution, type Receipt, type Execution } from '../framework/index.js';
-import type { TransitionDefinition } from '../framework/model.js';
+import { workflow, type Result, type Rule, type GroupExecution, type Receipt, type Execution } from '../framework/index.js';
+import { createGroupRuntime } from '../framework/group-runtime.js';
 import type { PlainCommand, ReplayCommand, ReplaySaveCheck, SelectCommand } from '../framework/use-case.js';
 type Fn = Rule<never, unknown, unknown>;
 type Load = (input: never) => Promise<Result<unknown, unknown>>;
@@ -36,6 +36,7 @@ type Commands<L extends Load, T extends Record<string, Entry>, S, SE, RE, D exte
 };
 interface RuntimeDefinition {
   name: string;
+  operation?: (name: string) => string;
   load: (input: unknown) => Promise<Result<unknown, unknown>>;
   save: (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<unknown, unknown>>;
   operations: Record<string, readonly Rule<unknown, unknown, unknown>[] | { load: RuntimeDefinition['load']; run: readonly Rule<unknown, unknown, unknown>[] }>;
@@ -43,6 +44,7 @@ interface RuntimeDefinition {
 }
 export function business<L extends Load, O, S, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
+  operation?: (name: Extract<keyof T, string>) => string;
   load: L;
   save: (value: O, context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Promise<Result<S, SE>>;
   // Infer the user tuple first; the compatibility check must not widen it.
@@ -54,10 +56,10 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
 }): Commands<L, T, S, SE, RE, D> {
   // Public checks prove adjacency. Only heterogeneous tuple positions are erased here.
   const source = definition as unknown as RuntimeDefinition;
-  const config = { operation: (name: string) => `${source.name}.${name}`, save: source.save };
+  const config = { operation: source.operation ?? ((name: string) => `${source.name}.${name}`), save: source.save };
   const group = source.replay
-    ? defineUseCaseGroup({ ...config, save: source.save as (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<Execution<unknown>, unknown>>, replay: source.replay })
-    : defineUseCaseGroup(config);
+    ? createGroupRuntime({ ...config, save: source.save as (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<Execution<unknown>, unknown>>, replay: source.replay })
+    : createGroupRuntime(config);
   const commands: Record<string, unknown> = {};
   for (const [name, entry] of Object.entries(source.operations)) {
     if (name === 'then') throw new Error('ReservedBusinessOperation:then');
@@ -65,12 +67,9 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
     const rules = [...(custom ? entry.run : entry)];
     if (!rules.length) throw new Error('BusinessRequiresRule');
     const first = rules[0]!;
-    // Single-rule operations still use the same transition engine; identity is explicit in trace.
-    const normalized = rules.length === 1
-      ? { validate: step('run:1', first), require: [], evolve: step('complete', (value: unknown) => ok(value)) }
-      : { validate: step('run:1', first), require: rules.slice(1, -1).map((rule, index) => step(`run:${index + 2}`, rule)), evolve: step(`run:${rules.length}`, rules.at(-1)!) };
-    const command = group.on(name, { load: custom ? entry.load : source.load,
-      transition: normalized as unknown as TransitionDefinition<unknown, unknown, unknown, readonly [], unknown, unknown> });
+    let decide = workflow('run:1', first);
+    for (let index = 1; index < rules.length; index++) decide = decide.then(`run:${index + 1}`, rules[index]!);
+    const command = group.on(name, { load: custom ? entry.load : source.load, decide });
     const run = (input: unknown) => command.run(input);
     // Works both as expense.approve(input) and as a command for operations(...).
     Object.defineProperty(commands, name, { value: Object.freeze(Object.assign(run, command)), enumerable: true });
