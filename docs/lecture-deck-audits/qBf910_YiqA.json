@@ -333,7 +333,10 @@
         "docs/business-api-study.md",
         "src/business-api-types.test.ts",
         "docs/typed-branch.md",
-        "scripts/fixtures/branch-narrowing-types.ts"
+        "scripts/fixtures/branch-narrowing-types.ts",
+        "docs/transition-inference-study.md",
+        "scripts/fixtures/transition-inference-limit.ts",
+        "src/transition-inference.test.ts"
       ],
       "remaining": [
         "defineTransitionでgenericヘルパー呼出しと未注釈evolveを同時に書く場合などの推論制限、および誤定義時の診断・独立利用者の学習負担の評価が残る。Workflow.branchのinline predicate入力型は推論可能になった。"

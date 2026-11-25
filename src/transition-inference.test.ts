@@ -49,3 +49,22 @@ function invalidDefinitions() {
   const exact: Result<number, 'Declined'> = transition(input).run(2); void exact;
 }
 void invalidDefinitions;
+test('named generic requirements preserve multiple dependent inputs and every failure type', () => {
+  type Quoted = Readonly<{ input: number; value: number }>;
+  const validate = (amount: number) => ok(amount);
+  const quoted = withInput(quote);
+  const fee = withInput((value: Quoted): Result<number, 'TooLarge'> => value.value > 10 ? err('TooLarge') : ok(1));
+  let evolutions = 0;
+  const flow = transition(defineTransition({ validate, require: [quoted, fee], evolve: value => {
+    const original: number = value.input.input;
+    const price: number = value.input.value;
+    const charge: number = value.value;
+    evolutions++; return ok(original + price + charge);
+  } }));
+  type ExactInput = Assert<Equal<Parameters<typeof flow.run>[0], number>>;
+  type ExactResult = Assert<Equal<ReturnType<typeof flow.run>, Result<number, 'Declined' | 'TooLarge'>>>;
+  assert.deepEqual(flow.run(2), ok(7));
+  assert.deepEqual(flow.run(0), err('Declined'));
+  assert.deepEqual(flow.run(6), err('TooLarge'));
+  assert.equal(evolutions, 1);
+});

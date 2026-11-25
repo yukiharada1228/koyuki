@@ -134,6 +134,7 @@ const next = defineTransition({
 ```
 
 型推論のためにResultの成功値・失敗型をunknownやanyへ広げる回避はしていない。
+[再現例と検証範囲](transition-inference-study.md)を記録し、実際の配布宣言でも制限と回避方法を検査する。
 
 ## 検証
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- genericなwithInputをinlineのrequireへ置き未注釈evolveと組み合わせる推論制限を、実配布宣言の検査へ追加。制限は未解消として維持し、名前付き要件による複数段階の入力・中間値・失敗型・途中停止を配布consumerで検証。推論用の新しい実行APIは追加せず、再現基準と判断を文書化。
+
 - Workflow.branchのinline型ガードで入力型注釈を省略可能に。タグ比較では型ガード自体の推論も利用できる。前段・predicate・各枝の接続契約を維持し、広いyes枝を通したfalse側の誤接続や定数booleanによる偽の絞り込みも拒否。実配布宣言と利用ガイドで検証。
 
 - 評価済みResultの固定tupleをまとめるcombineを追加。位置別の成功型・brand・失敗型Unionを維持し、最初の失敗Resultを変更せず返す。全失敗収集のcollectや遅延実行とは区別し、業務Workflowの失敗時に保存しないことを実配布consumerでも検証。
