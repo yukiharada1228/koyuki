@@ -43,6 +43,9 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 
 ## 完了扱いにしていないこと
 
+[未完了Issueとの照合](open-feature-reconciliation.md)では、既存の部分実装と各提案の未充足条件を分けている。
+将来の機能案を講演の必須要件へ読み替えず、個別adapterの原子保存を共通transaction契約の完成とも扱わない。
+
 - 全編の連続音声映像と自動字幕の照合。
 - 独立利用者による開発体験・学習負担の評価、実業務での運用実績。[評価用課題](../examples/onboarding/README.md)と開発版配布物での成立性検査は用意したが、実際の参加者による結果は未取得。
 - genericな要件計算と未注釈callbackの推論制限。
