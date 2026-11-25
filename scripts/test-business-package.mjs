@@ -5,6 +5,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { studyApprovalChange } from './studies/leave-approval-change.mjs';
+import { studyAuthorizationChange } from './studies/leave-authorization-change.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 function run(command, args, cwd) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8' });
@@ -119,6 +120,7 @@ try {
   if (process.argv.includes('--change')) {
     rmSync(join(consumer, 'business-diagnostics.ts'));
     studyApprovalChange(consumer, root, run);
+    studyAuthorizationChange(consumer, root, run);
   }
   console.log('Verified public development business API from the actual packed package: leave HTTP/GraphQL/Application, parity and migration. No npm publication.');
 } finally { rmSync(dir, { recursive: true, force: true }); }

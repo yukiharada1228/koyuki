@@ -62,7 +62,7 @@ core businessの再送は、現在のRuleより広い過去の成功型を許す
 ## まだ比較していないこと
 
 - 3方式へ同じ再送・未知commit照会・実行trace・観測・Applicationを接続した全体コスト。
-- 認可・監査方針等の追加の変更比較。二段階承認と複数場所の返品・訂正は[差分の再集計](procurement-change-measurement.md)まで追加済み。
+- 3方式の同等transport/runtimeを含む認可・監査方針の変更比較。[休暇の認可エラー](authorization-change-study.md)は別途、純粋判断とKoyukiのtransportを検証。二段階承認と複数場所の返品・訂正は[差分の再集計](procurement-change-measurement.md)まで追加済み。
 - 共通基盤・adapter・テストを含むソース量と、導入・型検査のコスト。
 - 独立参加者の実装時間・レビュー負担・オンボーディング、実運用のバグ率。
 
