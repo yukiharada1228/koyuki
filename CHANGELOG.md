@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Strengthen the unpublished business API study with authorization-proof, exact inference, and 64-stage connection checks; use accumulator-based type recursion. Long inline tuples still require inference improvements.
+- Strengthen the unpublished business API study with authorization-proof, exact inference, and 64-stage connection checks; use accumulator-based type recursion. Mapped adjacency checks now preserve 64-stage inline tuple inference for shared and per-operation loaders, with errors located at the mismatched stage.
 
 - 非公開のAPI試作：通常関数の配列とbusiness.operation(input)で経費5操作を実行。入力・失敗型、既存の再送・詳細記録・Application連携を検証。配布入口へは追加せず、trace・操作ID互換性などの未決事項を記録。
 - チーム開発での価値仮説と比較方針を文書化。通常TSの共通helper版を比較対象へ明示し、旧実験の計測漏れ・タグ比較の古いファイル参照を修正。行数比較を大規模開発・バグ率・生産性の証拠とは扱わない。

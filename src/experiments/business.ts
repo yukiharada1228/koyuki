@@ -15,12 +15,14 @@ type Out<F extends Fn> = Value<ReturnType<F>>;
 type ErrorOf<F extends Fn> = Failure<ReturnType<F>>;
 type Stages<E extends Entry> = E extends Pipeline ? E : E extends { run: infer P extends Pipeline } ? P : never;
 type Loader<L extends Load, E extends Entry> = E extends { load: infer P extends Load } ? P : L;
-// Accumulate in tail position to avoid constructing a nested conditional per stage.
-type Connect<C, P extends readonly Fn[], O, A extends readonly Fn[] = readonly []> =
-  P extends readonly [infer H extends Fn, ...infer T extends readonly Fn[]]
-    ? T extends readonly [] ? readonly [...A, Rule<C, O, ErrorOf<H>>]
-      : Connect<Out<H>, T, O, readonly [...A, Rule<C, Out<H>, ErrorOf<H>>]>
-    : never;
+// Shift stage outputs by one position to check every input without recursive expansion.
+// Only the final output is constrained by save; intermediate outputs remain exact.
+type Outputs<P extends readonly Fn[]> = { readonly [K in keyof P]: Out<P[K]> };
+type Inputs<C, P extends readonly Fn[]> = readonly [C, ...Outputs<P>];
+type Tail<P extends readonly Fn[]> = P extends readonly [Fn, ...infer T extends readonly Fn[]] ? T : readonly [];
+type Connect<C, P extends readonly Fn[], O> = {
+  readonly [K in keyof P]: Rule<Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Out<P[K]> : O, ErrorOf<P[K]>>
+};
 type Checked<L extends Load, E extends Entry, O> = E extends Pipeline ? Connect<Loaded<L>, E, O> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
   ? { readonly load: A; readonly run: Connect<Loaded<A>, P, O> } : never;
 type Requests<L extends Load, T extends Record<string, Entry>> = { [K in keyof T]: Input<Loader<L, T[K]>> }[keyof T];
@@ -43,7 +45,8 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
   name: string;
   load: L;
   save: (value: O, context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Promise<Result<S, SE>>;
-  operations: T & { readonly [K in keyof T]: K extends 'then' ? never : Checked<NoInfer<L>, T[K], NoInfer<O>> };
+  // Infer the user tuple first; the compatibility check must not widen it.
+  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], O> }>;
   replay?: {
     lookup: (context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
