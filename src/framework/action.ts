@@ -1,3 +1,6 @@
+import { bindDetailed, invokeDetailed, registerDetailed } from './instrumentation.js';
+import { observeEffect } from './observation.js';
+import type { StageObserver } from './workflow.js';
 import { registerStructure, structureOf, structureSequence, loadStructure } from './structure.js';
 import type { Result } from './result.js';
 import type { Trace } from './workflow.js';
@@ -12,7 +15,7 @@ export type ActionLoad<I, C, E> = ((input: I) => Promise<Result<C, E>>) | {
 /** Capture adapter methods once; function receivers are bound only when supplied. */
 export function captureLoad<I, C, E>(load: ActionLoad<I, C, E>, receiver?: object): ActionLoad<I, C, E> {
   if (typeof load === 'function') return receiver ? load.bind(receiver) : load;
-  return registerStructure(Object.freeze({ runDetailed: load.runDetailed.bind(load) }), structureOf(load));
+  return registerStructure(Object.freeze({ runDetailed: bindDetailed(load) }), structureOf(load));
 }
 type Loader = ActionLoad<never, unknown, unknown>;
 type LoadResult<L> = L extends (input: never) => infer R ? Awaited<R>
@@ -49,17 +52,21 @@ export function defineAction<I, C, LE, O, ME>(config: {
   mutation: { runDetailed(input: C): Promise<ActionReport<O, ME>> };
 }) {
   const load = captureLoad(config.load, config), loadName = config.loadName;
-  const mutation = config.mutation, runMutation = mutation.runDetailed.bind(mutation);
-  async function runDetailed(input: I): Promise<ActionReport<O, LE | ME>> {
-    const detailLoad = typeof load === 'function'
-      ? { result: await load(input), trace: [] }
-      : await load.runDetailed(input);
+  const mutation = config.mutation, runMutation = bindDetailed(mutation);
+  async function execute(input: I, observe?: StageObserver): Promise<ActionReport<O, LE | ME>> {
+    let detailLoad!: { result: Result<C, LE>; trace: readonly Trace[] };
+    const performLoad = async () => {
+      detailLoad = typeof load === 'function' ? { result: await load(input), trace: [] } : await invokeDetailed(load.runDetailed, input, observe);
+      return detailLoad.result;
+    };
+    if (observe) await observeEffect(loadName, input, performLoad, observe); else await performLoad();
     const loaded = detailLoad.result;
     const trace: readonly Trace[] = [...detailLoad.trace, { step: loadName, status: loaded.ok ? 'ok' : 'error' }];
     if (!loaded.ok) return { result: loaded, trace, plan: null };
-    const detail = await runMutation(loaded.value);
+    const detail = await invokeDetailed(runMutation, loaded.value, observe);
     return { ...detail, trace: [...trace, ...detail.trace] };
   }
+  const runDetailed = registerDetailed((input: I) => execute(input), execute);
   async function run(input: I): Promise<Result<O, LE | ME>> { return (await runDetailed(input)).result; }
   return registerStructure({ run, runDetailed }, structureSequence(loadStructure(load, loadName), structureOf(mutation)));
 }

@@ -1,3 +1,4 @@
+import { inheritDetailed } from './instrumentation.js';
 import { registerStructure, structureOf } from './structure.js';
 import { captureLoad, type ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
@@ -150,6 +151,7 @@ export function business(definition: object) {
       const report = await observed.runDetailed(input);
       return { ...report, ...recorder.report() };
     };
+    inheritDetailed(runDetailed, command.runDetailed);
     const run = (input: unknown) => command.run(input);
     // Works both as expense.approve(input) and as a command for operations(...).
     Object.defineProperty(commands, name, { value: registerStructure(Object.freeze(Object.assign(run, command, { runDetailed })), structureOf(command)), enumerable: true });

@@ -1,3 +1,4 @@
+import type { StageObserver, StageStatus } from './workflow.js';
 import type { Result } from './result.js';
 export interface OperationReport<O, E> {
   readonly result: Result<O, E>;
@@ -19,6 +20,8 @@ interface ExecutionMetadata {
 type ExecutionDetail = (
   | { readonly kind: 'queued' | 'started' }
   | { readonly kind: 'step'; readonly step: string; readonly status: 'ok' | 'error' | 'skipped'; readonly scope: 'operation' | 'replay'; readonly timing: 'reported-after-run' }
+  | { readonly kind: 'span-started'; readonly spanId: string; readonly parentSpanId: string | null; readonly step: string }
+  | { readonly kind: 'span-completed'; readonly spanId: string; readonly parentSpanId: string | null; readonly step: string; readonly status: StageStatus; readonly durationMs: number }
   | { readonly kind: 'completed'; readonly status: 'ok' | 'error' | 'defect' | 'rejected'; readonly revision?: number }
 );
 export type ExecutionEvent = ExecutionMetadata & ExecutionDetail;
@@ -51,6 +54,24 @@ export function executionSession(options: ExecutionOptions = {}) {
         try { void Promise.resolve(listener(event)).catch(() => {}); } catch { /* diagnostics only */ }
       }
     };
+    let spanSequence = 0;
+    const active: string[] = [];
+    const begin = (step: string) => {
+      const spanId = `${executionId}/span-${++spanSequence}`, parentSpanId = active.at(-1) ?? null, started = read();
+      let closed = false;
+      active.push(spanId);
+      emit({ kind: 'span-started', spanId, parentSpanId, step });
+      return (status: StageStatus) => {
+        if (closed) return;
+        closed = true;
+        const index = active.indexOf(spanId); if (index >= 0) active.splice(index, 1);
+        emit({ kind: 'span-completed', spanId, parentSpanId, step, status, durationMs: Math.max(0, read() - started) });
+      };
+    };
+    const observe: StageObserver = Object.assign((step: string, _input: unknown) => {
+      const finish = begin(step);
+      return Object.assign((result: Result<unknown, unknown>) => finish(result.ok ? 'ok' : 'error'), { defect: () => finish('defect') });
+    }, { live: true as const, scope: begin });
     const steps = (report: OperationReport<unknown, unknown>) => {
       // Detail reports are optional host capabilities. A broken diagnostic must
       // not replace a result, and only stage names/statuses leave this boundary.
@@ -72,7 +93,7 @@ export function executionSession(options: ExecutionOptions = {}) {
         rows(report.trace, 'attempt' in report ? 'replay' : 'operation');
       } catch { /* malformed metadata cannot change business success */ }
     };
-    return { emit, steps };
+    return { emit, steps, observe };
   };
   return { subscribe, create };
 }

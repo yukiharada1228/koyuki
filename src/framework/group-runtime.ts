@@ -1,3 +1,4 @@
+import { bindDetailed, invokeDetailed, registerDetailed } from './instrumentation.js';
 import { registerStructure, structureOf, structureSequence, structureStep, loadStructure } from './structure.js';
 import { captureLoad, type ActionLoad } from './action.js';
 // Internal composition shared by declared transitions and the unpublished API study.
@@ -34,7 +35,7 @@ export function createGroupRuntime<N extends string, I, O, S, SE, RE, const D ex
         decide, save: (change: O) => save(change, context(request)) });
       const command = registerStructure({
         run: (request: J) => forRequest(request).run(request),
-        runDetailed: (request: J) => forRequest(request).runDetailed(request),
+        runDetailed: registerDetailed((request: J) => forRequest(request).runDetailed(request), (request: J, observe) => invokeDetailed(bindDetailed(forRequest(request)), request, observe)),
       }, structureSequence(loadStructure(load, loadName ?? `${id}:load`), structureOf(decide), structureStep(id, 'save')));
       // The public definition checks the persisted Execution envelope when replay is enabled.
       const result = lookup ? withReplay(command as unknown as {

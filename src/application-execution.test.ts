@@ -14,7 +14,7 @@ test('Application correlates detailed IO, rules, save and completion without col
   const accepted = await session.dispatch({ type: 'apply', input: { n: 2, token: 'SECRET_TOKEN' } }); assert(accepted.ok);
   assert.equal(accepted.value.state.data, 3);
   assert.deepEqual(calls, ['load', 'validate', 'save']);
-  assert.deepEqual(events.map(event => event.kind), ['queued', 'started', 'step', 'step', 'step', 'step', 'step', 'completed']);
+  assert.deepEqual(events.filter(event => !event.kind.startsWith('span-')).map(event => event.kind), ['queued', 'started', 'step', 'step', 'step', 'step', 'step', 'completed']);
   assert(events.every(event => event.executionId === 'host-session/1' && event.operation === 'apply' && Object.isFrozen(event)));
   assert.deepEqual(events.filter(event => event.kind === 'step').map(event => event.step), ['lookup', 'save:load', 'validate', 'increment', 'save']);
   assert(events.filter(event => event.kind === 'step').every(event => event.timing === 'reported-after-run'));
@@ -79,7 +79,7 @@ test('observer exceptions, rejections and broken clocks do not change accepted r
   session.subscribeExecution(async () => { throw Error('async observer'); });
   session.subscribeExecution(event => { events.push(event); });
   const result = await session.dispatch({ type: 'go', input: 5 }); assert(result.ok && result.value.state.data === 5);
-  assert.deepEqual(events.map(event => event.kind), ['queued', 'started', 'completed']);
+  assert.deepEqual(events.filter(event => !event.kind.startsWith('span-')).map(event => event.kind), ['queued', 'started', 'completed']);
   assert(events.every(event => event.elapsedMs === 0));
 });
 

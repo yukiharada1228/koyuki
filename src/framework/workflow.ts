@@ -1,3 +1,5 @@
+import { registerDetailed } from './instrumentation.js';
+import { observeEffect } from './observation.js';
 import { registerStructure, structureOf, structureStep, structureSequence, structureBranch } from './structure.js';
 import { snapshotData } from './snapshot.js';
 import type { Result } from './result.js';
@@ -14,12 +16,14 @@ export interface WorkflowCapture<I, R> {
   readonly result: (value: Result<unknown, unknown>, step: string) => R;
 }
 /** Internal stage hook. The returned receiver retains that stage's selected input. */
-export type StageObserver = (step: string, input: unknown) => (result: Result<unknown, unknown>) => void;
+export type StageStatus = 'ok' | 'error' | 'defect';
+export type StageReceiver = ((result: Result<unknown, unknown>) => void) & { readonly defect?: () => void };
+export type StageObserver = ((step: string, input: unknown) => StageReceiver) & { readonly live?: true; readonly scope?: (name: string) => (status: StageStatus) => void };
 export function evaluateRule<I, O, E>(step: string, rule: Rule<I, O, E>, input: I, observe?: StageObserver): Result<O, E> {
   const receive = observe?.(step, input);
-  const result = rule(input);
-  receive?.(result);
-  return result;
+  try {
+    const result = rule(input); receive?.(result); return result;
+  } catch (cause) { try { receive?.defect?.(); } catch {} throw cause; }
 }
 /** Internal friend hook; not exported by the package entry point. */
 export const observeEvaluation: unique symbol = Symbol('Workflow.observeEvaluation');
@@ -49,11 +53,14 @@ export class Workflow<I, O, E> {
     return registerStructure(new Workflow<I, A | B, E | F | G>(this.name, [...this.steps, name], (input, observe) => {
       const previous = this.evaluate(input, observe);
       if (!previous.result.ok) return { result: previous.result, trace: previous.trace };
-      const selected = predicate(previous.result.value) ? 'yes' : 'no';
-      // Public overloads check the branch inputs. Dispatch erases those distinct inputs only
-      // after the predicate has selected the path; a user-written type guard is trusted as in TS.
-      const next = branches[selected].evaluate(previous.result.value as never, observe);
-      return { result: next.result, trace: [...previous.trace, { step: `${name}:${selected}`, status: 'ok' }, ...next.trace] };
+      const finish = observe?.live ? observe.scope?.(name) : undefined;
+      try {
+        const selected = predicate(previous.result.value) ? 'yes' : 'no';
+        // Public overloads prove the selected path accepts this value.
+        const next = branches[selected].evaluate(previous.result.value as never, observe);
+        finish?.(next.result.ok ? 'ok' : 'error');
+        return { result: next.result, trace: [...previous.trace, { step: `${name}:${selected}`, status: 'ok' }, ...next.trace] };
+      } catch (cause) { finish?.('defect'); throw cause; }
     }), structureSequence(structureOf(this), structureBranch(name, structureOf(branches.yes), structureOf(branches.no))));
   }
   then<N, F>(name: string, rule: Rule<O, N, F>): Workflow<I, N, E | F> {
@@ -141,26 +148,33 @@ export function bindMutation<I, O, E, S, F>(config: {
     return node;
   }
   function view(value: O): View { return render ? render(value) : Save({ value }); }
-  async function runDetailed(input: I): Promise<{ result: Result<S, E | F>; trace: readonly Trace[]; plan: unknown }> {
-    const evaluated = inspect(input), decision = evaluated.result;
+  async function execute(input: I, observe?: StageObserver): Promise<{ result: Result<S, E | F>; trace: readonly Trace[]; plan: unknown }> {
+    const evaluated = observe ? flow[observeEvaluation](input, observe) : inspect(input), decision = evaluated.result;
     if (!decision.ok) return { result: decision, trace: evaluated.trace, plan: null };
     if (!render) {
       // No renderer can substitute a different node. Execute the actual decision,
       // even when it cannot be represented in the diagnostic write plan.
       const plan = describeDecision(operation, decision.value);
-      const result = await save(decision.value);
+      const result = observe ? await observeEffect(operation, decision.value, () => save(decision.value), observe) : await save(decision.value);
       return { result, trace: [...evaluated.trace, { step: operation, status: result.ok ? 'ok' : 'error' }], plan };
     }
-    const rendered = view(decision.value);
-    let node = rendered;
-    while (node.kind === 'mutation') node = node.child;
-    if (node.kind !== 'write') throw new Error('WrongMutationBinding');
-    const task = tasks.get(node);
-    if (!task || task.identity !== identity) throw new Error('WrongMutationBinding');
-    if (canonicalIdentity(node.input) !== canonicalIdentity(decision.value)) throw new Error('ChangedDecision');
-    const result = await task.execute() as Result<S, F>;
+    const finishRender = observe?.live ? observe.scope?.('render-and-verify') : undefined;
+    let prepared: { rendered: View; task: { execute: () => Promise<Result<unknown, unknown>> } };
+    try {
+      const rendered = view(decision.value);
+      let node = rendered;
+      while (node.kind === 'mutation') node = node.child;
+      if (node.kind !== 'write') throw new Error('WrongMutationBinding');
+      const task = tasks.get(node);
+      if (!task || task.identity !== identity) throw new Error('WrongMutationBinding');
+      if (canonicalIdentity(node.input) !== canonicalIdentity(decision.value)) throw new Error('ChangedDecision');
+      prepared = { rendered, task }; finishRender?.('ok');
+    } catch (cause) { finishRender?.('defect'); throw cause; }
+    const { rendered, task } = prepared;
+    const result = (observe ? await observeEffect(operation, decision.value, () => task.execute(), observe) : await task.execute()) as Result<S, F>;
     return { result, trace: [...evaluated.trace, { step: operation, status: result.ok ? 'ok' : 'error' }], plan: describeView(rendered) };
   }
+  const runDetailed = registerDetailed((input: I) => execute(input), execute);
   async function run(input: I): Promise<Result<S, E | F>> { return (await runDetailed(input)).result; }
   return registerStructure({ Save, view, run, runDetailed, prepare: (input: I) => inspect(input), steps: flow.steps }, structureSequence(structureOf(flow), ...(render ? [structureStep('render-and-verify', 'unknown')] : []), structureStep(operation, 'save')));
 }

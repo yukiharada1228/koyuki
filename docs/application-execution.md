@@ -29,6 +29,8 @@ application、logger、inputはhost側の定義。
 | queued | 入力を所有し、既知の業務操作を待機列へ渡した |
 | started | 実行対象のcommandを開始した |
 | step | 詳細reportが返した段階名とok/error/skipped。scopeはoperationまたはreplay |
+| span-started | 対応するcoreの段階を実際に開始した。spanId・parentSpanIdを持つ |
+| span-completed | 段階の終了。ok/error/defectとdurationMsを持つ |
 | completed | Applicationの処理結果。ok/error/defect/rejectedと、得られた場合のrevision |
 
 completedのokは業務成功と投影成功、errorは想定内の業務失敗、defectは実行例外・投影失敗等。
@@ -65,7 +67,12 @@ receipt取得だけで完了した再送に、loadや業務ルールを実行し
 
 **stepはrunDetailed終了後の報告**で、timingはreported-after-run。
 elapsedMsはdispatchが待機列へ入った時点から通知時点までの時間であり、段階ごとの所要時間ではない。
-選択された枝の名前は分かるが、各段階のlive spanや親子span IDは未提供。
+対応するcoreは、処理中にspan-started/span-completedを通知する。
+取得・検証・遷移・保存、Processの詳細loaderとcommit、選択枝、replay、Applicationの投影が対象。
+spanIdとparentSpanIdで親子関係を表し、完了時にok/error/defectとdurationMsを通知する。
+durationMsは観察callbackも含む経過時間で、CPU時間ではない。
+普通の関数の内部IOやPromise.allは自動分解せず、任意の非同期context伝播は提供しない。
+静的なdescribeFlowのnode IDとの自動対応もない。
 そのため、stepに並ぶelapsedMsの差をそのステップのIO時間として使わない。
 
 時計は既定でWeb標準のperformance.now（利用できなければDate.now）。
@@ -111,5 +118,11 @@ core、実tarballのconsumer、Node globalなしのbundleで検査する。
 receiver、購読解除、観察側のthrow/reject、時計障害、誤った配布型の拒否を対象にする。
 
 [Issue #2](https://github.com/yukiharada1228/koyuki/issues/2)の相関観察の部分実装。
-各段階のlive timing・親子span、裸のProgram全体への共通API、永続的なtrace保存、
+対応するcoreのlive timing・親子spanは実装した。裸のProgram全体への共通API、永続的なtrace保存、
 HTTPや別サービスまでの分散相関はまだ提供していない。完全な実行trace基盤の完成とはしない。
+
+対応するcoreのlive spanは、reportが返らない例外でも開始済みの段階をdefectとして閉じる。
+カスタムcommandの内部段階は自動計測しない。既存のstepは従来どおり事後の報告。
+実行観察と選択値captureは別の経路で、入力・出力の自動収集やcapture対象の拡張は行わない。
+直接のWorkflow.inspect(capture)でcallbackがthrowする場合の従来契約も維持する。
+処理中の通知・親子関係・例外・二重実行防止は[live spanの検査](../src/live-execution.test.ts)で確認する。

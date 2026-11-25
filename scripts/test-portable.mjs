@@ -23,7 +23,7 @@ export const result = (async () => {
   const executionApp = defineApplication({ initial: () => 0, operations: { go: operation({ run: async n => ok(n), runDetailed: async n => ({ result: ok(n), trace: [{ step: 'portable-step', status: 'ok' }], plan: null }) }, (_, n) => n) }, view: state => state.data });
   const executionSession = await executionApp.start({ sessionId: 'portable', clock: () => 0, observeExecution: event => { executionEvents.push(event); } });
   const executionResult = await executionSession.dispatch({ type: 'go', input: 3 });
-  if (!executionResult.ok || executionResult.value.state.data !== 3 || executionEvents.map(event => event.kind).join(',') !== 'queued,started,step,completed' || executionEvents.some(event => event.executionId !== 'portable/1')) throw new Error('Portable execution observation failed');
+  if (!executionResult.ok || executionResult.value.state.data !== 3 || executionEvents.filter(event => !event.kind.startsWith('span-')).map(event => event.kind).join(',') !== 'queued,started,step,completed' || executionEvents.some(event => event.executionId !== 'portable/1')) throw new Error('Portable execution observation failed');
   const describedFlow = workflow('portable-rule', n => ok(n)).then('portable-next', n => ok(n + 1));
   if (describeFlow(describedFlow).nodes.length !== 2 || !flowMermaid(describedFlow).startsWith('flowchart TD')) throw new Error('Portable static flow description failed');
   const firstFailure = err('Invalid');
@@ -31,6 +31,11 @@ export const result = (async () => {
   const tuple = combine([ok('label'), ok(2)]);
   if (!tuple.ok || tuple.value[0] !== 'label' || tuple.value[1] !== 2 || !Object.isFrozen(tuple.value)) throw new Error('Tuple composition failed');
   const ordinary = business({ name: 'portable-business', load: async input => ok(input), save: async value => ok(value), operations: { double: [n => ok(n * 2)] } });
+  const liveEvents = [];
+  const liveApplication = defineApplication({ initial: () => 0, operations: { go: operation(ordinary.double, (_, n) => n) }, view: state => state.data });
+  const liveSession = await liveApplication.start({ clock: () => 0, observeExecution: event => liveEvents.push(event) });
+  const liveResult = await liveSession.dispatch({ type: 'go', input: 3 });
+  if (!liveResult.ok || liveResult.value.state.data !== 6 || !liveEvents.some(event => event.kind === 'span-started' && event.step === 'run:1') || !liveEvents.some(event => event.kind === 'span-completed' && event.step === 'application.project' && event.status === 'ok')) throw new Error('Portable live spans failed');
   const ordinaryResult = await ordinary.double(3);
   const ordinaryReport = await ordinary.double.runDetailed(3, { input: value => value, result: value => value.ok });
   if (ordinaryReport.observations.length !== 3 || ordinaryReport.observationErrors.length !== 0) throw new Error('Business observation failed');

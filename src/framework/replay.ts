@@ -1,3 +1,6 @@
+import { inheritDetailed, invokeDetailed, registerDetailed } from './instrumentation.js';
+import { observeEffect } from './observation.js';
+import type { StageObserver } from './workflow.js';
 import { registerStructure, structureOf, structureSequence, structureStep, structureBranch, emptyStructure } from './structure.js';
 import type { OperationReport, CheckedDetails } from './execution.js';
 import { snapshotData } from './snapshot.js';
@@ -42,36 +45,47 @@ export function withReplay<I, O, E, RE>(command: {
   readonly runDetailed?: (input: NoInfer<I>) => Promise<ActionReport<Execution<NoInfer<O>>, NoInfer<E>>>;
 }, boundary: ReplayBoundary<NoInfer<I>, NoInfer<O>, NoInfer<E>, RE>) {
   const runCommand = command.run.bind(command);
-  const detailedCommand = command.runDetailed?.bind(command);
+  const detail = command.runDetailed;
+  const detailedCommand = detail ? inheritDetailed(detail.bind(command), detail) : undefined;
   const lookup = boundary.lookup.bind(boundary), resolveAfter = boundary.resolveAfter.bind(boundary);
-  async function execute(input: I, detailed: boolean): Promise<ReplayReport<O, E, RE>> {
+  async function execute(input: I, detailed: boolean, observe?: StageObserver): Promise<ReplayReport<O, E, RE>> {
     const trace: ReplayTrace[] = [];
     let attempt: ReplayReport<O, E, RE>['attempt'] = null;
     const report = (result: ReplayReport<O, E, RE>['result']): ReplayReport<O, E, RE> => ({ result, trace, attempt });
     let request: I;
+    const snapshot = observe?.('replay.snapshot', input);
     try { request = snapshotData(input); }
-    catch { trace.push({ kind: 'snapshot', status: 'error' }); return report(err({ kind: 'ReplayInputNotCloneable' })); }
+    catch { const failure = err({ kind: 'ReplayInputNotCloneable' as const }); snapshot?.(failure); trace.push({ kind: 'snapshot', status: 'error' }); return report(failure); }
+    snapshot?.(ok(request));
     trace.push({ kind: 'snapshot', status: 'ok' });
-    const cached = await lookup(request);
+    const cached = observe ? await observeEffect('replay.lookup:before', request, () => lookup(request), observe) : await lookup(request);
     trace.push({ kind: 'lookup', phase: 'before', status: cached.ok ? cached.value.kind : 'error' });
     if (!cached.ok) return report(cached);
     if (cached.value.kind === 'found') return report(ok({ kind: 'replayed', value: cached.value.value }));
-    if (detailed && detailedCommand) attempt = await detailedCommand(request);
-    else attempt = { result: await runCommand(request), trace: null, plan: null };
-    const result = attempt.result;
+    const performCommand = async () => {
+      if (detailed && detailedCommand) attempt = await invokeDetailed(detailedCommand, request, observe);
+      else attempt = { result: await runCommand(request), trace: null, plan: null };
+      return attempt.result;
+    };
+    if (observe) await observeEffect('replay.command', request, performCommand, observe); else await performCommand();
+    if (!attempt) throw new Error('ReplayAttemptMissing');
+    const result = (attempt as NonNullable<ReplayReport<O, E, RE>['attempt']>).result;
     trace.push({ kind: 'command', status: result.ok ? result.value.kind : 'error' });
     if (result.ok) return report(result);
-    const resolve = resolveAfter(result.error);
+    const finishResolution = observe?.scope?.('replay.resolve-after');
+    let resolve: boolean;
+    try { resolve = resolveAfter(result.error); finishResolution?.('ok'); }
+    catch (cause) { finishResolution?.('defect'); throw cause; }
     trace.push({ kind: 'resolution', status: resolve ? 'lookup' : 'skip' });
     if (!resolve) return report(result);
-    const raced = await lookup(request);
+    const raced = observe ? await observeEffect('replay.lookup:after-error', request, () => lookup(request), observe) : await lookup(request);
     trace.push({ kind: 'lookup', phase: 'after-error', status: raced.ok ? raced.value.kind : 'error' });
     if (!raced.ok) return report(raced);
     return report(raced.value.kind === 'found' ? ok({ kind: 'replayed', value: raced.value.value }) : result);
   }
   return registerStructure({
     run: async (input: I): Promise<Result<Execution<O>, E | RE | ReplayInputError>> => (await execute(input, false)).result,
-    runDetailed: (input: I): Promise<ReplayReport<O, E, RE>> => execute(input, true),
+    runDetailed: registerDetailed((input: I): Promise<ReplayReport<O, E, RE>> => execute(input, true), (input: I, observe) => execute(input, true, observe)),
   }, structureSequence(structureStep('replay.snapshot'), structureStep('replay.lookup:before', 'effect'),
     structureBranch('replay.cached', emptyStructure, structureSequence(structureOf(command),
       structureBranch('replay.command-failed', structureBranch('replay.resolve-after', structureStep('replay.lookup:after-error', 'effect'), emptyStructure), emptyStructure)))));

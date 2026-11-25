@@ -1,3 +1,4 @@
+import { bindDetailed, invokeDetailed, registerDetailed } from './instrumentation.js';
 import { registerStructure, structureOf, structureSequence, structureStep, emptyStructure } from './structure.js';
 import { ok, type Result } from './result.js';
 import { observeEvaluation, type Workflow, type Evaluation, type Trace, type StageObserver, type WorkflowCapture } from './workflow.js';
@@ -13,7 +14,7 @@ function detailed<I, O, E>(perform: (input: I, observe?: StageObserver) => Promi
     const recorder = createObservation(capture);
     return { ...await perform(input, recorder.observe), ...recorder.report() };
   }
-  return runDetailed;
+  return registerDetailed(runDetailed, perform);
 }
 /** IO orchestration is intentionally separate from the synchronous, pure Workflow API. */
 class Process<I, O, E> {
@@ -43,9 +44,11 @@ class Process<I, O, E> {
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace };
       const receive = observe?.(name, prior.result.value);
       // A function keeps its original opaque IO contract. The object form opts into detail.
-      const detail = typeof effect === 'function'
+      let detail: Report<N, F>;
+      try { detail = typeof effect === 'function'
         ? { result: await effect(prior.result.value), trace: [] }
-        : await effect.runDetailed(prior.result.value);
+        : await invokeDetailed(effect.runDetailed, prior.result.value, observe);
+      } catch (cause) { try { receive?.defect?.(); } catch {} throw cause; }
       const { result } = detail;
       receive?.(result);
       return { result, trace: [...prior.trace, ...detail.trace, { step: name, status: result.ok ? 'ok' : 'error' }] };
@@ -53,12 +56,14 @@ class Process<I, O, E> {
   }
   /** The bound mutation owns its pure final decision and single save. */
   commit<S, F>(mutation: { readonly runDetailed: (input: NoInfer<O>) => Promise<ActionReport<S, F>> }) {
-    const evaluate = this.evaluate, commit = mutation.runDetailed.bind(mutation);
+    const evaluate = this.evaluate, commit = bindDetailed(mutation);
     const runDetailed = detailed(async (input: I, observe): Promise<ActionReport<S, E | F>> => {
       const prior = await evaluate(input, observe);
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace, plan: null };
       const receive = observe?.('commit', prior.result.value);
-      const next = await commit(prior.result.value);
+      let next: ActionReport<S, F>;
+      try { next = await invokeDetailed(commit, prior.result.value, observe); }
+      catch (cause) { try { receive?.defect?.(); } catch {} throw cause; }
       receive?.(next.result);
       return { ...next, trace: [...prior.trace, ...next.trace] };
     });

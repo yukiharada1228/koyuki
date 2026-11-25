@@ -1,3 +1,4 @@
+import { bindDetailedFunction, invokeDetailed } from './instrumentation.js';
 import { registerStructure, structureOf } from './structure.js';
 import { executionSession, type OperationReport, type ExecutionContext, type ExecutionOptions, type CheckedDetails } from './execution.js';
 import { snapshotData } from './snapshot.js';
@@ -10,7 +11,7 @@ export interface Operation<S, I, O, E> {
 }
 export function operation<S, I, O, E>(command: { readonly run: (input: I) => Promise<Result<O, E>>; readonly runDetailed?: (input: NoInfer<I>) => Promise<OperationReport<NoInfer<O>, NoInfer<E>>> }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, O, E> {
   const detailed = command.runDetailed;
-  return registerStructure({ run: command.run.bind(command), reduce, ...(detailed ? { runDetailed: detailed.bind(command) } : {}) }, structureOf(command));
+  return registerStructure({ run: command.run.bind(command), reduce, ...(detailed ? { runDetailed: bindDetailedFunction(command, detailed) } : {}) }, structureOf(command));
 }
 type RunCall<T> = T extends { run: infer F } ? F : never;
 // A runtime-selected union command must accept the request in every branch.
@@ -53,7 +54,7 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
   type State = ApplicationState<S, T>;
   type PublicEvent = ApplicationEvent<T>;
   type Crash = { type: '@crash'; operation: Key<T>; error: UnexpectedException };
-  type Completion = { type: '@complete'; operation: Key<T>; result: Result<unknown, unknown> };
+  type Completion = { type: '@complete'; operation: Key<T>; result: Result<unknown, unknown>; executionId?: number };
   type InternalEvent = { type: '@execute'; operation: Key<T>; input: unknown; executionId?: number } | Completion | Crash | { type: 'dismiss' };
   for (const key of Object.keys(definition.operations)) if (key === 'dismiss' || key.startsWith('@')) throw new Error('ReservedOperationName');
   const operations = { ...definition.operations }, view = definition.view;
@@ -71,11 +72,11 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
           try {
             if (context && entry.runDetailed) {
               const detailed = entry.runDetailed as (input: unknown) => Promise<OperationReport<unknown, unknown>>;
-              const report = await detailed.call(entry, input);
+              const report = await invokeDetailed(bindDetailedFunction(entry, detailed), input, context.observe);
               context.steps(report);
-              return { type: '@complete', operation: event.operation, result: report.result };
+              return { type: '@complete', operation: event.operation, result: report.result, executionId: event.executionId };
             }
-            return { type: '@complete', operation: event.operation, result: await run(input) };
+            return { type: '@complete', operation: event.operation, result: await run(input), executionId: event.executionId };
           } catch (cause) { return { type: '@crash', operation: event.operation, error: unexpectedException(cause) }; }
         }, message => message);
         return ok(next<State, InternalEvent>({ kind: 'running', operation: event.operation, data: state.data }, command(event.input)));
@@ -94,10 +95,13 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
           }
         }
         const reduce = operations[event.operation]!.reduce as (state: S, output: unknown) => S;
+        const finish = event.executionId === undefined ? undefined : contexts?.get(event.executionId)?.observe.scope?.('application.project');
         try {
           const data = snapshotData(reduce(snapshotData(state.data), event.result.value));
+          finish?.('ok');
           return ok(next<State, InternalEvent>({ kind: 'ready', data }));
         } catch (cause) {
+          finish?.('defect');
           return ok(next<State, InternalEvent>({ kind: 'crashed', data: state.data, operation: event.operation, error: unexpectedException(cause) }));
         }
       }

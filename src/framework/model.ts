@@ -1,3 +1,4 @@
+import { bindDetailed, invokeDetailed, registerDetailed } from './instrumentation.js';
 import { registerStructure, structureOf, structureSequence, structureStep, loadStructure } from './structure.js';
 import { captureLoad, type ActionLoad } from './action.js';
 import type { Result } from './result.js';
@@ -90,7 +91,7 @@ export function defineRequestTarget<I, C, LE, O, S, SE>(adapter: {
       return registerStructure({
         decision,
         run: (request: I) => forRequest(request).run(request),
-        runDetailed: (request: I) => forRequest(request).runDetailed(request),
+        runDetailed: registerDetailed((request: I) => forRequest(request).runDetailed(request), (request: I, observe) => invokeDetailed(bindDetailed(forRequest(request)), request, observe)),
       }, structureSequence(loadStructure(load, loadName ?? `${operation}:load`), structureOf(decision), structureStep(operation, 'save')));
     },
   };

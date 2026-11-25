@@ -21,7 +21,7 @@ export function createObservation<I, R>(capture: WorkflowCapture<I, R>) {
   return { observe, report: (): ObservationReport<I, R> => ({ observations: Object.freeze(observations), observationErrors: Object.freeze(errors) }) };
 }
 export async function observeEffect<I, O, E>(step: string, input: I, perform: () => Result<O, E> | Promise<Result<O, E>>, observe: StageObserver): Promise<Result<O, E>> {
-  const receive = observe(step, input), result = await perform();
-  receive(result);
-  return result;
+  const receive = observe(step, input);
+  try { const result = await perform(); receive(result); return result; }
+  catch (cause) { try { receive.defect?.(); } catch {} throw cause; }
 }
