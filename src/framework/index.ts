@@ -31,3 +31,5 @@ export type { AuditIdentity, AuditChange, AuditRecord } from './audit.js';
 export type { ExecutionEvent, ExecutionObserver, ExecutionOptions, OperationReport, OperationCommands } from './execution.js';
 export { describeFlow, flowMermaid } from './structure.js';
 export type { FlowGraph, FlowNode, FlowEdge } from './structure.js';
+export { retryEffect } from './retry.js';
+export type { RetryDecision, RetryAttempt, RetryFailure } from './retry.js';

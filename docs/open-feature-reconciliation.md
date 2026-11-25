@@ -10,7 +10,7 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 | [#1 共通transaction](https://github.com/yukiharada1228/koyuki/issues/1) | `src/expenses/sqlite.ts`のsaveは状態と履歴を同一transactionで保存する。タグ・調達にも個別adapterがある | [同期共通境界](transactions.md)をタグ・経費・経費receiptへ接続済み。callback型の[非同期契約](transactions.md)もPrismaへ接続済み。Target全体の相関観察、他driverの追加検証は未完了 |
 | [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)で待機・開始・実行段階・投影後の完了を関連付ける | 対応するcoreのlive timing・親子spanを追加。裸のProgram全体の共通API・opaque関数内部・分散相関は未提供 |
 | [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。既存Traceの名前を重ねる | 送料関数内部のifはopaqueで、branchを捏造しない。状態図・完全なnode実行対応は未提供 |
-| [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)は応答喪失・同時再送・要求不一致等を扱う | `src/framework/replay.ts`のwithReplayはcommandを再試行しない。試行上限・待機・中断・保持期限を備える共通retry方針は別途必要 |
+| [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)、[明示的なretryEffect](retry.md)で上限・待機・中断・失敗の安全条件を指定 | withReplay単体は再試行しない。未適用・冪等性はhostの保証。receiptの期限・削除・定義version移行の運用は未提供 |
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続。監査障害のrollbackと再送非重複を検査 | 他DB adapter、保持・削除の実運用、改ざん耐性、拒否ログは未実装・未検証。診断traceを監査とは呼ばない |
 | [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例がある | 重複ID・未登録参照等の位置付き診断CLI。型の接続検査をメタデータの検査や業務規則の証明とは扱わない |
 | [#7 有限モデル検査](https://github.com/yukiharada1228/koyuki/issues/7) | [明示モデルの有限探索](finite-model.md)で上限・反例・実装比較を指定。[経費](expense-state-exploration.md)は最大7操作で照合 | 実験用の検査入口。モデルの同値性・抽象化・実装対応は利用者の契約。チームの保守コスト・導入効果は未測定 |
@@ -64,3 +64,11 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 編集を除いた一回の承認過程も別に探索し、37状態・1,776操作の有限グラフを打切りなしで検査した。
 自己承認拒否15件と終端状態での再承認拒否192件を実装と照合し、モデルを意図的に壊すと
 申請→自己承認の反例が出ることも確認した。詳細と抽象化の範囲は[経費の探索](expense-state-exploration.md)を参照。
+
+## 限定retryの追加
+
+#4へ[retryEffect](retry.md)を追加。Resultの失敗ごとに未適用または冪等性を明示し、
+試行上限・待機・AbortSignalによる中断を扱う。in-flightの成功は中断で隠さない。
+SQLiteではcommit応答と直後のreceipt照会の喪失を注入し、2回目の呼出しが成功記録を返すこと、
+更新・履歴・receipt各1件を確認した。権限・version・idempotency競合は再試行しない例もある。
+保持・削除の運用、定義versionの移行、永続scheduler、外部副作用のexactly-onceは未提供。

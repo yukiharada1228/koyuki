@@ -7,11 +7,15 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
 import { exploreModel } from './dist/testing.js';
+import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   const explored = exploreModel({ initial: [0], key: String, events: n => n < 2 ? [1] : [], step: (n, e) => ({ state: n + e, output: n + e }), check: (n, e, expected) => n + e === expected.output, limits: { depth: 2, states: 3, transitions: 2 } });
   if (explored.kind !== 'passed' || explored.states !== 3 || explored.transitions !== 2) throw new Error('Portable finite exploration failed');
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
+  let retryCalls = 0;
+  const retried = await retryEffect(async n => ++retryCalls === 1 ? err('Offline') : ok(n), { maxAttempts: 2, decide: () => ({ kind: 'retry', safety: 'not-applied', delayMs: 0 }) })(3);
+  if (!retried.ok || retried.value !== 3 || retryCalls !== 2) throw new Error('Portable bounded retry failed');
   const transactionCalls = [];
   const transaction = createSyncTransaction({ begin() { transactionCalls.push('begin'); }, commit() { transactionCalls.push('commit'); }, rollback() { transactionCalls.push('rollback'); } });
   const transactionResult = transaction.run(() => ok(7));
@@ -118,7 +122,7 @@ export const result = (async () => {
 })();`;
 const bundled = await build({ stdin: { contents: source, resolveDir: root, loader: 'js' }, bundle: true, platform: 'browser', format: 'iife', globalName: 'Portable', write: false, metafile: true });
 assert.equal(Object.keys(bundled.metafile.outputs).flatMap(key => bundled.metafile.outputs[key].imports).length, 0);
-const context = { structuredClone };
+const context = { structuredClone, setTimeout, clearTimeout };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
 assert.deepEqual(result, { queuedValue: 3, crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
 import { spawnSync } from 'node:child_process';
-import { err, type Result, type Execution } from './framework/index.js';
+import { err, retryEffect, type Result, type Execution } from './framework/index.js';
 import { ReplaySqliteExpenses, type ExpenseRequest, type ReplayStorageError } from './expenses/sqlite-replay.js';
 import { expenseReplayCommands, expenseReplayApplication } from './expenses/replay.js';
 import { draftExpense, validateEdit, edit, type Actor, type ExpenseState, type Change } from './expenses/domain.js';
@@ -90,6 +90,49 @@ test('an unknown commit result is resolved using the atomic success receipt', as
   const other = new LostResponse(f.path); t.after(() => other.close());
   const result = value(await expenseReplayCommands(other, employee).submit.run(call('lost')));
   assert.equal(result.kind, 'replayed'); assert.equal(result.value.kind, 'manager'); assert.equal(value(f.repository.read('e1')).version, 2);
+});
+test('an explicitly idempotent retry resolves a lost commit response after the first receipt lookup also fails', async t => {
+  const f = fixture(t);
+  class LostCommitAndLookup extends ReplaySqliteExpenses {
+    saves = 0; failNextLookup = false;
+    override receipt(request: ExpenseRequest): ReturnType<ReplaySqliteExpenses['receipt']> {
+      if (this.failNextLookup) { this.failNextLookup = false; return err({ kind: 'RepositoryUnavailable' }); }
+      return super.receipt(request);
+    }
+    override async saveRequest(request: ExpenseRequest, change: Change): Promise<Result<Execution<ExpenseState>, ReplayStorageError>> {
+      this.saves++; const result = await super.saveRequest(request, change);
+      if (!result.ok) return result;
+      this.failNextLookup = true; return err({ kind: 'RepositoryUnavailable' });
+    }
+  }
+  const other = new LostCommitAndLookup(f.path); t.after(() => other.close());
+  const command = expenseReplayCommands(other, employee).submit; let attempts = 0;
+  const run = retryEffect(async (request: ReturnType<typeof call>) => { attempts++; return command.run(request); }, {
+    maxAttempts: 3,
+    decide: error => error.kind === 'RepositoryUnavailable' ? { kind: 'retry', safety: 'idempotent', delayMs: 0 } : { kind: 'stop' },
+  });
+  const result = value(await run(call('lost-twice')));
+  assert.equal(result.kind, 'replayed'); assert.equal(result.value.version, 2); assert.deepEqual([attempts, other.saves], [2, 1]);
+  const admin = new DatabaseSync(f.path); t.after(() => admin.close());
+  assert.equal(admin.prepare('SELECT count(*) AS n FROM expense_changes').get()?.n, 1);
+  assert.equal(admin.prepare('SELECT count(*) AS n FROM expense_receipts').get()?.n, 1);
+});
+test('the retry policy does not repeat permission, version or idempotency conflicts', async t => {
+  for (const [request, kind] of [
+    [call('denied'), 'Forbidden'],
+    [call('stale'), 'SaveConflict'],
+    [call('done', 2), 'IdempotencyConflict'],
+  ] as const) {
+    const f = fixture(t);
+    if (kind !== 'Forbidden') value(await f.employee.submit.run(call('done')));
+    const command = (kind === 'Forbidden' ? f.manager : f.employee).submit;
+    let attempts = 0;
+    const run = retryEffect(async (input: ReturnType<typeof call>) => { attempts++; return command.run(input); }, {
+      maxAttempts: 3,
+      decide: error => error.kind === 'RepositoryUnavailable' ? { kind: 'retry', safety: 'idempotent', delayMs: 0 } : { kind: 'stop' },
+    });
+    assert.deepEqual(await run(request), err({ kind })); assert.equal(attempts, 1);
+  }
 });
 test('expense receipts survive a fresh process and preserve newer stored state', async t => {
   const f = fixture(t); const original = value(await f.employee.submit.run(call('submit')));
