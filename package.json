@@ -68,7 +68,8 @@
     "prepare:onboarding": "node scripts/test-onboarding.mjs --prepare",
     "demo:flow": "tsx src/examples/flow-structure.ts",
     "check:declarations": "node scripts/check-declarations.mjs",
-    "test:declarations": "node --test scripts/declarations.test.mjs"
+    "test:declarations": "node --test scripts/declarations.test.mjs",
+    "benchmark:procurement": "tsx src/experiments/procurement/benchmark.ts"
   },
   "devDependencies": {
     "@babel/parser": "8.1.3",

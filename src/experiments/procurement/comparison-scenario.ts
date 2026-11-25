@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import type { Result } from '../../framework/index.js';
+import type { ProcurementRepository } from './repository.js';
+import type { Actor, Entity } from './domain.js';
+import type { StudyFactory } from './comparison-contract.js';
+export const actor = (role: Actor['role'], id: string = role): Actor => ({ id, role, groupId: 'g1', active: true });
+export const policy = { requestLimitCents: 1000, approverIds: ['approver', 'other'] };
+export type Inspectable = ProcurementRepository & { list<K extends Entity['kind']>(kind: K, identity: Actor): readonly Extract<Entity, { kind: K }>[] };
+export interface ScenarioTiming { constructed(): void; executed(): void }
+export async function story(factory: StudyFactory, repository: Inspectable, timing?: ScenarioTiming) {
+  const buyer = factory(repository, actor('buyer'), policy), boss = factory(repository, actor('approver'), policy);
+  const other = factory(repository, actor('approver', 'other'), policy), warehouse = factory(repository, actor('warehouse'), policy), finance = factory(repository, actor('finance'), policy);
+  timing?.constructed();
+  const outcomes: { operation: string; value: unknown }[] = [], covered = new Set<string>();
+  async function success(operation: string, pending: Promise<Result<unknown, unknown>>) {
+    const result = await pending; if (!result.ok) throw new Error(`${operation}: ${JSON.stringify(result)}`);
+    covered.add(operation); outcomes.push({ operation, value: result.value });
+  }
+  const lines = [{ sku: 'a', quantity: 2, unitCents: 500 }];
+  await success('request.create', buyer.requests.create({ id: 'rq', lines: [{ sku: 'a', quantity: 1, unitCents: 500 }] }));
+  await success('request.edit', buyer.requests.edit({ id: 'rq', expectedVersion: 1, lines }));
+  await success('request.submit', buyer.requests.submit({ id: 'rq', expectedVersion: 2, approverId: 'approver' }));
+  await success('request.withdraw', buyer.requests.withdraw({ id: 'rq', expectedVersion: 3 }));
+  await success('request.submit', buyer.requests.submit({ id: 'rq', expectedVersion: 4, approverId: 'approver' }));
+  await success('request.reassign', boss.requests.reassign({ id: 'rq', expectedVersion: 5, approverId: 'other' }));
+  await success('request.return', other.requests.return({ id: 'rq', expectedVersion: 6 }));
+  await success('request.submit', buyer.requests.submit({ id: 'rq', expectedVersion: 7, approverId: 'approver' }));
+  await success('request.approve', boss.requests.approve({ id: 'rq', expectedVersion: 8 }));
+  await success('request.create', buyer.requests.create({ id: 'rejected', lines }));
+  await success('request.submit', buyer.requests.submit({ id: 'rejected', expectedVersion: 1, approverId: 'approver' }));
+  await success('request.reject', boss.requests.reject({ id: 'rejected', expectedVersion: 2, reason: 'duplicate' }));
+  await success('order.place', buyer.orders.place({ id: 'rq', expectedVersion: 9, orderId: 'cancelled', supplier: 'supplier' }));
+  await success('order.amend', buyer.orders.amend({ id: 'cancelled', expectedVersion: 1, supplier: 'changed' }));
+  await success('order.cancel', buyer.orders.cancel({ id: 'cancelled', expectedVersion: 2 }));
+  await success('order.place', buyer.orders.place({ id: 'rq', expectedVersion: 9, orderId: 'po', supplier: 'supplier' }));
+  await success('receipt.receive', warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'returned', quantities: [{ sku: 'a', quantity: 1 }] }));
+  await success('receipt.correct', warehouse.receipts.correct({ id: 'returned', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 2 }] }));
+  await success('receipt.return', warehouse.receipts.return({ id: 'returned', expectedVersion: 2, reason: 'defect' }));
+  await success('receipt.receive', warehouse.receipts.receive({ id: 'po', expectedVersion: 4, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 2 }] }));
+  await success('invoice.register', finance.invoices.register({ id: 'po', expectedVersion: 5, invoiceId: 'voided', amountCents: 999 }));
+  await success('invoice.void', finance.invoices.void({ id: 'voided', expectedVersion: 1, reason: 'wrong amount' }));
+  await success('invoice.register', finance.invoices.register({ id: 'po', expectedVersion: 7, invoiceId: 'inv', amountCents: 1000 }));
+  await success('invoice.match', finance.invoices.match({ id: 'inv', expectedVersion: 1 }));
+  await success('invoice.approve', finance.invoices.approve({ id: 'inv', expectedVersion: 2 }));
+  await success('order.complete', buyer.orders.complete({ id: 'po', expectedVersion: 8 }));
+  await success('payment.record', finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId: 'pay', reference: 'bank-1' }));
+  await success('payment.cancel', finance.payments.cancel({ id: 'pay', expectedVersion: 1, reason: 'wrong reference' }));
+  const stock = { id: 'warehouse', sku: 'a', location: 'receiving', quantity: 1 };
+  await success('inventory.reserve', warehouse.inventory.reserve({ ...stock, expectedVersion: 4 }));
+  await success('inventory.release', warehouse.inventory.release({ ...stock, expectedVersion: 5 }));
+  await success('inventory.move', warehouse.inventory.move({ ...stock, expectedVersion: 6, destination: 'shelf' }));
+  await success('inventory.adjust', warehouse.inventory.adjust({ ...stock, location: 'shelf', quantity: 2, expectedVersion: 7, reason: 'count' }));
+  const persisted = (['request', 'order', 'receipt', 'invoice', 'payment', 'stock'] as const).flatMap(kind => repository.list(kind, actor('finance')));
+  timing?.executed();
+  assert.equal(covered.size, 25); assert.equal(outcomes.length, 32);
+  assert.equal(persisted.find(entity => entity.kind === 'request' && entity.id === 'rq')?.version, 9);
+  const completed = persisted.find(entity => entity.kind === 'order' && entity.id === 'po'); assert(completed?.kind === 'order'); assert.equal(completed.state, 'completed');
+  const inventory = persisted.find(entity => entity.kind === 'stock'); assert(inventory?.kind === 'stock');
+  assert.equal(inventory.version, 8); assert.equal(inventory.positions.reduce((sum, row) => sum + row.onHand, 0), 3);
+  assert.equal(inventory.positions.reduce((sum, row) => sum + row.reserved, 0), 0);
+  return { outcomes, persisted };
+}
