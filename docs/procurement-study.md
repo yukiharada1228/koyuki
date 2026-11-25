@@ -1,13 +1,13 @@
-# 購買業務の評価：最初の7操作
+# 購買業務の評価：最初の12操作
 
-25操作の評価アプリのうち、申請作成・申請・承認・発注・検収・請求登録・請求照合を実装した。
+25操作の評価アプリのうち、申請作成・変更・申請・取り下げ・承認・却下・差し戻し・担当変更・発注・検収・請求登録・請求照合を実装した。
 これは講演の実製品を再現した仕様ではなく、Koyukiの開発体験を検証するための独自の評価仕様である。
-残り18操作と通常TypeScript／helper版との同条件比較は未実施。
+残り13操作と通常TypeScript／helper版との同条件比較は未実施。
 
 ## 実装と境界
 
 - `src/experiments/procurement/domain.ts`：状態Union、検証済み明細、検証・純粋な状態遷移。
-- `src/experiments/procurement/application.ts`：既存business APIによる4モデル・7操作の登録。新しいcore APIは追加していない。
+- `src/experiments/procurement/application.ts`：既存business APIによる4モデル・12操作の登録。新しいcore APIは追加していない。
 - `src/experiments/procurement/repository.ts`：同期／非同期の読込みを許すportと、メモリadapter。
 - `src/procurement.test.ts`：一連の成功・業務失敗・競合・複合保存の検証。
 
@@ -48,10 +48,29 @@ ReceiptだけでOrderの画面状態まで自動更新できるとは扱わな�
 
 ## 検証と次の範囲
 
-`npx tsx --test src/procurement.test.ts`で8シナリオを検証する。
+`npx tsx --test src/procurement.test.ts`で12シナリオを検証する。
 同じテストを`npm run test:business:package`の独立consumerへコピーし、実際にpackしたルート公開APIで検査する。
 競合は同一プロセスの並行呼出しであり、負荷試験ではない。
 
-次に、残り18操作、永続adapterと再送境界、Applicationの複合結果投影を実装する。
+次に、残り13操作、永続adapterと再送境界、Applicationの複合結果投影を実装する。
 その後、同じ保証を持つ通常TypeScript／helper版で仕様変更を比較する。
 現段階ではコード量・生産性・大規模チームの優位性は測定していない。
+
+## 申請の修正・承認のやり直し
+
+| 入力状態 | 操作と実行者 | 成功状態 | 主な拒否条件 |
+| --- | --- | --- | --- |
+| draft | 変更：所有者buyer | draft、明細と合計を再検証 | 空明細・不正金額・非所有者 |
+| submitted | 取り下げ：所有者buyer | draft | 承認後・非所有者 |
+| submitted | 差し戻し：現在の担当approver | draft | 非担当者 |
+| submitted | 担当変更：現在の担当approver | submitted | 所有者・未登録者・同一担当への変更 |
+| submitted | 却下：現在の担当approver | rejected | 空理由・1000文字超・非担当者 |
+
+全操作でgroup・有効なactor・期待versionを確認する。却下は終端とし、再利用せず新規申請を作る。
+差し戻しと取り下げではdraftを明示的に再構築し、旧approverIdなどの不要フィールドを残さない。
+差し戻し理由の保存・承認履歴の永続化はこの段階では提供しない。
+承認と取り下げが競合しても同じsubmitted versionから保存できる遷移は一つだけである。
+
+業務のやり直しは新しいruntime APIを必要とせず、同じloadとsaveへの操作登録で表せた。
+ただし認可・version検証の重複はdomainに残るため、この評価domain内の小さな関数へ共通化した。
+業務判断そのものをframeworkへ移したという意味ではない。

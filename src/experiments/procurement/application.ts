@@ -1,6 +1,6 @@
 import { business, ok } from '../../framework/index.js';
-import { createRequest, submitRequest, approveRequest, placeOrder, receiveOrder, registerInvoice, matchInvoice,
-  type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
+import { editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, receiveOrder, registerInvoice, matchInvoice,
+  type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export function procurement(repository: ProcurementRepository, identity: Actor, configuration: Policy) {
   const actor = Object.freeze({ ...identity });
@@ -14,6 +14,11 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
   const requests = business({ name: 'procurement.request.v1', load: async (input: CreateInput) => ok({ input, actor }),
     save: (change: Change<Request>) => repository.commit(change, actor), operations: {
       create: [createRequest],
+      edit: { load: (input: EditInput) => loadRequest(input), run: [editRequest] },
+      withdraw: { load: (input: VersionInput) => loadRequest(input), run: [withdrawRequest] },
+      reject: { load: (input: ReasonInput) => loadRequest(input), run: [rejectRequest] },
+      return: { load: (input: VersionInput) => loadRequest(input), run: [returnRequest] },
+      reassign: { load: async (input: SubmitInput) => { const loaded = await loadRequest(input); return loaded.ok ? ok({ ...loaded.value, policy }) : loaded; }, run: [reassignRequest] },
       submit: { load: async (input: SubmitInput) => { const loaded = await loadRequest(input); return loaded.ok ? ok({ ...loaded.value, policy }) : loaded; }, run: [submitRequest] },
       approve: { load: (input: VersionInput) => loadRequest(input), run: [approveRequest] },
     } });

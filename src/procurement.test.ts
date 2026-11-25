@@ -130,3 +130,62 @@ if (false) {
   const forged: Approved = { ...draft, state: 'approved', approverId: 'boss', approvedBy: 'boss' };
   void forged;
 }
+
+test('request revisions, withdrawal and return discard obsolete approval fields before resubmission', async () => {
+  const f = setup();
+  assert((await f.buyer.requests.create({ id: 'rq', lines })).ok);
+  assert((await f.buyer.requests.edit({ id: 'rq', expectedVersion: 1, lines: [{ sku: 'c', quantity: 1, unitCents: 800 }] })).ok);
+  assert((await f.buyer.requests.submit({ id: 'rq', expectedVersion: 2, approverId: 'approver' })).ok);
+  assert.deepEqual(await f.buyer.requests.edit({ id: 'rq', expectedVersion: 3, lines }), err({ kind: 'WrongState' }));
+  const withdrawn = await f.buyer.requests.withdraw({ id: 'rq', expectedVersion: 3 }); assert(withdrawn.ok);
+  assert.equal(withdrawn.value.state, 'draft'); assert.equal('approverId' in withdrawn.value, false);
+  assert((await f.buyer.requests.submit({ id: 'rq', expectedVersion: 4, approverId: 'approver' })).ok);
+  const returned = await f.boss.requests.return({ id: 'rq', expectedVersion: 5 }); assert(returned.ok);
+  assert.equal('approverId' in returned.value, false);
+  assert((await f.buyer.requests.edit({ id: 'rq', expectedVersion: 6, lines })).ok);
+  assert((await f.buyer.requests.submit({ id: 'rq', expectedVersion: 7, approverId: 'approver' })).ok);
+  assert((await f.boss.requests.approve({ id: 'rq', expectedVersion: 8 })).ok);
+  const before = f.repository.commits;
+  assert.deepEqual(await f.buyer.requests.withdraw({ id: 'rq', expectedVersion: 9 }), err({ kind: 'WrongState' }));
+  assert.equal(f.repository.commits, before);
+});
+test('only the current assignee can reassign or reject and rejection is terminal', async () => {
+  const f = setup(), other = f.as(actor('approver', 'other-boss'));
+  assert((await f.buyer.requests.create({ id: 'rq', lines })).ok);
+  assert((await f.buyer.requests.submit({ id: 'rq', expectedVersion: 1, approverId: 'approver' })).ok);
+  assert.deepEqual(await other.requests.reassign({ id: 'rq', expectedVersion: 2, approverId: 'approver' }), err({ kind: 'Denied' }));
+  for (const approverId of ['buyer', 'unknown', 'approver']) assert.deepEqual(await f.boss.requests.reassign({ id: 'rq', expectedVersion: 2, approverId }), err({ kind: 'InvalidInput' }));
+  assert((await f.boss.requests.reassign({ id: 'rq', expectedVersion: 2, approverId: 'other-boss' })).ok);
+  assert.deepEqual(await f.boss.requests.reject({ id: 'rq', expectedVersion: 3, reason: 'no' }), err({ kind: 'Denied' }));
+  assert.deepEqual(await other.requests.reject({ id: 'rq', expectedVersion: 3, reason: '  ' }), err({ kind: 'InvalidInput' }));
+  const rejected = await other.requests.reject({ id: 'rq', expectedVersion: 3, reason: '  Duplicate purchase  ' }); assert(rejected.ok);
+  assert.equal(rejected.value.state, 'rejected');
+  if (rejected.value.state === 'rejected') assert.equal(rejected.value.reason, 'Duplicate purchase');
+  assert.equal('approverId' in rejected.value, false); assert.equal('approvedBy' in rejected.value, false);
+  const before = f.repository.commits;
+  assert.deepEqual(await f.buyer.requests.edit({ id: 'rq', expectedVersion: 4, lines }), err({ kind: 'WrongState' }));
+  assert.deepEqual(await f.buyer.requests.submit({ id: 'rq', expectedVersion: 4, approverId: 'approver' }), err({ kind: 'WrongState' }));
+  assert.deepEqual(await f.buyer.orders.place({ id: 'rq', expectedVersion: 4, orderId: 'po', supplier: 'supplier' }), err({ kind: 'WrongState' }));
+  assert.equal(f.repository.commits, before);
+});
+test('withdrawal racing approval permits only one transition from the submitted version', async () => {
+  const f = setup();
+  assert((await f.buyer.requests.create({ id: 'rq', lines })).ok);
+  assert((await f.buyer.requests.submit({ id: 'rq', expectedVersion: 1, approverId: 'approver' })).ok);
+  const outcomes = await Promise.all([f.buyer.requests.withdraw({ id: 'rq', expectedVersion: 2 }), f.boss.requests.approve({ id: 'rq', expectedVersion: 2 })]);
+  assert.equal(outcomes.filter(result => result.ok).length, 1);
+  assert.deepEqual(outcomes.find(result => !result.ok), err({ kind: 'Conflict' }));
+  assert.equal(f.repository.commits, 3);
+});
+test('new request operations enforce ownership, active actors, scope, versions and validated replacement lines', async () => {
+  const f = setup(); assert((await f.buyer.requests.create({ id: 'rq', lines })).ok);
+  assert.deepEqual(await f.as(actor('buyer', 'stranger')).requests.edit({ id: 'rq', expectedVersion: 1, lines }), err({ kind: 'Denied' }));
+  assert.deepEqual(await f.buyer.requests.edit({ id: 'rq', expectedVersion: 1, lines: [] }), err({ kind: 'InvalidInput' }));
+  assert.deepEqual(await f.buyer.requests.edit({ id: 'rq', expectedVersion: 0, lines }), err({ kind: 'InvalidInput' }));
+  assert((await f.buyer.requests.submit({ id: 'rq', expectedVersion: 1, approverId: 'approver' })).ok);
+  const before = f.repository.commits;
+  assert.deepEqual(await f.buyer.requests.withdraw({ id: 'rq', expectedVersion: 1 }), err({ kind: 'Conflict' }));
+  assert.deepEqual(await f.as({ ...actor('approver'), active: false }).requests.return({ id: 'rq', expectedVersion: 2 }), err({ kind: 'Denied' }));
+  assert.deepEqual(await f.as(actor('approver', 'approver', 'foreign')).requests.reject({ id: 'rq', expectedVersion: 2, reason: 'no' }), err({ kind: 'NotFound' }));
+  assert.equal(f.repository.commits, before);
+});

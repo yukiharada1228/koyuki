@@ -13,7 +13,8 @@ type RequestBase = Base & Readonly<{ kind: 'request'; ownerId: string; lines: re
 export type Draft = RequestBase & Readonly<{ state: 'draft' }> & Opaque<'request-draft'>;
 export type Submitted = RequestBase & Readonly<{ state: 'submitted'; approverId: string }> & Opaque<'request-submitted'>;
 export type Approved = RequestBase & Readonly<{ state: 'approved'; approverId: string; approvedBy: string }> & Opaque<'request-approved'>;
-export type Request = Draft | Submitted | Approved;
+export type Rejected = RequestBase & Readonly<{ state: 'rejected'; rejectedBy: string; reason: string }> & Opaque<'request-rejected'>;
+export type Request = Draft | Submitted | Approved | Rejected;
 export type Order = Base & Readonly<{ kind: 'order'; state: 'placed'; requestId: string; ownerId: string; supplier: string; lines: readonly Line[]; totalCents: number }>;
 export type Receipt = Base & Readonly<{ kind: 'receipt'; state: 'accepted'; orderId: string; quantities: readonly Quantity[] }>;
 type InvoiceBase = Base & Readonly<{ kind: 'invoice'; orderId: string; amountCents: number }>;
@@ -24,6 +25,8 @@ export type Change<T extends Entity> = Readonly<{ result: T; writes: readonly En
 export type RuleError = Readonly<{ kind: 'Denied' | 'InvalidInput' | 'WrongState' | 'Conflict' | 'BudgetExceeded' | 'AlreadyExists' | 'QuantityExceeded' | 'InvoiceMismatch' | 'TargetMismatch' }>;
 export type CreateInput = Readonly<{ id: string; lines: unknown }>;
 export type VersionInput = Readonly<{ id: string; expectedVersion: number }>;
+export type EditInput = VersionInput & Readonly<{ lines: unknown }>;
+export type ReasonInput = VersionInput & Readonly<{ reason: string }>;
 export type SubmitInput = VersionInput & Readonly<{ approverId: string }>;
 export type PlaceInput = VersionInput & Readonly<{ orderId: string; supplier: string }>;
 export type ReceiveInput = VersionInput & Readonly<{ receiptId: string; quantities: unknown }>;
@@ -135,4 +138,53 @@ export function matchInvoice(value: Loaded<VersionInput, Invoice> & Readonly<{ o
   if (order.id !== current.orderId || order.groupId !== current.groupId || receipts.some(receipt => receipt.orderId !== order.id || receipt.groupId !== current.groupId)) return failure('TargetMismatch');
   if (current.amountCents !== order.totalCents || order.lines.some(line => receipts.flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
   return ok(plan({ ...current, state: 'matched', receiptIds: receipts.map(receipt => receipt.id), version: current.version + 1 }, [check(current), check(order)]));
+}
+
+// Shared checks describe this domain's ownership and version rules, not runtime orchestration.
+function requestGuard(value: Loaded<VersionInput, Request>, role: 'buyer' | 'approver'): Result<Request, RuleError> {
+  const { input, actor, current } = value;
+  if (!allowed(actor, role, current.groupId) || (role === 'buyer' ? actor.id !== current.ownerId : actor.id === current.ownerId)) return failure('Denied');
+  if (current.id !== input.id) return failure('TargetMismatch');
+  if (!integer(input.expectedVersion)) return failure('InvalidInput');
+  if (current.version !== input.expectedVersion) return failure('Conflict');
+  if (role === 'approver' && current.state === 'submitted' && current.approverId !== actor.id) return failure('Denied');
+  return ok(current);
+}
+function draftFrom(current: Request): Draft {
+  return stamp('request-draft', { kind: 'request', state: 'draft', id: current.id, groupId: current.groupId,
+    ownerId: current.ownerId, lines: current.lines, totalCents: current.totalCents, version: current.version + 1 });
+}
+export function editRequest(value: Loaded<EditInput, Request>): Result<Change<Draft>, RuleError> {
+  const checked = requestGuard(value, 'buyer'); if (!checked.ok) return checked;
+  if (checked.value.state !== 'draft') return failure('WrongState');
+  const parsed = lines(value.input.lines); if (!parsed.ok) return parsed;
+  const result: Draft = { ...draftFrom(checked.value), lines: parsed.value, totalCents: parsed.value.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) };
+  return ok(plan(result, [check(checked.value)]));
+}
+export function withdrawRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
+  const checked = requestGuard(value, 'buyer'); if (!checked.ok) return checked;
+  if (checked.value.state !== 'submitted') return failure('WrongState');
+  return ok(plan(draftFrom(checked.value), [check(checked.value)]));
+}
+export function rejectRequest(value: Loaded<ReasonInput, Request>): Result<Change<Rejected>, RuleError> {
+  const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
+  const current = checked.value;
+  if (current.state !== 'submitted') return failure('WrongState');
+  if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
+  const result: Rejected = stamp('request-rejected', { kind: 'request', state: 'rejected', id: current.id, groupId: current.groupId,
+    ownerId: current.ownerId, lines: current.lines, totalCents: current.totalCents, version: current.version + 1,
+    rejectedBy: value.actor.id, reason: value.input.reason.trim() });
+  return ok(plan(result, [check(current)]));
+}
+export function returnRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
+  const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
+  if (checked.value.state !== 'submitted') return failure('WrongState');
+  return ok(plan(draftFrom(checked.value), [check(checked.value)]));
+}
+export function reassignRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<Submitted>, RuleError> {
+  const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
+  const current = checked.value, next = value.input.approverId;
+  if (current.state !== 'submitted') return failure('WrongState');
+  if (!id(next) || next === current.ownerId || next === current.approverId || !value.policy.approverIds.includes(next)) return failure('InvalidInput');
+  return ok(plan(stamp('request-submitted', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
 }
