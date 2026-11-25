@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
 import type { AsyncSequenceModel, ModelStep } from '../framework/testing.js';
-import { draftExpense } from './domain.js';
+import { err } from '../framework/index.js';
+import { draftExpense, type Change } from './domain.js';
 import { initial as drafts, reference, sequenceEvents, type Spec, type Event as DomainEvent } from './model-testing.js';
 import { ReplaySqliteExpenses, type ExpenseRequest } from './sqlite-replay.js';
 import { expenseReplayCommands } from './replay.js';
 
 type Alter = 'same' | 'input' | 'actor' | 'actor-id' | 'actor-role' | 'target' | 'operation' | 'reason' | 'amount' | 'receipt';
-export type RequestEvent = { type: 'call'; key: number; event: DomainEvent; stale: boolean }
+type Delivery = 'normal' | 'response-lost' | 'response-and-lookup-lost';
+export type RequestEvent = { type: 'call'; key: number; event: DomainEvent; stale: boolean; delivery?: Delivery }
   | { type: 'repeat'; receipt: number; alter: Alter };
 type Outcome = { kind: 'committed' | 'replayed'; value: Spec } | { kind: 'error'; error: string };
 interface StoredReceipt { request: ExpenseRequest; value: Spec }
@@ -62,8 +64,36 @@ export function requestStep(before: RequestState, event: RequestEvent): ModelSte
   if (event.type !== 'call') throw new Error('MissingReferenceReceipt');
   const expected = reference(before.expense, event.event);
   if ('error' in expected) return unchanged({ kind: 'error', error: expected.error });
+  const output: Outcome = event.delivery === 'response-and-lookup-lost' ? { kind: 'error', error: 'RepositoryUnavailable' }
+    : { kind: event.delivery === 'response-lost' ? 'replayed' : 'committed', value: expected.next };
+  // A missing acknowledgement is not proof of rollback. The receipt and new
+  // business state exist even when this attempt cannot return the success.
   return { state: { ...before, expense: expected.next, history,
-    receipts: [...before.receipts, { request, value: expected.next }] }, output: { kind: 'committed', value: expected.next } };
+    receipts: [...before.receipts, { request, value: expected.next }] }, output };
+}
+
+export function lossEvents(state: RequestState, random: () => number): readonly RequestEvent[] {
+  return requestEvents(state, random).flatMap<RequestEvent>(event => event.type === 'call' ? [
+    { ...event, delivery: 'response-lost' as const }, { ...event, delivery: 'response-and-lookup-lost' as const },
+  ] : [event]);
+}
+
+/** Test-only delivery faults after the real SQLite transaction has committed. */
+class DeliveryFaultExpenses extends ReplaySqliteExpenses {
+  private delivery: Delivery = 'normal';
+  private loseLookup = false;
+  arm(delivery: Delivery) { this.delivery = delivery; this.loseLookup = false; }
+  override receipt(request: ExpenseRequest): ReturnType<ReplaySqliteExpenses['receipt']> {
+    if (this.loseLookup) { this.loseLookup = false; return err({ kind: 'RepositoryUnavailable' }); }
+    return super.receipt(request);
+  }
+  override async saveRequest(request: ExpenseRequest, change: Change) {
+    const result = await super.saveRequest(request, change);
+    if (!result.ok || result.value.kind !== 'committed' || this.delivery === 'normal') return result;
+    this.loseLookup = this.delivery === 'response-and-lookup-lost';
+    this.delivery = 'normal';
+    return err({ kind: 'RepositoryUnavailable' as const });
+  }
 }
 
 export function requestEvents(state: RequestState, random: () => number): readonly RequestEvent[] {
@@ -94,28 +124,33 @@ async function execute(repository: ReplaySqliteExpenses, request: ExpenseRequest
 }
 
 export async function compareRequest(before: RequestState, event: RequestEvent, expected: ModelStep<RequestState, Outcome>, forgetReplayKind = false): Promise<boolean> {
-  const repository = new ReplaySqliteExpenses(':memory:');
+  const repository = new DeliveryFaultExpenses(':memory:');
   try {
     const start = before.start, draft = draftExpense({ id: start.id, owner: start.owner, amount: start.amount, receipt: start.receipt });
     assert(draft.ok); assert(repository.insertDraft(draft.value).ok);
     let state: RequestState = { start, expense: start, receipts: [], history: [] };
     const stored = (expense: Spec) => isDeepStrictEqual(repository.list(), { ok: true, value: [expense] });
-    const perform = async (request: ExpenseRequest): Promise<Outcome> => {
+    const perform = async (request: ExpenseRequest, operation: RequestEvent): Promise<Outcome> => {
+      repository.arm(operation.type === 'call' ? operation.delivery ?? 'normal' : 'normal');
       const result = await execute(repository, request);
       return forgetReplayKind && result.kind === 'replayed' ? { ...result, kind: 'committed' } : result;
     };
     for (const previous of before.history) {
-      const wanted = requestStep(state, previous), actual = await perform(requestFor(state, previous));
+      const wanted = requestStep(state, previous), actual = await perform(requestFor(state, previous), previous);
       if (!isDeepStrictEqual(actual, wanted.output) || !stored(wanted.state.expense)) return false;
       state = wanted.state;
     }
     if (!isDeepStrictEqual(state, before) || !stored(before.expense)) return false;
-    return isDeepStrictEqual(await perform(requestFor(before, event)), expected.output) && stored(expected.state.expense);
+    return isDeepStrictEqual(await perform(requestFor(before, event), event), expected.output) && stored(expected.state.expense);
   } finally { repository.close(); }
 }
 
-export const models = { 'expense-request-sqlite': {
+const requestModel = {
   initial, limits: { cases: 4, length: 32, shrinkAttempts: 200 }, events: requestEvents, step: requestStep,
   accepts: (state: RequestState, event: RequestEvent) => event.type === 'call' || !!state.receipts[event.receipt] && applicable(state.receipts[event.receipt]!.request, event.alter),
   check: compareRequest,
-} } satisfies Record<string, Omit<AsyncSequenceModel<RequestState, RequestEvent, Outcome>, 'seed'>>;
+} satisfies Omit<AsyncSequenceModel<RequestState, RequestEvent, Outcome>, 'seed'>;
+export const models = {
+  'expense-request-sqlite': requestModel,
+  'expense-request-loss-sqlite': { ...requestModel, events: lossEvents },
+};
