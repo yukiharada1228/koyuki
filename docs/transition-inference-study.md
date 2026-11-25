@@ -216,3 +216,29 @@ raw object tuple・raw unknown tuple・Tの制約なしの3候補すべてで、
 しかしinline例はTS2322/TS2339/TS2551を伴って不受理で、入力・成功・失敗型の厳密一致も成立しなかった。
 withInputのgenericな戻り値を変更したり、公開APIへrest引数を追加したりはしていない。
 この検査位置の移動だけでは制限を解消できず、候補は不採用とする。
+
+## 戻り値の推論抑制とフレームワークを除いた再現
+
+[戻り値の調査結果](transition-inference-return-checks.json)では、withInputの戻り値に
+NoInferを付ける3候補を比較した。すべてinline例を解消しなかった。
+入力または戻り値全体の推論を抑える2候補は、genericな入力・出力の対応にも追加診断8件を生じた。
+ペアの値側だけを抑える候補は既存契約を保ったが、inline例は改善せず、いずれも不採用。
+
+原因の切り分けとして、[最小例](../scripts/fixtures/transition-inference-minimal.ts)も作成した。
+Koyukiへのimport・Result型・Stage・隣接接続チェック・実行エンジンは含まない。
+名前付きのcarryと通常のinline関数では、evolveの引数と最終出力が正しく推論される。
+generic関数生成carry(quote)をrequireの中で呼ぶと、同じcompilerで空tupleへ戻る診断と
+evolveのinput/valueが存在しない診断が出る。出力がnumberという厳密一致検査も失敗する。
+
+調査スクリプトは最小例の名前付き・通常inline部分が成功することを先に確認し、
+genericなinline部分を追加した診断をminimalとして別に記録する。
+Node型も読み込まず、fixtureのSHA256を保存する。
+このファイルは意図的に型エラーを含む調査用であり、通常のsrc型検査や公開packageへは含めない。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,with-input-return-no-infer,with-input-parameter-no-infer,with-input-pair-no-infer
+```
+
+これは調査対象のTypeScript 7.0.2でフレームワークの接続チェックを除いても再現するという証拠。
+TypeScriptの実装内部の原因・既知Issueとの同一性・将来版での挙動・解決不能を証明するものではない。
+公開APIは変更していない。以後の候補は、この最小例と既存のgeneric契約の両方で評価する。

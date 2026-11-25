@@ -74,6 +74,9 @@ function restConnectionCandidate(constraint) {
 }
 const candidates = [
   ['current', original],
+  ['with-input-return-no-infer', withInputReturn('Rule<NoInfer<I>, Readonly<{ input: NoInfer<I>; value: NoInfer<O> }>, NoInfer<E>>')],
+  ['with-input-parameter-no-infer', withInputReturn('Rule<NoInfer<I>, Readonly<{ input: I; value: O }>, E>')],
+  ['with-input-pair-no-infer', withInputReturn('Rule<I, Readonly<{ input: NoInfer<I>; value: NoInfer<O> }>, E>')],
   ['monomorphic-with-input-overload', monomorphicWithInput()],
   ['mapped-adjacency', mappedAdjacency(false)],
   ['mapped-adjacency-no-infer', mappedAdjacency(true)],
@@ -101,6 +104,9 @@ const candidates = [
     '}): {\n  readonly validate: Step<StageInput<A>',
     '} & NoInfer<T extends ConnectedStages<StageOutput<A>, T> ? unknown : never>): {\n  readonly validate: Step<StageInput<A>')],
 ];
+function withInputReturn(type) {
+  return original.replace('): Rule<I, Readonly<{ input: I; value: O }>, E> {', `): ${type} {`);
+}
 function mappedAdjacency(noInfer) {
   const helper = `type PriorStages<I, T extends readonly AnyStage[]> = readonly [I, ...{ readonly [K in keyof T]: StageOutput<T[K]> }];
 type MappedConnection<I, T extends readonly AnyStage[]> = { readonly [K in keyof T]: Stage<PriorStages<I, T>[K & keyof PriorStages<I, T>], StageOutput<T[K]>, StageFailure<T[K]>> };
@@ -154,7 +160,21 @@ try {
       probeDiagnosticCodes: [...new Set(probeDiagnostics.map(line => line.match(/error (TS\d+):/)[1]))],
       existingContractDiagnostics: existing.length, existingDiagnosticSites: sites });
   }
-  console.log(JSON.stringify({ compiler: compileVersion(compiler), modelSourceSha256: createHash('sha256').update(original).digest('hex'), existingContractsPass: true, results }, null, 2));
+  const minimalSource = await readFile(resolve(root, 'scripts/fixtures/transition-inference-minimal.ts'), 'utf8');
+  const minimalFile = join(temporary, 'minimal.ts'), minimalConfig = join(temporary, 'minimal-config.json');
+  await writeFile(minimalConfig, JSON.stringify({ compilerOptions: { strict: true, noEmit: true, types: [], lib: ['ES2022'] }, files: ['minimal.ts'] }));
+  const minimalCompile = () => {
+    const result = spawnSync(compiler, ['--project', minimalConfig, '--pretty', 'false'], { encoding: 'utf8', cwd: temporary });
+    if (result.error || result.signal || ![0, 1, 2].includes(result.status)) throw result.error ?? Error('Minimal compiler invocation failed');
+    return { accepted: result.status === 0, diagnostics: (result.stdout + result.stderr).split('\n').filter(line => /error TS\d+:/.test(line)).map(line => line.replace(/^.*?minimal\.ts\(/, 'minimal.ts(')) };
+  };
+  if (!minimalSource.includes('// Inline reproduction')) throw Error('Minimal fixture marker changed');
+  await writeFile(minimalFile, minimalSource.split('// Inline reproduction')[0]);
+  const minimalBaseline = minimalCompile();
+  if (!minimalBaseline.accepted) throw Error(JSON.stringify(minimalBaseline));
+  await writeFile(minimalFile, minimalSource);
+  const minimal = { fixtureSha256: createHash('sha256').update(minimalSource).digest('hex'), baselineAccepted: true, ...minimalCompile() };
+  console.log(JSON.stringify({ compiler: compileVersion(compiler), modelSourceSha256: createHash('sha256').update(original).digest('hex'), existingContractsPass: true, minimal, results }, null, 2));
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }
