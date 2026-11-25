@@ -32,6 +32,7 @@ jobs:
       - run: npm test
       - run: npm run check:package
       - run: npm run test:portable
+      - run: npm run check:business:scale
 
   business:
     name: Installed consumer and policy change

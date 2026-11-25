@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit",
+    "check:business:scale": "node scripts/check-business-scale.mjs",
     "test": "tsx --test src/*.test.ts src/*.test.tsx",
     "compare": "node scripts/compare.mjs",
     "test:comparison": "tsx --test src/comparison.test.tsx",
