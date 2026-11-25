@@ -1,11 +1,22 @@
 import { stockId, reserveStock, releaseStock, moveStock, adjustStock, receiveIntoStock, returnFromStock, correctInStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
-import { business, ok } from '../../framework/index.js';
+import { business, ok, type Result } from '../../framework/index.js';
 import { recordPayment, cancelPayment, approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice,
-  type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
-import type { ProcurementRepository } from './repository.js';
-export function procurement(repository: ProcurementRepository, identity: Actor, configuration: Policy) {
+  type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
+import type { ProcurementRepository, StorageError } from './repository.js';
+export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
+type Saved<T extends Entity, Detailed extends boolean> = Detailed extends true ? Committed<T> : T;
+export const procurement = (repository: ProcurementRepository, identity: Actor, configuration: Policy) => createProcurement(repository, identity, configuration, false);
+export const procurementChanges = (repository: ProcurementRepository, identity: Actor, configuration: Policy) => createProcurement(repository, identity, configuration, true);
+function createProcurement<const Detailed extends boolean>(repository: ProcurementRepository, identity: Actor, configuration: Policy, detailed: Detailed) {
   const actor = Object.freeze({ ...identity });
   const policy = Object.freeze({ requestLimitCents: configuration.requestLimitCents, approverIds: Object.freeze([...configuration.approverIds]) });
+  const save = async <T extends Entity>(change: Change<T>): Promise<Result<Saved<T, Detailed>, StorageError>> => {
+    // Capture before the adapter receives mutable references; failed commits publish no delta.
+    const writes = detailed ? structuredClone(change.writes) : [];
+    const result = await repository.commit(change, actor); if (!result.ok) return result;
+    // Detailed is selected only by the two fixed public factories above.
+    return ok((detailed ? { result: result.value, writes } : result.value) as Saved<T, Detailed>);
+  };
   const loadStock = async () => {
     const row = await repository.read('stock', stockId, actor);
     return row.ok ? ok(row.value) : row.error.kind === 'NotFound' ? ok(null) : row;
@@ -39,7 +50,7 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
       invoices: (await repository.related('invoice', order.value.id, actor)).filter(row => row.state !== 'voided') });
   };
   const requests = business({ name: 'procurement.request.v1', load: async (input: CreateInput) => ok({ input, actor }),
-    save: (change: Change<Request>) => repository.commit(change, actor), operations: {
+    save: (change: Change<Request>) => save(change), operations: {
       create: [createRequest],
       edit: { load: (input: EditInput) => loadRequest(input), run: [editRequest] },
       withdraw: { load: (input: VersionInput) => loadRequest(input), run: [withdrawRequest] },
@@ -52,7 +63,7 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
   const orders = business({ name: 'procurement.order.v1', load: async (input: PlaceInput) => {
     const loaded = await loadRequest(input);
     return loaded.ok ? ok({ ...loaded.value, alreadyOrdered: (await repository.related('order', input.id, actor)).some(order => order.state !== 'cancelled') }) : loaded;
-  }, save: (change: Change<Order>) => repository.commit(change, actor), operations: {
+  }, save: (change: Change<Order>) => save(change), operations: {
     place: [placeOrder],
     amend: { load: (input: AmendInput) => loadOrderFacts(input), run: [amendOrder] },
     cancel: { load: (input: VersionInput) => loadOrderFacts(input), run: [cancelOrder] },
@@ -62,7 +73,7 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
     const loaded = await loadOrder(input); if (!loaded.ok) return loaded;
     const stock = await loadStock(); if (!stock.ok) return stock;
     return ok({ ...loaded.value, stock: stock.value, receipts: await repository.related('receipt', input.id, actor) });
-  }, save: (change: Change<Receipt>) => repository.commit(change, actor), operations: {
+  }, save: (change: Change<Receipt>) => save(change), operations: {
     receive: [receiveIntoStock],
     return: { load: (input: ReasonInput) => loadReceipt(input), run: [returnFromStock] },
     correct: { load: (input: CorrectInput) => loadReceipt(input), run: [correctInStock] },
@@ -70,7 +81,7 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
   const invoices = business({ name: 'procurement.invoice.v1', load: async (input: RegisterInput) => {
     const loaded = await loadOrder(input);
     return loaded.ok ? ok({ ...loaded.value, alreadyInvoiced: (await repository.related('invoice', input.id, actor)).some(invoice => invoice.state !== 'voided') }) : loaded;
-  }, save: (change: Change<Invoice>) => repository.commit(change, actor), operations: {
+  }, save: (change: Change<Invoice>) => save(change), operations: {
     register: [registerInvoice],
     approve: { load: (input: VersionInput) => loadInvoice(input), run: [approveInvoice] },
     void: { load: (input: ReasonInput) => loadInvoice(input), run: [voidInvoice] },
@@ -83,14 +94,14 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
   const payments = business({ name: 'procurement.payment.v1', load: async (input: PaymentInput) => {
     const current = await repository.read('invoice', input.id, actor); if (!current.ok) return current;
     return ok({ input, actor, current: current.value, alreadyRecorded: (await repository.related('payment', input.id, actor)).some(payment => payment.state === 'recorded') });
-  }, save: (change: Change<Payment>) => repository.commit(change, actor), operations: {
+  }, save: (change: Change<Payment>) => save(change), operations: {
     record: [recordPayment],
     cancel: { load: async (input: ReasonInput) => {
       const current = await repository.read('payment', input.id, actor); return current.ok ? ok({ input, actor, current: current.value }) : current;
     }, run: [cancelPayment] },
   } });
   const inventory = business({ name: 'procurement.inventory.v1', load: (input: StockInput) => loadInventory(input),
-    save: (change: Change<Stock>) => repository.commit(change, actor), operations: {
+    save: (change: Change<Stock>) => save(change), operations: {
       reserve: [reserveStock], release: [releaseStock],
       move: { load: (input: MoveInput) => loadInventory(input), run: [moveStock] },
       adjust: { load: (input: AdjustInput) => loadInventory(input), run: [adjustStock] },

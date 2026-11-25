@@ -47,7 +47,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 - 独立利用者による開発体験・学習負担の評価、実業務での運用実績。
 - genericな要件計算と未注釈callbackの推論制限。
 - hostをまたぐ永続実行・再試行・監査保持の共通方針と、他DB/driverでの追加検証。
-- [25操作のチーム評価案](team-development-study.md)の実装・同条件での比較。[25操作の初期実装](procurement-study.md)を実装済み。[SQLiteの複合保存と復元](procurement-sqlite.md)を検証済み。再送・Application投影・同条件比較は未実施。
+- [25操作のチーム評価案](team-development-study.md)の実装・同条件での比較。[25操作の初期実装](procurement-study.md)を実装済み。[SQLiteの複合保存と復元](procurement-sqlite.md)を検証済み。[複合Application投影](procurement-projection.md)も検証済み。再送・同条件比較は未実施。
 - 公開されていない元製品の予約取込・テーブル割当等との仕様の等価性。
 
 型クラス、Union-Find、ナップザック等の説明例や参照書籍全体は、設計思想を説明する文脈として記録した。

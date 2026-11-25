@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
+import { procurementApplication } from './experiments/procurement/projection.js';
 import { procurement } from './experiments/procurement/application.js';
 import { restoreEntity, placeOrder, registerInvoice, recordPayment, type Actor } from './experiments/procurement/domain.js';
 const actor = (role: Actor['role'], groupId = 'g1'): Actor => ({ id: role, role, groupId, active: true });
@@ -216,5 +217,24 @@ test('related SQLite reads isolate parents and groups and keep unrelated corrupt
     assert((await f.finance.invoices.approve({ id: 'inv2', expectedVersion: 2 })).ok);
     assert((await f.finance.payments.record({ id: 'inv2', expectedVersion: 3, paymentId: 'pay2', reference: 'bank-2' })).ok);
     assert((await f.buyer.orders.complete({ id: 'po2', expectedVersion: 3 })).ok);
+  } finally { repository.close(); store.clean(); }
+});
+
+test('SQLite-backed Application preserves projection after rollback and applies all models after a successful retry', async () => {
+  const store = file(), repository = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(repository); await matched(f);
+    const seed = (['request', 'order', 'receipt', 'invoice', 'payment', 'stock'] as const).flatMap(kind => repository.list(kind, actor('warehouse')));
+    const session = await procurementApplication(repository, actor('warehouse'), policy, seed).start();
+    const admin = new DatabaseSync(store.path);
+    try { admin.exec("CREATE TRIGGER projection_failure BEFORE UPDATE ON procurement WHEN NEW.kind = 'stock' BEGIN SELECT RAISE(ABORT, 'InjectedStockFailure'); END;"); } finally { admin.close(); }
+    await session.dispatch({ type: 'receipt.return', input: { id: 'rc', expectedVersion: 1, reason: 'defect' } });
+    assert.equal(session.snapshot().state.kind, 'crashed'); assert.deepEqual(session.snapshot().view.entities, seed);
+    const repair = new DatabaseSync(store.path); try { repair.exec('DROP TRIGGER projection_failure'); } finally { repair.close(); }
+    await session.dispatch({ type: 'dismiss' });
+    await session.dispatch({ type: 'receipt.return', input: { id: 'rc', expectedVersion: 1, reason: 'defect' } });
+    assert.equal(session.snapshot().state.kind, 'ready');
+    const persisted = (['request', 'order', 'receipt', 'invoice', 'payment', 'stock'] as const).flatMap(kind => repository.list(kind, actor('warehouse')));
+    assert.deepEqual(session.snapshot().view.entities, persisted);
   } finally { repository.close(); store.clean(); }
 });
