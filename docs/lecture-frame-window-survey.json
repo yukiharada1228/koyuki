@@ -1,0 +1,372 @@
+{
+  "schema": "koyuki.lecture-frame-window-survey.v1",
+  "videoId": "w0oLNoGsGLc",
+  "source": {
+    "file": "w0oLNoGsGLc.mp4",
+    "sha256": "573bd4f8aa6457afb2d198f0bc905a3a67481c2be6c69ca3a1388ff2f8de2f92"
+  },
+  "implementationBaseCommit": "84917b12efc256ff6e46704bf5efd40b4488ad49",
+  "excludedRectangle": [
+    1088,
+    0,
+    192,
+    108
+  ],
+  "allFramesReviewed": false,
+  "audioDirectlyReviewed": false,
+  "method": "All frames in two selected windows shown in contact sheets; ten representative frames read at original resolution. No perceptual deduplication. Outside-window content, excluded pixels, all code execution and direct audio review are not verified.",
+  "tooling": {
+    "python": "3.9.6",
+    "pillow": "11.3.0",
+    "ffmpeg": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "windows": [
+    {
+      "id": "w0o-17",
+      "startSeconds": 1750,
+      "endSecondsExclusive": 1761,
+      "fps": 25,
+      "frameCount": 275,
+      "directory": "frame-survey-84917b1/s17",
+      "contactSheets": [
+        {
+          "file": "frame-survey-84917b1/s17-contact-00.jpg",
+          "firstFrame": 0,
+          "lastFrame": 24,
+          "sha256": "691bd4726e7be1aa532dd2b8ab4551e08aa5523eaafd69afa6ac9b732c26d372",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-01.jpg",
+          "firstFrame": 25,
+          "lastFrame": 49,
+          "sha256": "ec79276dc0a474babb21303f89c73fbc0eee8cbb9c0c442c885af52a685504f4",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-02.jpg",
+          "firstFrame": 50,
+          "lastFrame": 74,
+          "sha256": "ffad00fff92543220f683d34287bf7859db505abd213b2df97eb0f8f078a7497",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-03.jpg",
+          "firstFrame": 75,
+          "lastFrame": 99,
+          "sha256": "8ca1150ce3e2bc6c947be6c2cc72a170a75fa4d73b3c5f90267ce8efe927fb20",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-04.jpg",
+          "firstFrame": 100,
+          "lastFrame": 124,
+          "sha256": "907e09d82dd89372197ce56bbbbfa095c15f481ca13722ee87b16c9fda6f45b2",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-05.jpg",
+          "firstFrame": 125,
+          "lastFrame": 149,
+          "sha256": "f847bf160dc08b931ea2354c7a7254f32f409c3c46bf6abccba15115760ac1a2",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-06.jpg",
+          "firstFrame": 150,
+          "lastFrame": 174,
+          "sha256": "e37146c801ecf616b82ed44896e47d89b70b382dff928769dec09128094fe66e",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-07.jpg",
+          "firstFrame": 175,
+          "lastFrame": 199,
+          "sha256": "19436072a558fe23e705a1de9e903f1ced41bc0084fe943c4f964f505ddc3864",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-08.jpg",
+          "firstFrame": 200,
+          "lastFrame": 224,
+          "sha256": "b6ddd20a011cf5d21fffd9e4fcd163aa09c4205ac48f8af93d8f018914a4ac14",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-09.jpg",
+          "firstFrame": 225,
+          "lastFrame": 249,
+          "sha256": "f15bff5f4c13d576e56ba9b71cb96714e7e79cf8eb83580e85d04ffe4d4b2da3",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s17-contact-10.jpg",
+          "firstFrame": 250,
+          "lastFrame": 274,
+          "sha256": "e51ce1bdfcba058671fcb4cc31ddf474e8cee494ffafceadedb35fb88577cb01",
+          "thumbnailReviewed": true
+        }
+      ],
+      "representatives": [
+        {
+          "index": 0,
+          "timeSeconds": 1750.0,
+          "lastFrameInScreenGroup": 16,
+          "file": "frame-survey-84917b1/s17/frame-0001.png",
+          "sha256": "e44ea063bfa7cb163463b75fb744b3f3bad8adcfd4d022a3a2fd00bd3ff38b78",
+          "observation": "入力と出力を集合として示す図",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 17,
+          "timeSeconds": 1750.68,
+          "lastFrameInScreenGroup": 206,
+          "file": "frame-survey-84917b1/s17/frame-0018.png",
+          "sha256": "9416c21fb3946587c1d34ae369c75bb69e1010b95e1a65d570626724826c35c3",
+          "observation": "forM_と可変配列の例。命令的な記述が適する場合も示す",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 207,
+          "timeSeconds": 1758.28,
+          "lastFrameInScreenGroup": 222,
+          "file": "frame-survey-84917b1/s17/frame-0208.png",
+          "sha256": "88008bd23a75a25d357382506719215b1a94158f44ab01fbdd5504d84e3afefc",
+          "observation": "不変・可変Union-Findを並べ、状態を返す方式と内部を更新する方式を比較",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 223,
+          "timeSeconds": 1758.92,
+          "lastFrameInScreenGroup": 274,
+          "file": "frame-survey-84917b1/s17/frame-0224.png",
+          "sha256": "955c0d36eb67abbad9386f7829aea301efa7af46bef7c900a2b62814124b15f2",
+          "observation": "値を写す計算と型による集合の表現を再掲",
+          "originalResolutionRead": true
+        }
+      ]
+    },
+    {
+      "id": "w0o-23",
+      "startSeconds": 2404,
+      "endSecondsExclusive": 2457,
+      "fps": 25,
+      "frameCount": 1325,
+      "directory": "frame-survey-84917b1/s23",
+      "contactSheets": [
+        {
+          "file": "frame-survey-84917b1/s23-contact-00.jpg",
+          "firstFrame": 0,
+          "lastFrame": 79,
+          "sha256": "d2b9ebf857691b7f7d932629d4022218832e21e82fffefe31ca9272fd109166c",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-01.jpg",
+          "firstFrame": 80,
+          "lastFrame": 159,
+          "sha256": "d14589df9edcac6461bb1c7ad2171e28a30fd5a307e144e28aa5da62828596a4",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-02.jpg",
+          "firstFrame": 160,
+          "lastFrame": 239,
+          "sha256": "189d9e3edca951724f2bb7838d0c1745dc11357e60836dca6bf4ec751356bef5",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-03.jpg",
+          "firstFrame": 240,
+          "lastFrame": 319,
+          "sha256": "5df465e30d4c39b0a25e5e4e609f37ebdc343d9162a7a184aae1e424b14bd827",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-04.jpg",
+          "firstFrame": 320,
+          "lastFrame": 399,
+          "sha256": "f8e31220d633250852733502948bb7657d916dab4e91a12fb0f29ad75ef30ec7",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-05.jpg",
+          "firstFrame": 400,
+          "lastFrame": 479,
+          "sha256": "078d54b5ba13a99fc35399d14537328a23f13ddb4de0c55d8ac6e43a94766b7c",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-06.jpg",
+          "firstFrame": 480,
+          "lastFrame": 559,
+          "sha256": "07091a8f02753b7854104e44fae268bb0a5836c098981816f5b632e61e5f848f",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-07.jpg",
+          "firstFrame": 560,
+          "lastFrame": 639,
+          "sha256": "3408957754377086cdd5da291e68edf6e8da6fcd53d7a5d77a539f39a061bee1",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-08.jpg",
+          "firstFrame": 640,
+          "lastFrame": 719,
+          "sha256": "20659c0c2e9b152c3e0a277cdb4c6065633eb4723992815a70df3442ae80700b",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-09.jpg",
+          "firstFrame": 720,
+          "lastFrame": 799,
+          "sha256": "7b22b2979e29bb9a7f9e25b10053bf82ed06df7e1c39137e70f35fc1775c4db2",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-10.jpg",
+          "firstFrame": 800,
+          "lastFrame": 879,
+          "sha256": "7563cc30ce6d49b7a21746076aa861ba349549038ffd3b25c98480fe9c16bba6",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-11.jpg",
+          "firstFrame": 880,
+          "lastFrame": 959,
+          "sha256": "b84354462f5634f2bab05930ac087f6f2a8bfa7fe48d4bcda6ae5436a0841118",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-12.jpg",
+          "firstFrame": 960,
+          "lastFrame": 1039,
+          "sha256": "ae51da17c2ea131dcd349ff615d64e2dbb0f4804493b509ff1751270038a27fc",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-13.jpg",
+          "firstFrame": 1040,
+          "lastFrame": 1119,
+          "sha256": "b7d9babb0608079d66e8ae631055767cdfbf32195a9ac4d4a3cc5ed991e8f39e",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-14.jpg",
+          "firstFrame": 1120,
+          "lastFrame": 1199,
+          "sha256": "5ddbdf95dcd4d095185c1c6777fb9d3f9fe29b25f133b8a554c8b4534bd0ae02",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-15.jpg",
+          "firstFrame": 1200,
+          "lastFrame": 1279,
+          "sha256": "cc5c16ed705d6e2dc30a622592d81037fdd20c685fa97ce860869bdf00e4a5f0",
+          "thumbnailReviewed": true
+        },
+        {
+          "file": "frame-survey-84917b1/s23-contact-16.jpg",
+          "firstFrame": 1280,
+          "lastFrame": 1324,
+          "sha256": "459579e842f3396cd2f56912b826dea505bd0ba479f565b9fd92b96d7a4e14de",
+          "thumbnailReviewed": true
+        }
+      ],
+      "representatives": [
+        {
+          "index": 0,
+          "timeSeconds": 2404.0,
+          "lastFrameInScreenGroup": 205,
+          "file": "frame-survey-84917b1/s23/frame-0001.png",
+          "sha256": "3d9f174610f1c557a14b7aba517c1e0066f21ecfd95ca2293bf64eacba41198b",
+          "observation": "直積だけで構造化した場合の階層と直和による組合せの柔軟性",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 206,
+          "timeSeconds": 2412.24,
+          "lastFrameInScreenGroup": 802,
+          "file": "frame-survey-84917b1/s23/frame-0207.png",
+          "sha256": "ba43992571d4b1080cd1037a666eb6abe4a6c99a2199c3b9d4530f6550a541ac",
+          "observation": "独立した未定義属性を持つUserとMember/GuestのUnionを比較",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 803,
+          "timeSeconds": 2436.12,
+          "lastFrameInScreenGroup": 809,
+          "file": "frame-survey-84917b1/s23/frame-0804.png",
+          "sha256": "a64575ca8971de5a2081a7801169961d4522a2d6ef2b49b160189d828d99b95e",
+          "observation": "接続状態と任意属性の列挙を、状態別の値とlast_pingの対へ分けるOCaml例",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 810,
+          "timeSeconds": 2436.4,
+          "lastFrameInScreenGroup": 823,
+          "file": "frame-survey-84917b1/s23/frame-0811.png",
+          "sha256": "0ce41fb200d3986f86ddecb1b9884ea04c0f56a6f90fbc8f2d30f51159aa3e52",
+          "observation": "state列挙と任意属性を同居させたTagクラス",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 824,
+          "timeSeconds": 2436.96,
+          "lastFrameInScreenGroup": 842,
+          "file": "frame-survey-84917b1/s23/frame-0825.png",
+          "sha256": "5d28edb664a72eef3a8a058b214c2b6598615923ad752c528c6e61ba6d15dcfc",
+          "observation": "Unvalidated/Validated/Createdで必要属性を分けるTagのUnion",
+          "originalResolutionRead": true
+        },
+        {
+          "index": 843,
+          "timeSeconds": 2437.72,
+          "lastFrameInScreenGroup": 1324,
+          "file": "frame-survey-84917b1/s23/frame-0844.png",
+          "sha256": "a2a605b555323dbf68565a4de8b3e5f66d2444ae52701dbfcca818eef385d218",
+          "observation": "型で入力・出力の集合を絞ることを示す図",
+          "originalResolutionRead": true
+        }
+      ]
+    }
+  ],
+  "artifactVerifier": {
+    "file": "scripts/check-lecture-frame-survey.py",
+    "sha256": "501a6539a817a07b4b8ec92e62f5cfb104e8c097b649cf17583cab8d58ec73f7",
+    "verifiedSourceFrames": 1600,
+    "negativeControls": [
+      {
+        "case": "missing-window",
+        "rejected": true,
+        "reason": "Unexpected window set"
+      },
+      {
+        "case": "wrong-source",
+        "rejected": true,
+        "reason": "Source hash mismatch"
+      },
+      {
+        "case": "full-mask",
+        "rejected": true,
+        "reason": "Unexpected excluded rectangle"
+      },
+      {
+        "case": "coverage-gap",
+        "rejected": true,
+        "reason": "Contact sheet coverage gap or overlap"
+      },
+      {
+        "case": "full-review-claim",
+        "rejected": true,
+        "reason": "A window survey cannot certify full-video review"
+      },
+      {
+        "case": "frame-from-wrong-time-with-updated-artifact-hash",
+        "rejected": true,
+        "reason": "Source pixels differ at w0o-17#0"
+      }
+    ]
+  }
+}

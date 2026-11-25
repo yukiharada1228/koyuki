@@ -169,6 +169,31 @@
         "src/experiments/procurement/application.ts",
         "src/experiments/procurement/domain.ts"
       ]
+    },
+    "frameWindowFollowUp": {
+      "implementationBaseCommit": "84917b12efc256ff6e46704bf5efd40b4488ad49",
+      "windows": [
+        [
+          1750,
+          1761
+        ],
+        [
+          2404,
+          2457
+        ]
+      ],
+      "contactFramesReviewed": 1600,
+      "originalResolutionRepresentativesRead": 10,
+      "sourcePixelMatchesVerified": 1600,
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "scope": "Two masked frame windows only; captions in the same windows reread. New correlated-field tests added after the implementation base. No runtime or API change, direct audio review or independent user trial.",
+      "evidence": [
+        "docs/lecture-frame-window-survey.md",
+        "docs/lecture-frame-window-survey.json",
+        "scripts/check-lecture-frame-survey.py",
+        "src/procurement-correlated-fields.test.ts"
+      ]
     }
   },
   "sections": [
@@ -457,15 +482,20 @@
       "endSeconds": 1761,
       "topic": "説明を省略したスライド",
       "status": "partial",
-      "assessment": "追加の静止画でforM_と可変・不変Union-Findの比較を確認。命令的実装が適する例も認める内容。全ての省略画面やコードの動作を検証したわけではない。",
+      "assessment": "1750–1761秒の全275フレームを縮小一覧で確認し、図・forM_・不変/可変Union-Find・計算の再掲という4種類の画面を原寸でも読み取った。Union-Findは約0.64秒の表示だった。命令的な実装が適する場合を認める説明例であり、ループ禁止やUnion-Findの内蔵APIを要求する内容とは解釈しない。Haskellコードの実行・正しさ証明は行っていない。",
       "evidence": [
         "docs/lecture-visual-w0o.json",
         "docs/lecture-local-asr-w0o-followup.md",
         "docs/lecture-local-asr-w0o-followup.json",
-        "docs/lecture-partial-reconciliation.md"
+        "docs/lecture-partial-reconciliation.md",
+        "docs/lecture-frame-window-survey.md",
+        "docs/lecture-frame-window-survey.json",
+        "scripts/check-lecture-frame-survey.py",
+        "src/procurement-correlated-fields.test.ts"
       ],
       "remaining": [
-        "説明を省略した全画面との連続照合や、画面内の全コードの動作確認は未完了。公開資料の説明例を全て業務runtimeへ組み込むこととは区別する。"
+        "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域、対象区間外、全フレームの原寸読取り、直接音声の確認はこの追加照合の対象外。",
+        "画面の全サンプルコードを実行・証明したものではない。説明例を全てframeworkに内蔵する必須機能へ読み替えない。"
       ]
     },
     {
@@ -552,7 +582,7 @@
       "endSeconds": 2457,
       "topic": "直和と直積の図・後半の説明省略",
       "status": "partial",
-      "assessment": "追加静止画で直和・直積、optionalの多いTagと状態別Tagの比較を確認。TypeScriptの構造的Unionの排他性は別に検証し、タグ・実行時検証と区別する。全画面の連続照合は未完了。",
+      "assessment": "2404–2457秒の全1325フレームを縮小一覧で確認し、6種類の画面を原寸でも読み取った。約0.28秒のOCaml比較には、状態別モデルに加え、last_pingを一つの任意の対へまとめる例があった。既存在庫履歴の相関する属性を型とJSON復元で検査した。TypeScriptの構造的Unionや余分な属性の代入は排他的な和・閉じた保存形式と同一ではなく、実行時の復元を区別する。",
       "evidence": [
         "src/registration/domain.ts",
         "src/expenses/domain.ts",
@@ -560,10 +590,15 @@
         "docs/lecture-visual-w0o.json",
         "docs/lecture-local-asr-w0o-followup.md",
         "docs/lecture-local-asr-w0o-followup.json",
-        "docs/lecture-partial-reconciliation.md"
+        "docs/lecture-partial-reconciliation.md",
+        "docs/lecture-frame-window-survey.md",
+        "docs/lecture-frame-window-survey.json",
+        "scripts/check-lecture-frame-survey.py",
+        "src/procurement-correlated-fields.test.ts"
       ],
       "remaining": [
-        "全画面との連続照合と、別記の直接音声確認が必要な区間は未確認。型の直和・直積の実装検査だけで、原発話や画面全体の確認完了とはしない。"
+        "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域と対象区間外の確認、別記の直接音声確認が必要な区間は残る。",
+        "型による接続の検査や原資料との画素一致だけで、原発話・業務仕様・任意の入力の安全性を証明したとはしない。"
       ]
     },
     {
