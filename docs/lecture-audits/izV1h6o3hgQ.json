@@ -83,13 +83,30 @@
     },
     "localAsrFollowUp": {
       "sections": [
+        "iz-01",
+        "iz-02",
+        "iz-03",
+        "iz-04",
+        "iz-05",
+        "iz-06",
+        "iz-07",
+        "iz-08",
+        "iz-09",
+        "iz-10",
+        "iz-11",
+        "iz-12",
+        "iz-13",
+        "iz-14",
+        "iz-15",
+        "iz-16",
+        "iz-17",
         "iz-22",
         "iz-24",
         "iz-27",
         "iz-31",
         "iz-36"
       ],
-      "scope": "First saved video fully processed by local ASR; only these five paired caption/ASR windows reviewed. Thirty-four other paired windows remain unreviewed. Not direct audio listening or whole-video text review.",
+      "scope": "Twenty-two paired caption/ASR windows reviewed: opening seventeen plus five earlier targeted windows. Seventeen remain. Four uncertain speech windows are retained in the record. Not direct listening or implementation completeness.",
       "record": "docs/lecture-local-asr-iz-followup.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
@@ -109,7 +126,10 @@
       "topic": "導入と自己紹介",
       "status": "context",
       "assessment": "登壇時の背景と個人の経験。現在の役職や製品状況を述べる根拠にはしない。",
-      "evidence": [],
+      "evidence": [
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
       "remaining": []
     },
     {
@@ -120,7 +140,9 @@
       "status": "design-choice",
       "assessment": "クラス中心の実装から別の表現を試す動機。すべてのクラスを禁止する要件ではない。",
       "evidence": [
-        "docs/business-api-study.md"
+        "docs/business-api-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -132,7 +154,9 @@
       "status": "experience",
       "assessment": "Reactの小さな関数とバックエンドの実装負担という問題提起。Koyukiでの認知負荷改善は未測定。",
       "evidence": [
-        "docs/team-development-study.md"
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -144,7 +168,9 @@
       "status": "design-choice",
       "assessment": "参照の取得形状と更新時の集約・不変条件を分ける。DBやサービスの物理分離を要求しない。",
       "evidence": [
-        "examples/leave-http/README.md"
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -157,7 +183,9 @@
       "assessment": "当該業務で参照が単純という条件付きの説明。Queryの認可や必要な業務計算を省略しない。Prisma採用は必須ではない。",
       "evidence": [
         "examples/leave-http/README.md",
-        "examples/prisma-stock/README.md"
+        "examples/prisma-stock/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -169,7 +197,9 @@
       "status": "design-choice",
       "assessment": "外部記事の紹介と方向性。紹介先の全仕様をそのまま実装する要件にはしない。",
       "evidence": [
-        "docs/framework-goal.md"
+        "docs/framework-goal.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -182,7 +212,9 @@
       "assessment": "Programのupdateとcommand、Applicationの状態・view・dispatchに対応。DOM描画や永続的な実行基盤まで含まない。",
       "evidence": [
         "src/framework/program.ts",
-        "src/framework/application.ts"
+        "src/framework/application.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -194,7 +226,9 @@
       "status": "design-choice",
       "assessment": "クリックに限らず業務上の出来事からモデルの変化を考える。イベント名の自動発見ではない。",
       "evidence": [
-        "src/expenses/domain.ts"
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -207,7 +241,9 @@
       "assessment": "DBに行ができる前の未検証・検証済み・作成後を別の状態として扱う。予約アプリ全体を再現する要件ではない。",
       "evidence": [
         "src/registration/domain.ts",
-        "src/expenses/domain.ts"
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -220,7 +256,9 @@
       "assessment": "入力から状態遷移、保存への境界を保つ。関数型とRepository・集約の併用が可能。",
       "evidence": [
         "src/framework/command.ts",
-        "src/framework/use-case.ts"
+        "src/framework/use-case.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -234,7 +272,9 @@
       "evidence": [
         "src/framework/result.ts",
         "src/framework/application.ts",
-        "docs/result-boundaries.md"
+        "docs/result-boundaries.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -247,7 +287,9 @@
       "assessment": "後で決まる値を一律optionalにせず、状態ごとの必要な値を表す。",
       "evidence": [
         "src/expenses/domain.ts",
-        "src/registration/domain.ts"
+        "src/registration/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -260,7 +302,9 @@
       "assessment": "状態別Unionとprivate brandで接続を制約する。any・assertion・未検証JSONまで排除できるわけではない。",
       "evidence": [
         "src/business-api-types.test.ts",
-        "src/expenses/domain.ts"
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -273,7 +317,9 @@
       "assessment": "普通の関数が変更前後の型を結び、宣言から実行へ接続する。型整合性は業務仕様の正しさそのものではない。",
       "evidence": [
         "src/framework/workflow.ts",
-        "src/experiments/business.ts"
+        "src/experiments/business.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -286,7 +332,9 @@
       "assessment": "最初の失敗で後続を止め、成功値と失敗型を保持する。neverthrow依存は採用せずコアのResultで実現。",
       "evidence": [
         "src/framework/result.ts",
-        "src/framework/workflow.ts"
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -299,7 +347,9 @@
       "assessment": "loadと純粋な計算とsaveを共通エンジンへ束縛。認知負荷の低下という評価は別途実測が必要。",
       "evidence": [
         "src/framework/command.ts",
-        "src/framework/group-runtime.ts"
+        "src/framework/group-runtime.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -312,7 +362,9 @@
       "assessment": "集約の保存とPromiseのResult変換を外側へ置く。Repository不要という書籍の意見を必須ルールへ置き換えない。",
       "evidence": [
         "docs/result-boundaries.md",
-        "src/framework/result.ts"
+        "src/framework/result.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
