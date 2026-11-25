@@ -1,0 +1,75 @@
+{
+  "compiler": "Version 7.0.2",
+  "businessSourceSha256": "06d933e03c081d26c2c6bd1c858361a367522b4b282f62da0edfe16a3a5fa48f",
+  "results": [
+    {
+      "name": "current",
+      "accepted": false,
+      "probeDiagnostics": [
+        "<temporary>/src/replay-context-number.ts(4,105): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-number.ts(5,3): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-number.ts(5,29): error TS7006: Parameter 'execution' implicitly has an 'any' type.",
+        "<temporary>/src/replay-context-number.ts(6,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-number.ts(7,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-number.ts(16,7): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(4,108): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-string.ts(5,3): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-string.ts(5,29): error TS7006: Parameter 'execution' implicitly has an 'any' type.",
+        "<temporary>/src/replay-context-string.ts(6,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(7,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(16,7): error TS2322: Type 'true' is not assignable to type 'false'."
+      ],
+      "contractDiagnostics": []
+    },
+    {
+      "name": "lookup-no-infer",
+      "accepted": false,
+      "probeDiagnostics": [
+        "<temporary>/src/replay-context-number.ts(4,105): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-number.ts(5,3): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-number.ts(5,29): error TS7006: Parameter 'execution' implicitly has an 'any' type.",
+        "<temporary>/src/replay-context-number.ts(6,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-number.ts(7,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-number.ts(16,7): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(4,108): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-string.ts(5,3): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-string.ts(5,29): error TS7006: Parameter 'execution' implicitly has an 'any' type.",
+        "<temporary>/src/replay-context-string.ts(6,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(7,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(16,7): error TS2322: Type 'true' is not assignable to type 'false'."
+      ],
+      "contractDiagnostics": []
+    },
+    {
+      "name": "outer-check-no-infer",
+      "accepted": false,
+      "probeDiagnostics": [
+        "<temporary>/src/replay-context-number.ts(4,105): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-number.ts(5,3): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-number.ts(5,29): error TS7006: Parameter 'execution' implicitly has an 'any' type.",
+        "<temporary>/src/replay-context-number.ts(6,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-number.ts(7,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-number.ts(16,7): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(4,108): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-string.ts(5,3): error TS2769: No overload matches this call.",
+        "<temporary>/src/replay-context-string.ts(5,29): error TS7006: Parameter 'execution' implicitly has an 'any' type.",
+        "<temporary>/src/replay-context-string.ts(6,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(7,11): error TS2322: Type 'true' is not assignable to type 'false'.",
+        "<temporary>/src/replay-context-string.ts(16,7): error TS2322: Type 'true' is not assignable to type 'false'."
+      ],
+      "contractDiagnostics": []
+    },
+    {
+      "name": "mandatory-replay-overload",
+      "accepted": true,
+      "probeDiagnostics": [],
+      "contractDiagnostics": []
+    },
+    {
+      "name": "mandatory-replay-lookup-no-infer",
+      "accepted": true,
+      "probeDiagnostics": [],
+      "contractDiagnostics": []
+    }
+  ]
+}
