@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ok, err, process, workflow, bindMutation, defineAction, defineCommand, business, defineTarget, defineRequestTarget, defineUseCase, defineUseCaseGroup, step,
-  type Result, type ActionReport, type Execution, type Receipt } from './framework/index.js';
+  type Result, type ActionReport, type ActionLoad, type Execution, type Receipt } from './framework/index.js';
 const trace = (step: string, status: 'ok' | 'error' = 'ok') => ({ step, status });
 const load = () => process<number>().effect('read-one', async n => ok(n + 1)).effect('read-two', async n => ok(n + 1));
 const decide = workflow('decide', (n: number) => ok(n + 1));
@@ -90,6 +90,32 @@ test('business replay hit skips detailed load; a missing receipt preserves detai
   assert.deepEqual(miss.attempt?.trace?.map(entry => entry.step), ['query', 'number.change:load', 'run:1', 'number.change']); assert.equal(reads, 1);
 });
 
+test('concurrent detailed loads keep each request capture, result and save isolated', async () => {
+  let releaseFirst!: () => void;
+  const gate = new Promise<void>(resolve => { releaseFirst = resolve; });
+  const reads: number[] = [], saved: number[] = [];
+  const query = process<number>().effect('query', async n => {
+    reads.push(n); if (n === 1) await gate;
+    return ok(n + 10);
+  });
+  const api = business({ name: 'concurrent', load: query,
+    save: async (n: number) => { saved.push(n); return ok(n); },
+    operations: { change: [(n: number) => ok(n + 1)] },
+  });
+  const capture = { input: (value: unknown) => value, result: (value: Result<unknown, unknown>) => value.ok ? value.value : null };
+  const first = api.change.runDetailed(1, capture);
+  const second = await api.change.runDetailed(2, capture);
+  assert.deepEqual(second.result, ok(13)); assert.deepEqual(saved, [13]);
+  releaseFirst(); const completed = await first;
+  assert.deepEqual(completed.result, ok(12)); assert.deepEqual(saved, [13, 12]);
+  assert.deepEqual(reads, [1, 2]);
+  assert.deepEqual(completed.observations.map(row => [row.input, row.result]), [[1, 11], [11, 12], [12, 12]]);
+  assert.deepEqual(second.observations.map(row => [row.input, row.result]), [[2, 12], [12, 13], [13, 13]]);
+  assert.deepEqual(completed.observationErrors, []); assert.deepEqual(second.observationErrors, []);
+  assert.deepEqual(completed.trace.map(row => row.step), ['query', 'concurrent.change:load', 'run:1', 'concurrent.change']);
+  assert.deepEqual(second.trace, completed.trace);
+});
+
 // Exact inferred public inputs, outputs and error unions, including rejected connections.
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 function contracts() {
@@ -135,6 +161,36 @@ function contracts() {
   const invalidDynamic = Math.random() > 0.5 ? async (_: number) => ok(1) : { runDetailed: 1 };
   // @ts-expect-error every dynamically selected loader must satisfy its contract
   defineAction({ loadName: 'read', load: invalidDynamic, mutation: bindMutation({ operation: 'save', workflow: decide, save }) });
+  const explicitAction = defineAction<number, string, 'Read', boolean, 'Rule'>({
+    loadName: 'read', load: { runDetailed: async id => {
+      const inputExact: Equal<typeof id, number> = true; void inputExact;
+      return { result: ok(id.toFixed()), trace: [], plan: null };
+    } }, mutation: { runDetailed: async text => ({ result: ok(text.length > 0), trace: [], plan: null }) },
+  });
+  const explicitActionResult: Equal<Awaited<ReturnType<typeof explicitAction.run>>, Result<boolean, 'Read' | 'Rule'>> = true;
+  const explicitCommand = defineCommand<number, string, 'Read', number, 'Rule', boolean, 'Write'>({
+    operation: 'explicit', load: { runDetailed: async id => ({ result: ok(id.toFixed()), trace: [], plan: null }) },
+    decide: workflow('length', (text: string): Result<number, 'Rule'> => ok(text.length)),
+    save: async length => ok(length > 0),
+  });
+  const explicitCommandResult: Equal<Awaited<ReturnType<typeof explicitCommand.run>>, Result<boolean, 'Read' | 'Rule' | 'Write'>> = true;
+  const selectedLoad: ActionLoad<{ id: string }, number, 'Plain' | 'Detailed'> = Math.random() > 0.5
+    ? async request => ok(request.id.length)
+    : { runDetailed: async request => ({ result: ok(request.id.length), trace: [], plan: null }) };
+  const selectedCommand = defineCommand({ operation: 'selected', load: selectedLoad,
+    decide: workflow('rule', (n: number): Result<number, 'Rule'> => ok(n)),
+    save: async (n: number): Promise<Result<number, 'Write'>> => ok(n),
+  });
+  const selectedInput: Equal<Parameters<typeof selectedCommand.run>[0], { id: string }> = true;
+  const selectedResult: Equal<Awaited<ReturnType<typeof selectedCommand.run>>, Result<number, 'Plain' | 'Detailed' | 'Rule' | 'Write'>> = true;
+  // @ts-expect-error selecting a loader does not make its request optional
+  void selectedCommand.run({});
+  const stringLoad = { runDetailed: async (_: number): Promise<ActionReport<string, never>> => ({ result: ok('arbitrary'), trace: [], plan: null }) };
+  // @ts-expect-error detailed input has not established the literal required by the rule
+  defineCommand({ operation: 'bad', load: stringLoad, decide: workflow('literal', (_: 'approved') => ok(1)), save });
+  // @ts-expect-error explicit type arguments cannot bypass the rule input contract
+  defineCommand<number, string, never, number, never, number, never>({ operation: 'bad-explicit', load: stringLoad, decide: workflow('literal', (_: 'approved') => ok(1)), save });
+  void explicitActionResult; void explicitCommandResult; void selectedInput; void selectedResult;
   void input; void result; void actionInput; void actionResult;
 }
 void contracts;

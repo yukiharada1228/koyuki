@@ -56,8 +56,19 @@ runとrunDetailedを両方呼ぶと、独立した2回の業務実行になる�
 DB snapshotの一貫性、永続的な再開・監査保持は提供しない。
 通常のResult関数へ変換した時点で捨てたtraceを復元することもできない。
 
-[共通実行・型の7テスト](../src/detailed-load.test.ts)と、
+[共通実行・型の8テスト](../src/detailed-load.test.ts)と、
 [購買の27テスト](../src/procurement-load-composition.test.ts)をrootと実tarballのconsumerで実行する。
 購買の4操作はメモリ／SQLiteで通常形式と詳細形式の結果・保存状態を比較する。
 Web標準だけのbrowser bundleでも詳細loadとcaptureを実行する。
 この機能は公開済みnpm alpha.5には含まれない。
+
+## 明示型引数・候補選択・同時実行の確認
+
+詳細形式についてもdefineActionの5型引数、defineCommandの7型引数を明示した宣言を検査する。
+コールバック引数を文脈から推論し、load・Rule・saveの失敗型が欠落しないこと、
+型引数を明示しても未検証のliteralだけを要求するRuleへ接続できないことを固定した。
+通常形式か詳細形式かを実行時に選ぶActionLoadの宣言でも、要求型と失敗Unionを保持する。
+
+同じbusiness・Process・capture設定から2要求を同時実行し、先行要求のreadを保留して後続を先に完了させる。
+各要求の入力・中間値・成功値と保存先が混ざらず、read/saveを要求ごとに1回実行することを確認した。
+これはPromiseを制御したインプロセスの検査であり、DB transactionの分離や分散実行の証明ではない。
