@@ -234,6 +234,15 @@
         "src/experiments/procurement/domain.ts",
         "src/experiments/procurement/receipt-pipeline.ts"
       ]
+    },
+    "correctionDecompositionProbeFollowUp": {
+      "implementationBaseCommit": "2fc0b6ca37b64e0cb8ef35e037d80ef35699e2ec",
+      "scope": "Design probe and installed-package tests only. Flat decomposition needs another callback annotation; a nested Workflow run keeps inner trace and structure opaque in business. Live domain and application paths unchanged. No new lecture audio/frame review or independent user evaluation; partial topic statuses unchanged.",
+      "evidence": [
+        "docs/procurement-correction-decomposition.md",
+        "src/procurement-correction-decomposition.test.ts",
+        "scripts/test-business-package.mjs"
+      ]
     }
   },
   "sections": [
