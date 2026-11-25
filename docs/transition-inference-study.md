@@ -157,3 +157,25 @@ inlineの制限は未解消として残す。この検査で任意のgeneric型�
 動的なvalidate候補の入力安全性は後続の[入力契約修正](application-input-contract.md)で別途改善した。
 保存済み候補結果のsource hashは調査時点を示し、現在のmodelとの同一性は主張しない。
 genericなrequireと未注釈evolveの制限を解消したという意味ではない。
+
+## requireの有無をoverloadで分けた検証
+
+実装基準e3e0157のmodelを複製し、require省略用と必須tuple用のoverloadを分けた。
+既定値の削除だけで省略時の推論を壊した過去の候補とは異なり、省略用の型を明示して比較した。
+[実測結果](transition-inference-overloads.json)にcompilerと元modelのhashを保存している。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,required-tuple-overloads,required-raw-overloads
+```
+
+| 候補 | inline例 | 既存契約の追加診断 |
+| --- | --- | --- |
+| 現行宣言 | 不受理 | 0 |
+| require省略と必須tupleのoverload分離 | 不受理 | 0 |
+| 同じ分離とraw object tuple・遅延検査 | 不受理 | 2 |
+
+後者では構成図の宣言例にも型診断が発生した。件数は独立した不具合数ではない。
+前者もinline例の入力型・成功型・失敗型の厳密一致まで成立していない。
+どちらも採用せず、公開宣言とruntimeは変更していない。
+「空tupleの既定値を除けば解消する」という仮説を支持する結果ではないが、
+TypeScriptで解決不能という証明でもない。

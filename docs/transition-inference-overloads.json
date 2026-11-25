@@ -1,0 +1,57 @@
+{
+  "compiler": "Version 7.0.2",
+  "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+  "existingContractsPass": true,
+  "results": [
+    {
+      "name": "current",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "required-tuple-overloads",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2345",
+        "TS2769",
+        "TS2339",
+        "TS2551",
+        "TS2322"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "required-raw-overloads",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2769",
+        "TS2339",
+        "TS2551",
+        "TS2322"
+      ],
+      "existingContractDiagnostics": 2,
+      "existingDiagnosticSites": [
+        {
+          "file": "src/flow-structure.test.ts",
+          "line": 25,
+          "code": "TS2769"
+        },
+        {
+          "file": "src/flow-structure.test.ts",
+          "line": 25,
+          "code": "TS7024"
+        }
+      ]
+    }
+  ]
+}

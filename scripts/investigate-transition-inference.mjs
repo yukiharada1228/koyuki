@@ -38,8 +38,30 @@ function rawTupleCandidate(constraint, spread = false, checked = false) {
     .replace('const stages: readonly AnyStage[] = definition.require ?? [];', 'const stages = (definition.require ?? []) as readonly AnyStage[];');
   return source;
 }
+// Separate omitted requirements from a supplied tuple, so a default empty tuple
+// cannot win inference for a context-sensitive higher-order expression.
+function explicitRequirementOverloads(raw = false) {
+  const start = original.indexOf('export function defineTransition<');
+  const body = original.indexOf('  // Adjacency is proved', start);
+  const signature = original.slice(start, body).replace(/ \{\n$/, ';\n');
+  let required = signature.replace('const T extends readonly AnyStage[] = readonly []', 'const T extends readonly AnyStage[]')
+    .replace('require?: T &', 'require: T &');
+  if (raw) {
+    required = required.replace('const T extends readonly AnyStage[]', 'const T extends readonly object[]')
+      .replace('require: T & ConnectedStages<StageOutput<NoInfer<A>>, T>;', 'require: T & NoInfer<T extends ConnectedStages<StageOutput<A>, Extract<T, readonly AnyStage[]>> ? unknown : never>;')
+      .replaceAll('StageEnd<StageOutput<A>, T>', 'StageEnd<StageOutput<A>, Extract<T, readonly AnyStage[]>>')
+      .replaceAll('NamedStages<T>', 'NamedStages<Extract<T, readonly AnyStage[]>>');
+  }
+  const absent = signature.replace('const T extends readonly AnyStage[] = readonly [], ', '')
+    .replace('require?: T & ConnectedStages<StageOutput<NoInfer<A>>, T>;', 'require?: undefined;')
+    .replaceAll('StageEnd<StageOutput<A>, T>', 'StageOutput<A>')
+    .replaceAll('NamedStages<T>', 'readonly []');
+  return original.slice(0, start) + required + absent + original.slice(start);
+}
 const candidates = [
   ['current', original],
+  ['required-tuple-overloads', explicitRequirementOverloads()],
+  ['required-raw-overloads', explicitRequirementOverloads(true)],
   ['callable-empty-intersection', original.replace('Rule<I, Readonly<{ input: I; value: O }>, E> {', 'Rule<I, Readonly<{ input: I; value: O }>, E> & {} {')],
   ['callable-object-intersection', original.replace('Rule<I, Readonly<{ input: I; value: O }>, E> {', 'Rule<I, Readonly<{ input: I; value: O }>, E> & object {')],
   ['callable-empty-pick', original.replace('Rule<I, Readonly<{ input: I; value: O }>, E> {', 'Rule<I, Readonly<{ input: I; value: O }>, E> & Pick<Function, never> {')],
