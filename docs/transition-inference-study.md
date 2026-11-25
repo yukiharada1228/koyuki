@@ -64,7 +64,7 @@ TS更新等により制限が解消すれば、不要になったts-expect-error
 既存テストの`ts-expect-error`も残すため、不正な接続を受理する変更は既存契約の診断に現れる。
 これは候補調査であり、候補が成功することを要求する受け入れテストではない。
 
-TypeScript 7.0.2での観測結果:
+初回の調査基準でTypeScript 7.0.2から得た観測結果（後続で型検査を追加しているため、診断数は恒久的な件数ではない）:
 
 | 候補 | inline例の受理 | 既存契約の追加診断数 |
 | --- | --- | --- |
@@ -98,3 +98,58 @@ TS 7.0.2では`callable-name-member`はinline例の診断0、既存契約の診�
 したがって、これは互換性を保った改善ではなく、不採用とする。
 通常の関数・named Step向けのoverload追加も調査したが、今回のinline例の
 callbackがunknown/neverになる問題は解消しなかった。本体の宣言は変更していない。
+
+
+## raw tupleとcallable表現を変えた再調査
+
+[新しい8候補と現行宣言の比較結果](transition-inference-candidates.json)を保存した。
+同じrevisionのscript・src・インストール済みcompilerから再実行でき、JSONにはmodel.tsのSHA-256も含める。
+既存契約の診断にはファイル・行・コードを付け、inline probeの診断と分けている。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,raw-object-deferred-check,raw-object-spread-check,raw-unknown-deferred-check,raw-object-per-branch-check,callable-empty-intersection,callable-object-intersection,callable-empty-pick,callable-signature-object
+```
+
+--onlyは指定候補だけを調べる。無引数なら従来の候補も含めて実行する。
+引数の検証後に一時領域を作り、候補のpatchが適用されていなければ失敗させる。
+このコマンドは調査用で、採用可能な候補が存在することを成功条件とする受入テストではない。
+
+| 新しい候補 | inline例 | 既存契約の追加診断 |
+| --- | --- | --- |
+| raw object tuple + 遅延した接続検査 | 不受理 | 0 |
+| raw object tuple + spread + 遅延検査 | 不受理 | 0 |
+| raw unknown tuple + 遅延検査 | 不受理 | 0 |
+| raw object tuple + 各branchの妥当性検査 | 不受理 | 0 |
+| `callable & {}` | 不受理 | 0 |
+| `callable & object` | 受理 | 7 |
+| `callable & Pick<Function, never>` | 受理 | 7 |
+| call signatureだけのobject表現 | 不受理 | 0 |
+
+raw tupleの候補はwithInputを変更せず、文脈のcall signatureを避けてから接続を検査する試みである。
+今回の8候補では、既存契約を保ったinline例の改善には至らなかった。公開宣言・runtimeは変更していない。
+
+callableをobjectや空のPickと交差させる2候補はinline例を通すが、
+number/string/objectの既存の厳密一致に加え、以下の2種類のgenericな利用を壊す。
+
+```ts
+const preserve = withInput(<T>(value: T) => ok(value));
+function forward<T>(value: T) {
+  const result = preserve(value);
+  if (result.ok) {
+    const before: T = result.value.input;
+    const after: T = result.value.value;
+  }
+  return result;
+}
+const wrap = withInput(<T>(value: T) => ok({ item: value }));
+// wrap(2)はinput:number、value:{item:number}を保持する必要がある。
+```
+
+[src/transition-inference.test.ts](../src/transition-inference.test.ts)へこれらの回帰検査を追加した。
+任意のTを受け取る別のgeneric呼出し元で入力と成功値を同じTとして使えることと、
+identity以外のgeneric出力構造を保持することを確認する。実tarballのconsumerでも型検査・実行する。
+7件は同じ推論の崩れに伴う診断であり、独立した7個のruntime不具合ではない。
+空の型を交差させるだけなら常に無害、という推測を改善策として採用する根拠にもならない。
+
+現行宣言はこのgenericな利用を保持する。名前付き要件による回避を維持し、
+inlineの制限は未解消として残す。この検査で任意のgeneric型計算・全callbackの無注釈化を保証したわけではない。

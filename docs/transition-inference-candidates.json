@@ -1,0 +1,179 @@
+{
+  "compiler": "Version 7.0.2",
+  "modelSourceSha256": "fc996345841e975d9a0970059b207e4a2bf89f6f2b52ac3d23ddfaf0286190f8",
+  "existingContractsPass": true,
+  "results": [
+    {
+      "name": "current",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "callable-empty-intersection",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "callable-object-intersection",
+      "accepted": false,
+      "inlineProbeAccepted": true,
+      "probeDiagnosticCodes": [],
+      "existingContractDiagnostics": 7,
+      "existingDiagnosticSites": [
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 78,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 79,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 80,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 91,
+          "code": "TS2322"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 92,
+          "code": "TS2322"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 103,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 104,
+          "code": "TS2344"
+        }
+      ]
+    },
+    {
+      "name": "callable-empty-pick",
+      "accepted": false,
+      "inlineProbeAccepted": true,
+      "probeDiagnosticCodes": [],
+      "existingContractDiagnostics": 7,
+      "existingDiagnosticSites": [
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 78,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 79,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 80,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 91,
+          "code": "TS2322"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 92,
+          "code": "TS2322"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 103,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 104,
+          "code": "TS2344"
+        }
+      ]
+    },
+    {
+      "name": "callable-signature-object",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "raw-object-deferred-check",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "raw-object-spread-check",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "raw-unknown-deferred-check",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "raw-object-per-branch-check",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    }
+  ]
+}

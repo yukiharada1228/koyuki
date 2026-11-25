@@ -82,3 +82,26 @@ test('withInput preserves a generic domain function across distinct invocations'
   assert.deepEqual(text, ok({ input: 'approved', value: 'approved' }));
   assert.deepEqual(object, ok({ input: { amount: 3 }, value: { amount: 3 } }));
 });
+
+test('withInput keeps the generic identity in an independently generic caller', () => {
+  const preserve = withInput(<T>(value: T) => ok(value));
+  function forward<T>(value: T) {
+    const result = preserve(value);
+    if (result.ok) {
+      const before: T = result.value.input;
+      const after: T = result.value.value;
+      void before; void after;
+    }
+    return result;
+  }
+  const input = { amount: 3 }, result = forward(input);
+  assert(result.ok); assert.equal(result.value.input, input); assert.equal(result.value.value, input);
+});
+test('withInput keeps non-identity generic output structure', () => {
+  const wrap = withInput(<T>(value: T) => ok({ item: value }));
+  const number = wrap(2), text = wrap('approved');
+  type NumberResult = Assert<Equal<typeof number, Result<Readonly<{ input: number; value: { item: number } }>, never>>>;
+  type TextResult = Assert<Equal<typeof text, Result<Readonly<{ input: string; value: { item: string } }>, never>>>;
+  assert.deepEqual(number, ok({ input: 2, value: { item: 2 } }));
+  assert.deepEqual(text, ok({ input: 'approved', value: { item: 'approved' } }));
+});
