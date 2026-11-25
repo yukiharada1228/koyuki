@@ -1,3 +1,4 @@
+import type { ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import type { ActionReport } from './action.js';
 import { defineRequestTarget, type RequestExecution, type Step, type TransitionDefinition } from './model.js';
@@ -8,7 +9,7 @@ export type Errors<LE, VE, T extends readonly AnyStep[], E, SE> = LE | VE | Fail
 type Definition<I, C, LE, V, VE, T extends readonly AnyStep[], O, E, S, SE> = {
   operation: string;
   loadName?: string;
-  load: (input: I) => Promise<Result<C, LE>>;
+  load: ActionLoad<I, C, LE>;
   transition: TransitionDefinition<NoInfer<C>, V, VE, T, O, E>;
   save: (change: NoInfer<O>, execution: RequestExecution<NoInfer<I>>) => Promise<Result<S, SE>>;
 };

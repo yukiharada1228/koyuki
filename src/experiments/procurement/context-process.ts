@@ -18,11 +18,10 @@ type Input<I> = { input: I; actor: Actor };
 export function procurementProcessContext<E>(repository: ProcurementRepository<E>, identity: Actor) {
   const actor = Object.freeze({ ...identity });
   const initial = <I extends VersionInput>(input: I) => ({ input, actor });
-  const invoice = <I extends VersionInput>(input: I) => process<Input<I>>()
+  const invoiceFlow = <I extends VersionInput>() => process<Input<I>>()
     .effect('read-invoice', attach('current', context => repository.read('invoice', context.input.id, actor)))
-    .effect('read-order', attach('order', context => repository.read('order', context.current.orderId, actor)))
-    .run(initial(input));
-  const receipt = <I extends VersionInput>(input: I) => process<Input<I>>()
+    .effect('read-order', attach('order', context => repository.read('order', context.current.orderId, actor)));
+  const receiptFlow = <I extends VersionInput>() => process<Input<I>>()
     .effect('read-receipt', attach('current', context => repository.read('receipt', context.input.id, actor)))
     .effect('read-order', attach('order', context => repository.read('order', context.current.orderId, actor)))
     .effect('read-stock', attach('stock', async () => {
@@ -33,7 +32,10 @@ export function procurementProcessContext<E>(repository: ProcurementRepository<E
     .effect('read-related', async context => ok({ ...context,
       receipts: await repository.related('receipt', context.order.id, actor),
       invoices: (await repository.related('invoice', context.order.id, actor)).filter(row => row.state !== 'voided'),
-    }))
-    .run(initial(input));
-  return { invoice, receipt };
+    }));
+  const invoice = <I extends VersionInput>(input: I) => invoiceFlow<I>().run(initial(input));
+  const receipt = <I extends VersionInput>(input: I) => receiptFlow<I>().run(initial(input));
+  const invoiceDetailed = <I extends VersionInput>() => ({ runDetailed: (input: I) => invoiceFlow<I>().runDetailed(initial(input)) });
+  const receiptDetailed = <I extends VersionInput>() => ({ runDetailed: (input: I) => receiptFlow<I>().runDetailed(initial(input)) });
+  return { invoice, receipt, invoiceDetailed, receiptDetailed };
 }

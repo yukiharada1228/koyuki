@@ -18,6 +18,10 @@ export const result = (async () => {
   const ordinaryReport = await ordinary.double.runDetailed(3, { input: value => value, result: value => value.ok });
   if (ordinaryReport.observations.length !== 3 || ordinaryReport.observationErrors.length !== 0) throw new Error('Business observation failed');
   if (!ordinaryResult.ok || ordinaryResult.value !== 6) throw new Error('Business operation failed');
+  let detailedReads = 0;
+  const detailed = business({ name: 'portable-detailed', load: effectProcess().effect('read', async input => { detailedReads++; return ok(input + 1); }), save: async value => ok(value), operations: { double: [n => ok(n * 2)] } });
+  const detailedReport = await detailed.double.runDetailed(3, { input: (_value, step) => step, result: result => result.ok });
+  if (!detailedReport.result.ok || detailedReport.result.value !== 8 || detailedReads !== 1 || detailedReport.trace.map(entry => entry.step).join(',') !== 'read,portable-detailed.double:load,run:1,portable-detailed.double' || detailedReport.observations.length !== 3) throw new Error('Detailed load failed');
   const proof = Symbol('portable-proof');
   class Domain { #value = 7; value() { return this.#value; } }
   let opaqueWrites = 0;

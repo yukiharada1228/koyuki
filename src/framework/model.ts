@@ -1,3 +1,4 @@
+import type { ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import { Workflow, evaluateRule, type Rule } from './workflow.js';
 import { defineCommand } from './command.js';
@@ -42,7 +43,7 @@ export function transition<I, V, VE, const T extends readonly AnyStep[], O, E>(d
 /** Register an operation's IO at the model boundary, then attach pure event behavior. */
 export function defineTarget<I, C, LE, O, S, SE>(adapter: {
   operation: string; loadName?: string;
-  load: (input: I) => Promise<Result<C, LE>>;
+  load: ActionLoad<I, C, LE>;
   save: (value: O) => Promise<Result<S, SE>>;
 }) {
   return {
@@ -68,7 +69,7 @@ export interface RequestExecution<I> {
  */
 export function defineRequestTarget<I, C, LE, O, S, SE>(adapter: {
   operation: string; loadName?: string;
-  load: (input: I) => Promise<Result<C, LE>>;
+  load: ActionLoad<I, C, LE>;
   save: (value: O, execution: RequestExecution<NoInfer<I>>) => Promise<Result<S, SE>>;
 }) {
   const { operation, loadName, load, save } = adapter;

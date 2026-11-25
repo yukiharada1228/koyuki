@@ -1,3 +1,4 @@
+import type { ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import { transition, type RequestExecution, type Step, type TransitionDefinition } from './model.js';
 import type { Execution, Receipt } from './replay.js';
@@ -27,7 +28,7 @@ export function defineUseCaseGroup<N extends string, I, O, S, SE, RE, const D ex
   return {
     on<J extends I, C, LE, V, VE, const T extends readonly AnyStep[], E>(name: N, entry: {
       loadName?: string;
-      load: (input: J) => Promise<Result<C, LE>>;
+      load: ActionLoad<J, C, LE>;
       transition: TransitionDefinition<NoInfer<C>, V, VE, T, NoInfer<O>, E>;
     }): SelectCommand<D,
       PlainCommand<J, S, Errors<LE, VE, T, E, SE>>,

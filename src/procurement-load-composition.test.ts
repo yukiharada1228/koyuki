@@ -165,7 +165,8 @@ if (false) {
 
 for (const driver of ['memory', 'sqlite'] as const) {
   for (const operation of ['approve', 'void', 'return', 'correct'] as const) {
-    test(`composed ${operation} operation matches domain result, trace and stored models on ${driver}`, async () => {
+    for (const detailedLoad of [false, true]) {
+    test(`composed ${operation} operation matches domain result, trace and stored models on ${driver} (detailed load: ${detailedLoad})`, async () => {
       const make = () => driver === 'memory' ? new MemoryProcurement() : new SqliteProcurement(':memory:', 'g');
       const left = make(), right = make();
       try {
@@ -179,14 +180,16 @@ for (const driver of ['memory', 'sqlite'] as const) {
           }
         }
         const identity = actor(operation === 'approve' || operation === 'void' ? 'finance' : 'warehouse');
-        const baseline = procurement(left, identity, policy), composed = procurementComposedReads(right, identity);
+        const baseline = procurement(left, identity, policy), composed = procurementComposedReads(right, identity, { detailedLoad });
         const input = { id: operation === 'approve' || operation === 'void' ? 'inv' : 'rc',
           expectedVersion: operation === 'approve' ? 2 : 1, reason: 'damaged', quantities: [{ sku: 'a', quantity: 2 }] };
         const run = (api: typeof composed) => operation === 'approve' ? api.invoices.approve.runDetailed(input)
           : operation === 'void' ? api.invoices.void.runDetailed(input)
           : operation === 'return' ? api.receipts.return.runDetailed(input) : api.receipts.correct.runDetailed(input);
         const expected = await run(baseline), actual = await run(composed);
-        assert(expected.result.ok); assert.deepEqual(actual, expected);
+        assert(expected.result.ok);
+        const reads = operation === 'approve' || operation === 'void' ? ['read-invoice', 'read-order'] : ['read-receipt', 'read-order', 'read-stock', 'read-related'];
+        assert.deepEqual(actual, detailedLoad ? { ...expected, trace: [...reads.map(step => ({ step, status: 'ok' })), ...expected.trace] } : expected);
         for (const kind of ['request', 'order', 'receipt', 'invoice', 'payment', 'stock'] as const) {
           assert.deepEqual(right.list(kind, identity), left.list(kind, identity));
         }
@@ -195,6 +198,7 @@ for (const driver of ['memory', 'sqlite'] as const) {
         if (right instanceof SqliteProcurement) right.close();
       }
     });
+    }
   }
 }
 
@@ -231,4 +235,17 @@ test('composed business save failure is returned once without repeating reads or
   assert.equal(saves, 1); assert.equal(reads.calls.length, 5);
   assert.deepEqual(report.trace.map(entry => entry.status), ['ok', 'ok', 'error']);
   assert.deepEqual(memory.list('receipt', actor('warehouse')), before);
+});
+
+test('detailed business load failure keeps only executed queries before the load boundary', async () => {
+  const memory = await fixture();
+  for (let failAt = 1; failAt <= 3; failAt++) {
+    const host = observed(memory, { failAt });
+    const api = procurementComposedReads(host.repository, actor('warehouse'), { detailedLoad: true });
+    const report = await api.receipts.return.runDetailed({ id: 'rc', expectedVersion: 1, reason: 'damaged' });
+    assert.deepEqual(report.result, err({ kind: 'Conflict' })); assert.equal(report.plan, null);
+    assert.deepEqual(report.trace, [...['read-receipt', 'read-order', 'read-stock'].slice(0, failAt).map((step, index) => ({ step, status: index === failAt - 1 ? 'error' : 'ok' })),
+      { step: 'procurement.receipt.v1.return:load', status: 'error' }]);
+    assert.equal(host.calls.length, failAt);
+  }
 });

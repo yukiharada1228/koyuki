@@ -1,3 +1,4 @@
+import type { ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
 import { workflow, evaluateRule, type WorkflowCapture, type Rule, type StageObserver } from './workflow.js';
 import type { Result } from './result.js';
@@ -7,14 +8,18 @@ import { createObservation, observeEffect, type ObservationReport } from './obse
 import { createGroupRuntime } from './group-runtime.js';
 import type { PlainCommand, ReplayCommand, ReplaySaveCheck, SelectCommand } from './use-case.js';
 type Fn = Rule<never, unknown, unknown>;
-type Load = (input: never) => Promise<Result<unknown, unknown>>;
+type Load = ActionLoad<never, unknown, unknown>;
 type Pipeline = readonly [Fn, ...Fn[]];
 type Entry = Pipeline | { readonly load: Load; readonly run: Pipeline };
-type Input<L> = L extends (input: infer I) => unknown ? I : never;
+// A dynamically selected loader must accept the request in every possible branch.
+type LoadCall<L> = L extends (input: never) => unknown ? L : L extends { runDetailed: infer F } ? F : never;
+type Input<L> = [LoadCall<L>] extends [(input: infer I) => unknown] ? I : never;
+type LoadResult<L> = L extends (input: never) => infer R ? Awaited<R>
+  : L extends { runDetailed: (input: never) => infer D } ? Awaited<D> extends { result: infer R } ? R : never : never;
 type Value<R> = R extends { ok: true; value: infer O } ? O : never;
 type Failure<R> = R extends { ok: false; error: infer E } ? E : never;
-type Loaded<L extends Load> = Value<Awaited<ReturnType<L>>>;
-type LoadError<L extends Load> = Failure<Awaited<ReturnType<L>>>;
+type Loaded<L extends Load> = Value<LoadResult<L>>;
+type LoadError<L extends Load> = Failure<LoadResult<L>>;
 type Out<F extends Fn> = Value<ReturnType<F>>;
 type ErrorOf<F extends Fn> = Failure<ReturnType<F>>;
 type Stages<E extends Entry> = E extends Pipeline ? E : E extends { run: infer P extends Pipeline } ? P : never;
@@ -57,7 +62,7 @@ type Commands<L extends Load, T extends Record<string, Entry>, S, SE, RE, D exte
 interface RuntimeDefinition {
   name: string;
   operation?: (name: string) => string;
-  load: (input: unknown) => Promise<Result<unknown, unknown>>;
+  load: ActionLoad<unknown, unknown, unknown>;
   save: (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<unknown, unknown>>;
   operations: Record<string, readonly Rule<unknown, unknown, unknown>[] | { load: RuntimeDefinition['load']; run: readonly Rule<unknown, unknown, unknown>[] }>;
   replay?: { lookup: (context: GroupExecution<string, unknown>) => Result<Receipt<unknown>, unknown> | Promise<Result<Receipt<unknown>, unknown>>; resolveAfter: readonly string[] | ((error: unknown) => boolean) };
@@ -131,7 +136,14 @@ export function business(definition: object) {
       if (!capture) return command.runDetailed(input);
       const recorder = createObservation(capture), id = config.operation(name);
       const observed = runtime(recorder.observe).on(name, {
-        load: (request: unknown) => observeEffect(`${id}:load`, request, () => load(request), recorder.observe),
+        load: typeof load === 'function'
+          ? (request: unknown) => observeEffect(`${id}:load`, request, () => load(request), recorder.observe)
+          : { runDetailed: async (request: unknown) => {
+            const receive = recorder.observe(`${id}:load`, request);
+            const detail = await load.runDetailed(request);
+            receive(detail.result);
+            return detail;
+          } },
         decide: decide(recorder.observe),
       });
       const report = await observed.runDetailed(input);

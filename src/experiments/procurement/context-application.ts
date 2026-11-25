@@ -5,20 +5,22 @@ import { returnFromStock, correctInStock } from './inventory.js';
 import type { ProcurementRepository } from './repository.js';
 
 /** Integration experiment: the same domain rules and saves with composed read contexts. */
-export function procurementComposedReads<E>(repository: ProcurementRepository<E>, identity: Actor) {
+export function procurementComposedReads<E>(repository: ProcurementRepository<E>, identity: Actor, options: { detailedLoad?: boolean } = {}) {
   const actor = Object.freeze({ ...identity });
   const context = procurementProcessContext(repository, actor);
-  const invoices = business({ name: 'procurement.invoice.v1', load: context.invoice<VersionInput>,
+  const invoiceLoad = <I extends VersionInput>() => options.detailedLoad ? context.invoiceDetailed<I>() : context.invoice<I>;
+  const receiptLoad = <I extends VersionInput>() => options.detailedLoad ? context.receiptDetailed<I>() : context.receipt<I>;
+  const invoices = business({ name: 'procurement.invoice.v1', load: invoiceLoad<VersionInput>(),
     save: <T extends Invoice>(change: Change<T>) => repository.commit(change, actor),
     operations: {
       approve: [approveInvoice],
-      void: { load: context.invoice<ReasonInput>, run: [voidInvoice] },
+      void: { load: invoiceLoad<ReasonInput>(), run: [voidInvoice] },
     } });
-  const receipts = business({ name: 'procurement.receipt.v1', load: context.receipt<ReasonInput>,
+  const receipts = business({ name: 'procurement.receipt.v1', load: receiptLoad<ReasonInput>(),
     save: <T extends Receipt>(change: Change<T>) => repository.commit(change, actor),
     operations: {
       return: [returnFromStock],
-      correct: { load: context.receipt<CorrectInput>, run: [correctInStock] },
+      correct: { load: receiptLoad<CorrectInput>(), run: [correctInStock] },
     } });
   return { invoices, receipts };
 }

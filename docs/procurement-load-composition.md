@@ -4,7 +4,7 @@
 複数のRepository呼び出しからRuleの入力を組み立てる部分にも残っている。
 [共通context](../src/experiments/procurement/context.ts)の請求書・入荷の読み込みを、
 既存のProcessで[別実装](../src/experiments/procurement/context-process.ts)へ組み直した。
-本体のAPIと25操作の既存実装・比較対象は変更していない。
+25操作の既存実装・比較対象は変更していない。後述の詳細記録には共通load契約の拡張を使う。
 
 ## 任せられたことと残ったこと
 
@@ -39,7 +39,7 @@ attachはこの試作内の既知のDTOと固定キーだけに使う。任意�
 
 ## 確認した範囲
 
-[18テスト](../src/procurement-load-composition.test.ts)をrootと実tarballの独立consumerで実行する。
+[27テスト](../src/procurement-load-composition.test.ts)をrootと実tarballの独立consumerで実行する。
 
 - 非同期Repositoryに対する成功値とread/relatedの呼び出し順の一致。
 - 追加の入力フィールド・実際のSymbol値・入力参照の保持、actorのfreeze。
@@ -69,14 +69,19 @@ SQLiteは各`:memory:` DBでの実行であり、この比較自体は再起動�
 権限不足でRuleが失敗すると保存しないことを検査した。
 返品の保存Conflictはそのまま返し、読込5回と保存1回だけで、自動再送しないことも確認した。
 
-### 内部の取得traceは自動では引き継がれない
+### 明示した詳細loaderから内部の取得traceを引き継ぐ
 
-今回のloaderはProcess.runでResultを返す通常の非同期関数である。
-businessからは一つのloadとして記録され、read-receipt/read-order/read-stock等のProcess内部traceは含まれない。
-ActionReportが元実装と一致したことを、全取得段階を観測できるようになったという意味にはしない。
-途中のI/Oを詳細形式で接続するProcess.effectのobject形式とは異なる境界である。
+通常のloaderはProcess.runでResultを返すため、businessでは一つのloadとして記録する。
+この契約は維持したまま、[詳細形式のloader](detailed-load.md)を追加した。
+試作の`procurementComposedReads(repository, actor, { detailedLoad: true })`は、
+同じProcessをrunDetailedで1回だけ呼ぶobjectをloadへ渡す。
 
-読み込みも含めて段階ごとの詳細を保持したい場合、Resultだけの関数契約では情報が足りない。
-詳細実行の明示的な接続契約と、通常の関数を渡した場合の挙動を区別する設計が必要になる。
-この試作では、traceのためにreadを再実行したり、グローバルな暗黙の記録先を追加したりしていない。
-全18テストはこの制約を含む現在の契約を対象とし、全25操作・全失敗経路の等価性を保証しない。
+詳細形式ではread-receipt/read-order/read-stock/read-related等のtraceに続けてload全体の成否を記録する。
+通常形式と詳細形式の両方で、4操作×2driverの結果と全6モデルが一致すること、
+詳細形式だけ内部取得traceが加わることを検査した。
+また、返品の各readがConflictになる場合、実行した取得段階のtraceとload/errorだけを残し、Ruleとsaveへ進まない。
+
+通常のResult関数が返さない内部情報を推測するわけではない。
+選択値のcaptureもload全体の入力・結果が対象で、内部I/Oの全値を自動収集しない。
+traceのための再実行、グローバルな暗黙の記録先、永続的な監査保存は追加していない。
+全27テストは現在の契約を対象とし、全25操作・全失敗経路の等価性を保証しない。

@@ -36,7 +36,7 @@ if (!accepted.ok || rejected.ok || saved.length !== 1) throw new Error('Unexpect
 ## 宣言と実行の契約
 
 - `name`は操作群の名前。操作IDの既定値は`${name}.${操作名}`。
-- `load`は要求から業務関数の入力を取得する非同期Result関数。
+- `load`は要求から業務関数の入力を取得する非同期Result関数。内部traceも接続する場合は[詳細形式](detailed-load.md)の`{ runDetailed }`を指定する。
 - `operations`は業務名と、同期Result関数の空でないtuple。成功値を順に渡す。
 - `save`は最後の成功値を保存する非同期Result関数。操作群で同じ保存契約を共有する。
 - 宣言時にI/Oは実行しない。`expense.approve(input)`と`.run(input)`は同じ実行入口。

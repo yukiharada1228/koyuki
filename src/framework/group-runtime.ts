@@ -1,3 +1,4 @@
+import type { ActionLoad } from './action.js';
 // Internal composition shared by declared transitions and the unpublished API study.
 import type { Result } from './result.js';
 import type { Workflow } from './workflow.js';
@@ -23,7 +24,7 @@ export function createGroupRuntime<N extends string, I, O, S, SE, RE, const D ex
   return {
     on<J extends I, C, LE, DE>(name: N, entry: {
       loadName?: string;
-      load: (input: J) => Promise<Result<C, LE>>;
+      load: ActionLoad<J, C, LE>;
       decide: Workflow<NoInfer<C>, NoInfer<O>, DE>;
     }): SelectCommand<D, PlainCommand<J, S, LE | DE | SE>, ReplayCommand<J, S, LE | DE | SE, RE>> {
       const id = operation(name);

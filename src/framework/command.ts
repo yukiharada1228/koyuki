@@ -1,3 +1,4 @@
+import type { ActionLoad } from './action.js';
 import type { Result } from './result.js';
 import type { Workflow } from './workflow.js';
 import { bindMutation } from './workflow.js';
@@ -6,7 +7,7 @@ import { defineAction } from './action.js';
 export function defineCommand<I, C, LE, O, DE, S, SE>(definition: {
   operation: string;
   loadName?: string;
-  load: (input: I) => Promise<Result<C, LE>>;
+  load: ActionLoad<I, C, LE>;
   decide: Workflow<C, O, DE> & { readonly run: (input: NoInfer<C>) => Result<O, DE> };
   save: (decision: NoInfer<O>) => Promise<Result<S, SE>>;
 }) {

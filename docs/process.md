@@ -33,6 +33,8 @@ traceはインプロセスの実行記録であり、永続監査ログや再開
 DB transaction・receipt・outbox・配送先の冪等性・lease管理は各adapterとホストの責務である。
 入力のsnapshotは暗黙には取らず、長時間のI/O中の参照所有権も呼び出し側が扱う。
 
+Processを業務操作のloadとして使い、内部traceを保持するには[詳細loader](detailed-load.md)を明示する。
+
 登録メールの実例は[永続イベント接続](registration-events.md)にある。
 この直接実行APIは開発版の追加で、公開済みnpm alpha.5には含まれない。
 
