@@ -96,6 +96,7 @@ export function replayOperations<S, const T extends Record<string, {
     [K in keyof T]: Operation<S, ReplayInput<T[K]>, Execution<ReplayOutput<T[K]>>, ReplayError<T[K]>>
   };
 }
-type ReplayInput<T> = T extends { run(input: infer I): unknown } ? I : never;
+type ReplayCall<T> = T extends { run: infer F } ? F : never;
+type ReplayInput<T> = [ReplayCall<T>] extends [(input: infer I) => unknown] ? I : never;
 type ReplayOutput<T> = T extends { run(input: never): Promise<Result<Execution<infer O>, unknown>> } ? O : never;
 type ReplayError<T> = T extends { run(input: never): Promise<Result<unknown, infer E>> } ? E : never;

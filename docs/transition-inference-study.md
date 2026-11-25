@@ -153,3 +153,7 @@ identity以外のgeneric出力構造を保持することを確認する。実ta
 
 現行宣言はこのgenericな利用を保持する。名前付き要件による回避を維持し、
 inlineの制限は未解消として残す。この検査で任意のgeneric型計算・全callbackの無注釈化を保証したわけではない。
+
+動的なvalidate候補の入力安全性は後続の[入力契約修正](application-input-contract.md)で別途改善した。
+保存済み候補結果のsource hashは調査時点を示し、現在のmodelとの同一性は主張しない。
+genericなrequireと未注釈evolveの制限を解消したという意味ではない。

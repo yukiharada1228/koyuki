@@ -96,6 +96,7 @@ loggerのbuffer・配送・保存・保持期間はhostの責任。
 
 詳細機能の入力をrunより狭くしたり、異なる成功型・エラー型を返したりする登録は拒否する。
 操作テーブルや直接のApplication宣言にも同じ検査をかける。
+動的に選ぶcommandの入力は、[全候補が受け取れる契約](application-input-contract.md)として検査する。
 高度なgeneric wrapperを書く場合は、OperationCommands<T>でテーブルの検査条件を次の呼出しへ引き継げる。
 通常のオブジェクト宣言ではこの補助型を記述する必要はない。
 

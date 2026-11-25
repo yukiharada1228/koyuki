@@ -11,7 +11,9 @@ export function operation<S, I, O, E>(command: { readonly run: (input: I) => Pro
   const detailed = command.runDetailed;
   return { run: command.run.bind(command), reduce, ...(detailed ? { runDetailed: detailed.bind(command) } : {}) };
 }
-type CommandInput<T> = T extends { run(input: infer I): unknown } ? I : never;
+type RunCall<T> = T extends { run: infer F } ? F : never;
+// A runtime-selected union command must accept the request in every branch.
+type CommandInput<T> = [RunCall<T>] extends [(input: infer I) => unknown] ? I : never;
 type CommandOutput<T> = T extends { run(input: never): Promise<Result<infer O, unknown>> } ? O : never;
 type CommandError<T> = T extends { run(input: never): Promise<Result<unknown, infer E>> } ? E : never;
 /** Apply one projection rule to a command table while preserving each command's signature. */
@@ -28,7 +30,7 @@ export function operations<S, const T extends Record<string, {
   };
 }
 type AnyOperation<S> = { run(input: never): Promise<Result<unknown, unknown>>; runDetailed?(input: never): Promise<OperationReport<unknown, unknown>>; reduce(state: S, output: never): S };
-type Input<T> = T extends { run(input: infer I): unknown } ? I : never;
+type Input<T> = CommandInput<T>;
 type ErrorOf<T> = T extends { run(input: never): Promise<Result<unknown, infer E>> } ? E : never;
 type Key<T> = Extract<keyof T, string>;
 export type ApplicationEvent<T> = { [K in Key<T>]: { readonly type: K; readonly input: Input<T[K]> } }[Key<T>] | { readonly type: 'dismiss' };

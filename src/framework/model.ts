@@ -96,7 +96,9 @@ export function defineRequestTarget<I, C, LE, O, S, SE>(adapter: {
 
 type Stage<I, O, E> = Step<I, O, E> | Rule<I, O, E>;
 type AnyStage = Stage<never, unknown, unknown>;
-type StageInput<T> = T extends Stage<infer I, unknown, unknown> ? I : never;
+type StageCall<T> = T extends (...args: never[]) => unknown ? T : T extends { readonly rule: infer F } ? F : never;
+// Normalize ordinary/named candidates before contravariant input inference.
+type StageInput<T> = [StageCall<T>] extends [(input: infer I) => unknown] ? I : never;
 type StageOutput<T> = T extends Stage<never, infer O, unknown> ? O : never;
 type StageFailure<T> = T extends Stage<never, unknown, infer E> ? E : never;
 type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<StageOutput<H>, R> : I;
