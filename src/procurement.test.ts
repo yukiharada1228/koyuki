@@ -24,15 +24,15 @@ test('procurement connects request, approval, order, partial receipts and invoic
   const before = f.repository.commits;
   assert.deepEqual(await f.finance.invoices.match({ id: 'inv', expectedVersion: 1 }), err({ kind: 'InvoiceMismatch' }));
   assert.equal(f.repository.commits, before);
-  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc1', quantities: [{ sku: 'a', quantity: 1 }] })).ok);
-  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 2, receiptId: 'rc2', quantities: [{ sku: 'a', quantity: 1 }, { sku: 'b', quantity: 1 }] })).ok);
+  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 2, receiptId: 'rc1', quantities: [{ sku: 'a', quantity: 1 }] })).ok);
+  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 3, receiptId: 'rc2', quantities: [{ sku: 'a', quantity: 1 }, { sku: 'b', quantity: 1 }] })).ok);
   const matched = await f.finance.invoices.match({ id: 'inv', expectedVersion: 1 }); assert(matched.ok);
   assert.equal(matched.value.state, 'matched'); assert.equal(matched.value.version, 2);
   if (matched.value.state === 'matched') assert.deepEqual(matched.value.receiptIds, ['rc1', 'rc2']);
   const request = f.repository.read('request', 'rq', actor('buyer')); assert(request.ok);
   assert.equal(request.value.state, 'approved'); assert.equal(request.value.totalCents, 1000);
   const order = f.repository.read('order', 'po', actor('buyer')); assert(order.ok);
-  assert.equal(order.value.version, 3); assert.equal(order.value.supplier, 'Supplier');
+  assert.equal(order.value.version, 4); assert.equal(order.value.supplier, 'Supplier');
   const original = f.repository.read('request', 'rq', actor('buyer')); assert(original.ok);
   assert.deepEqual(lines, [{ sku: 'a', quantity: 2, unitCents: 300 }, { sku: 'b', quantity: 1, unitCents: 400 }]);
 });
@@ -187,5 +187,60 @@ test('new request operations enforce ownership, active actors, scope, versions a
   assert.deepEqual(await f.buyer.requests.withdraw({ id: 'rq', expectedVersion: 1 }), err({ kind: 'Conflict' }));
   assert.deepEqual(await f.as({ ...actor('approver'), active: false }).requests.return({ id: 'rq', expectedVersion: 2 }), err({ kind: 'Denied' }));
   assert.deepEqual(await f.as(actor('approver', 'approver', 'foreign')).requests.reject({ id: 'rq', expectedVersion: 2, reason: 'no' }), err({ kind: 'NotFound' }));
+  assert.equal(f.repository.commits, before);
+});
+
+test('supplier amendment preserves approved amounts; cancellation frees the request for a replacement order', async () => {
+  const f = setup(); await ordered(f);
+  const amended = await f.buyer.orders.amend({ id: 'po', expectedVersion: 1, supplier: ' New supplier ' }); assert(amended.ok);
+  assert.equal(amended.value.supplier, 'New supplier'); assert.equal(amended.value.totalCents, 1000);
+  assert.deepEqual(await f.as(actor('buyer', 'stranger')).orders.cancel({ id: 'po', expectedVersion: 2 }), err({ kind: 'Denied' }));
+  assert((await f.buyer.orders.cancel({ id: 'po', expectedVersion: 2 })).ok);
+  assert.deepEqual(await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 3, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 1 }] }), err({ kind: 'WrongState' }));
+  assert.deepEqual(await f.finance.invoices.register({ id: 'po', expectedVersion: 3, invoiceId: 'inv', amountCents: 1000 }), err({ kind: 'WrongState' }));
+  const replacements = await Promise.all(['new1', 'new2'].map(orderId => f.buyer.orders.place({ id: 'rq', expectedVersion: 3, orderId, supplier: 'replacement' })));
+  assert.equal(replacements.filter(result => result.ok).length, 1);
+  assert.equal(f.repository.list('order', actor('buyer')).filter(order => order.state !== 'cancelled').length, 1);
+});
+test('receipt or invoice creation prevents later amendment and cancellation', async () => {
+  for (const downstream of ['receipt', 'invoice']) {
+    const f = setup(); await ordered(f);
+    if (downstream === 'receipt') assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 1 }] })).ok);
+    else assert((await f.finance.invoices.register({ id: 'po', expectedVersion: 1, invoiceId: 'inv', amountCents: 1000 })).ok);
+    const before = f.repository.commits;
+    assert.deepEqual(await f.buyer.orders.cancel({ id: 'po', expectedVersion: 2 }), err({ kind: 'WrongState' }));
+    assert.deepEqual(await f.buyer.orders.amend({ id: 'po', expectedVersion: 2, supplier: 'changed' }), err({ kind: 'WrongState' }));
+    assert.equal(f.repository.commits, before);
+  }
+});
+test('cancellation racing downstream creation never leaves a cancelled order with a receipt or invoice', async () => {
+  for (const downstream of ['receipt', 'invoice']) for (const cancelFirst of [true, false]) {
+    const f = setup(); await ordered(f);
+    const cancel = () => f.buyer.orders.cancel({ id: 'po', expectedVersion: 1 });
+    const create = () => downstream === 'receipt'
+      ? f.warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 1 }] })
+      : f.finance.invoices.register({ id: 'po', expectedVersion: 1, invoiceId: 'inv', amountCents: 1000 });
+    const results = await Promise.all(cancelFirst ? [cancel(), create()] : [create(), cancel()]);
+    assert.equal(results.filter(result => result.ok).length, 1);
+    assert.deepEqual(results.find(result => !result.ok), err({ kind: 'Conflict' }));
+    const order = f.repository.read('order', 'po', actor('buyer')); assert(order.ok);
+    if (order.value.state === 'cancelled') {
+      assert.equal(f.repository.list('receipt', actor('buyer')).length, 0);
+      assert.equal(f.repository.list('invoice', actor('buyer')).length, 0);
+    }
+  }
+});
+test('order completion requires full receipts and a matched invoice and closes further receiving', async () => {
+  const f = setup(); await ordered(f);
+  assert.deepEqual(await f.buyer.orders.complete({ id: 'po', expectedVersion: 1 }), err({ kind: 'InvoiceMismatch' }));
+  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: lines.map(({ sku, quantity }) => ({ sku, quantity })) })).ok);
+  assert((await f.finance.invoices.register({ id: 'po', expectedVersion: 2, invoiceId: 'inv', amountCents: 1000 })).ok);
+  assert.deepEqual(await f.buyer.orders.complete({ id: 'po', expectedVersion: 3 }), err({ kind: 'InvoiceMismatch' }));
+  assert((await f.finance.invoices.match({ id: 'inv', expectedVersion: 1 })).ok);
+  const completed = await f.buyer.orders.complete({ id: 'po', expectedVersion: 3 }); assert(completed.ok);
+  assert.equal(completed.value.state, 'completed'); assert.equal(completed.value.version, 4);
+  const before = f.repository.commits;
+  assert.deepEqual(await f.buyer.orders.cancel({ id: 'po', expectedVersion: 4 }), err({ kind: 'WrongState' }));
+  assert.deepEqual(await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 4, receiptId: 'extra', quantities: [{ sku: 'a', quantity: 1 }] }), err({ kind: 'WrongState' }));
   assert.equal(f.repository.commits, before);
 });

@@ -26,7 +26,7 @@ export class MemoryProcurement implements ProcurementRepository {
     for (const entity of change.writes) {
       const id = key(entity.kind, entity.groupId, entity.id), before = change.checks.find(condition => key(condition.kind, condition.groupId, condition.id) === id);
       if (entity.groupId !== actor.groupId || written.has(id) || !before || !Number.isSafeInteger(entity.version) || entity.version !== (before.version ?? 0) + 1) return err({ kind: 'Conflict' });
-      if (entity.kind === 'order' && this.list('order', actor).some(other => other.requestId === entity.requestId && other.id !== entity.id)) return err({ kind: 'Conflict' });
+      if (entity.kind === 'order' && entity.state !== 'cancelled' && this.list('order', actor).some(other => other.state !== 'cancelled' && other.requestId === entity.requestId && other.id !== entity.id)) return err({ kind: 'Conflict' });
       if (entity.kind === 'invoice' && this.list('invoice', actor).some(other => other.orderId === entity.orderId && other.id !== entity.id)) return err({ kind: 'Conflict' });
       written.add(id);
     }
