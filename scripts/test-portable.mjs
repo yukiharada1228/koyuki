@@ -19,6 +19,11 @@ export const result = (async () => {
   if (asyncOutcome !== deniedTransaction) throw new Error('Portable callback transaction failed');
   const audit = auditRecord({ actorId: 'host', operationId: 'request-1', definitionVersion: 'v1', occurredAt: '2026-11-25T00:00:00.000Z' }, 'submit', { targetType: 'expense', targetId: 'e1', beforeVersion: 1, afterVersion: 2 });
   if (!Object.isFrozen(audit) || audit.schema !== 'koyuki.audit.v1' || audit.afterVersion !== 2) throw new Error('Portable audit failed');
+  const executionEvents = [];
+  const executionApp = defineApplication({ initial: () => 0, operations: { go: operation({ run: async n => ok(n), runDetailed: async n => ({ result: ok(n), trace: [{ step: 'portable-step', status: 'ok' }], plan: null }) }, (_, n) => n) }, view: state => state.data });
+  const executionSession = await executionApp.start({ sessionId: 'portable', clock: () => 0, observeExecution: event => { executionEvents.push(event); } });
+  const executionResult = await executionSession.dispatch({ type: 'go', input: 3 });
+  if (!executionResult.ok || executionResult.value.state.data !== 3 || executionEvents.map(event => event.kind).join(',') !== 'queued,started,step,completed' || executionEvents.some(event => event.executionId !== 'portable/1')) throw new Error('Portable execution observation failed');
   const firstFailure = err('Invalid');
   if (combine([ok(1), firstFailure, err('Later')]) !== firstFailure) throw new Error('Tuple failure changed');
   const tuple = combine([ok('label'), ok(2)]);

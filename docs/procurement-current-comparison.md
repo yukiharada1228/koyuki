@@ -43,3 +43,9 @@ dispatch結果・snapshot・revision・通知・session traceを比較し、実t
 全体初期取得・ページング・他session同期・ブラウザ描画・任意の外部observer隔離は対象外。
 値のcapture・観測失敗・仕様変更差分・追加基盤を含めた実装量と、独立利用者の開発負担の評価は継続する。
 テスト時間から性能や生産性の優位性は主張しない。
+
+## 後続機能との境界
+
+この比較は従来のsnapshot/subscribe/trace/dispatchを対象にする。
+[Application実行観察](application-execution.md)のsubscribeExecutionは独立driverへ実装しておらず、
+比較用の型から除外している。観察の実装量や開発体験まで等価とする根拠にはしない。

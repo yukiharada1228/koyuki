@@ -1,3 +1,4 @@
+import type { OperationReport, CheckedDetails } from './execution.js';
 import { snapshotData } from './snapshot.js';
 import { err, ok, type Result } from './result.js';
 import type { ActionReport } from './action.js';
@@ -76,6 +77,7 @@ export function withReplay<I, O, E, RE>(command: {
 /** Preserve the current projection on replay. Refreshing stale projections is host-owned. */
 export function replayOperation<S, I, O, E>(command: {
   readonly run: (input: I) => Promise<Result<Execution<O>, E>>;
+  readonly runDetailed?: (input: NoInfer<I>) => Promise<OperationReport<Execution<NoInfer<O>>, NoInfer<E>>>;
 }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, Execution<O>, E> {
   return operation(command, (state, execution) => execution.kind === 'replayed' ? state : reduce(state, execution.value));
 }
@@ -83,7 +85,7 @@ export function replayOperation<S, I, O, E>(command: {
 /** Register commands sharing one projection rule, preserving each input/error pair. */
 export function replayOperations<S, const T extends Record<string, {
   run(input: never): Promise<Result<Execution<unknown>, unknown>>;
-}>>(commands: T, reduce: (state: S, output: ReplayOutput<T[keyof T]>) => S): {
+}>>(commands: T & NoInfer<CheckedDetails<T>>, reduce: (state: S, output: ReplayOutput<T[keyof T]>) => S): {
   [K in keyof T]: Operation<S, ReplayInput<T[K]>, Execution<ReplayOutput<T[K]>>, ReplayError<T[K]>>
 } {
   // Each key retains its own command. Only the shared projection rule is widened here.

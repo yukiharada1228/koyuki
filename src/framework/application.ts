@@ -1,12 +1,15 @@
+import { executionSession, type OperationReport, type ExecutionContext, type ExecutionOptions, type CheckedDetails } from './execution.js';
 import { snapshotData } from './snapshot.js';
 import { defineProgram, next, effect } from './program.js';
 import { ok, err, type Result } from './result.js';
 export interface Operation<S, I, O, E> {
   readonly run: (input: I) => Promise<Result<O, E>>;
   readonly reduce: (state: S, output: O) => S;
+  readonly runDetailed?: (input: I) => Promise<OperationReport<O, E>>;
 }
-export function operation<S, I, O, E>(command: { readonly run: (input: I) => Promise<Result<O, E>> }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, O, E> {
-  return { run: command.run.bind(command), reduce };
+export function operation<S, I, O, E>(command: { readonly run: (input: I) => Promise<Result<O, E>>; readonly runDetailed?: (input: NoInfer<I>) => Promise<OperationReport<NoInfer<O>, NoInfer<E>>> }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, O, E> {
+  const detailed = command.runDetailed;
+  return { run: command.run.bind(command), reduce, ...(detailed ? { runDetailed: detailed.bind(command) } : {}) };
 }
 type CommandInput<T> = T extends { run(input: infer I): unknown } ? I : never;
 type CommandOutput<T> = T extends { run(input: never): Promise<Result<infer O, unknown>> } ? O : never;
@@ -14,7 +17,7 @@ type CommandError<T> = T extends { run(input: never): Promise<Result<unknown, in
 /** Apply one projection rule to a command table while preserving each command's signature. */
 export function operations<S, const T extends Record<string, {
   run(input: never): Promise<Result<unknown, unknown>>;
-}>>(commands: T, reduce: (state: S, output: CommandOutput<T[keyof T]>) => S): {
+}>>(commands: T & NoInfer<CheckedDetails<T>>, reduce: (state: S, output: CommandOutput<T[keyof T]>) => S): {
   [K in keyof T]: Operation<S, CommandInput<T[K]>, CommandOutput<T[K]>, CommandError<T[K]>>
 } {
   const entries = Object.entries(commands).map(([key, command]) => [key,
@@ -24,7 +27,7 @@ export function operations<S, const T extends Record<string, {
     [K in keyof T]: Operation<S, CommandInput<T[K]>, CommandOutput<T[K]>, CommandError<T[K]>>
   };
 }
-type AnyOperation<S> = { run(input: never): Promise<Result<unknown, unknown>>; reduce(state: S, output: never): S };
+type AnyOperation<S> = { run(input: never): Promise<Result<unknown, unknown>>; runDetailed?(input: never): Promise<OperationReport<unknown, unknown>>; reduce(state: S, output: never): S };
 type Input<T> = T extends { run(input: infer I): unknown } ? I : never;
 type ErrorOf<T> = T extends { run(input: never): Promise<Result<unknown, infer E>> } ? E : never;
 type Key<T> = Extract<keyof T, string>;
@@ -42,16 +45,16 @@ export type ApplicationState<S, T> =
   | { [K in Key<T>]: { readonly kind: 'failed'; readonly data: S; readonly operation: K; readonly error: ErrorOf<T[K]> } }[Key<T>];
 /** Standard operation lifecycle belongs to the framework, not each business application. */
 export function defineApplication<S, const T extends Record<string, AnyOperation<S>>, V>(definition: {
-  initial: () => S; operations: T; view: (state: ApplicationState<S, T>) => V;
+  initial: () => S; operations: T & NoInfer<CheckedDetails<T>>; view: (state: ApplicationState<S, T>) => V;
 }) {
   type State = ApplicationState<S, T>;
   type PublicEvent = ApplicationEvent<T>;
   type Crash = { type: '@crash'; operation: Key<T>; error: UnexpectedException };
   type Completion = { type: '@complete'; operation: Key<T>; result: Result<unknown, unknown> };
-  type InternalEvent = { type: '@execute'; operation: Key<T>; input: unknown } | Completion | Crash | { type: 'dismiss' };
+  type InternalEvent = { type: '@execute'; operation: Key<T>; input: unknown; executionId?: number } | Completion | Crash | { type: 'dismiss' };
   for (const key of Object.keys(definition.operations)) if (key === 'dismiss' || key.startsWith('@')) throw new Error('ReservedOperationName');
-  const operations = { ...definition.operations };
-  const program = defineProgram({
+  const operations = { ...definition.operations }, view = definition.view;
+  const createProgram = (contexts?: Map<number, ExecutionContext>) => defineProgram({
     init: () => next<State, InternalEvent>({ kind: 'ready', data: definition.initial() }),
     update(state: State, event: InternalEvent) {
       if (state.kind === 'ready' && event.type === '@execute') {
@@ -60,8 +63,17 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
         // Public dispatch has already selected a type-checked operation/input pair.
         const run = entry.run as (input: unknown) => Promise<Result<unknown, unknown>>;
         const command = effect(event.operation, async (input: unknown): Promise<Completion | Crash> => {
-          try { return { type: '@complete', operation: event.operation, result: await run(input) }; }
-          catch (cause) { return { type: '@crash', operation: event.operation, error: unexpectedException(cause) }; }
+          const context = event.executionId === undefined ? undefined : contexts?.get(event.executionId);
+          context?.emit({ kind: 'started' });
+          try {
+            if (context && entry.runDetailed) {
+              const detailed = entry.runDetailed as (input: unknown) => Promise<OperationReport<unknown, unknown>>;
+              const report = await detailed.call(entry, input);
+              context.steps(report);
+              return { type: '@complete', operation: event.operation, result: report.result };
+            }
+            return { type: '@complete', operation: event.operation, result: await run(input) };
+          } catch (cause) { return { type: '@crash', operation: event.operation, error: unexpectedException(cause) }; }
         }, message => message);
         return ok(next<State, InternalEvent>({ kind: 'running', operation: event.operation, data: state.data }, command(event.input)));
       }
@@ -89,15 +101,18 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
       if ((state.kind === 'failed' || state.kind === 'crashed') && event.type === 'dismiss') return ok(next<State, InternalEvent>({ kind: 'ready', data: state.data }));
       return err({ kind: 'UnexpectedMessage' as const });
     },
-    view: definition.view,
+    view,
   });
   return {
-    initial: () => program.init().state,
-    view: definition.view,
-    async start() {
-      const session = await program.start();
+    initial: () => createProgram().init().state,
+    view,
+    async start(options?: ExecutionOptions) {
+      const executions = executionSession(options), contexts = new Map<number, ExecutionContext>();
+      let nextExecution = 0;
+      const session = await createProgram(contexts).start();
       return {
         snapshot: session.snapshot, subscribe: session.subscribe, trace: session.trace,
+        subscribeExecution: executions.subscribe,
         dispatch(event: PublicEvent, expectedRevision?: number) {
           // Validate before reading routing properties or deriving the private event.
           try { event = snapshotData(event); }
@@ -105,7 +120,19 @@ export function defineApplication<S, const T extends Record<string, AnyOperation
           if (event.type === 'dismiss') return session.dispatch({ type: 'dismiss' }, expectedRevision);
           // Reject forged completion events even from untyped JS callers.
           if (!Object.hasOwn(operations, event.type)) return Promise.resolve(err({ kind: 'UnexpectedMessage' as const }));
-          return session.dispatch({ type: '@execute', operation: event.type, input: (event as { input: unknown }).input }, expectedRevision);
+          const context = executions.create(event.type), executionId = context ? ++nextExecution : undefined;
+          if (context && executionId !== undefined) contexts.set(executionId, context);
+          const pending = session.dispatch({ type: '@execute', operation: event.type, input: (event as { input: unknown }).input, executionId }, expectedRevision);
+          context?.emit({ kind: 'queued' });
+          return pending.then(result => {
+            if (context) {
+              if (!result.ok) context.emit({ kind: 'completed', status: 'rejected' });
+              else context.emit({ kind: 'completed', status: result.value.state.kind === 'crashed' ? 'defect' : result.value.state.kind === 'failed' ? 'error' : 'ok', revision: result.value.revision });
+            }
+            return result;
+          }, cause => { context?.emit({ kind: 'completed', status: 'defect' }); throw cause; }).finally(() => {
+            if (executionId !== undefined) contexts.delete(executionId);
+          });
         },
       };
     },

@@ -104,3 +104,9 @@ command自体をcloneやfreezeする契約ではない。
 再送対応操作を検査する。成功時の投影、業務失敗時に投影しないこと、
 replayed時に過去の成功値で投影を進めないことを保つ。
 この修正は外部オブジェクトの純粋性・永続化・再試行方針を保証するものではない。
+
+## 実行の観察
+
+開発版ではstartのobserveExecutionオプションまたはsession.subscribeExecutionで、
+同じexecutionIdの待機・開始・詳細段階・完了を観察できる。
+[Application実行観察](application-execution.md)に、事後の段階報告と時間・機密情報・購読の契約を記載した。

@@ -8,9 +8,13 @@ import type { Committed } from './application.js';
 import type { Actor, Entity, Policy, RuleError } from './domain.js';
 import type { StorageError } from './repository.js';
 import type { ReplayError } from './replay-identity.js';
-type Application = ReturnType<typeof procurementReplayApplication>;
-type CurrentApplication = ReturnType<typeof procurementCurrentApplication>;
-type Session = Awaited<ReturnType<CurrentApplication['start']>>;
+// This independent comparison covers the original lifecycle API, not the new
+// execution observer. Do not claim observation parity through a type assertion.
+type CoreApplication = ReturnType<typeof procurementReplayApplication>;
+type CoreCurrentApplication = ReturnType<typeof procurementCurrentApplication>;
+type Session = Omit<Awaited<ReturnType<CoreCurrentApplication['start']>>, 'subscribeExecution'>;
+type Application = Omit<CoreApplication, 'start'> & { start(): Promise<Omit<Awaited<ReturnType<CoreApplication['start']>>, 'subscribeExecution'>> };
+type CurrentApplication = Omit<CoreCurrentApplication, 'start'> & { start(): Promise<Session> };
 type Snapshot = ReturnType<Session['snapshot']>;
 type State = Snapshot['state'];
 type Event = Parameters<Session['dispatch']>[0];

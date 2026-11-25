@@ -8,7 +8,7 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 | Issue | 現在使える根拠 | 満たしたと扱えない条件 |
 | --- | --- | --- |
 | [#1 共通transaction](https://github.com/yukiharada1228/koyuki/issues/1) | `src/expenses/sqlite.ts`のsaveは状態と履歴を同一transactionで保存する。タグ・調達にも個別adapterがある | [同期共通境界](transactions.md)をタグ・経費・経費receiptへ接続済み。callback型の[非同期契約](transactions.md)もPrismaへ接続済み。Target全体の相関観察、他driverの追加検証は未完了 |
-| [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | Workflow / Processのtrace、[詳細loader](detailed-load.md)、[選択値の観測](process-observation.md)、Applicationの購読がある | dispatchから内部完了まで共通の実行ID・親子関係・所要時間で相関するイベント契約。選択captureがあることだけでは全条件を満たさない |
+| [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)で待機・開始・実行段階・投影後の完了を関連付ける | 段階の報告は事後。live timing・親子span・裸のProgram全体の共通APIは未提供 |
 | [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | `src/framework/workflow.ts`のstepsは名前の列を保持する | 分岐・IO・保存境界を保持する静的構造、JSON/Mermaid出力、実行経路との対応。名前の列から完全な構造や業務状態遷移を復元できるとは扱わない |
 | [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)は応答喪失・同時再送・要求不一致等を扱う | `src/framework/replay.ts`のwithReplayはcommandを再試行しない。試行上限・待機・中断・保持期限を備える共通retry方針は別途必要 |
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続。監査障害のrollbackと再送非重複を検査 | 他DB adapter、保持・削除の実運用、改ざん耐性、拒否ログは未実装・未検証。診断traceを監査とは呼ばない |
@@ -42,3 +42,8 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 
 #5は[SQLiteの成功監査](audit.md)を追加した。監査表があるDBへの設定なしの更新も拒否する。
 保持・削除・改ざん耐性については保証範囲を明記し、運用検証まで完了したとは扱わない。
+
+## Application観察の追加
+
+#2へ[Applicationの実行観察](application-execution.md)を追加した。詳細commandを二重に実行せず、
+段階名と成否を同じexecutionIdへ接続する。各段階のlive timingや親子spanは未充足として残す。

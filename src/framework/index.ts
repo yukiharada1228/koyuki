@@ -28,3 +28,4 @@ export { inTransaction, TransactionHostFailure } from './transaction.js';
 export type { TransactionHost } from './transaction.js';
 export { auditRecord } from './audit.js';
 export type { AuditIdentity, AuditChange, AuditRecord } from './audit.js';
+export type { ExecutionEvent, ExecutionObserver, ExecutionOptions, OperationReport, OperationCommands } from './execution.js';

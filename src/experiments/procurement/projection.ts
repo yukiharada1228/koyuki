@@ -1,6 +1,6 @@
 import { procurementReplay, type ReplayRepository } from './replay.js';
 import type { ReplayError } from './replay-identity.js';
-import { defineApplication, operations, replayOperations, type Execution, type ReplayInputError, type Result } from '../../framework/index.js';
+import { defineApplication, operations, replayOperations, type OperationCommands, type Execution, type ReplayInputError, type Result } from '../../framework/index.js';
 import { procurementChanges, type Committed } from './application.js';
 import type { Entity, Actor, Policy, RuleError } from './domain.js';
 import type { ProcurementRepository, StorageError } from './repository.js';
@@ -17,7 +17,7 @@ export function applyCommitted(before: Projection, output: Committed): Projectio
 }
 type Command = { readonly run: (input: never) => Promise<Result<Committed, RuleError | StorageError>> };
 /** Example-local namespacing avoids collisions between request and invoice approval. */
-function namespaced<const P extends string, const T extends Record<string, Command>>(prefix: P, commands: T) {
+function namespaced<const P extends string, const T extends Record<string, Command>>(prefix: P, commands: OperationCommands<T>) {
   const projected = operations(commands, applyCommitted);
   return Object.fromEntries(Object.entries(projected).map(([key, value]) => [`${prefix}.${key}`, value])) as {
     [K in keyof typeof projected as `${P}.${Extract<K, string>}`]: typeof projected[K]
@@ -40,7 +40,7 @@ export function procurementApplication(repository: ProcurementRepository, actor:
 }
 
 type ReplayCommand = { readonly run: (input: never) => Promise<Result<Execution<Committed>, RuleError | StorageError | ReplayError | ReplayInputError>> };
-function replayNamespaced<const P extends string, const T extends Record<string, ReplayCommand>>(prefix: P, commands: T) {
+function replayNamespaced<const P extends string, const T extends Record<string, ReplayCommand>>(prefix: P, commands: OperationCommands<T>) {
   const projected = replayOperations(commands, applyCommitted);
   return Object.fromEntries(Object.entries(projected).map(([key, value]) => [`${prefix}.${key}`, value])) as {
     [K in keyof typeof projected as `${P}.${Extract<K, string>}`]: typeof projected[K]
