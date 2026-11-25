@@ -9,17 +9,23 @@ function npm(args, cwd, capture = false) {
   if (result.error || result.status !== 0) throw new Error(result.stderr || `npm ${args.join(' ')} failed`);
   return result.stdout;
 }
-npm(['run', 'build'], root);
-const tarball = JSON.parse(npm(['pack', '--ignore-scripts', '--json'], root, true))[0].filename;
+const registry = process.argv.includes('--registry');
+const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+let dependency = version;
+if (!registry) {
+  npm(['run', 'build'], root);
+  const tarball = JSON.parse(npm(['pack', '--ignore-scripts', '--json'], root, true))[0].filename;
+  dependency = `file:${join(root, tarball)}`;
+}
 const dir = mkdtempSync(join(tmpdir(), 'koyuki-leave-http-consumer-'));
 try {
   const source = join(root, 'examples/leave-http');
   for (const file of readdirSync(source).filter(file => file.endsWith('.ts') || ['package.json', 'tsconfig.json'].includes(file))) copyFileSync(join(source, file), join(dir, file));
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
-  pkg.dependencies.koyuki = `file:${join(root, tarball)}`;
+  pkg.dependencies.koyuki = dependency;
   writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg));
-  npm(['install', '--ignore-scripts', '--no-audit', '--no-fund'], dir);
+  npm(['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], dir);
   npm(['run', 'check'], dir);
   npm(['test'], dir);
-  console.log('Verified leave HTTP example outside the repository using only the packed public Koyuki package.');
+  console.log(`Verified leave HTTP example outside the repository using ${registry ? 'npm registry' : 'packed package'} koyuki@${version}.`);
 } finally { rmSync(dir, { recursive: true, force: true }); }

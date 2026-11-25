@@ -121,7 +121,7 @@ npm run test:use-case:package
 - 作業ツリー外のpack済みパッケージで、休暇の既存14＋詳細記録2＋旧新比較1の17テスト、型チェック、デモ。
 - 別途6件の意図的な誤定義をコンパイルし、旧新それぞれ期待位置で拒否されることを確認。
 
-## 複数操作のApplication登録（未公開の開発版）
+## 複数操作のApplication登録（alpha.5）
 
 同じ表示状態の更新規則を使う再送対応コマンドは、操作名を再列挙せず登録できる。
 
@@ -157,4 +157,4 @@ committedの成功値だけを共通reduceへ渡し、replayedでは現在の状
 
 
 共通adapterを各操作へ展開する部分は、さらに
-[defineUseCaseGroup](use-case-group.md)で一度の宣言にまとめられる（未公開の開発版）。
+[defineUseCaseGroup](use-case-group.md)で一度の宣言にまとめられる（alpha.5）。

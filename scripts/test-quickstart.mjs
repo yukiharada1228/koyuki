@@ -11,7 +11,7 @@ function npm(args, cwd, expectedFailure = false) {
   return output;
 }
 const registry = process.argv.includes('--registry');
-const version = registry ? JSON.parse(readFileSync(join(root, 'examples/quickstart/package.json'), 'utf8')).dependencies.koyuki : JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
+const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 let dependency = `koyuki@${version}`;
 if (!registry) {
   npm(['run', 'build'], root);
@@ -25,7 +25,7 @@ try {
   const pkg = JSON.parse(readFileSync(join(example, 'package.json'), 'utf8'));
   pkg.dependencies.koyuki = registry ? version : dependency;
   writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg));
-  npm(['install', '--ignore-scripts', '--no-audit', '--no-fund'], dir);
+  npm(['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], dir);
   npm(['run', 'check'], dir);
   console.log(npm(['start'], dir).trim());
   console.log(npm(['run', 'start:replay'], dir).trim());

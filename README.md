@@ -139,7 +139,7 @@ alpha.3では[再送を含む実行記録](docs/replay-trace.md)を追加して�
 alpha.3では[defineUseCaseによる接続の集約](docs/use-case.md)も利用できます。既存APIは引き続き使用できます。
 
 
-## 開発版：複数操作の接続を一度宣言する
+## alpha.5：複数操作の接続を一度宣言する
 
 `defineUseCaseGroup`で共通の保存・要求情報・再送境界を定義し、
 操作ごとのloadと純粋なtransitionを`.on`で接続できる。
@@ -148,10 +148,10 @@ alpha.3では[defineUseCaseによる接続の集約](docs/use-case.md)も利用�
 予期しない操作例外は業務失敗と区別した`crashed`状態で扱い、自動再試行しない。
 
 [全体例と責任範囲](docs/use-case-group.md)、[講演との対応と達成条件](docs/framework-goal.md)。
-これらの追加APIは未公開の開発版。既存APIは引き続き利用できる。
+既存APIは引き続き利用できる。Applicationの変更は[alpha.5移行ガイド](docs/migration-alpha.5.md)を参照。
 
 
-[休暇申請のHTTP API](examples/leave-http/README.md)では、開発版の新APIをHonoへ接続しています。
+[休暇申請のHTTP API](examples/leave-http/README.md)では、alpha.5の新APIをHonoへ接続しています。
 認証→入力検証→業務操作→SQLite保存・再送→HTTP応答を、実TCPとサーバー再起動まで検証します。
 `npm run test:leave:http:package`で、配布パッケージだけを使う独立consumerとして再現できます。
 [開発体験の評価](examples/leave-http/FINDINGS.md)も記録しています。

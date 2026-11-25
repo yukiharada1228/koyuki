@@ -50,7 +50,8 @@
     "check:leave:http": "npm --prefix examples/leave-http run check",
     "test:leave:http": "npm --prefix examples/leave-http test",
     "demo:leave:http": "npm --prefix examples/leave-http start",
-    "test:leave:http:package": "node scripts/test-leave-http-package.mjs"
+    "test:leave:http:package": "node scripts/test-leave-http-package.mjs",
+    "test:leave:http:registry": "node scripts/test-leave-http-package.mjs --registry"
   },
   "devDependencies": {
     "@types/node": "latest",
@@ -64,7 +65,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "description": "Declarative, functional business workflows for TypeScript",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

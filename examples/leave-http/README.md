@@ -1,6 +1,6 @@
 # 休暇申請のHTTP API
 
-未公開の開発版Koyukiを、公開入口`koyuki`から使うHono＋SQLiteサンプル。
+Koyuki alpha.5を、公開入口`koyuki`から使うHono＋SQLiteサンプル。
 HonoとNodeサーバーはアプリケーションの依存で、Koyukiコアの実行依存は追加しない。
 Node.js 22.13以上（開発・検証環境は26.12.0）が必要。
 

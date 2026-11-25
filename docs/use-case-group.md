@@ -1,6 +1,6 @@
 # 業務操作群の共通境界
 
-未公開の開発版API。`defineUseCaseGroup`で共通の保存・要求情報・再送方針を定義し、
+alpha.5で追加するAPI。`defineUseCaseGroup`で共通の保存・要求情報・再送方針を定義し、
 `.on`で操作ごとの取得と純粋な遷移を接続する。
 `defineUseCase`やTargetの代替を強制するものではない。
 
@@ -129,7 +129,7 @@ consumerは内部importを使わず、packしたパッケージをインスト�
 
 ## Applicationの例外と表示
 
-開発版では通常の`ready`→`running`→`ready / failed`に加え、
+alpha.5では通常の`ready`→`running`→`ready / failed`に加え、
 予期しない操作例外や成功時reduceの失敗を`crashed`として管理する。
 `crashed`のerrorは`{ kind: 'UnexpectedException', message: string }`。
 元の例外はcloneできるとは限らないため、状態へそのまま格納しない。
