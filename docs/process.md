@@ -49,3 +49,12 @@ effectのobject形式はActionReportを返すrunDetailedを1回呼び、内部tr
 通常の関数形式は従来通り、その関数を1回呼び出した成否のみを記録する。
 runDetailedを持つcallableをそのまま関数として渡しても、自動で詳細形式へ切り替えない。
 ReplayReportは別の形式なのでobject形式には渡せない。replayの値で後続を進める意味は明示的に設計する。
+
+## 接続先の入力型
+
+effectの詳細操作とcommitは、前段が返し得るすべての成功値を受け取れる必要がある。
+たとえば前段がstringを返す場合、`'approved'`だけを受け取る操作は接続できない。
+状態Unionの一種類だけを受け取る操作には、先に実際の検証・型の絞り込みを行う。
+単なるメソッド型の双変性でこの制約を迂回できないよう、接続契約は関数プロパティとして検査する。
+この修正はdefineActionのload→mutation、withReplayのrun→runDetailedにも適用する。
+従来コンパイルできた狭すぎる入力型は、開発版では型エラーになる。

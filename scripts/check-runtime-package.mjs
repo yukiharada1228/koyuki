@@ -47,7 +47,8 @@ const operation = defineUseCase({ operation: 'web', load: async (input: number) 
 const result = await operation.run(2);
 if (result.ok) { const n: number = result.value; console.log(n); }
 `);
-  writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] }, include: ['consumer.ts', 'node_modules/koyuki/dist/**/*.d.ts'] }));
+  if (!registry) writeFileSync(join(temp, 'connection-types.ts'), readFileSync(join(root, 'src/command-connection-types.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] }, include: ['consumer.ts', ...(!registry ? ['connection-types.ts'] : []), 'node_modules/koyuki/dist/**/*.d.ts'] }));
   run(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--project', join(temp, 'tsconfig.json')], temp);
   console.log(`Verified ${manifest.name}@${manifest.version}: no runtime dependencies, ${files.length} local-only JS modules and all public declarations, consumer types without @types/node.`);
 } finally { rmSync(temp, { recursive: true, force: true }); }

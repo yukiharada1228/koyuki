@@ -35,8 +35,8 @@ export interface ReplayReport<O, E, RE> {
  * run preserves the original run path. runDetailed uses command detail when supplied.
  */
 export function withReplay<I, O, E, RE>(command: {
-  run(input: I): Promise<Result<Execution<O>, E>>;
-  runDetailed?(input: NoInfer<I>): Promise<ActionReport<Execution<NoInfer<O>>, NoInfer<E>>>;
+  readonly run: (input: I) => Promise<Result<Execution<O>, E>>;
+  readonly runDetailed?: (input: NoInfer<I>) => Promise<ActionReport<Execution<NoInfer<O>>, NoInfer<E>>>;
 }, boundary: ReplayBoundary<NoInfer<I>, NoInfer<O>, NoInfer<E>, RE>) {
   const runCommand = command.run.bind(command);
   const detailedCommand = command.runDetailed?.bind(command);

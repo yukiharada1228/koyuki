@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 接続先メソッドの入力型が狭すぎても許容される型の穴を修正。Process.effect/commit・defineAction・withReplayの詳細操作を関数プロパティ契約で検査し、未検証のstring/状態Unionを狭い入力へ渡す接続を拒否。defineActionはloaderを先に推論し、既存の型引数指定と入出力・エラー推論を維持。
+
 - Process.effectにActionReportを返す操作のobject形式を追加。途中commandの詳細traceを保持し、内部失敗でも後続を停止。関数形式の挙動・例外伝播を維持し、途中planや値の自動記録は追加しない。複数集約の実例・独立配布consumer・Nodeなし実行で検証。
 
 - 非公開businessの複数集約接続例を追加。在庫確保と出荷登録の異なるsave/成功型をProcessで接続し、失敗停止・部分成功・adapterによる再実行時の重複防止・内容変更拒否を検証。永続replayや全体transactionとは区別し、内部traceの未展開も記録。

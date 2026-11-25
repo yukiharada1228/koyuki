@@ -20,7 +20,7 @@ class Process<I, O, E> {
     });
   }
   /** An explicit IO boundary; the adapter returns the next workflow's complete input. */
-  effect<N, F>(name: string, perform: ((value: O) => Promise<Result<N, F>>) | { runDetailed(value: O): Promise<ActionReport<N, F>> }): Process<I, N, E | F> {
+  effect<N, F>(name: string, perform: ((value: O) => Promise<Result<N, F>>) | { readonly runDetailed: (value: O) => Promise<ActionReport<N, F>> }): Process<I, N, E | F> {
     return new Process<I, N, E | F>(async input => {
       const prior = await this.evaluate(input);
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace };
@@ -33,7 +33,7 @@ class Process<I, O, E> {
     });
   }
   /** The bound mutation owns its pure final decision and single save. */
-  commit<S, F>(mutation: { runDetailed(input: NoInfer<O>): Promise<ActionReport<S, F>> }) {
+  commit<S, F>(mutation: { readonly runDetailed: (input: NoInfer<O>) => Promise<ActionReport<S, F>> }) {
     const evaluate = this.evaluate;
     async function runDetailed(input: I): Promise<ActionReport<S, E | F>> {
       const prior = await evaluate(input);
