@@ -19,7 +19,7 @@ const sourceStatus = git(['status', '--porcelain', '--', ...sourcePaths]);
 const original = await readFile(resolve(root, 'src/framework/model.ts'), 'utf8');
 const requirement = 'require?: T & ConnectedStages<StageOutput<NoInfer<A>>, T>;';
 if (!original.includes(requirement)) throw new Error('Declaration changed: re-evaluate candidate patches');
-const probe = `
+const inlineProbe = `
 import { defineTransition, withInput, transition, ok, err, type Result } from './framework/index.js';
 const quote = (amount: number): Result<number, 'Declined'> => amount > 0 ? ok(amount * 2) : err('Declined');
 const flow = transition(defineTransition({
@@ -32,6 +32,16 @@ const exactInput: Equal<Parameters<typeof flow.run>[0], number> = true;
 const exactResult: Equal<ReturnType<typeof flow.run>, Result<number, 'Declined'>> = true;
 void exactInput; void exactResult;
 `;
+const probes = {
+  inline: inlineProbe,
+  'readonly-tuple': inlineProbe.replace('require: [withInput(quote)],', 'require: [withInput(quote)] as const,'),
+  'named-step': inlineProbe.replace('withInput, transition,', 'withInput, step, transition,')
+    .replace('require: [withInput(quote)],', "require: [step('quote', withInput(quote))],"),
+  'local-factory': inlineProbe.replace('require: [withInput(quote)],', 'require: [(() => withInput(quote))()],'),
+  'generic-identity-named-step': inlineProbe.replace('withInput, transition,', 'withInput, step, transition,')
+    .replace(/^const quote = .*$/m, "const quote = <T>(value: T): Result<T, 'Declined'> => ok(value);")
+    .replace('require: [withInput(quote)],', "require: [step('quote', withInput(quote))],"),
+};
 // Test whether removing the contextual call signature from the raw tuple helps
 // nested higher-order calls, without changing withInput's generic function shape.
 function rawTupleCandidate(constraint, spread = false, checked = false) {
@@ -91,6 +101,8 @@ function restConnectionCandidate(constraint) {
 }
 const candidates = [
   ['current', original],
+  ['whole-callable-no-infer-return', withInputReturn('NoInfer<Rule<I, Readonly<{ input: I; value: O }>, E>>')],
+  ['tuple-rest-callable-return', withInputReturn('(...args: [I]) => Result<Readonly<{ input: I; value: O }>, E>')],
   ['deferred-with-input-return', deferredWithInputReturn()],
   ['raw-object-tuple-constraint', tupleConstraintCandidate('object')],
   ['raw-unknown-tuple-constraint', tupleConstraintCandidate('unknown')],
@@ -175,16 +187,19 @@ ${signature};
   return original.replace(signature, overload + signature);
 }
 const args = process.argv.slice(2);
-let selected = candidates.map(([name]) => name), compiler = resolve(root, 'node_modules/.bin/tsc');
+let selected = candidates.map(([name]) => name), compiler = resolve(root, 'node_modules/.bin/tsc'), probeVariant = 'inline';
 const options = new Set();
 for (let index = 0; index < args.length; index += 2) {
   const option = args[index], value = args[index + 1];
-  if (!['--only', '--compiler'].includes(option) || !value || options.has(option)) throw new Error('Use --only comma,separated,candidate,names and/or --compiler /path/to/tsc');
+  if (!['--only', '--compiler', '--probe'].includes(option) || !value || options.has(option)) throw new Error('Use --only comma,separated,candidate,names, --compiler /path/to/tsc, and/or --probe with a documented variant');
   options.add(option);
   if (option === '--only') selected = value.split(',');
-  else compiler = resolve(value);
+  else if (option === '--compiler') compiler = resolve(value);
+  else probeVariant = value;
 }
 if (!selected.length || selected.some(name => !candidates.some(([candidate]) => candidate === name))) throw new Error('Unknown candidate name');
+if (!Object.hasOwn(probes, probeVariant)) throw new Error('Unknown probe variant');
+const probe = probes[probeVariant];
 const temporary = await mkdtemp(join(tmpdir(), 'koyuki-inference-'));
 try {
   await cp(resolve(root, 'src'), join(temporary, 'src'), { recursive: true });
@@ -235,7 +250,7 @@ try {
   const minimal = { fixtureSha256: createHash('sha256').update(minimalSource).digest('hex'), baselineAccepted: true, ...minimalCompile() };
   if (git(['rev-parse', 'HEAD']) !== sourceGitCommit || git(['status', '--porcelain', '--', ...sourcePaths]) !== sourceStatus || hash(await readFile(resolve(root, 'src/framework/model.ts'))) !== hash(original)) throw Error('Investigation source changed during execution');
   console.log(JSON.stringify({ collectedAt: new Date().toISOString(), sourceGitCommit, sourceDirty: sourceStatus.length > 0,
-    collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))), probeSha256: hash(probe),
+    collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))), probeSha256: hash(probe), probeVariant,
     compiler: compileVersion(compiler), modelSourceSha256: hash(original), existingContractsPass: true, minimal, results }, null, 2));
 } finally {
   await rm(temporary, { recursive: true, force: true });
