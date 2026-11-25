@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
-import { exploreModel } from './framework/testing.js';
+import { exploreModel, type ModelStep } from './framework/testing.js';
 import { transition } from './framework/index.js';
 import { submitted, approved, rejected, returned, edited } from './expenses/application.js';
 import { restoreExpense, validExpenseChange, type ExpenseState, type Actor } from './expenses/domain.js';
@@ -75,35 +75,45 @@ function actual(state: ExpenseState, event: Event) {
   }
 }
 
+const initial: Spec[] = amounts.flatMap(amount => [false, true].map(receipt => ({ id: 'expense', owner: 'owner', amount, receipt, version: 1, kind: 'draft' as const })));
+const modelKey = (state: Spec) => JSON.stringify(state, (_key, value: unknown) => value && typeof value === 'object'
+  ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
+function modelStep(state: Spec, event: Event): ModelStep<Spec, Expected> {
+  const output = reference(state, event);
+  return { state: 'next' in output ? output.next : state, output };
+}
+function matchesImplementation(before: Spec, event: Event, expected: ModelStep<Spec, Expected>): boolean {
+  const restored = restoreExpense(before);
+  if (!restored.ok) return false;
+  const previous = structuredClone(restored.value), actualResult = actual(restored.value, event);
+  if (!isDeepStrictEqual(previous, restored.value)) return false;
+  if ('error' in expected.output) return !actualResult.ok && actualResult.error.kind === expected.output.error && isDeepStrictEqual(expected.state, before);
+  if (!actualResult.ok || !isDeepStrictEqual(actualResult.value.next, expected.output.next)) return false;
+  return validExpenseChange(restored.value, actualResult.value.next, before.version)
+    && isDeepStrictEqual(restoreExpense(actualResult.value.next), { ok: true, value: actualResult.value.next });
+}
+function noSelfApproval(state: Spec): boolean {
+  if (state.manager === state.owner) return false;
+  const approval = state.approval;
+  if (!approval || approval.kind === 'automatic') return true;
+  return approval.manager !== state.owner && (approval.kind !== 'finance' || approval.finance !== state.owner);
+}
+
 test('bounded breadth-first expense exploration agrees with an independent specification', t => {
   const depthLimit = 7;
-  const initial: Spec[] = amounts.flatMap(amount => [false, true].map(receipt => ({ id: 'expense', owner: 'owner', amount, receipt, version: 1, kind: 'draft' as const })));
   const reached = new Set<string>();
   let failures = 0, repeatedCorrection = false, resubmission = false;
   const result = exploreModel({
     initial,
-    key: state => JSON.stringify(state, (_key, value: unknown) => value && typeof value === 'object'
-      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value),
+    key: modelKey,
     events: () => events,
-    step: (state, event) => {
-      const output = reference(state, event);
-      return { state: 'next' in output ? output.next : state, output };
-    },
+    step: modelStep,
     check: (before, event, expected) => {
       reached.add(before.kind); reached.add(expected.state.kind);
       repeatedCorrection ||= (expected.state.draftVersion ?? 0) >= 7;
       resubmission ||= expected.state.kind === 'manager' && expected.state.draftVersion === 4;
-      const restored = restoreExpense(before);
-      if (!restored.ok) return false;
-      const previous = structuredClone(restored.value), actualResult = actual(restored.value, event);
-      if (!isDeepStrictEqual(previous, restored.value)) return false;
-      if ('error' in expected.output) {
-        failures++;
-        return !actualResult.ok && actualResult.error.kind === expected.output.error && isDeepStrictEqual(expected.state, before);
-      }
-      if (!actualResult.ok || !isDeepStrictEqual(actualResult.value.next, expected.output.next)) return false;
-      return validExpenseChange(restored.value, actualResult.value.next, before.version)
-        && isDeepStrictEqual(restoreExpense(actualResult.value.next), { ok: true, value: actualResult.value.next });
+      if ('error' in expected.output) failures++;
+      return matchesImplementation(before, event, expected);
     },
     limits: { depth: depthLimit, states: 1000, transitions: 100000 },
   });
@@ -114,4 +124,52 @@ test('bounded breadth-first expense exploration agrees with an independent speci
   assert(result.states >= 100 && result.transitions > 10000 && failures > 10000);
   assert(repeatedCorrection && resubmission);
   t.diagnostic(JSON.stringify({ ...result, rejectedEdges: failures, eventsPerState: events.length }));
+});
+
+test('the finite approval episode exhausts its graph without self approval or terminal reapproval', t => {
+  // This scenario deliberately excludes edit/resubmission, which would make
+  // version growth unbounded. Return is terminal only WITHIN this event set.
+  const episodeEvents = events.filter(event => event.type !== 'edit');
+  let terminalChecks = 0, selfChecks = 0;
+  const result = exploreModel({
+    initial, key: modelKey, events: () => episodeEvents, step: modelStep,
+    invariant: noSelfApproval,
+    check: (before, event, expected) => {
+      if (event.type === 'approve' && ['approved', 'rejected', 'returned'].includes(before.kind)) {
+        terminalChecks++;
+        if (!('error' in expected.output) || expected.output.error !== 'InvalidState' || !isDeepStrictEqual(before, expected.state)) return false;
+      }
+      if (event.type === 'approve' && (before.kind === 'manager' || before.kind === 'finance') && event.actor.id === before.owner) {
+        selfChecks++;
+        if (!('error' in expected.output) || expected.output.error !== 'SelfApproval' || !isDeepStrictEqual(before, expected.state)) return false;
+      }
+      return matchesImplementation(before, event, expected);
+    },
+    limits: { depth: 4, states: 1000, transitions: 100000 },
+  });
+  assert.equal(result.kind, 'passed', JSON.stringify(result));
+  assert(terminalChecks > 0 && selfChecks > 0);
+  t.diagnostic(JSON.stringify({ ...result, terminalChecks, selfChecks, eventsPerState: episodeEvents.length }));
+});
+
+test('the no-self-approval invariant exposes a deliberately broken reference transition', () => {
+  const result = exploreModel({
+    initial: initial.filter(state => state.amount === 100001 && state.receipt),
+    key: modelKey, events: () => events.filter(event => event.type === 'submit' || event.type === 'approve'),
+    step: (state, event): ModelStep<Spec, Expected> => {
+      if (state.kind === 'manager' && event.type === 'approve' && event.actor.id === state.owner) {
+        const next: Spec = { ...state, kind: 'approved', version: state.version + 1, approval: { kind: 'manager', manager: state.owner } };
+        return { state: next, output: { next } };
+      }
+      return modelStep(state, event);
+    },
+    invariant: noSelfApproval,
+    // Model-only mutation probe: the independent invariant must catch the
+    // corrupt model even with no implementation comparison to rescue it.
+    check: () => true,
+    limits: { depth: 4, states: 1000, transitions: 100000 },
+  });
+  assert(result.kind === 'counterexample' && result.reason === 'invariant', JSON.stringify(result));
+  assert.deepEqual(result.witness.events.map(event => event.type), ['submit', 'approve']);
+  assert.equal(result.witness.events[1]!.actor.id, result.witness.initial.owner);
 });

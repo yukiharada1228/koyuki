@@ -42,6 +42,12 @@ try {
   writeFileSync(join(consumer, 'detailed-load.test.ts'), readFileSync(join(root, 'src/detailed-load.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'live-execution.test.ts'), readFileSync(join(root, 'src/live-execution.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'finite-model.test.ts'), readFileSync(join(root, 'src/finite-model.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));
+  writeFileSync(join(consumer, 'expense-state-exploration.test.ts'), readFileSync(join(root, 'src/expense-state-exploration.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'").replace("'./framework/index.js'", "'koyuki'"));
+  mkdirSync(join(consumer, 'expenses'));
+  mkdirSync(join(consumer, 'examples'), { recursive: true });
+  for (const file of ['expenses/domain.ts', 'expenses/application.ts', 'expenses/repository.ts', 'examples/expense.ts']) {
+    writeFileSync(join(consumer, file), readFileSync(join(root, 'src', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'"));
+  }
   writeFileSync(join(consumer, 'declaration-ownership.test.ts'), readFileSync(join(root, 'src/declaration-ownership.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'flow-structure.test.ts'), readFileSync(join(root, 'src/flow-structure.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'application-input-contract.test.ts'), readFileSync(join(root, 'src/application-input-contract.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
