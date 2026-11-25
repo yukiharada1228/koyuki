@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 本人公開の講演PDF3件を取得し、URL・hash・ページ数・確認済みページを記録。1本目の公開版には動画の複雑な実製品コード画像がないことを確認。保存資料の同一性検査を追加し、全198ページの意味照合や全編視聴の完了とは区別。
+
 - business.runDetailedの任意captureをload/Rule/save/receipt照会へ接続。実行しない過去段階は記録せず、不明commit後の照会も観測。取得・clone失敗は秘密情報を含まないobservationErrorsへ分離し、保存済み業務結果を維持。通常report・型・操作ID・再送契約を維持。
 
 - Workflow.inspectの任意captureで、選択した段階入力・Resultをcloneして観測可能に。Ruleの再実行なしで失敗停止・選択branch・transitionを記録。通常実行のreportを維持し、値の永続保存やbusiness全体への観測設定は未提供。

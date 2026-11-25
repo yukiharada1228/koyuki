@@ -1,0 +1,63 @@
+[
+  {
+    "videoId": "izV1h6o3hgQ",
+    "title": "TypeScript による GraphQL バックエンド開発",
+    "pageUrl": "https://speakerdeck.com/naoya/typescript-niyoru-graphql-batukuendokai-fa-75b3dab7-90a8-4169-a4dc-d1e7410b9dbd",
+    "downloadUrl": "https://files.speakerdeck.com/presentations/91e940838e7845bf8df5ca43633a1edc/20221014-tech-play.pdf",
+    "source": {
+      "file": "decks/iz.pdf",
+      "sha256": "91608b60ef0c12b0c44faf4e793819854a64d2a447930545a898dbb70efc09e8",
+      "pageCount": 92
+    },
+    "review": {
+      "allPagesReviewed": false,
+      "textExtracted": true,
+      "visuallyReviewedPages": [
+        76,
+        91
+      ],
+      "basis": "Original author PDF downloaded via its public download link; selected pages rendered and inspected.",
+      "remaining": "Page-by-page semantic and visual audit, plus continuous audio/video review, is not complete."
+    }
+  },
+  {
+    "videoId": "qBf910_YiqA",
+    "title": "TypeScript 関数型スタイルでバックエンド開発のリアル",
+    "pageUrl": "https://speakerdeck.com/naoya/typescript-guan-shu-xing-sutairudebatukuendokai-fa-noriaru",
+    "downloadUrl": "https://files.speakerdeck.com/presentations/cb2e31ccf3c44779893bfd4eb0f86dca/20240511-tskaigi.pdf",
+    "source": {
+      "file": "decks/qbf.pdf",
+      "sha256": "fd4efc3c021bab4cc9863f65bc68ba2094b510b2ae975411dbc37a3791a58a03",
+      "pageCount": 32
+    },
+    "review": {
+      "allPagesReviewed": false,
+      "textExtracted": true,
+      "visuallyReviewedPages": [
+        28
+      ],
+      "basis": "Original author PDF downloaded via its public download link; selected pages rendered and inspected.",
+      "remaining": "Page-by-page semantic and visual audit, plus continuous audio/video review, is not complete."
+    }
+  },
+  {
+    "videoId": "w0oLNoGsGLc",
+    "title": "関数型プログラミングと型システムのメンタルモデル",
+    "pageUrl": "https://speakerdeck.com/naoya/guan-shu-xing-puroguramingutoxing-sisutemunomentarumoderu",
+    "downloadUrl": "https://files.speakerdeck.com/presentations/ed40eb21f5be431395028ee3777ca727/20231026-qiita-conference.pdf",
+    "source": {
+      "file": "decks/w0o.pdf",
+      "sha256": "aea0edcf201795b96fe2a3bb1094cc0c8058cf04f406f47b9c0b38e299bd1017",
+      "pageCount": 74
+    },
+    "review": {
+      "allPagesReviewed": false,
+      "textExtracted": true,
+      "visuallyReviewedPages": [
+        66
+      ],
+      "basis": "Original author PDF downloaded via its public download link; selected pages rendered and inspected.",
+      "remaining": "Page-by-page semantic and visual audit, plus continuous audio/video review, is not complete."
+    }
+  }
+]
