@@ -22,6 +22,9 @@ SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用�
 大規模なチーム開発での効果はまだ未実証です。
 [比較対象・現在の証拠・次の評価仕様](docs/team-development-study.md)を公開しています。
 
+[通常の関数で業務操作を書くAPI試作](docs/business-api-study.md)も検証中です。
+この試作は公開API・npm配布には含めていません。
+
 ## 最初の状態遷移
 
 ```ts
