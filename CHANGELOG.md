@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- processに直接run / runDetailedを追加。純粋な最終遷移が不要なI/O列をそのまま実行し、登録メールの完了記録から空のvalidate/evolveを除去。既存commitは維持し、失敗停止・型・並行実行・例外・Nodeなし実行を検証。
+
 - 未公開APIの仕様変更実験を追加。承認の新たな証拠型・制限ルールを通常TS/helper/既存遷移/businessで比較し、4方式の接続漏れとHTTPエラー対応漏れを型検査で検出。新仕様5テストで境界・失敗停止・Application・過去receiptの契約を検証し、実際の変更diffを出力。
 
 - business試作を休暇3操作へ適用。一時的なprivate候補tarballを独立consumerへインストールし、既存HTTP/GraphQL・Application・旧宣言比較・SQLite移行の31テスト、6件の不正定義拒否、Node型なしでの型推論を検証。通常の配布exportは変更なし。

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise } from './dist/index.js';
+import { defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   let receipt = null, writes = 0;
@@ -39,6 +39,8 @@ export const result = (async () => {
   const syncFailure = fromThrowable(() => { throw 'offline'; }, () => 'Unavailable')();
   const asyncFailure = await fromPromise(async () => { throw 'offline'; }, () => 'Unavailable')();
   if (syncFailure.ok || asyncFailure.ok || syncFailure.error !== 'Unavailable' || asyncFailure.error !== 'Unavailable') throw new Error('Boundary adaptation failed');
+  const delivered = await effectProcess().effect('send', async input => ok(input + 1)).effect('ack', async value => ok(value * 2)).runDetailed(3);
+  if (!delivered.result.ok || delivered.result.value !== 8 || delivered.plan !== null || delivered.trace.length !== 2) throw new Error('Direct process failed');
   return { queuedValue: isolated.snapshot().view, crash: crashed.snapshot().view, appValue: app.snapshot().view, first: first.result.value.kind, value: first.result.value.value, steps: first.attempt.trace.length, replay: replay.result.value.kind, attempt: replay.attempt, writes };
 })();`;
 const bundled = await build({ stdin: { contents: source, resolveDir: root, loader: 'js' }, bundle: true, platform: 'browser', format: 'iife', globalName: 'Portable', write: false, metafile: true });
@@ -47,4 +49,4 @@ const context = { structuredClone };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
 assert.deepEqual(result, { queuedValue: 3, crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
-console.log('Browser bundle executed without Node globals: function declarations, input-preserving composition, group commit, replay and application lifecycle verified.');
+console.log('Browser bundle executed without Node globals: function declarations, input-preserving composition, group commit, direct effect process, replay and application lifecycle verified.');

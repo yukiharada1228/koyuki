@@ -1,4 +1,4 @@
-import { process, defineTarget, defineTransition, fromPromise, ok } from '../framework/index.js';
+import { process, fromPromise } from '../framework/index.js';
 import { RegistrationRepository, type Delivery } from './repository.js';
 import type { EmailRequested } from './domain.js';
 export interface Tick { readonly now: number; readonly leaseMs: number }
@@ -9,11 +9,8 @@ export function emailWorker(repository: RegistrationRepository, sender: MailSend
     await sender.send(delivery.event); // stable event.id is the transport idempotency key
     return delivery;
   }, () => ({ kind: 'DeliveryUnavailable' as const }));
-  const acknowledgement = defineTarget({ operation: 'registration.email.ack.v1',
-    load: async (delivery: Delivery) => ok(delivery), save: (delivery: Delivery) => repository.acknowledge(delivery),
-  }).on(defineTransition({ validate: (delivery: Delivery) => ok(delivery), evolve: (delivery: Delivery) => ok(delivery) }));
   return process<Tick>()
     .effect('claim-email', tick => repository.claim(tick.now, tick.leaseMs))
     .effect('send-email', send)
-    .commit(acknowledgement);
+    .effect('ack-email', delivery => repository.acknowledge(delivery));
 }

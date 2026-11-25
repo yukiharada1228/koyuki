@@ -23,7 +23,7 @@
 | 32:37–38:58 | Resultを計算の合成に使う | workflow / transition / process。最初の失敗で後続停止 |
 | 40:31–42:21 | 振る舞いをドメイン近くへ、workflowは合成 | 各domain.tsとapplication.tsを分離。業務関数をフレームワークへ移さない |
 | 42:37–46:53 | 更新対象と入力をcommandへまとめる | Loaded、検証済みcommand、既存Entityと要求を一緒に渡す |
-| 46:56–50:40 | 途中IOの関数注入・workflow分割 | shippingのprocess.effect。注入したIOを純粋関数とは呼ばない |
+| 46:56–50:40 | 途中IOの関数注入・workflow分割 | shippingと登録メールのprocess.effect。直接runで不要な空の遷移を除去。注入したIOを純粋関数とは呼ばない |
 | 50:54–52:19 | Result接続の定型処理をframeworkへ | defineTransition / defineUseCaseGroup / operations、実行状態と完了イベントの自動処理 |
 | 54:10–54:50 | andThen/mapや入れ子の負担 | 宣言による順次接続、withInput、collect。TypeScriptのdo記法や全generic推論を提供するわけではない |
 | 56:54–58:59 | DB transaction、contextを渡す案 | SQLiteのCAS・履歴・receipt・outboxの原子保存をテスト。Prisma 7.10.1のcontextで複数更新・typed rollback・commit失敗の後処理を検証。提案は講演当時未実施。任意DBへの一括保証なし |
@@ -123,3 +123,11 @@ trace名そのものの変更や、独立した利用者による開発体験の
 [承認ルール追加の実験](business-change-study.md)で、普通の関数型と証拠型による接続漏れの検出を4方式で比較した。
 TS単体でも検出できること、新しい失敗のtransport対応と過去の成功receiptの扱いは別の契約であることを確認した。
 これは講演の型・純粋計算・実行接続の考えを検証する一例であり、一般的な生産性優位の証明ではない。
+
+## I/O列の終端に空の遷移を要求しない
+
+登録メールの完了記録で必要だった空のvalidate/evolveを除去し、既存processを直接run / runDetailedできるようにした。
+claim→send→ackという実際の3段階だけを記録する。状態遷移と保存があるshippingのcommit経路は維持する。
+rootの全385テスト、独立consumerの登録8テスト、15モジュールの依存ゼロ・Node型なし検査、
+Nodeのglobalを与えないbundleでの直接実行を確認した。
+これは途中I/Oの接続を簡単にする改善であり、永続scheduler・分散transaction・外部副作用の自動rollbackを実装したものではない。

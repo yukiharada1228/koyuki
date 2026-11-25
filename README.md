@@ -185,6 +185,7 @@ dispatch・保存・View更新までの手順と、利用者に残るadapterの�
 開発版には[例外・Promise境界](docs/result-boundaries.md)と、
 [メール・人の確認を挟む永続イベントの実例](docs/registration-events.md)を追加しています。
 実例は別OSプロセス・rollback・再配送・workerの競合まで検証し、全内容の完全実現とは区別しています。
+[途中のI/Oを接続するprocess](docs/process.md)は開発版で直接runでき、最終の業務遷移がない処理にも利用できます。
 
 [GraphQLの統合例](examples/leave-http/GRAPHQL.md)では、RESTと同じ業務宣言・保存先を使い、
 クエリ・mutation・型付き失敗・再送とトランザクション境界を検証しています。

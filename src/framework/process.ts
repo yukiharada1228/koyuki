@@ -5,6 +5,12 @@ interface Report<O, E> { readonly result: Result<O, E>; readonly trace: readonly
 /** IO orchestration is intentionally separate from the synchronous, pure Workflow API. */
 class Process<I, O, E> {
   constructor(private readonly evaluate: (input: I) => Promise<Report<O, E>>) {}
+  /** Execute the declared effects without requiring an artificial final mutation. */
+  readonly runDetailed = async (input: I): Promise<ActionReport<O, E>> => {
+    const report = await this.evaluate(input);
+    return { ...report, plan: null };
+  };
+  readonly run = async (input: I): Promise<Result<O, E>> => (await this.runDetailed(input)).result;
   through<N, F>(flow: Workflow<O, N, F>): Process<I, N, E | F> {
     return new Process<I, N, E | F>(async input => {
       const prior = await this.evaluate(input);

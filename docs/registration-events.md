@@ -30,13 +30,18 @@ private brandにより、検証前の構造をそのまま遷移へ渡せない�
 return process<Tick>()
   .effect('claim-email', tick => repository.claim(tick.now, tick.leaseMs))
   .effect('send-email', send)
-  .commit(acknowledgement);
+  .effect('ack-email', delivery => repository.acknowledge(delivery));
 ```
 
 claim失敗なら配送しない。配送失敗なら完了記録しない。
 例外を返す既存のメールSDKはfromPromiseで型付きのDeliveryUnavailableへ変換する。
 後続へDeliveryを戻すadapterは、どのメッセージを完了記録するかを明示するためのもの。
 純粋なdomainはメールSDK・SQLite・時計を参照しない。
+
+processには直接run / runDetailedできる入口があり、完了記録のためだけの空のvalidate/evolveは不要。
+配送traceはclaim-email→send-email→ack-emailの実行した段階だけを示し、mutationのplanはnullとなる。
+状態遷移と保存を最後に実行する場合は、従来のcommitを引き続き利用できる。
+詳細は[途中のI/Oを接続する](process.md)を参照。
 
 ## 障害時の契約
 

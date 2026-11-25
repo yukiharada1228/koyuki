@@ -24,7 +24,8 @@ test('registration, email delivery and human confirmation survive independent re
   f.restart();
   const delivered = await emailWorker(f.repository, { send: async e => { messages.push(e); } }).runDetailed({ now: 100, leaseMs: 10 });
   assert(delivered.result.ok);
-  assert.deepEqual(delivered.trace.filter(entry => entry.step === 'claim-email' || entry.step === 'send-email').map(entry => entry.status), ['ok', 'ok']);
+  assert.deepEqual(delivered.trace, ['claim-email', 'send-email', 'ack-email'].map(step => ({ step, status: 'ok' })));
+  assert.equal(delivered.plan, null);
   assert.equal(messages.length, 1);
   const waiting = f.repository.read(person.id); assert(waiting.ok); assert.equal(waiting.value?.kind, 'awaiting');
   f.restart();
