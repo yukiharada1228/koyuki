@@ -47,3 +47,6 @@ SQLiteを使うサンプルには引き続きNode.jsが必要。
 
 開発版Applicationのイベント所有権・購読・revisionの契約は
 [業務宣言からApplicationまで](application-development.md)に記載。
+
+通常の業務処理では[決定値と診断用snapshotを分離する](opaque-decisions.md)。
+実際のSymbol属性やクラスをsaveへ渡す場合もWeb標準APIだけを使い、Node globalsなしのbundleで検証する。

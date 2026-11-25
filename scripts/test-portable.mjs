@@ -18,6 +18,14 @@ export const result = (async () => {
   const ordinaryReport = await ordinary.double.runDetailed(3, { input: value => value, result: value => value.ok });
   if (ordinaryReport.observations.length !== 3 || ordinaryReport.observationErrors.length !== 0) throw new Error('Business observation failed');
   if (!ordinaryResult.ok || ordinaryResult.value !== 6) throw new Error('Business operation failed');
+  const proof = Symbol('portable-proof');
+  class Domain { #value = 7; value() { return this.#value; } }
+  let opaqueWrites = 0;
+  const opaque = business({ name: 'portable-opaque', load: async input => ok(input), save: async value => { opaqueWrites++; return ok(value); }, operations: { save: [value => ok(value)] } });
+  const symbolValue = { value: 2, [proof]: true }, instance = new Domain();
+  const symbolReport = await opaque.save.runDetailed(symbolValue), classReport = await opaque.save.runDetailed(instance);
+  if (!symbolReport.result.ok || symbolReport.result.value !== symbolValue || !symbolReport.result.value[proof] || symbolReport.plan.inputStatus !== 'unavailable') throw new Error('Opaque symbol decision failed');
+  if (!classReport.result.ok || classReport.result.value !== instance || classReport.result.value.value() !== 7 || classReport.plan.inputStatus !== 'unavailable' || opaqueWrites !== 2) throw new Error('Opaque class decision failed');
   let receipt = null, writes = 0;
   const model = defineUseCaseGroup({
     operation: name => 'portable',
@@ -69,4 +77,4 @@ const context = { structuredClone };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
 assert.deepEqual(result, { queuedValue: 3, crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
-console.log('Browser bundle executed without Node globals: function declarations, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');
+console.log('Browser bundle executed without Node globals: function declarations, opaque domain decisions, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');

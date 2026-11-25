@@ -52,11 +52,13 @@ test('generic saves retain additional validation proof beyond the shared state u
   assert.deepEqual(await direct.create(0), err('Invalid')); assert.deepEqual(await projected.create(0), err('Invalid')); assert.deepEqual(await wrapped.create(0), err('Invalid'));
 });
 
-test('runtime symbol attributes remain an explicit unsupported final decision shape', async () => {
+test('runtime symbol attributes reach save while the diagnostic plan reports unavailable input', async () => {
   const proof = Symbol('runtime-proof'); let saves = 0;
   const save = async <T extends State>(value: T): Promise<Result<T, never>> => { saves++; return ok(value); };
-  const app = business({ name: 'symbol-limit', load, save, operations: { create: [(n: number) => ok({ ...draft(n), [proof]: true })] } });
-  await assert.rejects(app.create(2), /SymbolInput/); assert.equal(saves, 0);
+  const app = business({ name: 'symbol', load, save, operations: { create: [(n: number) => ok({ ...draft(n), [proof]: true as const })] } });
+  const report = await app.create.runDetailed(2);
+  assert(report.result.ok); assert.equal(report.result.value[proof], true); assert.equal(saves, 1);
+  assert.deepEqual(report.plan, { kind: 'write', operation: 'symbol.create', inputStatus: 'unavailable' });
 });
 
 test('generic projection save preserves the direct result field and request context', async () => {

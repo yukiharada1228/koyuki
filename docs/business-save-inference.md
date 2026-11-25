@@ -67,17 +67,16 @@ Committed<Approved | FinalReview>を保持する。サンプル固有の再送ta
 core businessのreplay設定では、上記のとおり宣言された履歴の成功型を維持する。
 キーが異なる深いenvelopeやprivateなclass等まで、すべての成功型を自動特殊化できたとはしない。
 
-## 保存する値について残るruntime制限
+## 保存する値と診断の分離
 
-型推論の検証中に、保存前の最終決定に実際のSymbol属性があるとSymbolInputで拒否されることを確認した。
-既存の保存計画の照合がcanonicalIdentityによるJSON形式に依存するためである。
-今回の変更では、このruntime制限を解消していない。拒否してsaveを呼ばない検査を残した。
-phantom brandは型だけの証拠なのでこの制限を受けず、検証関数で生成した証拠を保存後の型にも保持できる。
-実際のSymbol属性を持つオブジェクトと、型だけにunique symbolを用いることを混同しない。
+型推論の検証中（1105d3d）に、保存前の最終決定に実際のSymbol属性があると
+SymbolInputで拒否される制限を発見した。その後、[通常の保存と診断用の計画を分離](opaque-decisions.md)し、
+rendererなしの経路では実際の決定値をそのままsaveへ渡すよう改善した。
+診断できない値はplanにinputStatus: unavailableを明記し、保存を止めない。
+実際のSymbol属性をsaveへ渡すテストも成功例へ変更している。
 
-最終決定では非plainなclass、関数、循環参照なども同じ照合境界の制限を受ける。
-privateなclassの検査はsaveが返す値の型を保持するものであり、保存前の決定をclassにできる保証ではない。
-型検査を通ったすべてのTypeScript値を実行・保存できるようになったとはしない。
+明示的なViewのrenderer、replayのrequest snapshot、Applicationの所有境界には別の契約が残る。
+型検査を通った任意の値を、DBやApplicationまで自動で同じ形に保存・復元する保証ではない。
 
 ## 検証
 

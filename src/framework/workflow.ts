@@ -85,6 +85,39 @@ export function describeView(view: View): unknown {
   if (view.kind === 'done') return { kind: 'done' };
   return { kind: view.kind, operation: view.operation, input: structuredClone(view.input) };
 }
+// A diagnostic snapshot is not the execution capability or the replay identity.
+// Inspect data descriptors first so reporting never invokes domain accessors.
+function describeDecision(operation: string, input: unknown): unknown {
+  try {
+    const active = new Set<object>(), inspected = new Set<object>();
+    function inspect(value: unknown): void {
+      if (value === null || typeof value === 'string' || typeof value === 'boolean' || typeof value === 'number' && Number.isFinite(value)) return;
+      if (typeof value !== 'object' || value === null) throw new Error('OpaquePlanInput');
+      if (active.has(value)) throw new Error('OpaquePlanInput');
+      if (inspected.has(value)) return;
+      const array = Array.isArray(value), prototype = Object.getPrototypeOf(value);
+      if (array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null) throw new Error('OpaquePlanInput');
+      const descriptors = Object.getOwnPropertyDescriptors(value);
+      const length: unknown = array ? descriptors.length?.value : undefined;
+      if (array && (typeof length !== 'number' || !Number.isSafeInteger(length) || length < 0)) throw new Error('OpaquePlanInput');
+      active.add(value);
+      for (const key of Reflect.ownKeys(descriptors)) {
+        if (typeof key !== 'string') throw new Error('OpaquePlanInput');
+        if (array && key === 'length') continue;
+        const descriptor = descriptors[key]!;
+        if (!descriptor.enumerable || !Object.hasOwn(descriptor, 'value')) throw new Error('OpaquePlanInput');
+        if (array && (!/^(0|[1-9][0-9]*)$/.test(key) || typeof length !== 'number' || Number(key) >= length)) throw new Error('OpaquePlanInput');
+        inspect(descriptor.value);
+      }
+      if (array && typeof length === 'number' && Object.keys(descriptors).length !== length + 1) throw new Error('OpaquePlanInput');
+      active.delete(value); inspected.add(value);
+    }
+    inspect(input);
+    return { kind: 'write', operation, input: structuredClone(input) };
+  } catch {
+    return { kind: 'write', operation, inputStatus: 'unavailable' };
+  }
+}
 export function bindMutation<I, O, E, S, F>(config: {
   workflow: WorkflowConsumer<I, O, E>;
   operation: string;
@@ -102,6 +135,13 @@ export function bindMutation<I, O, E, S, F>(config: {
   async function runDetailed(input: I): Promise<{ result: Result<S, E | F>; trace: readonly Trace[]; plan: unknown }> {
     const evaluated = config.workflow.inspect(input), decision = evaluated.result;
     if (!decision.ok) return { result: decision, trace: evaluated.trace, plan: null };
+    if (!config.render) {
+      // No renderer can substitute a different node. Execute the actual decision,
+      // even when it cannot be represented in the diagnostic write plan.
+      const plan = describeDecision(config.operation, decision.value);
+      const result = await config.save(decision.value);
+      return { result, trace: [...evaluated.trace, { step: config.operation, status: result.ok ? 'ok' : 'error' }], plan };
+    }
     const rendered = view(decision.value);
     let node = rendered;
     while (node.kind === 'mutation') node = node.child;

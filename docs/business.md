@@ -50,8 +50,8 @@ if (!accepted.ok || rejected.ok || saved.length !== 1) throw new Error('Unexpect
 共通generic saveが操作ごとの成功型を保持する場合は、[保存後の成功型](business-save-inference.md)も保持できる。
 広い結果への変換や再送の成功型を、最後のRuleだけから狭めない。
 voidの検証結果から元の入力を暗黙に復元しない。必要な値は関数の戻り値で表す。
-保存前の最終決定は既存の実行計画でJSON形式として照合する。実際のSymbol属性、非plainなclass等を
-最終値に含む場合は実行時に拒否される。[保存値の制限](business-save-inference.md)を参照。
+通常実行では業務の成功値をそのままsaveへ渡し、Symbol属性やクラスを診断のために拒否しない。
+計画へsnapshotできない場合はinputStatus: unavailableを示す。[業務値と診断の分離](opaque-decisions.md)を参照。
 `then`という操作名はthenableとの衝突を避けるため予約する。
 
 ## 状態・再送・複数集約

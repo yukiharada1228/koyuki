@@ -24,7 +24,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | --- | --- | --- |
 | 状態を直和と必要なpayloadで表す | [domain](../src/tags/domain.ts)、[直和の検査](../src/sum-model.test.ts) | 型アサーションや外部入力は別の検証が必要 |
 | 検証済みの前提を次段へ渡す | private brand、[配布入力契約](workflow-input-contract.md) | 業務規則そのものの正しさや純粋性を型だけで証明しない |
-| 普通の関数を並べ、Resultの接続を任せる | [business](business.md)、実tarballの型・実行検査 | 工程・順番・必要な業務判断は利用者が宣言する。保存前の最終決定はJSON形式で照合し、実際のSymbol属性等は拒否する |
+| 普通の関数を並べ、Resultの接続を任せる | [business](business.md)、実tarballの型・実行検査 | 工程・順番・必要な業務判断は利用者が宣言する。通常実行はopaque値を渡せるが、診断・Application・永続adapterには別の契約がある |
 | 検証→要件→更新の定型処理を委譲する | [defineTransition](declarative-transitions.md) | [generic要件と未注釈evolve](transition-inference-study.md)の推論制限は未解消 |
 | 失敗した段階で後続計算・保存を止める | Workflow / Process / command / businessの検査 | 既に確定した別工程の副作用を自動rollbackしない |
 | 成功と失敗の型を保持する | [入力・成功・失敗型の検査](../src/business-api-types.test.ts)、[generic saveの成功型](business-save-inference.md)、配布宣言の拒否検査 | 64段の検査を無制限長の保証にしない |
@@ -46,7 +46,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 - 全編の連続音声映像と自動字幕の照合。
 - 独立利用者による開発体験・学習負担の評価、実業務での運用実績。
 - genericな要件計算と未注釈callbackの推論制限。
-- 保存前の最終決定がJSON形式の照合に依存する制限。実際のSymbol属性等は型検査を通っても保存前に拒否される。
+- [opaque値の通常保存](opaque-decisions.md)は改善済み。明示的なView rendererのJSON照合、Applicationのclone境界、永続adapterまで任意の値を扱う保証は残る課題。
 - hostをまたぐ永続実行・再試行・監査保持の共通方針と、他DB/driverでの追加検証。
 - [25操作のチーム評価案](team-development-study.md)の実装・同条件での比較。[25操作の初期実装](procurement-study.md)を実装済み。[SQLiteの複合保存と復元](procurement-sqlite.md)を検証済み。[複合Application投影](procurement-projection.md)も検証済み。[永続再送境界](procurement-replay.md)も接続済み。[25操作の接続比較](procurement-comparison.md)で3方式の結果一致を検証済み。[基本traceと保存計画](procurement-trace-comparison.md)の代表ケースも一致を検証済み。[独立再送driver](procurement-replay-comparison.md)も代表ケースを比較済み。[独立Application](procurement-application-comparison.md)も代表ケースを比較済み。比較で見つかった表示制約に対する[現在値取得](procurement-current-projection.md)も追加。[現在値取得方針](procurement-current-comparison.md)も代表ケースを比較済み。[選択値観測](procurement-observation-comparison.md)も代表ケースを比較済み。[二段階承認への仕様変更](procurement-approval-change.md)も3方式で検証済み。全観測経路の比較・その他の仕様変更評価・実装負担の測定は未実施。
 - 公開されていない元製品の予約取込・テーブル割当等との仕様の等価性。
