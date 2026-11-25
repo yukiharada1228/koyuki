@@ -76,6 +76,8 @@ try {
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   writeFileSync(join(consumer, 'procurement-current-projection.test.ts'), readFileSync(join(root, 'src/procurement-current-projection.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
+  writeFileSync(join(consumer, 'procurement-current-comparison.test.ts'), readFileSync(join(root, 'src/procurement-current-comparison.test.ts'), 'utf8')
+    .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);

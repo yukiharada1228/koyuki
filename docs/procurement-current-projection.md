@@ -68,5 +68,5 @@ SQLiteは破損の復元拒否時にもread transactionをrollbackし、以後�
 初期Queryの設計・権限・ページング・外部更新通知はhostに残る。
 
 読取りtransactionの機構と上記シナリオを検証したもので、別OSの並行writerや他DB・高負荷を網羅した試験ではない。
-これは新しいhost機能の追加であり、独立plain/helper Applicationへ同じ取得方針を接続した比較はまだ行っていない。
-既存の3方式比較を、この追加機能まで同等になったという判定へ置き換えない。
+[独立plain/helper Applicationとの比較](procurement-current-comparison.md)も追加し、代表的な取得・失敗・queueの契約一致を検証した。
+全障害経路や値の観測までの同等性を証明したものではない。

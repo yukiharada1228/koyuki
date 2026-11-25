@@ -1,3 +1,4 @@
+import type { CurrentRepository, ProjectionError, procurementCurrentApplication } from './current-projection.js';
 import type { Execution, ProgramTrace, Result, ReplayInputError } from '../../framework/index.js';
 import { baselineReplay } from './baseline-replay.js';
 import { applyCommitted } from './projection.js';
@@ -8,11 +9,12 @@ import type { Actor, Entity, Policy, RuleError } from './domain.js';
 import type { StorageError } from './repository.js';
 import type { ReplayError } from './replay-identity.js';
 type Application = ReturnType<typeof procurementReplayApplication>;
-type Session = Awaited<ReturnType<Application['start']>>;
+type CurrentApplication = ReturnType<typeof procurementCurrentApplication>;
+type Session = Awaited<ReturnType<CurrentApplication['start']>>;
 type Snapshot = ReturnType<Session['snapshot']>;
 type State = Snapshot['state'];
 type Event = Parameters<Session['dispatch']>[0];
-type Failure = RuleError | StorageError | ReplayError | ReplayInputError;
+type Failure = RuleError | StorageError | ReplayError | ReplayInputError | ProjectionError;
 type Command = (input: unknown) => Promise<Result<Execution<Committed>, Failure>>;
 const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
 const rejected = <const K extends 'UnexpectedMessage' | 'StaleRevision'>(kind: K): Result<never, { kind: K }> => ({ ok: false, error: { kind } });
@@ -22,6 +24,13 @@ function unexpected(cause: unknown) {
 }
 /** Independent, in-process session driver. No defineApplication/Program/replayOperations execution. */
 export function baselineApplication(mode: 'plain' | 'helper', repository: ReplayRepository, identity: Actor, policy: Policy, initial: readonly Entity[] = []): Application {
+  // No refresh callback means this path cannot introduce ProjectionUnavailable.
+  return createApplication(mode, repository, identity, policy, initial) as Application;
+}
+export function baselineCurrentApplication(mode: 'plain' | 'helper', repository: CurrentRepository, identity: Actor, policy: Policy, initial: readonly Entity[] = []): CurrentApplication {
+  return createApplication(mode, repository, identity, policy, initial, repository.current.bind(repository));
+}
+function createApplication(mode: 'plain' | 'helper', repository: ReplayRepository, identity: Actor, policy: Policy, initial: readonly Entity[], refresh?: CurrentRepository['current']): CurrentApplication {
   const actor = Object.freeze({ ...identity });
   if (initial.some(entity => entity.groupId !== actor.groupId)) throw new Error('ProjectionScopeMismatch');
   const seed = structuredClone(initial), tables = baselineReplay(mode, repository, actor, policy);
@@ -60,7 +69,24 @@ export function baselineApplication(mode: 'plain' | 'helper', repository: Replay
             history.push({ revision, kind: 'event', name: '@execute', status: 'ok' });
             state = { kind: 'running', operation, data: structuredClone(state.data) }; revision++; publish();
             let result: Result<Execution<Committed>, Failure> | null = null, crash: ReturnType<typeof unexpected> | null = null;
-            try { result = await commands.get(operation)!(received.input); } catch (cause) { crash = unexpected(cause); }
+            let current: readonly Entity[] | null = null;
+            try {
+              result = await commands.get(operation)!(received.input);
+              if (result.ok && result.value.kind === 'replayed' && refresh) {
+                const writes = result.value.value.writes;
+                const response = await refresh(writes.map(entity => ({ kind: entity.kind, id: entity.id })), actor);
+                if (!response.ok) result = response;
+                else {
+                  const complete = response.value.length === writes.length && writes.every(prior => {
+                    const matches = response.value.filter(entity => entity.kind === prior.kind && entity.id === prior.id);
+                    const entity = matches[0];
+                    return matches.length === 1 && entity && entity.groupId === actor.groupId && Number.isSafeInteger(entity.version) && entity.version >= prior.version;
+                  });
+                  if (!complete) result = { ok: false, error: { kind: 'ProjectionUnavailable' } };
+                  else current = response.value;
+                }
+              }
+            } catch (cause) { crash = unexpected(cause); }
             history.push({ revision, kind: 'command', name: operation, status: 'ok' });
             history.push({ revision, kind: 'event', name: crash ? '@crash' : '@complete', status: 'ok' });
             if (crash) state = { kind: 'crashed', operation, error: crash, data: state.data };
@@ -68,7 +94,10 @@ export function baselineApplication(mode: 'plain' | 'helper', repository: Replay
               if (!result) throw new Error('MissingBaselineExecutionResult');
               try {
                 if (!result.ok) state = { kind: 'failed', operation, error: structuredClone(result.error), data: state.data };
-                else state = { kind: 'ready', data: structuredClone(result.value.kind === 'replayed' ? state.data : applyCommitted(structuredClone(state.data), result.value.value)) };
+                else {
+                  const writes = result.value.kind === 'committed' ? result.value.value.writes : current;
+                  state = { kind: 'ready', data: structuredClone(writes ? applyCommitted(structuredClone(state.data), { result: result.value.value.result, writes }) : state.data) };
+                }
               } catch (cause) { state = { kind: 'crashed', operation, error: unexpected(cause), data: state.data }; }
             }
             revision++; publish(); return ok(snapshot());

@@ -82,3 +82,7 @@ Applicationと値の観測を含む全体比較は引き続き未完了。
 [独立したApplication driverの比較](procurement-application-comparison.md)を追加した。
 状態・revision・通知・実行履歴・queue・例外復旧を代表ケースで比較し、応答消失後に自動refreshしない制約も確認した。
 値の観測と仕様変更を含む全体評価は引き続き未完了。
+
+
+[現在値取得付きApplicationの比較](procurement-current-comparison.md)も追加した。
+応答消失後の表示更新・不正patchの拒否・現在値取得待ちのqueueを3方式で検証する。

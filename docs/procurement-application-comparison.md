@@ -53,4 +53,4 @@ Koyuki製品のコードや型を一切使わない別製品の比較ではな�
 
 
 この比較で確認した表示上の制約を根拠に、[現在値を取得するApplication](procurement-current-projection.md)を追加した。
-既存3方式は比較時の契約を維持し、新しい取得方針の3方式比較は未実施として区別する。
+既存3方式は比較時の契約を維持し、[新しい取得方針の3方式比較](procurement-current-comparison.md)も別途追加した。
