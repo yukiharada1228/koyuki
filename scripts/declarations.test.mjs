@@ -9,6 +9,117 @@ import { analyzeDeclarations } from './check-declarations.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const analyze = source => analyzeDeclarations([{ file: 'sample.ts', source }]);
 
+test('business rule diagnostics combine default labels, named Steps and structural Step objects per operation', () => {
+  const result = analyze(`import {business,step} from 'koyuki';
+const rule = value => ({ok:true,value});
+business({name:'expense',operations:{
+  approve:[rule,step('run:1',rule),{name:'run:1',rule}],
+  reject:{load,run:[step('check',rule),step('check',rule)]}
+}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 5); assert.equal(result.checkedOperationIds, 2);
+  assert.deepEqual(result.unresolved, []); assert.equal(result.diagnostics.length, 3);
+  assert(result.diagnostics.every(item => item.code === 'AMBIGUOUS_BUSINESS_RULE_LABEL' && item.severity === 'warning' && item.related.length === 1));
+});
+
+test('reused business Steps point to distinct connection sites and do not collide across operations', () => {
+  const result = analyze(`import {business,step} from 'koyuki';
+const checked=step('check',rule);
+business({name:'one',operations:{approve:[checked,checked],reject:[checked]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 3); assert.equal(result.diagnostics.length, 1);
+  const item = result.diagnostics[0];
+  assert.equal(item.line, 3); assert.equal(item.related[0].line, 3);
+  assert(item.column > item.related[0].column); assert.deepEqual(result.unresolved, []);
+});
+
+test('business rule labels remain inspectable when operation identity is dynamic', () => {
+  const result = analyze(`import {business,step} from 'koyuki';
+business({name:compute(),operation:resolve,operations:{approve:[step('check',rule),step('check',rule)]}});`);
+  assert.equal(result.checkedOperationIds, 0); assert.equal(result.checkedBusinessRuleLabels, 2);
+  assert.equal(result.diagnostics.length, 1); assert.equal(result.diagnostics[0].code, 'AMBIGUOUS_BUSINESS_RULE_LABEL');
+  assert.equal(result.unresolved.length, 1); assert.match(result.unresolved[0].reason, /resolver/);
+});
+
+test('business dynamic stages, spreads, holes and getters stay unresolved without invented function labels', () => {
+  const result = analyze(`import {business,step} from 'koyuki';
+business({name:'dynamic',operations:{
+  factory:makePipeline(),spread:[...rules,step('same',rule)],hole:[,rule],empty:[],
+  unknown:[external,step('run:1',rule)],getter:[{get name(){throw Error('never')},rule}],
+  numeric:[step(1,rule)],foreign:[other.step('same',rule)]
+}});`);
+  assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 8);
+  assert.equal(result.checkedBusinessRuleLabels, 1); assert.equal(result.checkedOperationIds, 8);
+});
+
+test('selected function exports and Step aliases resolve business labels without inspecting function bodies', () => {
+  const files = [
+    { file: 'business/main.ts', source: `import {business} from 'koyuki';
+import {ordinary,named} from './rules.js';
+business({name:'selected',operations:{approve:[ordinary,named]}});` },
+    { file: 'business/rules.ts', source: `import {step} from 'koyuki';
+export function ordinary(value){throw Error('must not execute');}
+const shared=step('run:1',ordinary); export {shared as named};` },
+  ];
+  const alone = analyzeDeclarations([files[0]]);
+  assert.equal(alone.unresolved.length, 2); assert.equal(alone.checkedBusinessRuleLabels, 0); assert.deepEqual(alone.diagnostics, []);
+  for (const selected of [files, [...files].reverse()]) {
+    const result = analyzeDeclarations(selected);
+    assert.equal(result.checkedBusinessRuleLabels, 2); assert.deepEqual(result.unresolved, []);
+    assert.equal(result.diagnostics.length, 1);
+    assert.equal(result.diagnostics[0].file, 'business/main.ts'); assert.equal(result.diagnostics[0].related[0].file, 'business/main.ts');
+    assert(result.diagnostics[0].column > result.diagnostics[0].related[0].column);
+  }
+});
+
+test('reassigned business functions and type-only imports are not assumed to be plain rules', () => {
+  const result = analyze(`import {business,step,withInput} from 'koyuki';
+import type {imported} from './other.js';
+function changed(value){return value;} changed=makeStage();
+business({name:'one',operations:{change:[changed,step('run:1',rule)],typed:[imported],wrapped:[withInput(rule)]}});`);
+  assert.equal(result.unresolved.length, 2); assert.equal(result.checkedBusinessRuleLabels, 2); assert.deepEqual(result.diagnostics, []);
+});
+
+test('business stage expansion has one shared budget across operation arrays', () => {
+  const source = `import {business,step} from 'koyuki'; const rule=value=>value;
+business({name:'large',operations:{first:[${Array(512).fill('rule')}],second:{load,run:[${Array(513).fill('rule')}]},skipped:[step('same',rule),step('same',rule)]}});`;
+  const result = analyze(source);
+  assert.equal(result.checkedBusinessRuleLabels, 1024); assert.equal(result.checkedOperationIds, 3);
+  assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 1);
+  assert.match(result.unresolved[0].reason, /1024 stages/);
+});
+
+test('selected procurement sources resolve all 41 rule labels and detect an injected label collision', async () => {
+  const paths = ['application.ts', 'domain.ts', 'inventory.ts', 'receipt-pipeline.ts'].map(name => `src/experiments/procurement/${name}`);
+  const files = await Promise.all(paths.map(async file => ({ file, source: await readFile(join(root, file), 'utf8') })));
+  const result = analyzeDeclarations(files);
+  assert.equal(result.checkedDeclarations, 6); assert.equal(result.checkedOperationIds, 25); assert.equal(result.checkedBusinessRuleLabels, 41);
+  assert.deepEqual(result.diagnostics, []); assert.deepEqual(result.unresolved, []);
+  const mutated = files.map(file => file.file !== paths[0] ? file : { ...file, source: file.source.replace('run: [checkBuyerRequest, submitCheckedRequest]', "run: [diagnosticStep('run:2', checkBuyerRequest), submitCheckedRequest]") + "\nimport {step as diagnosticStep} from 'koyuki';" });
+  assert.notEqual(mutated[0].source, files[0].source);
+  const broken = analyzeDeclarations(mutated);
+  assert.equal(broken.checkedBusinessRuleLabels, 41); assert.deepEqual(broken.unresolved, []);
+  assert.equal(broken.diagnostics.length, 1); assert.equal(broken.diagnostics[0].code, 'AMBIGUOUS_BUSINESS_RULE_LABEL');
+  assert.equal(broken.diagnostics[0].file, paths[0]);
+});
+
+test('business CLI diagnostics never execute selected modules, stage bodies or operation resolvers', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'koyuki-business-cli-'));
+  try {
+    const main = join(directory, 'main.ts'), rules = join(directory, 'rules.ts'), marker = join(directory, 'executed');
+    await writeFile(main, `import {business} from 'koyuki'; import {ordinary,named} from './rules.js';
+business({name:'cli',operation:()=>{throw Error('resolver')},operations:{approve:[ordinary,named]}});`);
+    await writeFile(rules, `import {writeFileSync} from 'node:fs'; import {step} from 'koyuki';
+writeFileSync(${JSON.stringify(marker)},'executed'); throw Error('module');
+export function ordinary(value){writeFileSync(${JSON.stringify(marker)},'rule');throw Error('rule');}
+export const named=step('run:1',ordinary);`);
+    const run = args => spawnSync(process.execPath, ['scripts/check-declarations.mjs', '--json', ...args], { cwd: root, encoding: 'utf8' });
+    const alone = run([main]); assert.equal(alone.status, 0, alone.stderr); assert.equal(JSON.parse(alone.stdout).unresolved.length, 3);
+    const selected = run([main, rules]); assert.equal(selected.status, 0, selected.stderr);
+    const report = JSON.parse(selected.stdout); assert.equal(report.checkedBusinessRuleLabels, 2); assert.equal(report.diagnostics.length, 1);
+    assert.equal(report.unresolved.length, 1); assert.equal(run(['--strict', main, rules]).status, 1);
+    await assert.rejects(access(marker), { code: 'ENOENT' });
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
 test('Process diagnostics connect explicit IO, through Workflow and bound commit labels', () => {
   const result = analyze(`import {process, workflow, bindMutation} from 'koyuki';
 const flow = workflow('validate', rule);
@@ -211,7 +322,8 @@ const prefix='expense'; const table={approve:[approve],0:[submit]} as const;
 business({name:prefix,operations:table});
 defineTarget({operation:'expense.approve'});
 defineTarget({operation:'expense.0'});`);
-  assert.equal(result.checkedDeclarations, 3); assert.deepEqual(result.unresolved, []);
+  assert.equal(result.checkedDeclarations, 3); assert.equal(result.unresolved.length, 2);
+  assert(result.unresolved.every(item => item.reason.includes('Business stage')));
   assert.equal(result.diagnostics.length, 2);
   for (const item of result.diagnostics) {
     assert.equal(item.code, 'REPEATED_OPERATION_ID'); assert.equal(item.related[0].line, 2);
@@ -224,7 +336,7 @@ test('custom business resolvers and dynamic names remain unresolved instead of i
 business({name:'expense',operation:()=>{throw new Error('must not execute')},operations:{approve:[approve]}});
 business({name:computeName(),operations:{approve:[approve]}});
 defineTarget({operation:'expense.approve'});`);
-  assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 2);
+  assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 4);
   assert(result.unresolved.some(item => item.reason.includes('resolver')));
   assert(result.unresolved.some(item => item.reason.includes('name')));
 });
@@ -234,7 +346,7 @@ test('prototype setters are unresolved while computed prototype-like data keys k
 business({name:'unsafe',operations:{__proto__:[approve]}});
 business({name:'safe',operations:{['__proto__']:[approve],constructor:[approve]}});
 defineTarget({operation:'safe.__proto__'}); defineTarget({operation:'safe.constructor'});`);
-  assert.equal(result.unresolved.length, 1); assert.equal(result.diagnostics.length, 2);
+  assert.equal(result.unresolved.length, 3); assert.equal(result.diagnostics.length, 2);
   assert(result.diagnostics.every(item => item.code === 'REPEATED_OPERATION_ID'));
 });
 
@@ -296,7 +408,9 @@ test('all 25 procurement business IDs are checked without executing the applicat
   const source = await readFile(join(root, file), 'utf8');
   const baseline = analyzeDeclarations([{ file, source }]);
   assert.equal(baseline.checkedDeclarations, 6); assert.equal(baseline.checkedOperationIds, 25);
-  assert.deepEqual(baseline.diagnostics, []); assert.deepEqual(baseline.unresolved, []);
+  assert.deepEqual(baseline.diagnostics, []); assert.equal(baseline.unresolved.length, 41);
+  assert.equal(baseline.checkedBusinessRuleLabels, 0);
+  assert(baseline.unresolved.every(item => item.reason.includes('Business stage')));
   const expected = {
     request: ['create', 'edit', 'withdraw', 'reject', 'return', 'reassign', 'submit', 'approve'],
     order: ['place', 'amend', 'cancel', 'complete'], receipt: ['receive', 'return', 'correct'],

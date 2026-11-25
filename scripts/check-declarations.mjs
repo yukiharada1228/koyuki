@@ -59,6 +59,34 @@ function declarationTools(selectedImports) {
     return result;
   }
 
+  function businessStage(candidate, fallback) {
+    const resolved = resolveValue(candidate);
+    let site, value;
+    if (resolved?.isCallExpression() && api(resolved.get('callee')) === 'step') {
+      site = resolved.get('arguments')[0]; value = site && resolveValue(site);
+    } else if (resolved?.isObjectExpression()) {
+      const declared = fields(resolved);
+      if (declared?.has('name') && declared.has('rule')) { site = declared.get('name'); value = resolveValue(site); }
+    }
+    if (site) {
+      const label = value?.isStringLiteral() || value?.isTemplateLiteral() && value.node.expressions.length === 0 ? literal(value) : undefined;
+      if (label !== undefined) return { label, path: unwrap(candidate)?.isIdentifier() ? candidate : site };
+      return { path: candidate, reason: 'Business Step name is not a statically resolved string' };
+    }
+    const binding = resolved?.isIdentifier() ? resolved.scope.getBinding(resolved.node.name) : undefined;
+    if (resolved?.isFunctionExpression() || resolved?.isArrowFunctionExpression() || resolved?.isFunctionDeclaration()
+      || binding?.constant && binding.path.isFunctionDeclaration()
+      || resolved?.isCallExpression() && api(resolved.get('callee')) === 'withInput') return { label: fallback, path: candidate };
+    return { path: candidate, reason: 'Business stage is not a statically identified function or Step' };
+  }
+
+  function businessPipeline(candidate) {
+    const entry = resolveValue(candidate);
+    const run = entry?.isArrayExpression() ? entry : resolveValue(fields(entry)?.get('run'));
+    if (!run?.isArrayExpression() || !run.node.elements.length || run.node.elements.some(node => node === null || node.type === 'SpreadElement')) return;
+    return run.get('elements');
+  }
+
   // Only explicit framework construction is recognized. Never infer method ownership
   // from a method name alone, or inspect a predicate/rule body.
   function rootedComposition(candidate, factory = 'workflow', methods = ['then', 'branch']) {
@@ -150,10 +178,10 @@ function declarationTools(selectedImports) {
     result.nodes.push(path.node); return result;
   }
 
-  return { resolveValue, api, fields, processLabels, workflowLabels };
+  return { resolveValue, api, fields, processLabels, workflowLabels, businessStage, businessPipeline };
 }
 
-// Resolve only named imports of immutable exported const values from the explicit
+// Resolve only named imports of immutable const values or function declarations from the explicit
 // input set. No filesystem lookup, package resolution, module import or evaluation.
 function selectedSourceImports(parsed) {
   const modules = new Map();
@@ -166,6 +194,8 @@ function selectedSourceImports(parsed) {
       const declaration = statement.get('declaration');
       if (declaration?.isVariableDeclaration({ kind: 'const' })) {
         for (const entry of declaration.get('declarations')) if (entry.get('id').isIdentifier()) exports.set(entry.node.id.name, program.scope.getBinding(entry.node.id.name));
+      } else if (declaration?.isFunctionDeclaration() && declaration.node.id) {
+        exports.set(declaration.node.id.name, program.scope.getBinding(declaration.node.id.name));
       } else for (const entry of statement.get('specifiers')) if (entry.isExportSpecifier() && entry.node.exportKind !== 'type') {
         const name = entry.node.exported.name ?? entry.node.exported.value;
         exports.set(name, program.scope.getBinding(entry.node.local.name));
@@ -195,9 +225,12 @@ function selectedSourceImports(parsed) {
         if (!entry.isImportSpecifier() || entry.node.importKind === 'type') continue;
         const name = entry.node.imported.name ?? entry.node.imported.value;
         const binding = target.exports.get(name);
-        if (!binding?.constant || !binding.path.isVariableDeclarator() || binding.path.parent.kind !== 'const') continue;
+        if (!binding?.constant) continue;
+        const value = binding.path.isFunctionDeclaration() ? binding.path
+          : binding.path.isVariableDeclarator() && binding.path.parent.kind === 'const' ? binding.path.get('init') : undefined;
+        if (!value?.node) continue;
         const local = item.program.scope.getBinding(entry.node.local.name);
-        if (local) imports.set(local, binding.path.get('init'));
+        if (local) imports.set(local, value);
       }
     }
   }
@@ -206,7 +239,7 @@ function selectedSourceImports(parsed) {
 
 /** Parse selected sources only. Never import a module or evaluate an expression. */
 export function analyzeDeclarations(files) {
-  const diagnostics = [], unresolved = [], ids = new Map(); let checkedDeclarations = 0, checkedOperationIds = 0;
+  const diagnostics = [], unresolved = [], ids = new Map(); let checkedDeclarations = 0, checkedOperationIds = 0, checkedBusinessRuleLabels = 0;
   const report = (code, severity, file, path, message, related = []) => diagnostics.push({ code, severity, ...position(file, path), message, related });
   const skip = (file, path, reason) => unresolved.push({ ...position(file, path), reason });
   const operationId = (value, file, path) => {
@@ -219,7 +252,7 @@ export function analyzeDeclarations(files) {
     try { parsed.push({ file, ast: parse(source, { sourceType: 'module', sourceFilename: file, plugins: ['typescript', ...(/\.[jt]sx$/i.test(file) ? ['jsx'] : [])], attachComment: false }) }); }
     catch (error) { diagnostics.push({ code: 'PARSE_ERROR', severity: 'error', file, line: error.loc?.line ?? 1, column: (error.loc?.column ?? 0) + 1, message: error.message, related: [] }); }
   }
-  const { resolveValue, api, fields, processLabels, workflowLabels } = declarationTools(selectedSourceImports(parsed));
+  const { resolveValue, api, fields, processLabels, workflowLabels, businessStage, businessPipeline } = declarationTools(selectedSourceImports(parsed));
   for (const { file, ast } of parsed) {
     const coveredCompositions = new Set(), reportedLabelPairs = new Set();
     traverse(ast, { CallExpression(path) {
@@ -262,6 +295,24 @@ export function analyzeDeclarations(files) {
         if (name === 'defineApplication') for (const [key, value] of operations) {
           if (key === 'dismiss' || key.startsWith('@')) report('RESERVED_APPLICATION_OPERATION', 'error', file, value.parentPath.get('key'), `Operation ${JSON.stringify(key)} is reserved by Application; rename the public operation.`);
         }
+        if (name === 'business') {
+          const budget = { left: 1024 };
+          for (const [key, entry] of operations) {
+            if (budget.left < 0) continue;
+            const stages = businessPipeline(entry);
+            if (!stages) { skip(file, entry, `Business ${JSON.stringify(key)} pipeline is not a nonempty static array without holes or spreads`); continue; }
+            const labels = new Map();
+            for (const [index, candidate] of stages.entries()) {
+              if (--budget.left < 0) { skip(file, candidate, 'Business exceeds the static expansion limit of 1024 stages'); break; }
+              const stage = businessStage(candidate, `run:${index + 1}`);
+              if (stage.reason) { skip(file, stage.path, `${key}[${index}]: ${stage.reason}`); continue; }
+              checkedBusinessRuleLabels++;
+              if (labels.has(stage.label)) report('AMBIGUOUS_BUSINESS_RULE_LABEL', 'warning', file, stage.path,
+                `Business ${JSON.stringify(key)} rule label ${JSON.stringify(stage.label)} repeats in this pipeline; use distinct labels if traces must identify the stage. This is not a type check or a proof of repeated execution.`, [labels.get(stage.label)]);
+              else labels.set(stage.label, position(file, stage.path));
+            }
+          }
+        }
         if (name === 'business' && operations.size) {
           if (definition.has('operation')) { skip(file, definition.get('operation'), 'Business operation resolver is not evaluated'); return; }
           const prefix = definition.get('name') && resolveValue(definition.get('name'));
@@ -294,7 +345,7 @@ export function analyzeDeclarations(files) {
       }
     } });
   }
-  return { schema: 'koyuki.declaration-diagnostics.v1', scope: 'static-source-metadata', checkedDeclarations, checkedOperationIds, diagnostics, unresolved };
+  return { schema: 'koyuki.declaration-diagnostics.v1', scope: 'static-source-metadata', checkedDeclarations, checkedOperationIds, checkedBusinessRuleLabels, diagnostics, unresolved };
 }
 
 async function main(args) {
