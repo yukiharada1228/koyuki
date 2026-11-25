@@ -175,7 +175,9 @@
         "src/branch.test.ts",
         "src/examples/customer-import/application.ts",
         "src/customer-import.test.ts",
-        "docs/customer-import-study.md"
+        "docs/customer-import-study.md",
+        "docs/typed-branch.md",
+        "src/branch-narrowing.test.ts"
       ],
       "remaining": [
         "名寄せの永続DB競合と、資料の予約取込・テーブル割当・影響スロット探索の全仕様は未検証。一般的なDX優位の測定はない。"

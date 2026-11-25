@@ -11,7 +11,7 @@ class Process<I, O, E> {
     return { ...report, plan: null };
   };
   readonly run = async (input: I): Promise<Result<O, E>> => (await this.runDetailed(input)).result;
-  through<N, F>(flow: Workflow<O, N, F>): Process<I, N, E | F> {
+  through<N, F>(flow: Workflow<O, N, F> & { readonly run: (value: O) => Result<N, F> }): Process<I, N, E | F> {
     return new Process<I, N, E | F>(async input => {
       const prior = await this.evaluate(input);
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace };

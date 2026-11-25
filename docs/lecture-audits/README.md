@@ -204,5 +204,13 @@ Process・通常TSの分岐・既存Workflowによる顧客照合の統合例を
 [顧客取込の実例](../customer-import-study.md)を追加した。
 通常関数の検証→非同期照合→Unionのswitch→保存を既存Process/Workflowで接続し、
 作成・更新・変更なし、失敗停止、scope不一致、CAS競合、adapter欠陥を検査した。
-through/effectの宣言と業務分岐は利用者に残り、boolean branchが自動で型を絞り込むわけではない。
+through/effectの宣言と業務分岐は利用者に残る。後続で型ガード付きbranchを追加した（下記）。
 メモリhostによる検証であり、名寄せの永続DB競合や元製品の全予約仕様の再現ではない。
+
+## 型ガードによる分岐接続
+
+[Workflow.branchの型ガード形式](../typed-branch.md)を追加した。
+名前付きの通常TS型ガードと、各Unionメンバーを要求する関数を直接接続できる。
+枝の取り違えや未検証の追加条件は型エラーになる。boolean形式の契約は維持した。
+false側はExcludeによる型であり、任意の集合の厳密な補集合ではない。
+型ガードの正しさとinline推論の一部注釈は利用者に残る。

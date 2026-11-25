@@ -74,3 +74,6 @@ Process自体は全体transactionや永続的な再開を提供しない。
 [仕様変更の比較](business-change-study.md)を参照。
 大規模組織での生産性・バグ率改善や、独立した開発者の習得の容易さは未実証。
 アルファAPIのため変更可能性は残る。
+
+状態Unionを分岐ごとの関数へ接続する場合は、[型ガード付きWorkflow.branch](typed-branch.md)を利用できる。
+通常のswitchをRule内に書く方式も選べる。非同期I/OはProcessの境界へ置く。

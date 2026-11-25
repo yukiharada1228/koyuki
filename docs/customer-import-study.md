@@ -39,8 +39,8 @@ Promiseを同期のbusiness関数列へ混ぜたり、終端に空の状態遷�
 
 1. 純粋な計算と非同期I/Oを交互に置く場合、through/effectの構造は利用者が宣言する。
    接続の実行は任せられるが、業務工程の選択まで自動推測するものではない。
-2. switchは業務判断として残る。現在のWorkflow.branchはbooleanの選択であり、
-   predicateから片側の型を自動で絞り込むAPIではない。
+2. switchは業務判断として残る。後続の[型ガード付きbranch](typed-branch.md)では、型ガードを渡せば各枝の入力型を絞り込める。
+   この実例の通常switchも有効であり、業務上の選択は利用者が宣言する。
 3. traceはdecide-customerという段階を記録する。内部switchの各caseを自動で別段階としては記録しない。
 4. この検証のRepositoryはメモリ上のテストhost。scope付き照会・保存値の復元・ID採番・
    createの一意制約・updateの原子的CASは実adapterの責任。永続DBでの名寄せ競合は未検証。

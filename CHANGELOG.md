@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Workflow.branchとProcess.throughで、配布宣言でも入力の狭すぎるWorkflowを拒否する契約へ修正。Workflow.branchに通常TSの型ガードを受け取る形式を追加。各Unionメンバーを要求する枝を直接接続でき、成功・失敗型を保持。boolean形式を維持し、枝の取り違え・未証明条件の拒否、選択枝のtrace/capture、途中I/Oとの接続を検証。型ガードの正しさとinline入力型注釈の制限は明記。
+
 - 非同期顧客照合後に状態Unionで作成・更新・変更なしを選ぶ実例を既存Process/Workflowで追加。失敗停止・scope不一致・CAS競合・欠陥伝播・型の絞り込みを検査し、実配布consumerへ追加。新しいcore APIは追加せず、永続DB名寄せと予約取込全体は対象外と明記。
 
 - 1本目の本人公開PDF92ページを全体照合し、3資料全198ページのページ別対応を記録。84ページのframework構想を既存APIへ対応付け、開発体験の未実証・DIと純粋性の違い・非公開仕様の確認限界を維持。

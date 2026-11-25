@@ -1,6 +1,9 @@
 import type { Result } from './result.js';
 import { canonicalIdentity } from './identity.js';
 export type Rule<I, O, E> = (input: I) => Result<O, E>;
+// A function property keeps input contravariance in emitted declarations, where private
+// implementation fields no longer carry the class's input variance.
+type BranchWorkflow<I, O, E> = Workflow<I, O, E> & { readonly run: Rule<I, O, E> };
 export interface Trace { readonly step: string; readonly status: 'ok' | 'error' }
 export interface Evaluation<O, E> { result: Result<O, E>; trace: readonly Trace[] }
 export interface StepObservation<I, R> { readonly step: string; readonly input: I; readonly result: R }
@@ -31,13 +34,19 @@ export class Workflow<I, O, E> {
     });
     return { ...evaluation, observations: Object.freeze(observations) };
   }
+  branch<N extends O, A, B, F, G>(name: string, predicate: (value: O) => value is N,
+    paths: { yes: BranchWorkflow<NoInfer<N>, A, F>; no: BranchWorkflow<Exclude<O, NoInfer<N>>, B, G> }): Workflow<I, A | B, E | F | G>;
   branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,
-    paths: { yes: Workflow<O, A, F>; no: Workflow<O, B, G> }): Workflow<I, A | B, E | F | G> {
+    paths: { yes: BranchWorkflow<O, A, F>; no: BranchWorkflow<O, B, G> }): Workflow<I, A | B, E | F | G>;
+  branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,
+    paths: { yes: Workflow<never, A, F>; no: Workflow<never, B, G> }): Workflow<I, A | B, E | F | G> {
     return new Workflow<I, A | B, E | F | G>(this.name, [...this.steps, name], (input, observe) => {
       const previous = this.evaluate(input, observe);
       if (!previous.result.ok) return { result: previous.result, trace: previous.trace };
       const selected = predicate(previous.result.value) ? 'yes' : 'no';
-      const next = paths[selected].evaluate(previous.result.value, observe);
+      // Public overloads check the branch inputs. Dispatch erases those distinct inputs only
+      // after the predicate has selected the path; a user-written type guard is trusted as in TS.
+      const next = paths[selected].evaluate(previous.result.value as never, observe);
       return { result: next.result, trace: [...previous.trace, { step: `${name}:${selected}`, status: 'ok' }, ...next.trace] };
     });
   }
