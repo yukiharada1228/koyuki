@@ -1,0 +1,141 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { DatabaseSync } from 'node:sqlite';
+import { SqliteProcurement } from './experiments/procurement/sqlite.js';
+import { procurement } from './experiments/procurement/application.js';
+import { restoreEntity, type Actor } from './experiments/procurement/domain.js';
+const actor = (role: Actor['role'], groupId = 'g1'): Actor => ({ id: role, role, groupId, active: true });
+const policy = { requestLimitCents: 1000, approverIds: ['approver'] };
+const lines = [{ sku: 'a', quantity: 2, unitCents: 500 }];
+function clients(repository: SqliteProcurement, group = 'g1') {
+  return { repository, buyer: procurement(repository, actor('buyer', group), policy), boss: procurement(repository, actor('approver', group), policy), warehouse: procurement(repository, actor('warehouse', group), policy), finance: procurement(repository, actor('finance', group), policy) };
+}
+async function ordered(f: ReturnType<typeof clients>) {
+  assert((await f.buyer.requests.create({ id: 'rq', lines })).ok);
+  assert((await f.buyer.requests.submit({ id: 'rq', expectedVersion: 1, approverId: 'approver' })).ok);
+  assert((await f.boss.requests.approve({ id: 'rq', expectedVersion: 2 })).ok);
+  assert((await f.buyer.orders.place({ id: 'rq', expectedVersion: 3, orderId: 'po', supplier: 'supplier' })).ok);
+}
+async function matched(f: ReturnType<typeof clients>) {
+  await ordered(f);
+  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 2 }] })).ok);
+  assert((await f.finance.invoices.register({ id: 'po', expectedVersion: 2, invoiceId: 'inv', amountCents: 1000 })).ok);
+  assert((await f.finance.invoices.match({ id: 'inv', expectedVersion: 1 })).ok);
+}
+function file() { const directory = mkdtempSync(join(tmpdir(), 'koyuki-procurement-db-')); return { path: join(directory, 'data.sqlite'), clean: () => rmSync(directory, { recursive: true, force: true }) }; }
+test('SQLite procurement survives reopen and a separate OS reader across all six models', async () => {
+  const store = file(); let repository = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(repository); await matched(f);
+    assert((await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 })).ok);
+    assert((await f.finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId: 'pay', reference: 'bank-1' })).ok);
+    repository.close(); repository = new SqliteProcurement(store.path, 'g1');
+    for (const kind of ['request', 'order', 'receipt', 'invoice', 'payment', 'stock'] as const) {
+      const entities = repository.list(kind, actor('finance')); assert.equal(entities.length, 1);
+      for (const entity of entities) assert.deepEqual(restoreEntity(JSON.parse(JSON.stringify(entity))), entity);
+    }
+    const child = execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
+      const { SqliteProcurement } = await import(${JSON.stringify(new URL('./experiments/procurement/sqlite.ts', import.meta.url).href)});
+      const db = new SqliteProcurement(${JSON.stringify(store.path)}, 'g1');
+      try { console.log(JSON.stringify(db.read('invoice', 'inv', {id:'finance',role:'finance',groupId:'g1',active:true}))); } finally { db.close(); }
+    `], { encoding: 'utf8' });
+    const persisted = JSON.parse(child); assert.equal(persisted.ok, true); assert.equal(persisted.value.state, 'approved');
+    assert((await clients(repository).finance.payments.cancel({ id: 'pay', expectedVersion: 1, reason: 'correction' })).ok);
+    assert((await clients(repository).buyer.orders.complete({ id: 'po', expectedVersion: 3 })).ok);
+  } finally { repository.close(); store.clean(); }
+});
+test('SQLite rolls back order, receipt and invoice changes if the final stock write fails', async () => {
+  const store = file(), repository = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(repository); await matched(f);
+    const admin = new DatabaseSync(store.path);
+    try { admin.exec("CREATE TRIGGER reject_stock BEFORE UPDATE ON procurement WHEN NEW.kind = 'stock' BEGIN SELECT RAISE(ABORT, 'InjectedStockFailure'); END;"); } finally { admin.close(); }
+    const before = (['order', 'receipt', 'invoice', 'stock'] as const).map(kind => JSON.stringify(repository.list(kind, actor('warehouse'))));
+    await assert.rejects(f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' }), /InjectedStockFailure/);
+    const after = (['order', 'receipt', 'invoice', 'stock'] as const).map(kind => JSON.stringify(repository.list(kind, actor('warehouse'))));
+    assert.deepEqual(after, before);
+    const repair = new DatabaseSync(store.path); try { repair.exec('DROP TRIGGER reject_stock'); } finally { repair.close(); }
+    assert((await f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' })).ok);
+    assert.equal(repository.list('invoice', actor('finance'))[0]?.state, 'registered');
+  } finally { repository.close(); store.clean(); }
+});
+test('two SQLite connections serialize inventory CAS and protect reservations against returns', async () => {
+  const store = file(), first = new SqliteProcurement(store.path, 'g1'), second = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(first), g = clients(second); await matched(f);
+    const input = { id: 'warehouse', expectedVersion: 1, sku: 'a', location: 'receiving', quantity: 2 };
+    const results = await Promise.all([f.warehouse.inventory.reserve(input), g.warehouse.inventory.reserve(input)]);
+    assert.equal(results.filter(result => result.ok).length, 1);
+    assert.deepEqual(results.find(result => !result.ok), { ok: false, error: { kind: 'Conflict' } });
+    assert.deepEqual(await g.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' }), { ok: false, error: { kind: 'InsufficientStock' } });
+    assert.equal(second.list('stock', actor('warehouse'))[0]?.positions[0]?.reserved, 2);
+    assert.equal(first.list('invoice', actor('finance'))[0]?.state, 'matched');
+  } finally { first.close(); second.close(); store.clean(); }
+});
+test('corrupt persisted state is a defect, not a valid proof or an expected business rejection', async () => {
+  const store = file(), repository = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(repository); await ordered(f);
+    const admin = new DatabaseSync(store.path);
+    try { admin.exec("UPDATE procurement SET payload = json_remove(payload, '$.approvedBy') WHERE kind = 'request'"); } finally { admin.close(); }
+    assert.throws(() => repository.read('request', 'rq', actor('buyer')), /CorruptProcurementStorage/);
+    assert.throws(() => repository.list('request', actor('buyer')), /CorruptProcurementStorage/);
+    await assert.rejects(f.buyer.orders.place({ id: 'rq', expectedVersion: 3, orderId: 'second', supplier: 'supplier' }), /CorruptProcurementStorage/);
+    assert.equal(repository.list('order', actor('buyer')).length, 1);
+  } finally { repository.close(); store.clean(); }
+});
+test('SQLite binds trusted groups and keeps same business IDs isolated', async () => {
+  const store = file(), first = new SqliteProcurement(store.path, 'g1'), second = new SqliteProcurement(store.path, 'g2');
+  try {
+    await ordered(clients(first)); await ordered(clients(second, 'g2'));
+    assert.deepEqual(first.read('request', 'rq', actor('buyer', 'g2')), { ok: false, error: { kind: 'NotFound' } });
+    assert.equal(first.list('request', actor('buyer', 'g2')).length, 0);
+    const foreign = second.read('request', 'rq', actor('buyer', 'g2')); assert(foreign.ok);
+    assert.deepEqual(await first.commit({ result: foreign.value, writes: [foreign.value], checks: [] }, actor('buyer', 'g2')), { ok: false, error: { kind: 'Conflict' } });
+    assert.equal(first.list('request', actor('buyer')).length, 1);
+    assert.equal(second.list('request', actor('buyer', 'g2')).length, 1);
+  } finally { first.close(); second.close(); store.clean(); }
+});
+
+test('storage decoding accepts all sixteen state shapes and rejects corrupt fields and impossible payloads', () => {
+  const base = { id: 'entity', groupId: 'g1', version: 1 };
+  const request = { ...base, kind: 'request', ownerId: 'buyer', lines, totalCents: 1000 };
+  const invoice = { ...base, kind: 'invoice', orderId: 'order', amountCents: 1000 };
+  const receipt = { ...base, kind: 'receipt', orderId: 'order', quantities: [{ sku: 'a', quantity: 2 }] };
+  const payment = { ...base, kind: 'payment', invoiceId: 'invoice', amountCents: 1000, reference: 'bank-1', recordedBy: 'finance' };
+  const stock = { ...base, id: 'warehouse', kind: 'stock', positions: [{ sku: 'a', location: 'receiving', onHand: 2, reserved: 1 }], lastAdjustment: { reason: 'count', by: 'warehouse' } };
+  const valid = [
+    { ...request, state: 'draft' }, { ...request, state: 'submitted', approverId: 'approver' },
+    { ...request, state: 'approved', approverId: 'approver', approvedBy: 'approver' }, { ...request, state: 'rejected', reason: 'duplicate', rejectedBy: 'approver' },
+    ...['placed', 'cancelled', 'completed'].map(state => ({ ...base, kind: 'order', state, requestId: 'request', ownerId: 'buyer', supplier: 'supplier', lines, totalCents: 1000 })),
+    { ...receipt, state: 'accepted' }, { ...receipt, state: 'returned', reason: 'defect', returnedBy: 'warehouse' },
+    { ...invoice, state: 'registered' }, { ...invoice, state: 'matched', receiptIds: ['receipt'] },
+    { ...invoice, state: 'approved', receiptIds: ['receipt'], approvedBy: 'finance' }, { ...invoice, state: 'voided', reason: 'duplicate', voidedBy: 'finance' },
+    { ...payment, state: 'recorded' }, { ...payment, state: 'cancelled', reason: 'wrong reference', cancelledBy: 'finance' }, stock,
+  ];
+  assert.equal(valid.length, 16);
+  for (const entity of valid) {
+    assert.deepEqual(restoreEntity(JSON.parse(JSON.stringify(entity))), entity);
+    assert.equal(restoreEntity({ ...entity, version: 0 }), null);
+    assert.equal(restoreEntity({ ...entity, unexpected: 'field' }), null);
+    assert.equal(restoreEntity({ ...entity, groupId: '' }), null);
+  }
+  for (const entity of [
+    { ...request, state: 'approved', approverId: 'approver' },
+    { ...request, state: 'approved', approverId: 'buyer', approvedBy: 'buyer' },
+    { ...request, state: 'draft', totalCents: 999 },
+    { ...request, state: 'draft', lines: [{ ...lines[0], unexpected: true }] },
+    { ...invoice, state: 'registered', receiptIds: ['receipt'] },
+    { ...invoice, state: 'matched', receiptIds: ['receipt', 'receipt'] },
+    { ...invoice, state: 'matched', receiptIds: new Array(1) },
+    { ...receipt, state: 'accepted', quantities: [{ sku: 'a', quantity: -1 }] },
+    { ...stock, positions: [{ sku: 'a', location: 'receiving', onHand: 1, reserved: 2 }] },
+    { ...stock, positions: [...stock.positions, ...stock.positions] },
+    { ...stock, lastAdjustment: { reason: ' ', by: 'warehouse' } },
+    { ...payment, state: 'recorded', amountCents: Number.MAX_SAFE_INTEGER + 1 },
+  ]) assert.equal(restoreEntity(entity), null);
+});

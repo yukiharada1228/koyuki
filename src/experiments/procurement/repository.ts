@@ -11,6 +11,9 @@ const key = (kind: Entity['kind'], group: string, id: string) => JSON.stringify(
 export class MemoryProcurement implements ProcurementRepository {
   private readonly records = new Map<string, Entity>();
   commits = 0;
+  constructor(initial: readonly Entity[] = []) {
+    for (const entity of initial) this.records.set(key(entity.kind, entity.groupId, entity.id), structuredClone(entity));
+  }
   read<K extends Entity['kind']>(kind: K, id: string, actor: Actor): Result<Extract<Entity, { kind: K }>, StorageError> {
     const entity = this.records.get(key(kind, actor.groupId, id));
     return entity?.kind === kind ? ok(structuredClone(entity) as Extract<Entity, { kind: K }>) : err({ kind: 'NotFound' });
@@ -19,6 +22,10 @@ export class MemoryProcurement implements ProcurementRepository {
     return [...this.records.values()].filter(entity => entity.kind === kind && entity.groupId === actor.groupId).map(entity => structuredClone(entity) as Extract<Entity, { kind: K }>);
   }
   async commit<T extends Entity>(change: Change<T>, actor: Actor): Promise<Result<T, StorageError>> {
+    return this.apply(change, actor);
+  }
+  /** Synchronous host primitive; SQLite uses it inside an already-open transaction. */
+  apply<T extends Entity>(change: Change<T>, actor: Actor): Result<T, StorageError> {
     for (const condition of change.checks) {
       if (condition.groupId !== actor.groupId || (this.records.get(key(condition.kind, condition.groupId, condition.id))?.version ?? null) !== condition.version) return err({ kind: 'Conflict' });
     }

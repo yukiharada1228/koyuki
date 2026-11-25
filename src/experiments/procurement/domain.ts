@@ -306,3 +306,80 @@ export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFac
   const result: Receipt = { ...parsed.value.result, version: checked.value.version + 1 };
   return ok(receiptChange(result, checked.value, value));
 }
+
+/** Decode persisted values at the domain boundary; never restore proof by casting JSON. */
+export function restoreEntity(value: unknown): Entity | null {
+  const object = (value: unknown): Record<string, unknown> | null => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  const row = object(value); if (!row || !id(row.id) || !id(row.groupId) || typeof row.version !== 'number' || !integer(row.version)) return null;
+  const base = { id: row.id, groupId: row.groupId, version: row.version };
+  const exact = (...fields: string[]) => { const expected = ['kind', 'id', 'groupId', 'version', ...fields]; return Object.keys(row).length === expected.length && expected.every(field => Object.hasOwn(row, field)); };
+  const reason = (value: unknown): value is string => id(value) && value.length <= 1000;
+  const quantityRows = (value: unknown): readonly Quantity[] | null => {
+    if (!Array.isArray(value) || value.length === 0 || value.length > 1000) return null;
+    const seen = new Set<string>(), result: Quantity[] = [];
+    for (const raw of value) {
+      const item = object(raw);
+      if (!item || Object.keys(item).length !== 2 || !id(item.sku) || seen.has(item.sku) || typeof item.quantity !== 'number' || !integer(item.quantity)) return null;
+      seen.add(item.sku); result.push(Object.freeze({ sku: item.sku, quantity: item.quantity }));
+    }
+    return Object.freeze(result);
+  };
+  if (row.kind === 'request' || row.kind === 'order') {
+    if (!Array.isArray(row.lines) || row.lines.some(line => !object(line) || Object.keys(line).length !== 3)) return null;
+    const parsed = lines(row.lines); if (!parsed.ok || row.totalCents !== parsed.value.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) || !id(row.ownerId)) return null;
+    const common = { ...base, ownerId: row.ownerId, lines: parsed.value, totalCents: row.totalCents };
+    if (row.kind === 'order') {
+      if (!exact('state', 'requestId', 'ownerId', 'supplier', 'lines', 'totalCents') || !id(row.requestId) || !id(row.supplier) || (row.state !== 'placed' && row.state !== 'cancelled' && row.state !== 'completed')) return null;
+      return { ...common, kind: 'order', state: row.state, requestId: row.requestId, supplier: row.supplier };
+    }
+    const fields = ['state', 'ownerId', 'lines', 'totalCents'];
+    if (row.state === 'draft' && exact(...fields)) return stamp('request-draft', { ...common, kind: 'request', state: 'draft' });
+    if (row.state === 'submitted' && exact(...fields, 'approverId') && id(row.approverId) && row.approverId !== row.ownerId) return stamp('request-submitted', { ...common, kind: 'request', state: 'submitted', approverId: row.approverId });
+    if (row.state === 'approved' && exact(...fields, 'approverId', 'approvedBy') && id(row.approverId) && row.approvedBy === row.approverId && row.approverId !== row.ownerId) return stamp('request-approved', { ...common, kind: 'request', state: 'approved', approverId: row.approverId, approvedBy: row.approverId });
+    if (row.state === 'rejected' && exact(...fields, 'rejectedBy', 'reason') && id(row.rejectedBy) && row.rejectedBy !== row.ownerId && reason(row.reason)) return stamp('request-rejected', { ...common, kind: 'request', state: 'rejected', rejectedBy: row.rejectedBy, reason: row.reason });
+    return null;
+  }
+  if (row.kind === 'receipt') {
+    const quantities = quantityRows(row.quantities); if (!quantities || !id(row.orderId)) return null;
+    const common = { ...base, kind: 'receipt' as const, orderId: row.orderId, quantities };
+    if (row.state === 'accepted' && exact('state', 'orderId', 'quantities')) return { ...common, state: 'accepted' };
+    if (row.state === 'returned' && exact('state', 'orderId', 'quantities', 'reason', 'returnedBy') && reason(row.reason) && id(row.returnedBy)) return { ...common, state: 'returned', reason: row.reason, returnedBy: row.returnedBy };
+    return null;
+  }
+  if (row.kind === 'invoice') {
+    if (!id(row.orderId) || typeof row.amountCents !== 'number' || !integer(row.amountCents)) return null;
+    const common = { ...base, kind: 'invoice' as const, orderId: row.orderId, amountCents: row.amountCents };
+    if (row.state === 'registered' && exact('state', 'orderId', 'amountCents')) return { ...common, state: 'registered' };
+    if (row.state === 'voided' && exact('state', 'orderId', 'amountCents', 'reason', 'voidedBy') && reason(row.reason) && id(row.voidedBy)) return { ...common, state: 'voided', reason: row.reason, voidedBy: row.voidedBy };
+    if (!Array.isArray(row.receiptIds) || !row.receiptIds.length || !Array.from(row.receiptIds).every(id) || new Set(row.receiptIds).size !== row.receiptIds.length) return null;
+    const receiptIds: readonly string[] = Object.freeze([...row.receiptIds]);
+    if (row.state === 'matched' && exact('state', 'orderId', 'amountCents', 'receiptIds')) return { ...common, state: 'matched', receiptIds };
+    if (row.state === 'approved' && exact('state', 'orderId', 'amountCents', 'receiptIds', 'approvedBy') && id(row.approvedBy)) return { ...common, state: 'approved', receiptIds, approvedBy: row.approvedBy };
+    return null;
+  }
+  if (row.kind === 'payment') {
+    if (!id(row.invoiceId) || typeof row.amountCents !== 'number' || !integer(row.amountCents) || !id(row.reference) || row.reference.length > 200 || !id(row.recordedBy)) return null;
+    const common = { ...base, kind: 'payment' as const, invoiceId: row.invoiceId, amountCents: row.amountCents, reference: row.reference, recordedBy: row.recordedBy };
+    if (row.state === 'recorded' && exact('state', 'invoiceId', 'amountCents', 'reference', 'recordedBy')) return { ...common, state: 'recorded' };
+    if (row.state === 'cancelled' && exact('state', 'invoiceId', 'amountCents', 'reference', 'recordedBy', 'reason', 'cancelledBy') && reason(row.reason) && id(row.cancelledBy)) return { ...common, state: 'cancelled', reason: row.reason, cancelledBy: row.cancelledBy };
+    return null;
+  }
+  if (row.kind === 'stock') {
+    if (row.id !== 'warehouse' || !exact('positions', 'lastAdjustment') || !Array.isArray(row.positions)) return null;
+    const positions: Position[] = [], seen = new Set<string>();
+    for (const raw of row.positions) {
+      const item = object(raw);
+      if (!item || Object.keys(item).length !== 4 || !id(item.sku) || !id(item.location) || typeof item.onHand !== 'number' || !Number.isSafeInteger(item.onHand) || item.onHand < 0 || typeof item.reserved !== 'number' || !Number.isSafeInteger(item.reserved) || item.reserved < 0 || item.reserved > item.onHand) return null;
+      const key = JSON.stringify([item.sku, item.location]); if (seen.has(key)) return null; seen.add(key);
+      positions.push(Object.freeze({ sku: item.sku, location: item.location, onHand: item.onHand, reserved: item.reserved }));
+    }
+    let lastAdjustment: Stock['lastAdjustment'] = null;
+    if (row.lastAdjustment !== null) {
+      const adjustment = object(row.lastAdjustment);
+      if (!adjustment || Object.keys(adjustment).length !== 2 || !reason(adjustment.reason) || !id(adjustment.by)) return null;
+      lastAdjustment = { reason: adjustment.reason, by: adjustment.by };
+    }
+    return { ...base, kind: 'stock', positions: Object.freeze(positions), lastAdjustment };
+  }
+  return null;
+}
