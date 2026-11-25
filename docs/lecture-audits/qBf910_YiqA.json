@@ -170,6 +170,16 @@
         "src/experiments/procurement/application.ts",
         "src/experiments/procurement/domain.ts"
       ]
+    },
+    "stockPlanningFollowUp": {
+      "implementationBaseCommit": "5afa9df00b7b742d8f640ff772b123bfcba97b92",
+      "scope": "Implementation and comparison tests only; no new lecture audio or frame review; no independent user trial. Partial topic statuses remain unchanged.",
+      "evidence": [
+        "docs/procurement-stock-planning.md",
+        "src/procurement-stock-planning.test.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/inventory.ts"
+      ]
     }
   },
   "sections": [
