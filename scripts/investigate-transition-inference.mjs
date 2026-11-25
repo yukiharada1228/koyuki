@@ -74,6 +74,9 @@ function restConnectionCandidate(constraint) {
 }
 const candidates = [
   ['current', original],
+  ['monomorphic-with-input-overload', monomorphicWithInput()],
+  ['mapped-adjacency', mappedAdjacency(false)],
+  ['mapped-adjacency-no-infer', mappedAdjacency(true)],
   ['raw-object-rest-check', restConnectionCandidate('object')],
   ['raw-unknown-rest-check', restConnectionCandidate('unknown')],
   ['unconstrained-rest-check', restConnectionCandidate()],
@@ -98,6 +101,20 @@ const candidates = [
     '}): {\n  readonly validate: Step<StageInput<A>',
     '} & NoInfer<T extends ConnectedStages<StageOutput<A>, T> ? unknown : never>): {\n  readonly validate: Step<StageInput<A>')],
 ];
+function mappedAdjacency(noInfer) {
+  const helper = `type PriorStages<I, T extends readonly AnyStage[]> = readonly [I, ...{ readonly [K in keyof T]: StageOutput<T[K]> }];
+type MappedConnection<I, T extends readonly AnyStage[]> = { readonly [K in keyof T]: Stage<PriorStages<I, T>[K & keyof PriorStages<I, T>], StageOutput<T[K]>, StageFailure<T[K]>> };
+`;
+  return original.replace('export function defineTransition<', helper + 'export function defineTransition<')
+    .replace(requirement, `require?: T & ${noInfer ? 'NoInfer<MappedConnection<StageOutput<A>, T>>' : 'MappedConnection<StageOutput<NoInfer<A>>, T>'};`);
+}
+function monomorphicWithInput() {
+  const signature = 'export function withInput<I, O, E>(rule: Rule<I, O, E>): Rule<I, Readonly<{ input: I; value: O }>, E>';
+  const overload = `export function withInput<const F extends Rule<never, unknown, unknown>>(rule: F & (unknown extends Parameters<F>[0] ? never : unknown)): Rule<Parameters<F>[0], Readonly<{ input: Parameters<F>[0]; value: StageOutput<F> }>, StageFailure<F>> & object;
+${signature};
+`;
+  return original.replace(signature, overload + signature);
+}
 const args = process.argv.slice(2);
 if (!(args.length === 0 || (args.length === 2 && args[0] === '--only'))) throw new Error('Use no arguments or --only comma,separated,candidate,names');
 const selected = args.length ? args[1].split(',') : candidates.map(([name]) => name);

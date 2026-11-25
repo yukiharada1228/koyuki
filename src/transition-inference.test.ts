@@ -105,3 +105,12 @@ test('withInput keeps non-identity generic output structure', () => {
   assert.deepEqual(number, ok({ input: 2, value: { item: 2 } }));
   assert.deepEqual(text, ok({ input: 'approved', value: { item: 'approved' } }));
 });
+
+test('withInput retains extra fields through a constrained generic domain function', () => {
+  const preserve = withInput(<T extends { amount: number }>(value: T) => ok(value));
+  const input = { amount: 3, currency: 'JPY' as const };
+  const result = preserve(input);
+  type Exact = Assert<Equal<typeof result, Result<Readonly<{ input: typeof input; value: typeof input }>, never>>>;
+  assert(result.ok); assert.equal(result.value.input, input); assert.equal(result.value.value, input);
+  assert.equal(result.value.value.currency, 'JPY');
+});

@@ -54,6 +54,26 @@ TS更新等により制限が解消すれば、不要になったts-expect-error
 中間状態に業務上の名前を与えた通常の関数・型も比較対象にする。
 名前付きにすればReact/Elm相当の書き心地になる、という実証ではない。
 
+## 位置ごとの接続チェックとmonomorphic overloadの追加調査
+
+[追加結果](transition-inference-mapped-checks.json)では、再帰的な接続チェックを
+各tuple位置のmapped typeへ置き換える2候補を確認した。NoInferを全体へ付ける場合も、
+既存契約は維持したがinlineの推論制限は解消しなかった。
+
+withInputへ普通の関数用overloadを追加し、入力型がunknownなら従来のgenericな宣言へ
+戻す候補も確認した。この候補もinline例を改善せず、制約付きgeneric関数の型を壊した。
+`<T extends { amount: number }>(value: T) => ok(value)`の型引数を単なる制約へ潰すと、
+呼び出し時に渡したcurrency等の追加フィールドと戻り値の対応が失われる。
+入力型がunknownかどうかの判定だけでは、generic関数を安全に見分けられない。
+
+[回帰検査](../src/transition-inference.test.ts)へこの制約付きgeneric例を追加した。
+既存の制約なしidentityだけで候補の互換性を判断せず、入力・出力の厳密一致と参照を確認する。
+今回の3候補は不採用とし、実装と公開APIは変更していない。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,mapped-adjacency,mapped-adjacency-no-infer,monomorphic-with-input-overload
+```
+
 ## 宣言候補の再検証
 
 `node scripts/investigate-transition-inference.mjs` は、srcとtsconfigを一時ディレクトリへ
