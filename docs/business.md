@@ -68,6 +68,7 @@ voidの検証結果から元の入力を暗黙に復元しない。必要な値�
 Process自体は全体transactionや永続的な再開を提供しない。
 複数の取得からloadの入力を組む場合は、[effectの成功値投影](effect-projection.md)で
 前のcontextと取得成功値から次の入力を構築でき、Resultの取り出しと失敗停止を委譲できる。
+[購買25操作への適用](procurement-framework-context.md)では、比較側の手続き型loaderと分けて検証している。
 
 ## 既存APIとの関係
 

@@ -5,7 +5,7 @@ import type { ProcurementRepository } from './repository.js';
 
 type Input<I> = { input: I; actor: Actor };
 
-/** Alternative loaders kept separate from the common baseline and all public APIs. */
+/** Shared Process loaders; conventional baselines retain context.ts. Not a root package API. */
 export function procurementProcessContext<E>(repository: ProcurementRepository<E>, identity: Actor, configuration: Pick<Policy, 'receiptDepletion'> = {}) {
   const actor = Object.freeze({ ...identity });
   const receiptDepletion = configuration.receiptDepletion;
@@ -29,5 +29,5 @@ export function procurementProcessContext<E>(repository: ProcurementRepository<E
   const receipt = <I extends VersionInput>(input: I) => receiptFlow<I>().run(initial(input));
   const invoiceDetailed = <I extends VersionInput>() => ({ runDetailed: (input: I) => invoiceFlow<I>().runDetailed(initial(input)) });
   const receiptDetailed = <I extends VersionInput>() => ({ runDetailed: (input: I) => receiptFlow<I>().runDetailed(initial(input)) });
-  return { invoice, receipt, invoiceDetailed, receiptDetailed };
+  return { actor, invoice, receipt, invoiceDetailed, receiptDetailed };
 }

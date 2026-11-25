@@ -4,7 +4,8 @@
 複数のRepository呼び出しからRuleの入力を組み立てる部分にも残っている。
 [共通context](../src/experiments/procurement/context.ts)の請求書・入荷の読み込みを、
 既存のProcessで[別実装](../src/experiments/procurement/context-process.ts)へ組み直した。
-25操作の既存実装・比較対象は変更していない。後述の詳細記録には共通load契約の拡張を使う。
+初回試作では25操作の既存実装・比較対象を変更しなかった。現在は[25操作への適用](procurement-framework-context.md)へ進み、
+Koyuki側のloaderをProcessへ移した。plain/helperは従来のcontextを維持する。後述の詳細記録には共通load契約の拡張を使う。
 
 ## 任せられたことと残ったこと
 
@@ -33,7 +34,8 @@ attach自体にはResultの判定が1か所あった。
 初回のattachには、動的な名前付きプロパティを型へ反映する内部の型アサーションもあった。
 普通のasync関数で早期returnする元の実装より簡単だと示す根拠はまだない。
 attachは公開せず、現在の実装は既存effectの任意の第3引数で成功値から入力を構築する。
-6つのeffect名と入力構築は依然として必要で、全25操作のloaderを置き換えたり、DXの優位を実証したりはしていない。
+6つのeffect名と入力構築は依然として必要で、DXの優位は実証していない。
+この2loaderの検査に加え、現在は[全13種類のhost loadと25操作](procurement-framework-context.md)へ適用している。
 
 初回のattachは既知のDTOと固定キー専用だった。現在のeffectはrecordを自動結合せず、projectorが次の値を明示する。
 同じ入力contextを各I/Oへ残すという用途と、前段の成功値だけを次段へ渡す通常のeffectは区別する必要がある。
@@ -64,7 +66,9 @@ attachは公開せず、現在の実装は既存effectの任意の第3引数で�
 [4操作の宣言](../src/experiments/procurement/context-application.ts)で、試作loaderをbusinessへ渡し、
 既存の承認・請求書取消・返品・入荷訂正RuleとRepository.commitへ接続した。
 Resultを取り出してRuleや保存を呼ぶ手続きは追加していない。
-元の25操作は引き続き共通contextを使い、比較用の4操作だけを別factoryで構成する。
+初回の4操作比較時点では元の25操作は共通contextを使っていた。
+現在、Koyukiの25操作もProcess contextを使うため、この4操作比較だけを独立loader間の比較とはしない。
+従来の手続き型contextとのload単体比較と、plain/helperとの25操作比較を別に継続する。
 
 メモリとSQLiteのそれぞれで、4操作の成功結果・ActionReport全体・保存後の全6モデルが従来実装と一致した。
 SQLiteは各`:memory:` DBでの実行であり、この比較自体は再起動・別writer・分離レベルの検証ではない。

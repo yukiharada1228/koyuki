@@ -40,6 +40,13 @@
       "sections": [
         "qbf-19"
       ]
+    },
+    "frameworkContextFollowUp": {
+      "implementationBaseCommit": "0796c4525b1beb7bed5dc6be62075cb8fb22ff56",
+      "scope": "Implementation follow-up: use Process-based host loaders for the 25-operation Koyuki example while retaining conventional baseline context. No new source/audio review.",
+      "sections": [
+        "qbf-19"
+      ]
     }
   },
   "sections": [
@@ -319,7 +326,9 @@
         "docs/lecture-core-focus.md",
         "docs/transition-inference-rest-checks.json",
         "docs/effect-projection.md",
-        "src/process-projection.test.ts"
+        "src/process-projection.test.ts",
+        "docs/procurement-framework-context.md",
+        "src/procurement-framework-context.test.ts"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"

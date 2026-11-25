@@ -39,6 +39,14 @@
         "iz-22",
         "iz-24"
       ]
+    },
+    "frameworkContextFollowUp": {
+      "implementationBaseCommit": "0796c4525b1beb7bed5dc6be62075cb8fb22ff56",
+      "scope": "Implementation follow-up: use Process-based host loaders for the 25-operation Koyuki example while retaining conventional baseline context. No new source/audio review.",
+      "sections": [
+        "iz-22",
+        "iz-24"
+      ]
     }
   },
   "sections": [
@@ -333,7 +341,9 @@
         "docs/lecture-core-focus.md",
         "src/live-execution.test.ts",
         "docs/effect-projection.md",
-        "src/process-projection.test.ts"
+        "src/process-projection.test.ts",
+        "docs/procurement-framework-context.md",
+        "src/procurement-framework-context.test.ts"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
@@ -367,7 +377,9 @@
         "src/procurement-load-composition.test.ts",
         "docs/transition-inference-study.md",
         "docs/effect-projection.md",
-        "src/process-projection.test.ts"
+        "src/process-projection.test.ts",
+        "docs/procurement-framework-context.md",
+        "src/procurement-framework-context.test.ts"
       ],
       "remaining": [
         "genericヘルパーと未注釈evolveの同時推論には制限がある。"

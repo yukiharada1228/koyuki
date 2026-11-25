@@ -5,6 +5,9 @@
 [ファイル別の集計結果](procurement-change-metrics.json)を保存した。
 作業ツリーや現在のHEADを対象へ混ぜず、同じ履歴から再集計できる。
 
+後続で[現在のKoyuki loaderをProcessへ移した](procurement-framework-context.md)が、下記は
+その変更前の固定revisionの計測である。現在の2系統のcontextの保守コストや差分を測った値ではない。
+
 ## 結果
 
 数字はGitの物理行の追加／削除で、空行・コメント・書式変更も含む。

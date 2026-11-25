@@ -58,6 +58,9 @@ live spanも外側のeffectに入力構築を含む。詳細loaderのIO成功後
 書く必要があるのは取得関数と次の入力構築で、Resultの接続はruntimeへ委譲する。
 これだけでReact/Elmと同等の書き心地や、独立利用者の生産性優位が実証されたとは扱わない。
 
+後続の[25操作への適用](procurement-framework-context.md)では、Koyuki側の全host loaderへこの接続を広げた。
+plain/helperは従来の手続き型loaderを維持し、新旧の取得順序・失敗停止・入力保持も比較する。
+
 [専用検査](../src/process-projection.test.ts)は型の維持、不正な接続の拒否、失敗停止、例外、
 参照とopaque値、capture、live span、詳細loader、並行実行、従来の2引数契約を対象にする。
 実tarballのconsumer、Node型なしの配布宣言、Node globalなしのbundleでも検査する。

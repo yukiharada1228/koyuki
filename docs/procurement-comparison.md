@@ -10,8 +10,8 @@
 | 対象 | 3方式での扱い |
 | --- | --- |
 | 業務型・検証・遷移 | domain.ts、inventory.tsを共有 |
-| 認証済みactor・policyのsnapshot | context.tsを共有 |
-| 複数モデルのloadと関連照会 | context.tsを共有 |
+| 認証済みactor・policyのsnapshot | 同じ契約。plain/helperはcontext.ts、Koyukiはcontext-framework.ts |
+| 複数モデルのloadと関連照会 | plain/helperは手続き型context、Koyukiは[Process context](procurement-framework-context.md)。結果と順序を別途照合 |
 | 保存・CAS・一意性・復元・複合transaction | 同じMemory／SQLite adapterを使用 |
 | load → domain → saveの接続 | 各方式で別実装 |
 | 基本trace・保存計画 | [追加比較](procurement-trace-comparison.md)で代表的な成功・失敗を検証 |
@@ -22,10 +22,11 @@
 通常TypeScript版は`plain.ts`で各操作にResultの分岐と保存を明記する。
 helper版は`helper.ts`のaction関数へ同じ処理をまとめ、操作ごとにloadと業務関数を渡す。
 共通化を禁止して通常TypeScriptを不利にしない。
-Koyuki版は既存のbusiness宣言を使い、同じcontextのloadと同じ業務関数を接続する。
+Koyuki版は既存のbusiness宣言を使い、Process contextのloadと同じ業務関数を接続する。
 
-比較用にcontextをKoyukiから切り出したため、hostのデータ取得を3回コピーしていない。
-型とactorの注入境界は維持し、既存の再送・Application・SQLiteテストも継続する。
+初回比較ではcontextを共有していた。後続の[loader適用](procurement-framework-context.md)ではKoyuki側を分離し、
+plain/helperがKoyukiのProcessを実行する循環を避けた。型とactorの注入境界は維持し、
+既存の再送・Application・SQLiteテストも継続する。現在はhost contextの2系統の保守も評価対象となる。
 
 domain/contextは共通のResult型とok/errを使う。基準実装はbusiness/Workflowを実行しないが、
 Koyukiのコード・依存を一切使わない別製品を作ったという比較ではない。
