@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { receiveIntoStock } from './experiments/procurement/inventory.js';
 import { procurement } from './experiments/procurement/application.js';
 import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
 import { completeOrder, receiveOrder, type Actor, type Approved, type Draft, type Request, type RuleError } from './experiments/procurement/domain.js';
@@ -405,3 +406,95 @@ test('concurrent return and correction save exactly one composite change', async
   const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok); assert.equal(invoice.value.state, 'registered'); assert.equal(invoice.value.version, 3);
   const order = f.repository.read('order', 'po', actor('buyer')); assert(order.ok); assert.equal(order.value.version, 4);
 });
+
+test('receipts feed inventory; reservations and relocated quantities prevent returns without partial updates', async () => {
+  const f = setup(); await invoiced(f);
+  const base = { id: 'warehouse', sku: 'a', location: 'receiving', quantity: 1 };
+  assert((await f.warehouse.inventory.reserve({ ...base, expectedVersion: 1 })).ok);
+  let before = f.repository.commits;
+  assert.deepEqual(await f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' }), err({ kind: 'InsufficientStock' }));
+  assert.equal(f.repository.commits, before);
+  const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok); assert.equal(invoice.value.state, 'matched');
+  assert((await f.warehouse.inventory.release({ ...base, expectedVersion: 2 })).ok);
+  assert((await f.warehouse.inventory.move({ ...base, expectedVersion: 3, destination: 'shelf' })).ok);
+  before = f.repository.commits;
+  assert.deepEqual(await f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' }), err({ kind: 'InsufficientStock' }));
+  assert.equal(f.repository.commits, before);
+  assert((await f.warehouse.inventory.move({ ...base, location: 'shelf', destination: 'receiving', expectedVersion: 4 })).ok);
+  assert((await f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' })).ok);
+  const stock = f.repository.read('stock', 'warehouse', actor('warehouse')); assert(stock.ok);
+  assert.equal(stock.value.version, 6); assert.equal(stock.value.positions.reduce((sum, row) => sum + row.onHand, 0), 0);
+});
+test('inventory adjustment, reservation, release and movement preserve safe nonnegative quantities', async () => {
+  const f = setup(), base = { id: 'warehouse', sku: 'a', location: 'shelf' };
+  const adjusted = await f.warehouse.inventory.adjust({ ...base, expectedVersion: 0, quantity: 5, reason: ' Opening count ' }); assert(adjusted.ok);
+  assert.deepEqual(adjusted.value.lastAdjustment, { reason: 'Opening count', by: 'warehouse' });
+  assert((await f.warehouse.inventory.reserve({ ...base, expectedVersion: 1, quantity: 3 })).ok);
+  const before = f.repository.commits;
+  assert.deepEqual(await f.warehouse.inventory.adjust({ ...base, expectedVersion: 2, quantity: 2, reason: 'count' }), err({ kind: 'InsufficientStock' }));
+  assert.deepEqual(await f.warehouse.inventory.move({ ...base, expectedVersion: 2, quantity: 3, destination: 'other' }), err({ kind: 'InsufficientStock' }));
+  assert.deepEqual(await f.warehouse.inventory.release({ ...base, expectedVersion: 2, quantity: 4 }), err({ kind: 'InsufficientStock' }));
+  assert.equal(f.repository.commits, before);
+  const moved = await f.warehouse.inventory.move({ ...base, expectedVersion: 2, quantity: 2, destination: 'other' }); assert(moved.ok);
+  assert.equal(moved.value.positions.reduce((sum, row) => sum + row.onHand, 0), 5);
+  assert.equal(moved.value.positions.reduce((sum, row) => sum + row.reserved, 0), 3);
+  assert((await f.warehouse.inventory.release({ ...base, expectedVersion: 3, quantity: 3 })).ok);
+  assert((await f.warehouse.inventory.adjust({ ...base, expectedVersion: 4, quantity: 0, reason: 'recount' })).ok);
+});
+test('inventory commands reject wrong actors, versions, scope, identifiers and numeric boundaries', async () => {
+  const f = setup(), base = { id: 'warehouse', expectedVersion: 0, sku: 'a', location: 'shelf', quantity: 5, reason: 'count' };
+  assert.deepEqual(await f.buyer.inventory.adjust(base), err({ kind: 'Denied' }));
+  for (const input of [{ ...base, quantity: -1 }, { ...base, quantity: Infinity }, { ...base, quantity: Number.MAX_SAFE_INTEGER + 1 }, { ...base, expectedVersion: -1 }, { ...base, sku: ' ' }, { ...base, reason: ' ' }]) assert.deepEqual(await f.warehouse.inventory.adjust(input), err({ kind: 'InvalidInput' }));
+  assert.deepEqual(await f.warehouse.inventory.adjust({ ...base, id: 'other' }), err({ kind: 'TargetMismatch' }));
+  assert((await f.warehouse.inventory.adjust(base)).ok);
+  assert.deepEqual(await f.warehouse.inventory.reserve({ ...base, quantity: 1 }), err({ kind: 'Conflict' }));
+  assert.deepEqual(await f.warehouse.inventory.move({ ...base, expectedVersion: 1, destination: 'shelf' }), err({ kind: 'InvalidInput' }));
+  const foreign = f.as(actor('warehouse', 'warehouse', 'foreign'));
+  assert.deepEqual(await foreign.inventory.reserve({ ...base, quantity: 1 }), err({ kind: 'InsufficientStock' }));
+});
+test('concurrent reservations cannot overallocate; receipt correction cannot reduce reserved stock', async () => {
+  const f = setup(); await invoiced(f);
+  const base = { id: 'warehouse', expectedVersion: 1, sku: 'a', location: 'receiving', quantity: 2 };
+  const results = await Promise.all([f.warehouse.inventory.reserve(base), f.warehouse.inventory.reserve(base)]);
+  assert.equal(results.filter(result => result.ok).length, 1); assert.deepEqual(results.find(result => !result.ok), err({ kind: 'Conflict' }));
+  const before = f.repository.commits;
+  assert.deepEqual(await f.warehouse.receipts.correct({ id: 'rc', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 1 }] }), err({ kind: 'InsufficientStock' }));
+  assert.equal(f.repository.commits, before);
+  const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok); assert.equal(invoice.value.state, 'matched');
+});
+test('return racing reservation preserves inventory and matching consistently', async () => {
+  for (const returnFirst of [true, false]) {
+    const f = setup(); await invoiced(f);
+    const reserve = () => f.warehouse.inventory.reserve({ id: 'warehouse', expectedVersion: 1, sku: 'a', location: 'receiving', quantity: 2 });
+    const returning = () => f.warehouse.receipts.return({ id: 'rc', expectedVersion: 1, reason: 'defect' });
+    const results = await Promise.all(returnFirst ? [returning(), reserve()] : [reserve(), returning()]);
+    assert.equal(results.filter(result => result.ok).length, 1);
+    const stock = f.repository.read('stock', 'warehouse', actor('warehouse')); assert(stock.ok);
+    assert(stock.value.positions.every(row => row.onHand >= row.reserved && row.reserved >= 0));
+    const receipt = f.repository.read('receipt', 'rc', actor('warehouse')); assert(receipt.ok);
+    const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok);
+    assert.equal(invoice.value.state, receipt.value.state === 'returned' ? 'registered' : 'matched');
+  }
+});
+
+test('a clone failure in inventory cannot partially save order and receipt writes', async () => {
+  const f = setup(); await ordered(f);
+  const order = f.repository.read('order', 'po', actor('warehouse')); assert(order.ok);
+  const change = receiveIntoStock({ input: { id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 1 }] },
+    actor: actor('warehouse'), current: order.value, receipts: [], stock: null }); assert(change.ok);
+  const writes = change.value.writes.map(entity => entity.kind === 'stock' ? { ...entity, debug: () => 1 } : entity);
+  const before = f.repository.commits;
+  await assert.rejects(f.repository.commit({ ...change.value, writes }, actor('warehouse')));
+  assert.equal(f.repository.commits, before);
+  assert.equal(f.repository.list('receipt', actor('warehouse')).length, 0);
+  assert.equal(f.repository.list('stock', actor('warehouse')).length, 0);
+  const persisted = f.repository.read('order', 'po', actor('warehouse')); assert(persisted.ok); assert.equal(persisted.value.version, 1);
+});
+
+if (false) {
+  const inventory = setup().warehouse.inventory;
+  // @ts-expect-error move requires a destination; other operations do not fabricate it
+  inventory.move({ id: 'warehouse', expectedVersion: 1, sku: 'a', location: 'receiving', quantity: 1 });
+  // @ts-expect-error adjustment requires its own reason
+  inventory.adjust({ id: 'warehouse', expectedVersion: 1, sku: 'a', location: 'receiving', quantity: 0 });
+}

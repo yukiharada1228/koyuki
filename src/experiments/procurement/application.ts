@@ -1,10 +1,18 @@
+import { stockId, reserveStock, releaseStock, moveStock, adjustStock, receiveIntoStock, returnFromStock, correctInStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, ok } from '../../framework/index.js';
 import { returnReceipt, correctReceipt, recordPayment, cancelPayment, approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, receiveOrder, registerInvoice, matchInvoice,
-  type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
+  type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export function procurement(repository: ProcurementRepository, identity: Actor, configuration: Policy) {
   const actor = Object.freeze({ ...identity });
   const policy = Object.freeze({ requestLimitCents: configuration.requestLimitCents, approverIds: Object.freeze([...configuration.approverIds]) });
+  const loadStock = async () => {
+    const row = await repository.read('stock', stockId, actor);
+    return row.ok ? ok(row.value) : row.error.kind === 'NotFound' ? ok(null) : row;
+  };
+  const loadInventory = async <I extends StockInput>(input: I) => {
+    const stock = await loadStock(); return stock.ok ? ok({ input, actor, stock: stock.value }) : stock;
+  };
   const loadRequest = async <I extends VersionInput>(input: I) => {
     const row = await repository.read('request', input.id, actor); return row.ok ? ok({ input, actor, current: row.value }) : row;
   };
@@ -25,7 +33,8 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
   const loadReceipt = async <I extends VersionInput>(input: I) => {
     const current = await repository.read('receipt', input.id, actor); if (!current.ok) return current;
     const order = await repository.read('order', current.value.orderId, actor); if (!order.ok) return order;
-    return ok({ input, actor, current: current.value, order: order.value,
+    const stock = await loadStock(); if (!stock.ok) return stock;
+    return ok({ stock: stock.value, input, actor, current: current.value, order: order.value,
       receipts: (await repository.list('receipt', actor)).filter(row => row.orderId === order.value.id),
       invoices: (await repository.list('invoice', actor)).filter(row => row.orderId === order.value.id && row.state !== 'voided') });
   };
@@ -50,12 +59,13 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
     complete: { load: (input: VersionInput) => loadOrderFacts(input), run: [completeOrder] },
   } });
   const receipts = business({ name: 'procurement.receipt.v1', load: async (input: ReceiveInput) => {
-    const loaded = await loadOrder(input);
-    return loaded.ok ? ok({ ...loaded.value, receipts: (await repository.list('receipt', actor)).filter(receipt => receipt.orderId === input.id) }) : loaded;
+    const loaded = await loadOrder(input); if (!loaded.ok) return loaded;
+    const stock = await loadStock(); if (!stock.ok) return stock;
+    return ok({ ...loaded.value, stock: stock.value, receipts: (await repository.list('receipt', actor)).filter(receipt => receipt.orderId === input.id) });
   }, save: (change: Change<Receipt>) => repository.commit(change, actor), operations: {
-    receive: [receiveOrder],
-    return: { load: (input: ReasonInput) => loadReceipt(input), run: [returnReceipt] },
-    correct: { load: (input: CorrectInput) => loadReceipt(input), run: [correctReceipt] },
+    receive: [receiveIntoStock],
+    return: { load: (input: ReasonInput) => loadReceipt(input), run: [returnFromStock] },
+    correct: { load: (input: CorrectInput) => loadReceipt(input), run: [correctInStock] },
   } });
   const invoices = business({ name: 'procurement.invoice.v1', load: async (input: RegisterInput) => {
     const loaded = await loadOrder(input);
@@ -79,5 +89,11 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
       const current = await repository.read('payment', input.id, actor); return current.ok ? ok({ input, actor, current: current.value }) : current;
     }, run: [cancelPayment] },
   } });
-  return { requests, orders, receipts, invoices, payments };
+  const inventory = business({ name: 'procurement.inventory.v1', load: (input: StockInput) => loadInventory(input),
+    save: (change: Change<Stock>) => repository.commit(change, actor), operations: {
+      reserve: [reserveStock], release: [releaseStock],
+      move: { load: (input: MoveInput) => loadInventory(input), run: [moveStock] },
+      adjust: { load: (input: AdjustInput) => loadInventory(input), run: [adjustStock] },
+    } });
+  return { requests, orders, receipts, invoices, payments, inventory };
 }
