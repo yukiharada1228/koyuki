@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Workflow.runと通常/再送commandの公開型を関数プロパティへ変更し、配布宣言で入力型を広げた変数に代入して接続検査を迂回できる穴を修正。defineCommand・bindMutation・operation・replayOperationも入力契約を保持。明示的型引数と推論を検査し、Workflow.runを通常のbusiness関数として再利用する例を実配布consumerで検証。
+
 - Workflow.branchとProcess.throughで、配布宣言でも入力の狭すぎるWorkflowを拒否する契約へ修正。Workflow.branchに通常TSの型ガードを受け取る形式を追加。各Unionメンバーを要求する枝を直接接続でき、成功・失敗型を保持。boolean形式を維持し、枝の取り違え・未証明条件の拒否、選択枝のtrace/capture、途中I/Oとの接続を検証。型ガードの正しさとinline入力型注釈の制限は明記。
 
 - 非同期顧客照合後に状態Unionで作成・更新・変更なしを選ぶ実例を既存Process/Workflowで追加。失敗停止・scope不一致・CAS競合・欠陥伝播・型の絞り込みを検査し、実配布consumerへ追加。新しいcore APIは追加せず、永続DB名寄せと予約取込全体は対象外と明記。

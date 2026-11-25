@@ -17,12 +17,12 @@ export type ReplaySaveCheck<S> = [S] extends [Execution<unknown>] ? unknown : {
   readonly 'Koyuki: replay requires save to return Execution<Output>': never;
 };
 export type PlainCommand<I, S, F> = {
-  run(input: I): Promise<Result<S, F>>;
-  runDetailed(input: I): Promise<ActionReport<S, F>>;
+  readonly run: (input: I) => Promise<Result<S, F>>;
+  readonly runDetailed: (input: I) => Promise<ActionReport<S, F>>;
 };
 export type ReplayCommand<I, S, F, RE> = {
-  run(input: I): Promise<Result<Execution<ReplayValue<S>>, F | RE | ReplayInputError>>;
-  runDetailed(input: I): Promise<ReplayReport<ReplayValue<S>, F, RE>>;
+  readonly run: (input: I) => Promise<Result<Execution<ReplayValue<S>>, F | RE | ReplayInputError>>;
+  readonly runDetailed: (input: I) => Promise<ReplayReport<ReplayValue<S>, F, RE>>;
 };
 // Optional or union-valued configuration must expose both possible report formats.
 export type SelectCommand<D, Plain, Replayed> = D extends { replay: infer R }

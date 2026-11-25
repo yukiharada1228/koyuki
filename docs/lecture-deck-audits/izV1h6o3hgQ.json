@@ -535,7 +535,9 @@
       "assessment": "前提状態を要求する関数同士の接続を型検査する。",
       "evidence": [
         "src/command-connection-types.test.ts",
-        "src/tags/domain.ts"
+        "src/tags/domain.ts",
+        "docs/workflow-input-contract.md",
+        "scripts/fixtures/branch-narrowing-types.ts"
       ],
       "remaining": []
     },

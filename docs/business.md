@@ -77,3 +77,6 @@ Process自体は全体transactionや永続的な再開を提供しない。
 
 状態Unionを分岐ごとの関数へ接続する場合は、[型ガード付きWorkflow.branch](typed-branch.md)を利用できる。
 通常のswitchをRule内に書く方式も選べる。非同期I/OはProcessの境界へ置く。
+
+既存Workflowを通常関数として再利用する場合は、runをそのまま登録できる。
+[配布後の入力型の保証範囲](workflow-input-contract.md)を参照。

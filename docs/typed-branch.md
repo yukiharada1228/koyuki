@@ -49,3 +49,7 @@ Nodeの型を読み込まない配布宣言の検査では成功型・失敗型�
 branchの各枝とProcess.throughは、runを関数プロパティとしても要求する契約へ変更した。
 そのため、同じ問題のある接続をソース内だけでなくインストール後にも拒否する。
 この検査は型ガードの真偽自体や任意の型アサーションを検証するものではない。
+
+さらに[Workflow入力契約の検査](workflow-input-contract.md)で、
+Workflow自体・defineCommand・bindMutation・Application操作・command戻り値の
+入力型の拡大による迂回も検査し、runを関数プロパティとして保持する契約へ修正した。

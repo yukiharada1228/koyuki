@@ -1,5 +1,5 @@
 // Regression contracts: methods on supplied commands must not bypass strict input variance.
-import { process, defineAction, withReplay, ok, type ActionReport, type Execution } from './framework/index.js';
+import { process, workflow, bindMutation, defineCommand, defineAction, withReplay, ok, type ActionReport, type Execution } from './framework/index.js';
 if (false) {
   const narrow = { async runDetailed(input: 'approved'): Promise<ActionReport<string, never>> {
     return { result: ok(input.toUpperCase()), trace: [], plan: null };
@@ -52,3 +52,30 @@ const explicit = defineAction<number, string, 'Missing', boolean, 'Denied'>({
   mutation: { runDetailed: async text => ({ result: ok(text.length > 0), trace: [], plan: null }) },
 });
 type ExplicitInput = Assert<Equal<Parameters<typeof explicit.run>[0], number>>;
+
+if (false) {
+  const literal = workflow('one', (value: 'one') => ok(value.length));
+  // @ts-expect-error aliasing cannot widen a workflow input to bypass the connection contract
+  const widened: import('./framework/index.js').Workflow<string, number, never> = literal;
+  void widened;
+  // @ts-expect-error an explicit wider input does not prove the required literal
+  bindMutation<string, number, never, number, never>({ operation: 'unsafe-binding', workflow: literal, save: async value => ok(value) });
+  // @ts-expect-error arbitrary loaded strings have not been proved to be the required literal
+  defineCommand({ operation: 'unsafe', load: async (_id: number) => ok('any' as string), decide: literal, save: async (value: number) => ok(value) });
+  defineCommand({ operation: 'safe', load: async (_id: number) => ok('one' as const),
+    decide: workflow('wide', (value: string) => ok(value.length)), save: async (value: number) => ok(value) });
+}
+
+const connected = defineCommand({ operation: 'typed-command',
+  load: async (id: number): Promise<import('./framework/index.js').Result<string, 'Missing'>> => ok(String(id)),
+  decide: workflow('nonempty', (value: string): import('./framework/index.js').Result<number, 'Empty'> => ok(value.length)),
+  save: async (length: number): Promise<import('./framework/index.js').Result<boolean, 'Conflict'>> => ok(length > 0),
+});
+type CommandInput = Assert<Equal<Parameters<typeof connected.run>[0], number>>;
+type CommandResult = Assert<Equal<Awaited<ReturnType<typeof connected.run>>, import('./framework/index.js').Result<boolean, 'Missing' | 'Empty' | 'Conflict'>>>;
+const explicitCommand = defineCommand<number, string, 'Missing', number, 'Empty', boolean, 'Conflict'>({
+  operation: 'explicit-command', load: async id => ok(String(id)),
+  decide: workflow('length', (value: string) => ok(value.length)), save: async value => ok(value > 0),
+});
+type ExplicitCommandInput = Assert<Equal<Parameters<typeof explicitCommand.run>[0], number>>;
+type ExplicitCommandResult = Assert<Equal<Awaited<ReturnType<typeof explicitCommand.run>>, import('./framework/index.js').Result<boolean, 'Missing' | 'Empty' | 'Conflict'>>>;

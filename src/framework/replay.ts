@@ -74,7 +74,7 @@ export function withReplay<I, O, E, RE>(command: {
 
 /** Preserve the current projection on replay. Refreshing stale projections is host-owned. */
 export function replayOperation<S, I, O, E>(command: {
-  run(input: I): Promise<Result<Execution<O>, E>>;
+  readonly run: (input: I) => Promise<Result<Execution<O>, E>>;
 }, reduce: (state: S, output: NoInfer<O>) => S): Operation<S, I, Execution<O>, E> {
   return operation(command, (state, execution) => execution.kind === 'replayed' ? state : reduce(state, execution.value));
 }

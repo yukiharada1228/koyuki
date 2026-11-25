@@ -187,3 +187,8 @@ hostの永続化責任・予約取込全仕様の未検証を残している。
 [型ガード付きbranch](typed-branch.md)では、状態Unionを絞り込む関数と
 各枝の業務関数を直接接続できる。選択した段階だけをtrace/captureへ記録する。
 業務判断やpredicateの正しさは自動生成・証明しない。inline入力型の注釈制限は残る。
+
+[配布後の入力契約](workflow-input-contract.md)では、ソースのprivate実装に依存していた
+型検査が宣言ファイルで弱まるケースを確認・修正した。Workflow、commandのload→decide、
+mutation binding、Application操作、通常/再送commandの戻り値で、
+入力範囲の不正な拡大を検査する。これを業務仕様・純粋性の証明とは扱わない。

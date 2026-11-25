@@ -486,7 +486,9 @@
       "assessment": "接続漏れや不正状態をコンパイル時に拒否するケースを検証する。",
       "evidence": [
         "src/command-connection-types.test.ts",
-        "docs/business-change-study.md"
+        "docs/business-change-study.md",
+        "docs/workflow-input-contract.md",
+        "scripts/fixtures/branch-narrowing-types.ts"
       ],
       "remaining": [
         "any・型アサーション・外部JS・不正なadapterは保証外。業務仕様の完全性・純粋性・一般的DX改善は証明していない。"

@@ -214,3 +214,11 @@ through/effectの宣言と業務分岐は利用者に残る。後続で型ガー
 枝の取り違えや未検証の追加条件は型エラーになる。boolean形式の契約は維持した。
 false側はExcludeによる型であり、任意の集合の厳密な補集合ではない。
 型ガードの正しさとinline推論の一部注釈は利用者に残る。
+
+## 配布宣言を使う入力契約の検査
+
+[Workflow入力契約](../workflow-input-contract.md)で、ソースでは拒否できる接続が
+インストール後に通る問題を追跡した。Workflow自体やcommand戻り値を広い型へ代入する迂回、
+load→decide・mutation binding・Application操作の入力も検査対象にした。
+readonly関数プロパティで契約を保持し、実tarballの宣言で不正接続の拒否を検査する。
+anyや虚偽の型ガード、外部データ・業務仕様の正しさまでは証明しない。

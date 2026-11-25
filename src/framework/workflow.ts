@@ -3,7 +3,7 @@ import { canonicalIdentity } from './identity.js';
 export type Rule<I, O, E> = (input: I) => Result<O, E>;
 // A function property keeps input contravariance in emitted declarations, where private
 // implementation fields no longer carry the class's input variance.
-type BranchWorkflow<I, O, E> = Workflow<I, O, E> & { readonly run: Rule<I, O, E> };
+type WorkflowConsumer<I, O, E> = Workflow<I, O, E> & { readonly run: Rule<I, O, E> };
 export interface Trace { readonly step: string; readonly status: 'ok' | 'error' }
 export interface Evaluation<O, E> { result: Result<O, E>; trace: readonly Trace[] }
 export interface StepObservation<I, R> { readonly step: string; readonly input: I; readonly result: R }
@@ -21,7 +21,7 @@ export function evaluateRule<I, O, E>(step: string, rule: Rule<I, O, E>, input: 
 }
 export class Workflow<I, O, E> {
   constructor(readonly name: string, readonly steps: readonly string[], private readonly evaluate: (input: I, observe?: StageObserver) => Evaluation<O, E>) {}
-  run(input: I): Result<O, E> { return this.evaluate(input).result; }
+  readonly run = (input: I): Result<O, E> => this.evaluate(input).result;
   inspect(input: I): Evaluation<O, E>;
   inspect<A, B>(input: I, capture: WorkflowCapture<A, B>): Evaluation<O, E> & { readonly observations: readonly StepObservation<A, B>[] };
   inspect<A, B>(input: I, capture?: WorkflowCapture<A, B>): Evaluation<O, E> & { readonly observations?: readonly StepObservation<A, B>[] } {
@@ -35,9 +35,9 @@ export class Workflow<I, O, E> {
     return { ...evaluation, observations: Object.freeze(observations) };
   }
   branch<N extends O, A, B, F, G>(name: string, predicate: (value: O) => value is N,
-    paths: { yes: BranchWorkflow<NoInfer<N>, A, F>; no: BranchWorkflow<Exclude<O, NoInfer<N>>, B, G> }): Workflow<I, A | B, E | F | G>;
+    paths: { yes: WorkflowConsumer<NoInfer<N>, A, F>; no: WorkflowConsumer<Exclude<O, NoInfer<N>>, B, G> }): Workflow<I, A | B, E | F | G>;
   branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,
-    paths: { yes: BranchWorkflow<O, A, F>; no: BranchWorkflow<O, B, G> }): Workflow<I, A | B, E | F | G>;
+    paths: { yes: WorkflowConsumer<O, A, F>; no: WorkflowConsumer<O, B, G> }): Workflow<I, A | B, E | F | G>;
   branch<A, B, F, G>(name: string, predicate: (value: O) => boolean,
     paths: { yes: Workflow<never, A, F>; no: Workflow<never, B, G> }): Workflow<I, A | B, E | F | G> {
     return new Workflow<I, A | B, E | F | G>(this.name, [...this.steps, name], (input, observe) => {
@@ -86,7 +86,7 @@ export function describeView(view: View): unknown {
   return { kind: view.kind, operation: view.operation, input: structuredClone(view.input) };
 }
 export function bindMutation<I, O, E, S, F>(config: {
-  workflow: Workflow<I, O, E>;
+  workflow: WorkflowConsumer<I, O, E>;
   operation: string;
   save: (value: NoInfer<O>) => Promise<Result<S, F>>;
   render?: (value: NoInfer<O>) => View;
