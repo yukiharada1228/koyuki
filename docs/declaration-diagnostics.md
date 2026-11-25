@@ -2,7 +2,7 @@
 
 開発用CLIはTypeScript/TSXのソースを構文解析し、既知の宣言の静的なメタデータを検査する。
 対象モジュールをimportせず、業務関数、トップレベルのコード、getter、repository、
-参照先モジュールを実行しない。既存の型チェックとは別の任意の検査である。
+参照先モジュールを実行しない。明示した入力ファイル間の限定的な参照解決は行う。既存の型チェックとは別の任意の検査である。
 
 ```sh
 npm run check:declarations -- src/tags/model.ts src/tags/events.ts src/expenses/application.ts
@@ -10,6 +10,7 @@ npm run check:declarations -- --json src/expenses/application.ts
 npm run check:declarations -- --json src/experiments/procurement/application.ts
 npm run check:declarations -- --json src/shipping/domain.ts
 npm run check:declarations -- --json src/shipping/feature.ts
+npm run check:declarations -- --json src/shipping/feature.ts src/shipping/domain.ts
 npm run test:declarations
 ```
 
@@ -54,7 +55,7 @@ coreと同じ`${name}.${operationName}`の既定IDを検査する。数値名は
 checkedOperationIdsは検査したIDの出現数であり、重複や共有を除いた業務機能数ではない。
 独自resolverを呼んだり、その関数本体からIDを推測したりせず、未解決として残す。
 Object literalの__proto__ setterをownデータキーと見なさず、そのテーブルも未解決にする。
-動的なID・spread・関数で作るテーブル・import先にある段階の実体はunresolvedとして位置と理由を残す。
+動的なID・spread・関数で作るテーブル・選択外のimport先にある段階の実体はunresolvedとして位置と理由を残す。
 通常関数か名前付きStepか判別できない値に、推測で自動ラベルを付けない。
 defineApplicationやbusinessに動的な操作テーブルを渡すこと自体は正当なので、未解決をエラーにはしない。
 
@@ -64,7 +65,7 @@ Workflowでは、既知のimportの`workflow(name, rule)`を起点とする`then
 別経路に同名段階があっても名前だけでは図へ一意に対応できないため警告するが、
 その両方が実際に実行された、または業務規則が誤っているという判定ではない。
 共通prefixを再利用しても、同じソース位置の組への警告は重ねない。
-動的な名前・importされた分岐の実体・循環参照・展開上限は未解決として残す。
+動的な名前・解決できないimport先の分岐・循環参照・展開上限は未解決として残す。
 展開は一つの構成につき1024個のconstruction callまでで、無制限な全展開ではない。
 未知のオブジェクトのthen/branchを、メソッド名だけでWorkflowと取り違えない。
 任意のメソッド・関数内部・live spanの名前全体を検査する機能ではない。
@@ -75,11 +76,33 @@ Processは既知のimportの`process()`を起点として、`through`・`effect`
 `commit`はローカルの`bindMutation`のWorkflowと保存操作IDを読む。
 同じWorkflowを再利用する場合、二つのthroughの参照位置を報告する。
 WorkflowとProcessで共通の展開予算を使い、一つの構成につき1024 construction callで制限する。
-import先のWorkflow・不明なcommit・動的effect名は、位置付きの未解決として残す。
+解決できないimport先のWorkflow・不明なcommit・動的effect名は、位置付きの未解決として残す。
 effect・save・projectorは実行せず、その内部traceや任意の詳細loaderは解析しない。
 Processのlive観測で使うcommit scope名を、返却traceの段階名と混ぜない。
-送料のfeatureでは保存操作IDを検査し、importされた3つのWorkflowは未解決として報告する。
-domainを別途検査しても、ファイル間の接続まで解決できたという意味にはしない。
+送料のfeatureだけを渡した場合、保存操作IDを検査し、importされた3つのWorkflowは未解決として報告する。
+featureとdomainを同じ検査に渡すと、3つのWorkflowの参照を解決し、診断・未解決とも0になる。
+これは明示された構成の接続であり、関数内部や業務状態の完全性を示すものではない。
+
+## 明示したソース間の参照解決
+
+同じ検査呼び出しへ渡したファイルに限り、相対パスの名前付きimportから、変更されない
+export constの初期値をたどる。importの別名、ローカルconstのexport別名、複数ファイルを
+またぐconst参照を扱い、Workflow・Process・bindMutation・段階名等の既存の静的解析へ接続する。
+解析に渡す順序へ依存せず、参照先の診断は参照先のファイル名・行・列を保持する。
+解析呼び出しをまたいで参照情報を保持しない。
+
+ファイルはCLI引数またはanalyzeDeclarationsの入力で明示する。importを見て自動的にファイルを
+読み足したり、package resolver、実モジュールのimport、getterやトップレベルの評価を行ったりしない。
+指定した正確なパスのほか、.jsから.ts/.tsx、.mjsから.mts、.cjsから.ctsへの対応だけを扱う。
+複数候補や同じ入力パスの重複があれば、一つを推測で選ばない。
+
+選択外のファイル、拡張子省略、package名・path alias、namespace/default/type-only import、
+別モジュールからの再export、letや再代入されたbinding、分割代入、循環した値は解決しない。
+対象宣言がそれらを必要とする場合は従来どおりunresolvedへ残す。
+全importの存在・型・用途を検査する機能ではなく、診断に不要なimportは走査対象に加えない。
+constオブジェクトの後続変更や任意のaliasを介した変更まで解析する保証もない。
+WorkflowとProcessの1024 construction callの予算はファイル間の展開でも共有する。
+
 
 検査はソース上に書いた定義と静的なconst参照の展開であり、実際に到達するコードや、
 オブジェクトの後続変更・任意の別名経由の変更を解析した結果ではない。
@@ -89,9 +112,10 @@ domainを別途検査しても、ファイル間の接続まで解決できた�
 分岐・状態の網羅性、関数本体の純粋性や業務ルールの正しさは証明しない。
 このためIssue #6全体の完了とはしない。
 
-[22件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
+[29件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
 未解決、実例に加え、対象ファイルへ副作用・throw・存在しないimport・getterを置いても
-それらを実行しないことを確認する。CIのcore jobでも継続する。
+それらを実行しないことを確認する。明示した参照先にも副作用・存在しないimport・getterを置き、
+参照解決で実行や自動ファイル探索が起きないことをCLIで検査する。CIのcore jobでも継続する。
 購買の25操作には、独立した期待ID一覧と重複する宣言をテスト用に追加し、
 各操作に対応する25件の警告が出ることも確認する。元のアプリの実行や定義変更は行わない。
 これは講演が指定したCLI仕様ではなく、Koyuki側の開発支援の具体化である。

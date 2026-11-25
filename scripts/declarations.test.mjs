@@ -48,6 +48,94 @@ test('shipping Process declarations retain unresolved imported Workflow metadata
   assert(result.unresolved.every(item => /Workflow/.test(item.reason)));
 });
 
+test('selected shipping sources resolve imported Workflow metadata in either input order', async () => {
+  const paths = ['src/shipping/feature.ts', 'src/shipping/domain.ts'];
+  const files = await Promise.all(paths.map(async file => ({ file, source: await readFile(join(root, file), 'utf8') })));
+  for (const selected of [files, [...files].reverse()]) {
+    const result = analyzeDeclarations(selected);
+    assert.equal(result.checkedOperationIds, 1);
+    assert.deepEqual(result.diagnostics, []); assert.deepEqual(result.unresolved, []);
+  }
+});
+
+test('selected named const exports connect aliases across three source files and preserve diagnostic positions', () => {
+  const files = [
+    { file: 'selected/main.ts', source: `import {workflow} from 'koyuki';
+import {choice as external} from './branch.js';
+workflow('same', rule).branch('choice', predicate, {yes:external,no:workflow('no',rule)});` },
+    { file: 'selected/branch.ts', source: `import {workflow} from 'koyuki';
+import {label as importedLabel} from './label.js';
+const selected = workflow(importedLabel, rule);
+export {selected as choice};` },
+    { file: 'selected/label.ts', source: `export const label = 'same';` },
+  ];
+  const result = analyzeDeclarations(files);
+  assert.deepEqual(result.unresolved, []);
+  assert.equal(result.diagnostics.length, 1);
+  const item = result.diagnostics[0];
+  assert.equal(item.code, 'AMBIGUOUS_WORKFLOW_LABEL');
+  assert.equal(item.file, 'selected/branch.ts'); assert.equal(item.line, 3);
+  assert.equal(item.related[0].file, 'selected/main.ts'); assert.equal(item.related[0].line, 3);
+  assert.deepEqual(analyzeDeclarations([...files].reverse()).diagnostics, result.diagnostics);
+  // A separate analysis must not retain imports from a previous call.
+  assert.equal(analyzeDeclarations([files[0]]).unresolved.length, 1);
+});
+
+test('selected imported bindMutation and Workflow references connect Process labels without evaluating ports', () => {
+  const result = analyzeDeclarations([
+    { file: 'selected/main.ts', source: `import {process} from 'koyuki';
+import {mutation as save} from './save.js';
+process().effect('save.v1', neverExecute).commit(save);` },
+    { file: 'selected/save.ts', source: `import {workflow,bindMutation} from 'koyuki';
+export const mutation=bindMutation({workflow:workflow('validate',neverExecute),operation:'save.v1',save:neverExecute});` },
+  ]);
+  assert.deepEqual(result.unresolved, []);
+  assert.equal(result.diagnostics.length, 1);
+  assert.equal(result.diagnostics[0].code, 'AMBIGUOUS_PROCESS_LABEL');
+  assert.equal(result.diagnostics[0].file, 'selected/save.ts');
+  assert.equal(result.diagnostics[0].related[0].file, 'selected/main.ts');
+});
+
+test('selected source resolver does not infer mutable, type-only, namespace or re-exported values', () => {
+  const main = {file:'selected/main.ts',source:`import {process} from 'koyuki';
+import {mutable, reassigned, forwarded, typed} from './values.js';
+import type {onlyType} from './values.js';
+import * as namespace from './values.js';
+process().through(mutable).through(reassigned).through(forwarded).through(typed).through(onlyType).through(namespace.flow);`};
+  const values = {file:'selected/values.ts',source:`import {workflow} from 'koyuki';
+export let mutable=workflow('mutable',rule);
+export const reassigned=workflow('reassigned',rule); reassigned=other;
+export {flow as forwarded} from './not-selected.js';
+export type {typed,onlyType} from './not-selected.js';
+export const flow=workflow('flow',rule);`};
+  const result=analyzeDeclarations([main,values]);
+  assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 6);
+});
+
+test('ambiguous selected module identities and cyclic imports remain unresolved', () => {
+  const main={file:'selected/main.ts',source:`import {process} from 'koyuki'; import {flow} from './flow.js'; process().through(flow);`};
+  const js={file:'selected/flow.js',source:`import {workflow} from 'koyuki'; export const flow=workflow('js',rule);`};
+  const ts={file:'selected/flow.ts',source:`import {workflow} from 'koyuki'; export const flow=workflow('ts',rule);`};
+  for (const files of [[main,js,ts],[main,ts,ts]]) {
+    const result=analyzeDeclarations(files);
+    assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 1);
+  }
+  const cycle=analyzeDeclarations([main,
+    {file:'selected/flow.ts',source:`import {other} from './other.js'; export const flow=other;`},
+    {file:'selected/other.ts',source:`import {flow} from './flow.js'; export const other=flow;`},
+  ]);
+  assert.deepEqual(cycle.diagnostics, []); assert.equal(cycle.unresolved.length, 1);
+});
+
+test('selected source resolution obeys lexical shadowing and supports explicit module extensions only', () => {
+  const result=analyzeDeclarations([
+    {file:'selected/main.mts',source:`import {process} from 'koyuki'; import {flow} from './flow.mjs';
+process().through(flow); function hidden(flow) { return process().through(flow); }`},
+    {file:'selected/flow.mts',source:`import {workflow} from 'koyuki'; export const flow=workflow('stage',rule);`},
+  ]);
+  assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 1);
+});
+
 test('workflow chains diagnose ambiguous trace labels through const references and explicit branches', () => {
   const result = analyze(`import {workflow as flow} from 'koyuki';
 const base = flow('load', neverExecute);
@@ -243,4 +331,27 @@ defineApplication({get operations(){writeFileSync(${JSON.stringify(marker)}, 'ge
     const invalid = run(['--json']); assert.equal(invalid.status, 1); assert.equal(JSON.parse(invalid.stdout).diagnostics[0].code, 'PARSE_ERROR');
     const usage = spawnSync(process.execPath, ['scripts/check-declarations.mjs'], { cwd: root, encoding: 'utf8' }); assert.equal(usage.status, 2);
   } finally { await rm(temporary, { recursive: true, force: true }); }
+});
+
+
+test('CLI reads selected import sources without executing either module or discovering other files', async () => {
+  const temporary=await mkdtemp(join(tmpdir(),'koyuki-selected-source-cli-'));
+  try {
+    const main=join(temporary,'main.ts'), domain=join(temporary,'domain.ts'), marker=join(temporary,'executed');
+    await writeFile(main, `import {process} from 'koyuki'; import {flow} from './domain.js';
+throw Error('main must not execute'); process().effect('same',neverExecute).through(flow);`);
+    await writeFile(domain, `import {workflow} from 'koyuki'; import {writeFileSync} from 'node:fs';
+import './missing.js'; writeFileSync(${JSON.stringify(marker)},'executed');
+export const flow=workflow('same',(() => {throw Error('rule factory must not execute');})());
+const trap={get value(){writeFileSync(${JSON.stringify(marker)},'getter');}};`);
+    const run=(paths,flags=[])=>spawnSync(process.execPath,['scripts/check-declarations.mjs','--json',...flags,...paths],{cwd:root,encoding:'utf8'});
+    const omitted=run([main]); assert.equal(omitted.status,0,omitted.stderr);
+    assert.equal(JSON.parse(omitted.stdout).unresolved.length,1);
+    const selected=run([main,domain]); assert.equal(selected.status,0,selected.stderr);
+    const report=JSON.parse(selected.stdout);
+    assert.deepEqual(report.unresolved,[]); assert.equal(report.diagnostics.length,1);
+    assert.equal(report.diagnostics[0].code,'AMBIGUOUS_PROCESS_LABEL');
+    assert.equal(run([main,domain],['--strict']).status,1);
+    await assert.rejects(access(marker));
+  } finally {await rm(temporary,{recursive:true,force:true});}
 });

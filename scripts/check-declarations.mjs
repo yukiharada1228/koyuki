@@ -1,12 +1,12 @@
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const knownModule = name => name === 'koyuki' || /(?:^|\/)framework\/index\.[cm]?[jt]sx?$/.test(name);
 const factories = new Set(['defineTarget', 'defineUseCase', 'defineCommand', 'bindMutation', 'defineUseCaseGroup']);
-const position = (file, path) => ({ file, line: path.node.loc.start.line, column: path.node.loc.start.column + 1 });
+const position = (file, path) => ({ file: path.node.loc.filename ?? file, line: path.node.loc.start.line, column: path.node.loc.start.column + 1 });
 function unwrap(path) {
   while (path?.node && ['TSAsExpression', 'TSSatisfiesExpression', 'TSNonNullExpression', 'ParenthesizedExpression'].includes(path.node.type)) path = path.get('expression');
   return path;
@@ -16,136 +16,195 @@ function literal(path) {
   if (path?.isStringLiteral() || path?.isNumericLiteral()) return String(path.node.value);
   if (path?.isTemplateLiteral() && path.node.expressions.length === 0) return path.node.quasis[0].value.cooked;
 }
-function resolveValue(path, seen = new Set()) {
-  path = unwrap(path);
-  if (!path?.isIdentifier()) return path;
-  const binding = path.scope.getBinding(path.node.name);
-  if (!binding || !binding.constant || !binding.path.isVariableDeclarator() || binding.path.parent.kind !== 'const' || seen.has(binding)) return path;
-  seen.add(binding); return resolveValue(binding.path.get('init'), seen);
-}
-function api(path) {
-  path = unwrap(path);
-  if (!path?.node) return;
-  if (path.isIdentifier()) {
+function declarationTools(selectedImports) {
+  function resolveValue(path, seen = new Set()) {
+    path = unwrap(path);
+    if (!path?.isIdentifier()) return path;
     const binding = path.scope.getBinding(path.node.name);
-    if (binding?.path.isImportSpecifier() && binding.path.node.importKind !== 'type') {
-      const declaration = binding.path.parentPath;
-      if (declaration.node.importKind !== 'type' && knownModule(declaration.node.source.value)) return binding.path.node.imported.name ?? binding.path.node.imported.value;
+    if (binding && selectedImports.has(binding) && !seen.has(binding)) {
+      seen.add(binding);
+      return resolveValue(selectedImports.get(binding), seen);
     }
-  } else if (path.isMemberExpression()) {
-    const owner = path.get('object');
-    const binding = owner.isIdentifier() ? owner.scope.getBinding(owner.node.name) : undefined;
-    if (binding?.path.isImportNamespaceSpecifier() && binding.path.parent.importKind !== 'type' && knownModule(binding.path.parent.source.value)) {
-      return path.node.computed ? literal(path.get('property')) : path.node.property.name;
-    }
+    if (!binding || !binding.constant || !binding.path.isVariableDeclarator() || binding.path.parent.kind !== 'const' || seen.has(binding)) return path;
+    seen.add(binding); return resolveValue(binding.path.get('init'), seen);
   }
-}
-function fields(path) {
-  path = resolveValue(path);
-  if (!path?.isObjectExpression() || path.node.properties.some(node => node.type !== 'ObjectProperty')) return;
-  const result = new Map();
-  for (const property of path.get('properties')) {
-    const key = property.node.computed ? literal(property.get('key')) : property.node.key.name ?? literal(property.get('key'));
-    if (key === undefined) return;
-    // In an object literal this spelling sets the prototype rather than an own data key.
-    if (key === '__proto__' && !property.node.computed && !property.node.shorthand) return;
-    result.set(key, property.get('value'));
-  }
-  return result;
-}
-
-// Only explicit framework construction is recognized. Never infer method ownership
-// from a method name alone, or inspect a predicate/rule body.
-function rootedComposition(candidate, factory = 'workflow', methods = ['then', 'branch']) {
-  const seen = new Set();
-  for (let path = resolveValue(candidate); path?.isCallExpression() && !seen.has(path.node);) {
-    seen.add(path.node);
-    const callee = unwrap(path.get('callee'));
-    if (api(callee) === factory) return true;
-    if (!callee?.isMemberExpression()) return false;
-    const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
-    if (!methods.includes(method)) return false;
-    path = resolveValue(callee.get('object'));
-  }
-  return false;
-}
-
-function processLabels(candidate, ancestors = new Set(), budget = { left: 1024 }, provenRoot = false) {
-  const path = resolveValue(candidate);
-  if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedComposition(path, 'process', ['through', 'effect', 'commit'])) return;
-  if (--budget.left < 0) return { labels: [], nodes: [path.node], unresolved: [{ path, reason: 'Process exceeds the static expansion limit of 1024 construction calls' }] };
-  if (api(path.get('callee')) === 'process') return { labels: [], nodes: [path.node], unresolved: [] };
-  const next = new Set(ancestors); next.add(path.node);
-  const callee = unwrap(path.get('callee')), args = path.get('arguments');
-  const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
-  const result = processLabels(callee.get('object'), next, budget, true);
-  if (!result) return;
-  const appendWorkflow = (flow, site) => {
-    const metadata = flow && workflowLabels(flow, next, budget);
-    if (!metadata) result.unresolved.push({ path: site, reason: 'Process Workflow is not a statically resolved local declaration' });
-    else {
-      // A reused local Workflow must identify the two connection sites, rather
-      // than report the same original label literal as both locations.
-      result.labels.push(...metadata.labels.map(item => ({ ...item, path: unwrap(site)?.isIdentifier() ? site : item.path })));
-      result.unresolved.push(...metadata.unresolved); result.nodes.push(...metadata.nodes);
-    }
-  };
-  if (method === 'through') appendWorkflow(args[0], args[0] ?? path);
-  else if (method === 'effect') {
-    const label = literal(resolveValue(args[0]));
-    if (label === undefined) result.unresolved.push({ path, reason: 'Process effect label is dynamic' });
-    else result.labels.push({ label, path: args[0] });
-  } else if (method === 'commit') {
-    const mutation = resolveValue(args[0]);
-    const definition = mutation?.isCallExpression() && api(mutation.get('callee')) === 'bindMutation' && fields(mutation.get('arguments')[0]);
-    if (!definition) result.unresolved.push({ path: args[0] ?? path, reason: 'Process commit is not a statically resolved bindMutation declaration' });
-    else {
-      appendWorkflow(definition.get('workflow'), args[0] ?? path);
-      const operation = definition.get('operation'), label = operation && literal(resolveValue(operation));
-      if (label === undefined) result.unresolved.push({ path: operation ?? path, reason: 'Process commit operation label is dynamic or absent' });
-      else result.labels.push({ label, path: operation });
-    }
-  }
-  result.nodes.push(path.node); return result;
-}
-function workflowLabels(candidate, ancestors = new Set(), budget = { left: 1024 }, provenRoot = false) {
-  const path = resolveValue(candidate);
-  if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedComposition(path)) return;
-  if (--budget.left < 0) return { labels: [], nodes: [path.node], unresolved: [{ path, reason: 'Workflow exceeds the static expansion limit of 1024 construction calls' }] };
-  const next = new Set(ancestors); next.add(path.node);
-  const callee = unwrap(path.get('callee'));
-  const args = path.get('arguments');
-  let result;
-  if (api(callee) === 'workflow') result = { labels: [], unresolved: [], nodes: [] };
-  else if (callee?.isMemberExpression()) {
-    const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
-    if (method !== 'then' && method !== 'branch') return;
-    result = workflowLabels(callee.get('object'), next, budget, true);
-    if (!result) return;
-    if (method === 'branch') {
-      const name = literal(resolveValue(args[0]));
-      if (name === undefined) result.unresolved.push({ path, reason: 'Workflow branch label is dynamic' });
-      else for (const choice of ['yes', 'no']) result.labels.push({ label: `${name}:${choice}`, path: args[0] });
-      const paths = fields(args[2]);
-      if (!paths) result.unresolved.push({ path, reason: 'Workflow branches are not a statically resolved data object' });
-      else for (const choice of ['yes', 'no']) {
-        const child = paths.get(choice);
-        const branch = child && workflowLabels(child, next, budget);
-        if (!branch) result.unresolved.push({ path: child ?? path, reason: 'Workflow branch body is unresolved, cyclic, or exceeds the static expansion limit' });
-        else {
-          result.labels.push(...branch.labels); result.unresolved.push(...branch.unresolved); result.nodes.push(...branch.nodes);
-        }
+  function api(path) {
+    path = unwrap(path);
+    if (!path?.node) return;
+    if (path.isIdentifier()) {
+      const binding = path.scope.getBinding(path.node.name);
+      if (binding?.path.isImportSpecifier() && binding.path.node.importKind !== 'type') {
+        const declaration = binding.path.parentPath;
+        if (declaration.node.importKind !== 'type' && knownModule(declaration.node.source.value)) return binding.path.node.imported.name ?? binding.path.node.imported.value;
       }
-      result.nodes.push(path.node); return result;
+    } else if (path.isMemberExpression()) {
+      const owner = path.get('object');
+      const binding = owner.isIdentifier() ? owner.scope.getBinding(owner.node.name) : undefined;
+      if (binding?.path.isImportNamespaceSpecifier() && binding.path.parent.importKind !== 'type' && knownModule(binding.path.parent.source.value)) {
+        return path.node.computed ? literal(path.get('property')) : path.node.property.name;
+      }
     }
-  } else return;
-  const label = literal(resolveValue(args[0]));
-  if (label === undefined) result.unresolved.push({ path, reason: 'Workflow step label is dynamic' });
-  else result.labels.push({ label, path: args[0] });
-  result.nodes.push(path.node); return result;
+  }
+  function fields(path) {
+    path = resolveValue(path);
+    if (!path?.isObjectExpression() || path.node.properties.some(node => node.type !== 'ObjectProperty')) return;
+    const result = new Map();
+    for (const property of path.get('properties')) {
+      const key = property.node.computed ? literal(property.get('key')) : property.node.key.name ?? literal(property.get('key'));
+      if (key === undefined) return;
+      // In an object literal this spelling sets the prototype rather than an own data key.
+      if (key === '__proto__' && !property.node.computed && !property.node.shorthand) return;
+      result.set(key, property.get('value'));
+    }
+    return result;
+  }
+
+  // Only explicit framework construction is recognized. Never infer method ownership
+  // from a method name alone, or inspect a predicate/rule body.
+  function rootedComposition(candidate, factory = 'workflow', methods = ['then', 'branch']) {
+    const seen = new Set();
+    for (let path = resolveValue(candidate); path?.isCallExpression() && !seen.has(path.node);) {
+      seen.add(path.node);
+      const callee = unwrap(path.get('callee'));
+      if (api(callee) === factory) return true;
+      if (!callee?.isMemberExpression()) return false;
+      const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
+      if (!methods.includes(method)) return false;
+      path = resolveValue(callee.get('object'));
+    }
+    return false;
+  }
+
+  function processLabels(candidate, ancestors = new Set(), budget = { left: 1024 }, provenRoot = false) {
+    const path = resolveValue(candidate);
+    if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedComposition(path, 'process', ['through', 'effect', 'commit'])) return;
+    if (--budget.left < 0) return { labels: [], nodes: [path.node], unresolved: [{ path, reason: 'Process exceeds the static expansion limit of 1024 construction calls' }] };
+    if (api(path.get('callee')) === 'process') return { labels: [], nodes: [path.node], unresolved: [] };
+    const next = new Set(ancestors); next.add(path.node);
+    const callee = unwrap(path.get('callee')), args = path.get('arguments');
+    const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
+    const result = processLabels(callee.get('object'), next, budget, true);
+    if (!result) return;
+    const appendWorkflow = (flow, site) => {
+      const metadata = flow && workflowLabels(flow, next, budget);
+      if (!metadata) result.unresolved.push({ path: site, reason: 'Process Workflow is not a statically resolved local declaration' });
+      else {
+        // A reused local Workflow must identify the two connection sites, rather
+        // than report the same original label literal as both locations.
+        result.labels.push(...metadata.labels.map(item => ({ ...item, path: unwrap(site)?.isIdentifier() ? site : item.path })));
+        result.unresolved.push(...metadata.unresolved); result.nodes.push(...metadata.nodes);
+      }
+    };
+    if (method === 'through') appendWorkflow(args[0], args[0] ?? path);
+    else if (method === 'effect') {
+      const label = literal(resolveValue(args[0]));
+      if (label === undefined) result.unresolved.push({ path, reason: 'Process effect label is dynamic' });
+      else result.labels.push({ label, path: args[0] });
+    } else if (method === 'commit') {
+      const mutation = resolveValue(args[0]);
+      const definition = mutation?.isCallExpression() && api(mutation.get('callee')) === 'bindMutation' && fields(mutation.get('arguments')[0]);
+      if (!definition) result.unresolved.push({ path: args[0] ?? path, reason: 'Process commit is not a statically resolved bindMutation declaration' });
+      else {
+        appendWorkflow(definition.get('workflow'), args[0] ?? path);
+        const operation = definition.get('operation'), label = operation && literal(resolveValue(operation));
+        if (label === undefined) result.unresolved.push({ path: operation ?? path, reason: 'Process commit operation label is dynamic or absent' });
+        else result.labels.push({ label, path: operation });
+      }
+    }
+    result.nodes.push(path.node); return result;
+  }
+  function workflowLabels(candidate, ancestors = new Set(), budget = { left: 1024 }, provenRoot = false) {
+    const path = resolveValue(candidate);
+    if (!path?.isCallExpression() || ancestors.has(path.node) || !provenRoot && !rootedComposition(path)) return;
+    if (--budget.left < 0) return { labels: [], nodes: [path.node], unresolved: [{ path, reason: 'Workflow exceeds the static expansion limit of 1024 construction calls' }] };
+    const next = new Set(ancestors); next.add(path.node);
+    const callee = unwrap(path.get('callee'));
+    const args = path.get('arguments');
+    let result;
+    if (api(callee) === 'workflow') result = { labels: [], unresolved: [], nodes: [] };
+    else if (callee?.isMemberExpression()) {
+      const method = callee.node.computed ? literal(callee.get('property')) : callee.node.property.name;
+      if (method !== 'then' && method !== 'branch') return;
+      result = workflowLabels(callee.get('object'), next, budget, true);
+      if (!result) return;
+      if (method === 'branch') {
+        const name = literal(resolveValue(args[0]));
+        if (name === undefined) result.unresolved.push({ path, reason: 'Workflow branch label is dynamic' });
+        else for (const choice of ['yes', 'no']) result.labels.push({ label: `${name}:${choice}`, path: args[0] });
+        const paths = fields(args[2]);
+        if (!paths) result.unresolved.push({ path, reason: 'Workflow branches are not a statically resolved data object' });
+        else for (const choice of ['yes', 'no']) {
+          const child = paths.get(choice);
+          const branch = child && workflowLabels(child, next, budget);
+          if (!branch) result.unresolved.push({ path: child ?? path, reason: 'Workflow branch body is unresolved, cyclic, or exceeds the static expansion limit' });
+          else {
+            result.labels.push(...branch.labels); result.unresolved.push(...branch.unresolved); result.nodes.push(...branch.nodes);
+          }
+        }
+        result.nodes.push(path.node); return result;
+      }
+    } else return;
+    const label = literal(resolveValue(args[0]));
+    if (label === undefined) result.unresolved.push({ path, reason: 'Workflow step label is dynamic' });
+    else result.labels.push({ label, path: args[0] });
+    result.nodes.push(path.node); return result;
+  }
+
+  return { resolveValue, api, fields, processLabels, workflowLabels };
 }
 
-/** Parse declarations only. Never import a target module, resolve imports, or evaluate an expression. */
+// Resolve only named imports of immutable exported const values from the explicit
+// input set. No filesystem lookup, package resolution, module import or evaluation.
+function selectedSourceImports(parsed) {
+  const modules = new Map();
+  for (const item of parsed) {
+    let program;
+    traverse(item.ast, { Program(path) { program = path; path.stop(); } });
+    const exports = new Map();
+    for (const statement of program.get('body')) {
+      if (!statement.isExportNamedDeclaration() || statement.node.source || statement.node.exportKind === 'type') continue;
+      const declaration = statement.get('declaration');
+      if (declaration?.isVariableDeclaration({ kind: 'const' })) {
+        for (const entry of declaration.get('declarations')) if (entry.get('id').isIdentifier()) exports.set(entry.node.id.name, program.scope.getBinding(entry.node.id.name));
+      } else for (const entry of statement.get('specifiers')) if (entry.isExportSpecifier() && entry.node.exportKind !== 'type') {
+        const name = entry.node.exported.name ?? entry.node.exported.value;
+        exports.set(name, program.scope.getBinding(entry.node.local.name));
+      }
+    }
+    const key = resolve(item.file);
+    // Duplicate input identities are ambiguous; do not pick an arbitrary source.
+    modules.set(key, modules.has(key) ? null : { program, exports });
+  }
+  const imports = new Map();
+  for (const item of modules.values()) {
+    if (!item) continue;
+    for (const statement of item.program.get('body')) {
+      if (!statement.isImportDeclaration() || statement.node.importKind === 'type') continue;
+      const specifier = statement.node.source.value;
+      if (!specifier.startsWith('./') && !specifier.startsWith('../')) continue;
+      const absolute = resolve(dirname(item.program.node.loc.filename), specifier);
+      const candidates = [absolute];
+      if (/\.js$/.test(absolute)) candidates.push(absolute.slice(0, -3) + '.ts', absolute.slice(0, -3) + '.tsx');
+      else if (/\.mjs$/.test(absolute)) candidates.push(absolute.slice(0, -4) + '.mts');
+      else if (/\.cjs$/.test(absolute)) candidates.push(absolute.slice(0, -4) + '.cts');
+      const matches = candidates.filter(candidate => modules.has(candidate));
+      if (matches.length !== 1) continue;
+      const target = modules.get(matches[0]);
+      if (!target) continue;
+      for (const entry of statement.get('specifiers')) {
+        if (!entry.isImportSpecifier() || entry.node.importKind === 'type') continue;
+        const name = entry.node.imported.name ?? entry.node.imported.value;
+        const binding = target.exports.get(name);
+        if (!binding?.constant || !binding.path.isVariableDeclarator() || binding.path.parent.kind !== 'const') continue;
+        const local = item.program.scope.getBinding(entry.node.local.name);
+        if (local) imports.set(local, binding.path.get('init'));
+      }
+    }
+  }
+  return imports;
+}
+
+/** Parse selected sources only. Never import a module or evaluate an expression. */
 export function analyzeDeclarations(files) {
   const diagnostics = [], unresolved = [], ids = new Map(); let checkedDeclarations = 0, checkedOperationIds = 0;
   const report = (code, severity, file, path, message, related = []) => diagnostics.push({ code, severity, ...position(file, path), message, related });
@@ -155,10 +214,13 @@ export function analyzeDeclarations(files) {
     if (ids.has(value)) report('REPEATED_OPERATION_ID', 'warning', file, path, `Operation ID ${JSON.stringify(value)} appears in another selected declaration; confirm whether the shared persistence identity is intentional.`, [ids.get(value)]);
     else ids.set(value, position(file, path));
   };
+  const parsed = [];
   for (const { file, source } of files) {
-    let ast;
-    try { ast = parse(source, { sourceType: 'module', sourceFilename: file, plugins: ['typescript', ...(/\.[jt]sx$/i.test(file) ? ['jsx'] : [])], attachComment: false }); }
-    catch (error) { diagnostics.push({ code: 'PARSE_ERROR', severity: 'error', file, line: error.loc?.line ?? 1, column: (error.loc?.column ?? 0) + 1, message: error.message, related: [] }); continue; }
+    try { parsed.push({ file, ast: parse(source, { sourceType: 'module', sourceFilename: file, plugins: ['typescript', ...(/\.[jt]sx$/i.test(file) ? ['jsx'] : [])], attachComment: false }) }); }
+    catch (error) { diagnostics.push({ code: 'PARSE_ERROR', severity: 'error', file, line: error.loc?.line ?? 1, column: (error.loc?.column ?? 0) + 1, message: error.message, related: [] }); }
+  }
+  const { resolveValue, api, fields, processLabels, workflowLabels } = declarationTools(selectedSourceImports(parsed));
+  for (const { file, ast } of parsed) {
     const coveredCompositions = new Set(), reportedLabelPairs = new Set();
     traverse(ast, { CallExpression(path) {
       if (!coveredCompositions.has(path.node)) {
@@ -172,7 +234,7 @@ export function analyzeDeclarations(files) {
           for (const item of workflow.labels) {
             const previous = labels.get(item.label);
             if (previous) {
-              const pair = `${previous.node.start}:${item.path.node.start}:${item.label}`;
+              const pair = `${previous.node.loc.filename}:${previous.node.start}:${item.path.node.loc.filename}:${item.path.node.start}:${item.label}`;
               if (!reportedLabelPairs.has(pair)) {
                 report(processMetadata ? 'AMBIGUOUS_PROCESS_LABEL' : 'AMBIGUOUS_WORKFLOW_LABEL', 'warning', file, item.path,
                   `${processMetadata ? 'Process' : 'Workflow'} trace label ${JSON.stringify(item.label)} repeats in this declared composition; use distinct labels if traces must identify the stage. This includes alternative branches and does not prove repeated execution or an invalid business rule.`, [position(file, previous)]);

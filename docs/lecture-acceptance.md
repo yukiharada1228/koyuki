@@ -59,7 +59,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | Applicationの実行状態・完了・viewを任せる | [Application](application-development.md)、[状態・イベントの所有](application-ownership.md)、成功・failed・crashed・再送投影の検査 | インプロセスのruntime。永続schedulerではない |
 | 通常の関数・オブジェクトを自然に接続する | [Workflow再利用](workflow-input-contract.md)、[command receiver](../src/application-receiver.test.ts) | あらゆるcallbackの型注釈を省けるわけではない |
 | 接続ミスの位置を診断する | [businessの段階診断](business-diagnostics.md)を実tarballの既定のcompiler表示で検査 | 操作名・配列位置・入力/保存出力の不一致を対象にする。全診断の表示保証・推論制限の解消・独立利用者の修正時間の実証ではない |
-| 明示した宣言メタデータの問題を実行せず確認する | [ソース診断CLI](declaration-diagnostics.md)で段階名・操作ID・Application予約名を位置付きで報告。タグ・経費の11宣言と、購買のbusiness 25操作の既定IDを検査。明示Workflowのthen/branchとconst参照で同名traceの曖昧さも警告し、送料の3構成でも非実行検査。Processのeffect・through・ローカルbindMutationも接続し、参照位置を診断 | Koyuki独自の具体化。独自resolver・動的定義等は未解決で残し、全参照・分岐・状態・純粋性を証明しない。解析packageは開発依存のみ |
+| 明示した宣言メタデータの問題を実行せず確認する | [ソース診断CLI](declaration-diagnostics.md)で段階名・操作ID・Application予約名を位置付きで報告。タグ・経費の11宣言と、購買のbusiness 25操作の既定IDを検査。明示Workflowのthen/branchとconst参照で同名traceの曖昧さも警告し、送料の3構成でも非実行検査。Processのeffect・through・bindMutationも接続し、明示した複数ソースのexport const参照を限定解決して位置を診断 | Koyuki独自の具体化。独自resolver・動的定義等は未解決で残し、全参照・分岐・状態・純粋性を証明しない。解析packageは開発依存のみ |
 | 操作宣言と生成されるキーを揃える | [操作テーブルの回帰検査](business-operation-table.md)で非列挙データ、Symbol拒否、数値名の実行型と型宣言を照合 | 操作テーブルは通常のownデータrecord。構造的な型だけではprototype/getter等を表せないため構築時にも確認する。任意のJS objectの型宣言を証明しない |
 | 宣言した操作をApplicationのイベントへ接続する | [Application操作テーブル](application-operation-table.md)で通常・再送・直接登録、非列挙操作と数値名の型・実行を照合 | Symbol・accessor・custom prototypeのテーブルは構築時に拒否。generic変換関数との互換性を維持し、Symbolの静的拒否までは保証しない |
 | Queryと更新の関心を分ける | [HTTP/GraphQLの実統合](../examples/leave-http/GRAPHQL.md) | [失敗enum](../examples/leave-http/GRAPHQL.md)は対応表を型検査する。SDLからの全自動型生成・clientの再生成は未提供 |
@@ -92,7 +92,7 @@ then getterを実行しないことを確認する。対象は同じrealmの通�
 個別adapterの原子保存だけで任意driverの共通transaction契約を証明することもできない。
 
 - 全編の連続音声映像と自動字幕の照合。
-- 独立利用者による開発体験・学習負担の評価、実業務での運用実績。[評価用課題](../examples/onboarding/README.md)と開発版配布物での成立性検査は用意したが、実際の参加者による結果は未取得。
+- 独立利用者による開発体験・学習負担の評価、実業務での運用実績。[評価用課題](../examples/onboarding/README.md)と開発版配布物での成立性検査は用意したが、実際の参加者による結果は未取得。利用者への確認でも独立した試用記録はまだないとの回答であり、保守者側の検査を代用しない。
 - genericな要件計算と未注釈callbackの推論制限。
 - [再送付きbusinessのcallback推論](replay-context-inference-study.md)は専用overloadで改善した。検証した無注釈例を超える、あらゆるcallbackの推論省略は保証しない。
 - [opaque値の通常保存](opaque-decisions.md)は改善済み。[Application・captureの情報を失うコピー](application-ownership.md)も拒否するよう改善済み。明示的なView rendererのJSON照合や、任意のopaque値を状態・永続adapterで扱う保証は残る課題。
