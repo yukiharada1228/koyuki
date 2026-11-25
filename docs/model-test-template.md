@@ -37,6 +37,23 @@ node --import tsx --test generated-tag-model.test.ts
 生成時に契約moduleのトップレベルthrowが実行されないことも検査する。
 これは利用者が指定した仕様の接続であり、業務コードから正しい仕様を発見する機能ではない。
 
+経費の同じ入口での実行例：
+
+```sh
+npm run build
+npm run --silent generate:model-test -- --contract ./src/expenses/model-testing.js > generated-expense-model.test.ts
+node --import tsx --test generated-expense-model.test.ts
+```
+
+[経費の契約](../src/expenses/model-testing.ts)は、申請・承認・却下・差戻し・編集の
+独立仕様を、既存の有限探索と操作列検査から共有する。生成された3 seedのテストは
+それぞれ64試行・32操作を純粋なドメイン処理と比較する。
+4金額境界、操作者・役割・有効性、領収書、理由、状態・版数を仕様へ明記する。
+すべての条件への到達は既存の手書きテストでも別途確認し、生成しただけで網羅したとは扱わない。
+生成コードを使う検査では、申請者を別の承認者へ誤変換する故意の不具合も反例として検出する。
+配布物のconsumerでも、この契約から生成したコードを型検査・実行する。
+経費のこの契約はDB・認証・再送の検査ではなく、それらの既存adapter検査を置き換えない。
+
 利用者が次を実装するまでは、生成されたテストは必ず失敗する。
 
 1. `State`・`Event`・`Output`と初期状態を業務に合わせる。

@@ -97,3 +97,28 @@ export const models = { memory: { ...healthy.memory,
     assert.match(broken.stdout, /witness/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test('generated expense tests use independent approval rules and detect a forged actor adaptation', async () => {
+  const dir = await mkdtemp(join(root, '.model-template-expense-'));
+  try {
+    const contract = new URL('../src/expenses/model-testing.ts', import.meta.url).href;
+    const file = join(dir, 'generated.test.ts');
+    const source = module => generateModelTest(module).replace("'koyuki/testing'", JSON.stringify(testing));
+    await writeFile(file, source(contract));
+    const healthy = run(['node_modules/tsx/dist/cli.mjs', '--test', file]);
+    assert.equal(healthy.status, 0, healthy.stdout + healthy.stderr);
+    assert.match(healthy.stdout, /pass 3/);
+    const faulty = join(dir, 'faulty.mjs');
+    await writeFile(faulty, `import { models as healthy, matchesImplementation, actual } from ${JSON.stringify(contract)};
+export const models = { 'expense-domain': { ...healthy['expense-domain'],
+  check: (before, event, expected) => matchesImplementation(before, event, expected,
+    (state, operation) => actual(state, operation.type === 'approve' && operation.actor.id === state.owner
+      ? { ...operation, actor: { id: 'forged-actor', role: 'manager', active: true } } : operation))
+} };`);
+    await writeFile(file, source(faulty));
+    const broken = run(['node_modules/tsx/dist/cli.mjs', '--test', file]);
+    assert.equal(broken.status, 1, broken.stderr);
+    assert.match(broken.stdout, /counterexample/);
+    assert.match(broken.stdout, /witness/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

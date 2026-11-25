@@ -27,8 +27,13 @@ npx tsx --test src/expense-state-exploration.test.ts
 これは有限の入力集合・深さに対する経費の実装照合であり、任意金額・無限の編集回数・
 DB競合・永続化・副作用・独立利用者の開発体験を証明しない。
 編集・再申請を含む探索結果はkind: limited、limits: ['depth']。同一モデルの無限version列を検証済みとはしない。
-明示モデルと上限を渡す検査APIは追加したが、独立仕様からの汎用的なテスト生成器・seed・縮小器は未提供。
+有限探索とは別に、[seed付き操作列と縮小](model-sequences.md)も提供する。
 Issue #8全体の完成、一般的なモデル検査の導入効果、講演全内容の完全実現とは扱わない。
+
+参照仕様・入力生成・実装比較は[model-testing.ts](../src/expenses/model-testing.ts)に置き、
+既存の探索・到達確認・反例検査と[雛形から生成したテスト](model-test-template.md)で共有する。
+生成時には業務moduleを実行せず、テスト時に利用者指定の仕様とドメイン処理を比較する。
+実tarballのconsumerでも生成した3 seedのテストを型検査・実行する。
 
 ## 一回の承認過程の有限グラフ
 
