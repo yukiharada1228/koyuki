@@ -7,7 +7,7 @@ import type { ProcurementRepository, StorageError } from './repository.js';
 import { ok, type Result } from '../../framework/index.js';
 import type { Actor, Policy, Entity, Change, Receipt, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
-import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
+import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, createRequest, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
 import { reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
@@ -55,15 +55,15 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
     requests: {
       create: action(context.create, createRequest),
       edit: checkedAction(context.request<EditInput>, checkBuyerRequest, editCheckedRequest),
-      submit: action(context.approval, submitRequest),
+      submit: checkedAction(context.approval, checkBuyerRequest, submitCheckedRequest),
       withdraw: checkedAction(context.request<VersionInput>, checkBuyerRequest, withdrawCheckedRequest),
-      approve: action(context.request<VersionInput>, approveRequest),
+      approve: checkedAction(context.request<VersionInput>, checkApproverRequest, approveCheckedRequest),
       reject: checkedAction(context.request<ReasonInput>, checkApproverRequest, rejectCheckedRequest),
       return: checkedAction(context.request<VersionInput>, checkApproverRequest, returnCheckedRequest),
       reassign: checkedAction(context.approval, checkApproverRequest, reassignCheckedRequest),
     },
     orders: {
-      place: action(context.place, placeOrder),
+      place: checkedAction(context.place, checkBuyerRequest, placeCheckedOrder),
       amend: checkedAction(context.order<AmendInput>, checkOrder, amendCheckedOrder),
       cancel: checkedAction(context.order<VersionInput>, checkOrder, cancelCheckedOrder),
       complete: checkedAction(context.order<VersionInput>, checkOrder, completeCheckedOrder),

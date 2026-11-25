@@ -2,7 +2,8 @@
 
 [購買アプリ](../src/experiments/procurement/application.ts)の申請5操作と請求書2操作へ、
 [注文3操作](procurement-order-guards.md)と同じ接続を適用した。
-現在、全25操作のうち次の10操作が共通検証と個別更新の2段階を宣言する。
+当初の10操作に[申請・承認・発注の3操作](procurement-request-planning.md)も加わり、
+現在、全25操作のうち次の13操作が共通検証と個別更新の2段階を宣言する。
 
 | 操作 | 共通検証 | 更新関数の要求する証明 |
 | --- | --- | --- |
@@ -10,6 +11,8 @@
 | request.reject / return / reassign | checkApproverRequest | approver |
 | order.amend / cancel / complete | checkOrder | 注文の共通検証済み |
 | invoice.approve / void | checkInvoice | 請求書の共通検証済み |
+| request.submit / order.place | checkBuyerRequest | buyer |
+| request.approve | checkApproverRequest | approver |
 
 ```ts
 reject: { load: context.request<ReasonInput>, run: [checkApproverRequest, rejectCheckedRequest] },
@@ -42,10 +45,11 @@ plain/helper比較版では2段階を自分で実行し、frameworkによる実�
 請求書も、finance権限、対象と親注文、版数形式、版数一致の後に個別の状態や理由を検査する。
 操作ID、保存計画、成功/失敗型、CASによる保存条件は維持する。
 
-10操作の成功traceはload / run:1 / run:2 / saveで、共通検証で失敗すればrun:2とsaveを実行しない。
-[全25操作の成功観測比較](procurement-observation-comparison.md)の32操作では、この10操作が各1回ずつ現れる。
+当初の10操作の成功traceはload / run:1 / run:2 / saveで、共通検証で失敗すればrun:2とsaveを実行しない。
+[全25操作の成功観測比較](procurement-observation-comparison.md)の32操作では、この当初の10操作が各1回ずつ現れる。
 共通検証10操作を分けた時点では、記録数は99から106となった。
-現在は[入荷・在庫の3操作](procurement-receipt-pipeline.md)でも段階を分け、110記録と対応する射影失敗を比較する。
+その後[入荷・在庫の3操作](procurement-receipt-pipeline.md)で110記録となり、
+現在は[申請・承認・発注の追加分離](procurement-request-planning.md)も含め、117記録と対応する射影失敗を比較する。
 
 ## 検査と残る範囲
 

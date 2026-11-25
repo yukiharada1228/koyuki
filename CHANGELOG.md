@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買の申請・承認・発注も既存の共通検証と個別判断の配列へ移し、13操作で共通検証の接続を委譲した。拒否の優先順位、二段階承認と発注の保存計画、メモリ/SQLiteの非保存を検証。全25操作の3方式比較を正常117境界・代表失敗259境界へ更新し、I/O例外の比較も継続。コード量や独立利用者の負担の改善を実証した件数とは区別。
+
 - businessの段階に既存のstep(name, rule)を指定でき、通常関数と混在可能にした。名前をtrace・選択観測・構造図へ反映し、具体的な文脈を注釈したwithInputのinline例を配布consumerで検証。Step型も公開。名前なしinlineや任意のgeneric推論は未解消。ruleプロパティも持つ関数は実行本体が曖昧なため、生成時にAmbiguousBusinessStageで拒否する。
 
 - 購買plain/helperへ選択値captureを追加し、Koyukiと観測reportを比較。射影後のsnapshot・機密値の非選択・入力／結果のcapture失敗分離・保存成功の維持・並行呼出しの記録所有権を配布consumerで検証。純粋な射影と通常commandを対象とし、全観測経路や永続監査とは区別。

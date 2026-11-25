@@ -148,6 +148,7 @@ try {
   writeFileSync(join(consumer, 'procurement-receipt-pipeline.test.ts'), readFileSync(join(root, 'src/procurement-receipt-pipeline.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-shared-guards.test.ts'), readFileSync(join(root, 'src/procurement-shared-guards.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-order-guard.test.ts'), readFileSync(join(root, 'src/procurement-order-guard.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
+  writeFileSync(join(consumer, 'procurement-request-planning.test.ts'), readFileSync(join(root, 'src/procurement-request-planning.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-return-change.test.ts'), readFileSync(join(root, 'src/procurement-return-change.test.ts'), 'utf8')
     .replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-approval-change.test.ts'), readFileSync(join(root, 'src/procurement-approval-change.test.ts'), 'utf8')

@@ -78,11 +78,11 @@ export function createRequest(value: Readonly<{ input: CreateInput; actor: Actor
   return ok(plan(result, [absent('request', actor.groupId, input.id)]));
 }
 export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<Submitted | FirstReview>, RuleError> {
-  const { input, actor, current, policy } = value;
-  if (!allowed(actor, 'buyer', current.groupId) || actor.id !== current.ownerId) return failure('Denied');
-  if (current.id !== input.id) return failure('TargetMismatch');
-  if (!integer(input.expectedVersion)) return failure('InvalidInput');
-  if (current.version !== input.expectedVersion) return failure('Conflict');
+  const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
+  return submitCheckedRequest(checked.value);
+}
+export function submitCheckedRequest(value: CheckedRequest<Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>, 'buyer'>): Result<Change<Submitted | FirstReview>, RuleError> {
+  const { input, current, policy } = value;
   if (current.state !== 'draft') return failure('WrongState');
   if (!id(input.approverId) || !policy.approverIds.includes(input.approverId) || input.approverId === current.ownerId) return failure('InvalidInput');
   if (!integer(policy.requestLimitCents) || current.totalCents > policy.requestLimitCents) return failure('BudgetExceeded');
@@ -98,13 +98,12 @@ export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ p
   return ok(plan(stamp('request-submitted', { ...current, state: 'submitted', approverId: input.approverId, version: current.version + 1 }), [check(current)]));
 }
 export function approveRequest(value: Loaded<VersionInput, Request>): Result<Change<Approved | FinalReview>, RuleError> {
-  const { input, actor, current } = value;
-  if (!allowed(actor, 'approver', current.groupId) || actor.id === current.ownerId) return failure('Denied');
-  if (current.id !== input.id) return failure('TargetMismatch');
-  if (!integer(input.expectedVersion)) return failure('InvalidInput');
-  if (current.version !== input.expectedVersion) return failure('Conflict');
+  const checked = checkApproverRequest(value); if (!checked.ok) return checked;
+  return approveCheckedRequest(checked.value);
+}
+export function approveCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'approver'>): Result<Change<Approved | FinalReview>, RuleError> {
+  const { actor, current } = value;
   if (!pendingApproval(current)) return failure('WrongState');
-  if (current.approverId !== actor.id) return failure('Denied');
   if (current.state === 'first-review') {
     const { finalApproverId, ...base } = current;
     return ok(plan(stamp('request-final-review', { ...base, state: 'final-review', approverId: finalApproverId,
@@ -118,11 +117,11 @@ export function approveRequest(value: Loaded<VersionInput, Request>): Result<Cha
   return ok(plan(stamp('request-approved', { ...current, state: 'approved', approvedBy: actor.id, version: current.version + 1 }), [check(current)]));
 }
 export function placeOrder(value: Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>): Result<Change<Order>, RuleError> {
-  const { input, actor, current } = value;
-  if (!allowed(actor, 'buyer', current.groupId) || actor.id !== current.ownerId) return failure('Denied');
-  if (current.id !== input.id) return failure('TargetMismatch');
-  if (!integer(input.expectedVersion)) return failure('InvalidInput');
-  if (current.version !== input.expectedVersion) return failure('Conflict');
+  const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
+  return placeCheckedOrder(checked.value);
+}
+export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>, 'buyer'>): Result<Change<Order>, RuleError> {
+  const { input, current } = value;
   if (current.state !== 'approved') return failure('WrongState');
   if (!id(input.orderId) || typeof input.supplier !== 'string' || !input.supplier.trim()) return failure('InvalidInput');
   if (value.alreadyOrdered) return failure('AlreadyExists');

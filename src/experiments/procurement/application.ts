@@ -2,7 +2,7 @@ import { receiveDecision, returnDecision, correctDecision } from './receipt-pipe
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
 import { includeReceivedStock, includeChangedStock, reserveStock, releaseStock, moveStock, adjustStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, ok, type Result } from '../../framework/index.js';
-import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice,
+import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, createRequest, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
@@ -26,12 +26,12 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
       reject: { load: context.request<ReasonInput>, run: [checkApproverRequest, rejectCheckedRequest] },
       return: { load: context.request<VersionInput>, run: [checkApproverRequest, returnCheckedRequest] },
       reassign: { load: context.approval, run: [checkApproverRequest, reassignCheckedRequest] },
-      submit: { load: context.approval, run: [submitRequest] },
-      approve: { load: context.request<VersionInput>, run: [approveRequest] },
+      submit: { load: context.approval, run: [checkBuyerRequest, submitCheckedRequest] },
+      approve: { load: context.request<VersionInput>, run: [checkApproverRequest, approveCheckedRequest] },
     } });
   const orders = business({ name: 'procurement.order.v1', load: context.place,
     save: <T extends Order>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
-      place: [placeOrder],
+      place: [checkBuyerRequest, placeCheckedOrder],
       amend: { load: context.order<AmendInput>, run: [checkOrder, amendCheckedOrder] },
       cancel: { load: context.order<VersionInput>, run: [checkOrder, cancelCheckedOrder] },
       complete: { load: context.order<VersionInput>, run: [checkOrder, completeCheckedOrder] },
