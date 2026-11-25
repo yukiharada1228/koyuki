@@ -39,7 +39,7 @@ attachはこの試作内の既知のDTOと固定キーだけに使う。任意�
 
 ## 確認した範囲
 
-[8テスト](../src/procurement-load-composition.test.ts)をrootと実tarballの独立consumerで実行する。
+[18テスト](../src/procurement-load-composition.test.ts)をrootと実tarballの独立consumerで実行する。
 
 - 非同期Repositoryに対する成功値とread/relatedの呼び出し順の一致。
 - 追加の入力フィールド・実際のSymbol値・入力参照の保持、actorのfreeze。
@@ -55,3 +55,28 @@ attachはこの試作内の既知のDTOと固定キーだけに使う。任意�
 5つの分岐を除いたことを、全体のコード量・学習負担・生産性の改善とは読み替えない。
 この試作は、講演の指摘に対応する接続の記述が依然としてloaderに残ることと、
 既存エンジンで実行を共通化できても利用者向けAPIの改善には別の検討が要ることを示す。
+
+## 業務操作までつないだ比較
+
+[4操作の宣言](../src/experiments/procurement/context-application.ts)で、試作loaderをbusinessへ渡し、
+既存の承認・請求書取消・返品・入荷訂正RuleとRepository.commitへ接続した。
+Resultを取り出してRuleや保存を呼ぶ手続きは追加していない。
+元の25操作は引き続き共通contextを使い、比較用の4操作だけを別factoryで構成する。
+
+メモリとSQLiteのそれぞれで、4操作の成功結果・ActionReport全体・保存後の全6モデルが従来実装と一致した。
+SQLiteは各`:memory:` DBでの実行であり、この比較自体は再起動・別writer・分離レベルの検証ではない。
+また、代表的な請求書取消と返品では、各readのConflictでload以降のtraceがなく保存しないこと、
+権限不足でRuleが失敗すると保存しないことを検査した。
+返品の保存Conflictはそのまま返し、読込5回と保存1回だけで、自動再送しないことも確認した。
+
+### 内部の取得traceは自動では引き継がれない
+
+今回のloaderはProcess.runでResultを返す通常の非同期関数である。
+businessからは一つのloadとして記録され、read-receipt/read-order/read-stock等のProcess内部traceは含まれない。
+ActionReportが元実装と一致したことを、全取得段階を観測できるようになったという意味にはしない。
+途中のI/Oを詳細形式で接続するProcess.effectのobject形式とは異なる境界である。
+
+読み込みも含めて段階ごとの詳細を保持したい場合、Resultだけの関数契約では情報が足りない。
+詳細実行の明示的な接続契約と、通常の関数を渡した場合の挙動を区別する設計が必要になる。
+この試作では、traceのためにreadを再実行したり、グローバルな暗黙の記録先を追加したりしていない。
+全18テストはこの制約を含む現在の契約を対象とし、全25操作・全失敗経路の等価性を保証しない。

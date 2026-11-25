@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { err } from './framework/index.js';
+import { procurementComposedReads } from './experiments/procurement/context-application.js';
+import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 import { procurement } from './experiments/procurement/application.js';
 import { procurementContext } from './experiments/procurement/context.js';
 import { procurementProcessContext } from './experiments/procurement/context-process.js';
@@ -10,8 +12,7 @@ import type { Actor, VersionInput, Invoice, Receipt, Order, Stock } from './expe
 
 const actor = (role: Actor['role']): Actor => ({ role, id: role, groupId: 'g', active: true });
 const policy = { requestLimitCents: 1000, approverIds: ['approver'] };
-async function fixture() {
-  const repository = new MemoryProcurement();
+async function seed(repository: ProcurementRepository) {
   const buyer = procurement(repository, actor('buyer'), policy);
   const boss = procurement(repository, actor('approver'), policy);
   const warehouse = procurement(repository, actor('warehouse'), policy);
@@ -22,6 +23,11 @@ async function fixture() {
   assert((await buyer.orders.place({ id: 'rq', expectedVersion: 3, orderId: 'po', supplier: 'supplier' })).ok);
   assert((await warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 1 }] })).ok);
   assert((await finance.invoices.register({ id: 'po', expectedVersion: 2, invoiceId: 'inv', amountCents: 200 })).ok);
+  return repository;
+}
+async function fixture() {
+  const repository = new MemoryProcurement();
+  await seed(repository);
   return repository;
 }
 function observed(memory: MemoryProcurement, options: { failAt?: number; missingStock?: boolean; throwAt?: number } = {}) {
@@ -156,3 +162,73 @@ if (false) {
     }
   });
 }
+
+for (const driver of ['memory', 'sqlite'] as const) {
+  for (const operation of ['approve', 'void', 'return', 'correct'] as const) {
+    test(`composed ${operation} operation matches domain result, trace and stored models on ${driver}`, async () => {
+      const make = () => driver === 'memory' ? new MemoryProcurement() : new SqliteProcurement(':memory:', 'g');
+      const left = make(), right = make();
+      try {
+        await seed(left); await seed(right);
+        if (operation === 'approve') {
+          for (const repository of [left, right]) {
+            const warehouse = procurement(repository, actor('warehouse'), policy);
+            const finance = procurement(repository, actor('finance'), policy);
+            assert((await warehouse.receipts.receive({ id: 'po', expectedVersion: 3, receiptId: 'rc2', quantities: [{ sku: 'a', quantity: 1 }] })).ok);
+            assert((await finance.invoices.match({ id: 'inv', expectedVersion: 1 })).ok);
+          }
+        }
+        const identity = actor(operation === 'approve' || operation === 'void' ? 'finance' : 'warehouse');
+        const baseline = procurement(left, identity, policy), composed = procurementComposedReads(right, identity);
+        const input = { id: operation === 'approve' || operation === 'void' ? 'inv' : 'rc',
+          expectedVersion: operation === 'approve' ? 2 : 1, reason: 'damaged', quantities: [{ sku: 'a', quantity: 2 }] };
+        const run = (api: typeof composed) => operation === 'approve' ? api.invoices.approve.runDetailed(input)
+          : operation === 'void' ? api.invoices.void.runDetailed(input)
+          : operation === 'return' ? api.receipts.return.runDetailed(input) : api.receipts.correct.runDetailed(input);
+        const expected = await run(baseline), actual = await run(composed);
+        assert(expected.result.ok); assert.deepEqual(actual, expected);
+        for (const kind of ['request', 'order', 'receipt', 'invoice', 'payment', 'stock'] as const) {
+          assert.deepEqual(right.list(kind, identity), left.list(kind, identity));
+        }
+      } finally {
+        if (left instanceof SqliteProcurement) left.close();
+        if (right instanceof SqliteProcurement) right.close();
+      }
+    });
+  }
+}
+
+test('composed business load failures stop rule and save; domain failures stop save', async () => {
+  const memory = await fixture();
+  for (const operation of ['void', 'return'] as const) {
+    for (let failAt = 1; failAt <= (operation === 'void' ? 2 : 3); failAt++) {
+      const host = observed(memory, { failAt });
+      const api = procurementComposedReads(host.repository, actor(operation === 'void' ? 'finance' : 'warehouse'));
+      const input = { id: operation === 'void' ? 'inv' : 'rc', expectedVersion: 1, reason: 'damaged' };
+      const report = operation === 'void' ? await api.invoices.void.runDetailed(input) : await api.receipts.return.runDetailed(input);
+      assert.deepEqual(report.result, err({ kind: 'Conflict' }));
+      assert.deepEqual(report.trace, [{ step: `procurement.${operation === 'void' ? 'invoice' : 'receipt'}.v1.${operation}:load`, status: 'error' }]);
+      assert.equal(report.plan, null); assert.equal(host.calls.length, failAt);
+    }
+    const host = observed(memory);
+    const wrongRole = procurementComposedReads(host.repository, actor('buyer'));
+    const input = { id: operation === 'void' ? 'inv' : 'rc', expectedVersion: 1, reason: 'damaged' };
+    const report = operation === 'void' ? await wrongRole.invoices.void.runDetailed(input) : await wrongRole.receipts.return.runDetailed(input);
+    assert.deepEqual(report.result, err({ kind: 'Denied' }));
+    assert.deepEqual(report.trace.map(entry => entry.status), ['ok', 'error']);
+    assert.equal(report.plan, null);
+  }
+});
+
+test('composed business save failure is returned once without repeating reads or rules', async () => {
+  const memory = await fixture(), reads = observed(memory);
+  let saves = 0;
+  const repository: ProcurementRepository = { ...reads.repository, commit: async () => { saves++; return err({ kind: 'Conflict' }); } };
+  const api = procurementComposedReads(repository, actor('warehouse'));
+  const before = memory.list('receipt', actor('warehouse'));
+  const report = await api.receipts.return.runDetailed({ id: 'rc', expectedVersion: 1, reason: 'damaged' });
+  assert.deepEqual(report.result, err({ kind: 'Conflict' }));
+  assert.equal(saves, 1); assert.equal(reads.calls.length, 5);
+  assert.deepEqual(report.trace.map(entry => entry.status), ['ok', 'ok', 'error']);
+  assert.deepEqual(memory.list('receipt', actor('warehouse')), before);
+});
