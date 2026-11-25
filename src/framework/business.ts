@@ -5,6 +5,7 @@ import { captureLoad, type ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
 import { workflow, evaluateRule, type WorkflowCapture, type Rule, type StageObserver } from './workflow.js';
 import type { Result } from './result.js';
+import type { Step } from './model.js';
 import type { GroupExecution } from './use-case-group.js';
 import type { Receipt, Execution } from './replay.js';
 import { createObservation, observeEffect, type ObservationReport } from './observation.js';
@@ -12,7 +13,9 @@ import { createGroupRuntime } from './group-runtime.js';
 import type { PlainCommand, ReplayCommand, ReplaySaveCheck, SelectCommand } from './use-case.js';
 type Fn = Rule<never, unknown, unknown>;
 type Load = ActionLoad<never, unknown, unknown>;
-type Pipeline = readonly [Fn, ...Fn[]];
+type Stage = Fn | Step<never, unknown, unknown>;
+type RuleOf<F extends Stage> = F extends Fn ? F : F extends Step<never, unknown, unknown> ? F['rule'] : never;
+type Pipeline = readonly [Stage, ...Stage[]];
 type Entry = Pipeline | { readonly load: Load; readonly run: Pipeline };
 // A shared loader is unnecessary only when every declared operation owns one.
 type SharedLoad<L extends Load, T extends Record<string, Entry>> =
@@ -26,11 +29,11 @@ type Value<R> = R extends { ok: true; value: infer O } ? O : never;
 type Failure<R> = R extends { ok: false; error: infer E } ? E : never;
 type Loaded<L extends Load> = Value<LoadResult<L>>;
 type LoadError<L extends Load> = Failure<LoadResult<L>>;
-type Out<F extends Fn> = Value<ReturnType<F>>;
-type ErrorOf<F extends Fn> = Failure<ReturnType<F>>;
+type Out<F extends Stage> = Value<ReturnType<RuleOf<F>>>;
+type ErrorOf<F extends Stage> = Failure<ReturnType<RuleOf<F>>>;
 type Stages<E extends Entry> = E extends Pipeline ? E : E extends { run: infer P extends Pipeline } ? P : never;
 type RawLoader<L extends Load, E extends Entry> = E extends { load: infer P extends Load } ? P : L;
-type FirstInput<E extends Entry> = Stages<E>[0] extends (input: infer I) => unknown ? I : never;
+type FirstInput<E extends Entry> = RuleOf<Stages<E>[0]> extends (input: infer I) => unknown ? I : never;
 // Keep every previously compatible loader unchanged. For an incompatible generic
 // envelope, consider the first rule's input field only as a request candidate.
 // The actual loader must guarantee the entire required context for that request;
@@ -50,25 +53,25 @@ type OperationNames<T> = OperationName<keyof T>;
 // A proof-producing check may additionally retain its declared facts, but only
 // when the actual function guarantees the entire intersection. A monomorphic
 // broad return must never invent a narrower success value.
-type StageOutput<F extends Fn, I> = [Out<F>] extends [I] ? Out<F>
+type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
   : [I] extends [Out<F>]
-    ? [F] extends [Rule<I, I, ErrorOf<F>>] ? I : Out<F>
-    : [F] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : Out<F>;
+    ? [RuleOf<F>] extends [Rule<I, I, ErrorOf<F>>] ? I : Out<F>
+    : [RuleOf<F>] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : Out<F>;
 // Tail recursion carries the concrete context across generic identity checks.
 // Unknown-length arrays retain the original mapped fallback.
-type Outputs<C, P extends readonly Fn[], A extends readonly unknown[] = readonly []> = number extends P['length']
+type Outputs<C, P extends readonly Stage[], A extends readonly unknown[] = readonly []> = number extends P['length']
   ? { readonly [K in keyof P]: Out<P[K]> }
-  : P extends readonly [infer F extends Fn, ...infer R extends readonly Fn[]]
+  : P extends readonly [infer F extends Stage, ...infer R extends readonly Stage[]]
     ? Outputs<StageOutput<F, C>, R, readonly [...A, StageOutput<F, C>]> : A;
-type Inputs<C, P extends readonly Fn[]> = readonly [C, ...Outputs<C, P>];
-type Tail<P extends readonly Fn[]> = P extends readonly [Fn, ...infer T extends readonly Fn[]] ? T : readonly [];
+type Inputs<C, P extends readonly Stage[]> = readonly [C, ...Outputs<C, P>];
+type Tail<P extends readonly Stage[]> = P extends readonly [Stage, ...infer T extends readonly Stage[]] ? T : readonly [];
 // Keep the actual function contract even in the error branch. The marker is
 // diagnostic-only: adding a property cannot make an incompatible rule valid.
-type DiagnosticRule<F extends Fn, I, O, Operation extends string, Index extends PropertyKey> =
-  ([F] extends [Rule<I, O, ErrorOf<F>>] ? unknown : {
-    readonly [K in `Koyuki: ${Operation}[${Extract<Index, string | number>}] ${[F] extends [Rule<I, Out<F>, ErrorOf<F>>] ? 'output must match save' : 'input must accept prior output'}`]: never
-  }) & Rule<I, O, ErrorOf<F>>;
-type Connect<C, P extends readonly Fn[], O, Operation extends string> = {
+type DiagnosticRule<F extends Stage, I, O, Operation extends string, Index extends PropertyKey> =
+  ([RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>] ? unknown : {
+    readonly [K in `Koyuki: ${Operation}[${Extract<Index, string | number>}] ${[RuleOf<F>] extends [Rule<I, Out<F>, ErrorOf<F>>] ? 'output must match save' : 'input must accept prior output'}`]: never
+  }) & (F extends Fn ? Rule<I, O, ErrorOf<F>> : Step<I, O, ErrorOf<F>>);
+type Connect<C, P extends readonly Stage[], O, Operation extends string> = {
   readonly [K in keyof P]: DiagnosticRule<P[K], Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Outputs<C, P>[K & keyof Outputs<C, P>] : O, Operation, K>
 };
 type Checked<L extends Load, E extends Entry, O, Operation extends string> = E extends Pipeline ? Connect<Loaded<Loader<L, E>>, E, O, Operation> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
@@ -103,7 +106,7 @@ interface RuntimeDefinition {
   operation?: (name: string) => string;
   load?: ActionLoad<unknown, unknown, unknown>;
   save: (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<unknown, unknown>>;
-  operations: Record<string, readonly Rule<unknown, unknown, unknown>[] | { load: ActionLoad<unknown, unknown, unknown>; run: readonly Rule<unknown, unknown, unknown>[] }>;
+  operations: Record<string, readonly (Rule<unknown, unknown, unknown> | Step<unknown, unknown, unknown>)[] | { load: ActionLoad<unknown, unknown, unknown>; run: readonly (Rule<unknown, unknown, unknown> | Step<unknown, unknown, unknown>)[] }>;
   replay?: { lookup: (context: GroupExecution<string, unknown>) => Result<Receipt<unknown>, unknown> | Promise<Result<Receipt<unknown>, unknown>>; resolveAfter: readonly string[] | ((error: unknown) => boolean) };
 }
 type SaveFn = (...args: never[]) => Promise<Result<unknown, unknown>>;
@@ -111,6 +114,8 @@ type SaveInput<A> = Parameters<Extract<A, SaveFn>>[0];
 type SaveResult<A> = Awaited<ReturnType<Extract<A, SaveFn>>>;
 /** Operations are own data entries of a plain record. Numeric names use JavaScript
  * string keys; Symbols, accessors and custom-prototype operation tables are rejected.
+ * Stages may be plain rules or named Step objects; names and rule references are
+ * captured at construction. Callable objects with a rule property are ambiguous.
  */
 export function business<L extends Load, O, S extends Execution<unknown>, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
@@ -189,16 +194,27 @@ export function business(definition: object) {
   const commands: Record<string, unknown> = {};
   for (const [name, entry] of entries) {
     const custom = 'run' in entry;
-    const rules = [...(custom ? entry.run : entry)];
+    const rules = [...(custom ? entry.run : entry)].map((stage, index) => {
+      if (typeof stage === 'function') {
+        // A callable structural Step can hide a different outer function when
+        // assigned to Step alone. Never silently choose one of two rule bodies.
+        if ('rule' in stage) throw new TypeError('AmbiguousBusinessStage');
+        return { name: `run:${index + 1}`, rule: stage };
+      }
+      if (stage === null || typeof stage !== 'object') throw new TypeError('BusinessRequiresRule');
+      const { name, rule } = stage;
+      if (typeof name !== 'string' || typeof rule !== 'function') throw new TypeError('BusinessRequiresRule');
+      return { name, rule };
+    });
     if (!rules.length) throw new Error('BusinessRequiresRule');
     const selectedLoad = custom ? entry.load : sharedLoad;
     if (selectedLoad === undefined) throw new TypeError('BusinessRequiresLoad');
     const load = captureLoad(selectedLoad);
     const decide = (observe?: StageObserver) => {
       const rule = (index: number): Rule<unknown, unknown, unknown> => observe
-        ? input => evaluateRule(`run:${index + 1}`, rules[index]!, input, observe) : rules[index]!;
-      let flow = workflow('run:1', rule(0));
-      for (let index = 1; index < rules.length; index++) flow = flow.then(`run:${index + 1}`, rule(index));
+        ? input => evaluateRule(rules[index]!.name, rules[index]!.rule, input, observe) : rules[index]!.rule;
+      let flow = workflow(rules[0]!.name, rule(0));
+      for (let index = 1; index < rules.length; index++) flow = flow.then(rules[index]!.name, rule(index));
       return flow;
     };
     const command = group.on(name, { load, decide: decide() });

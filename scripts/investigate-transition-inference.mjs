@@ -46,6 +46,9 @@ const probes = {
 probes['business-input-pair-explicit'] = probes['business-input-pair'].split('// Direct generic withInput calls')[0];
 probes['business-input-pair-inline'] = probes['business-input-pair-explicit']
   .replace('[explicitQuote, finish]', '[withInput((value: Context) => quote(value)), finish]');
+probes['business-input-pair-named-step'] = probes['business-input-pair-explicit']
+  .replace('business, withInput,', 'business, step, withInput,')
+  .replace('[explicitQuote, finish]', "[step('calculate-quote', withInput((value: Context) => quote(value))), finish]");
 // Test whether removing the contextual call signature from the raw tuple helps
 // nested higher-order calls, without changing withInput's generic function shape.
 function rawTupleCandidate(constraint, spread = false, checked = false) {

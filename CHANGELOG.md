@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- businessの段階に既存のstep(name, rule)を指定でき、通常関数と混在可能にした。名前をtrace・選択観測・構造図へ反映し、具体的な文脈を注釈したwithInputのinline例を配布consumerで検証。Step型も公開。名前なしinlineや任意のgeneric推論は未解消。ruleプロパティも持つ関数は実行本体が曖昧なため、生成時にAmbiguousBusinessStageで拒否する。
+
 - 購買plain/helperへ選択値captureを追加し、Koyukiと観測reportを比較。射影後のsnapshot・機密値の非選択・入力／結果のcapture失敗分離・保存成功の維持・並行呼出しの記録所有権を配布consumerで検証。純粋な射影と通常commandを対象とし、全観測経路や永続監査とは区別。
 
 - 購買plain/helperの独立Applicationへ現在値取得方針を追加。応答消失後の表示更新、不正patch・取得例外からの復旧、複数モデルの現在値反映、取得待ち中のqueueをKoyukiと比較し配布consumerで検証。従来の再送投影も維持し、全体同期・全障害経路の保証とは区別。

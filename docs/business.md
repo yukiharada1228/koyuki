@@ -96,3 +96,7 @@ Process自体は全体transactionや永続的な再開を提供しない。
 
 既存Workflowを通常関数として再利用する場合は、runをそのまま登録できる。
 [配布後の入力型の保証範囲](workflow-input-contract.md)を参照。
+
+段階に業務上の名前を付ける場合は、既存の`step(name, rule)`も配列へ置ける。
+[名前付き段階](business-named-stages.md)では、普通の関数との混在、trace・観測・構造図への反映と、
+具体的な文脈を注釈したwithInputをinlineで置ける範囲を説明する。

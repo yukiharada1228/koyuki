@@ -77,3 +77,10 @@ minimal欄は従来のtransition用の最小fixtureであり、今回のbusiness
 購買の3つの注釈付きadapterは維持する。これは保守者によるcompiler検査であり、
 利用者の学習時間・修正容易性・生産性の評価ではない。
 講演の型記述の省略や自然な書き心地については、未解消の制約として対応表へ残す。
+
+## 後続の名前付き段階
+
+[businessでの名前付きstep](business-named-stages.md)を追加した。具体的なContextを注釈した
+withInput呼出しをstepで包む場合は、inlineでも書ける検査を追加した。
+このJSONの7e9992dでの結果は当時の宣言の記録として維持する。
+名前なしinlineとgenericな入力の対応まで解消したわけではなく、現行APIの改善範囲は後続の文書で区別する。

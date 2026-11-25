@@ -15,7 +15,7 @@ export { defineApplication, operation, operations } from './application.js';
 export type { ApplicationState, ApplicationEvent, UnexpectedException } from './application.js';
 export { withReplay, replayOperation, replayOperations } from './replay.js';
 export type { Execution, Receipt, ReplayBoundary, ReplayInputError, ReplayTrace, ReplayReport } from './replay.js';
-export type { RequestExecution } from './model.js';
+export type { RequestExecution, Step } from './model.js';
 export { defineUseCase } from './use-case.js';
 export { defineUseCaseGroup } from './use-case-group.js';
 export type { GroupExecution } from './use-case-group.js';
