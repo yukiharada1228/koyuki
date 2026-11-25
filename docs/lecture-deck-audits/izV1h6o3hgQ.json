@@ -1,0 +1,1003 @@
+{
+  "videoId": "izV1h6o3hgQ",
+  "sourceManifest": "docs/lecture-decks.json",
+  "sourceSha256": "91608b60ef0c12b0c44faf4e793819854a64d2a447930545a898dbb70efc09e8",
+  "implementationBaseCommit": "bcbb1c8",
+  "review": {
+    "allPagesRead": true,
+    "allPagesVisuallyInspected": true,
+    "method": "Read extracted text for pages 1–92 and inspected all rendered pages in twenty-three four-page contact sheets; low-contrast code on page 47 was cross-read in the extracted text.",
+    "allCodeExecuted": false,
+    "continuousAudioVideoReviewed": false,
+    "meaning": "Every page of this published PDF is assessed. This does not establish all spoken claims, unpublished product behavior, external references, or execution of every displayed snippet."
+  },
+  "pages": [
+    {
+      "page": 1,
+      "topic": "表題",
+      "status": "context",
+      "assessment": "発表を識別する。機能要件ではない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 2,
+      "topic": "動機の章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 3,
+      "topic": "フロントエンド・バックエンドの関心事の隔たり",
+      "status": "experience",
+      "assessment": "著者の組織での観察。全開発組織に共通する測定結果ではない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 4,
+      "topic": "Reactと従来backendの書き方の隔たり",
+      "status": "partial",
+      "assessment": "通常関数を直接登録するbusinessを推奨入口とし、接続の手書きを減らす。",
+      "evidence": [
+        "docs/business.md"
+      ],
+      "remaining": [
+        "独立利用者による学習負担やコンテキスト切替コストの評価は未実施。"
+      ]
+    },
+    {
+      "page": 5,
+      "topic": "複雑な状態をReactのように扱う着想",
+      "status": "supported",
+      "assessment": "業務状態と関数を宣言し、runtimeで接続・実行する。Reactの内部機構をそのまま移植する要求ではない。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/application.ts",
+        "src/framework/program.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 6,
+      "topic": "CQRSの導入",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 7,
+      "topic": "参照と更新のモデル分離",
+      "status": "supported",
+      "assessment": "read queryとcommandの更新経路を分けたGraphQL例がある。",
+      "evidence": [
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 8,
+      "topic": "Queryと集約の粒度",
+      "status": "supported",
+      "assessment": "参照を更新集約の遷移経路へ無理に通さない。全query方式を標準化するものではない。",
+      "evidence": [
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 9,
+      "topic": "Queryに必要な業務ロジックの量",
+      "status": "experience",
+      "assessment": "著者の製品での経験。Koyukiでも全queryが単純であるとは仮定しない。",
+      "evidence": [
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 10,
+      "topic": "他講演のRead/Write特性画像",
+      "status": "context",
+      "assessment": "CQSを説明する外部資料の引用。参照講演全体の照合は含まない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 11,
+      "topic": "Prismaの紹介画像",
+      "status": "context",
+      "assessment": "技術選択の背景。coreの必須依存にはしない。",
+      "evidence": [
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 12,
+      "topic": "Prismaとプレーンデータ・migration",
+      "status": "design-choice",
+      "assessment": "Prismaは外部adapterの選択肢。coreは特定ORMに依存しない。",
+      "evidence": [
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 13,
+      "topic": "GraphQL・Prisma・CQRSの構成図",
+      "status": "supported",
+      "assessment": "参照と更新を分離し、更新はdomainとRepositoryを通す。GraphQLとPrismaの接続例は別々のサンプル。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 14,
+      "topic": "更新系domainに焦点を絞る",
+      "status": "supported",
+      "assessment": "業務計算をdomainに置き、transport・DBから独立させる。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 15,
+      "topic": "実装方法再考の章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 16,
+      "topic": "宣言的プログラミングの引用",
+      "status": "design-choice",
+      "assessment": "状態の宣言と実行側の調停を着想にする。Kubernetesや引用記事全体の再実装ではない。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/program.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 17,
+      "topic": "Elmアーキテクチャ図",
+      "status": "supported",
+      "assessment": "状態・イベント・指示・viewを分離する仕組みを持つ。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/framework/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 18,
+      "topic": "Elm view/updateコード",
+      "status": "supported",
+      "assessment": "純粋なupdateとview、指示の実行を分ける。Elm処理系の提供とは区別する。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/framework/application.ts",
+        "src/program.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 19,
+      "topic": "遷移関数と外界のコマンド・イベント",
+      "status": "supported",
+      "assessment": "副作用をruntimeで実行しイベントとして返す。",
+      "evidence": [
+        "src/framework/program.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 20,
+      "topic": "イベントを契機とする時系列の状態",
+      "status": "supported",
+      "assessment": "Program/Applicationがイベントの配送と実行状態更新を担う。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/framework/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 21,
+      "topic": "実行をruntimeへ委ねる",
+      "status": "supported",
+      "assessment": "業務関数を記述し接続と実行を委譲できる。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/program.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 22,
+      "topic": "Redux Data Flow図",
+      "status": "design-choice",
+      "assessment": "状態更新と表示の一方向フローを参考にする。Redux互換APIの提供は要件にしない。",
+      "evidence": [
+        "src/framework/application.ts",
+        "src/framework/program.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 23,
+      "topic": "オブジェクトへのメッセージと値間写像の手書き図",
+      "status": "design-choice",
+      "assessment": "隠れた内部変更より、遷移前後の値を明示する関数を選ぶ。クラスは禁止しない。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 24,
+      "topic": "domainの状態とイベントに着目",
+      "status": "supported",
+      "assessment": "業務状態のUnionとイベント・操作をモデル化できる。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/events.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 25,
+      "topic": "宿泊予約を静的構造以外から考える",
+      "status": "design-choice",
+      "assessment": "業務イベントと状態から設計する着想。宿泊予約製品の全仕様は公開されておらず内蔵しない。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 26,
+      "topic": "予約後・決済・キャンセル・宿泊の状態図",
+      "status": "design-choice",
+      "assessment": "状態ごとに必要なデータと許可される遷移を表せる。宿泊予約・カード決済の実運用実装ではない。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 27,
+      "topic": "永続化前にもdomain状態がある",
+      "status": "supported",
+      "assessment": "未検証・検証済み・作成済み・保存済みを区別する。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 28,
+      "topic": "状態遷移を起こすイベント",
+      "status": "supported",
+      "assessment": "イベントを起点に業務関数と実行を結び付ける。全イベントを自動永続化するものではない。",
+      "evidence": [
+        "src/tags/events.ts",
+        "src/framework/program.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 29,
+      "topic": "モデルから次モデルへの連続",
+      "status": "supported",
+      "assessment": "成功値を次段へ渡し、失敗なら停止する。",
+      "evidence": [
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 30,
+      "topic": "両端はrouterとDB・response",
+      "status": "supported",
+      "assessment": "Web処理と保存を業務計算の外側へ置く。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 31,
+      "topic": "外界イベントと状態の接続図",
+      "status": "supported",
+      "assessment": "transportで受けた操作をcommandへ渡し、結果を公開形式へ変換する。",
+      "evidence": [
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 32,
+      "topic": "フロントエンドruntimeとの類似",
+      "status": "supported",
+      "assessment": "状態計算と実行機構を分離する。DOM調停との完全同一性を主張しない。",
+      "evidence": [
+        "src/framework/application.ts",
+        "src/framework/program.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 33,
+      "topic": "I/O→pure function→I/O",
+      "status": "supported",
+      "assessment": "load・同期Rule・saveを接続する。純粋性自体は型だけでは証明できない。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 34,
+      "topic": "Domain Modeling Made Functionalの書影",
+      "status": "context",
+      "assessment": "参考書。書籍全内容の実装要求ではない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 35,
+      "topic": "Onion図",
+      "status": "supported",
+      "assessment": "外側adapterからpure coreへの依存方向を保つ。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "examples/leave-http/README.md",
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 36,
+      "topic": "アプリ状態とdomain状態の違い",
+      "status": "supported",
+      "assessment": "Applicationの実行状態とdomain状態は別の型・責任で管理する。",
+      "evidence": [
+        "src/framework/application.ts",
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 37,
+      "topic": "宣言的backendの章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 38,
+      "topic": "状態遷移の宣言とI/O分離",
+      "status": "supported",
+      "assessment": "通常の関数と型を中心にし、I/Oを明示的境界に置く。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/process.ts",
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 39,
+      "topic": "Union・Result・currying・brand",
+      "status": "supported",
+      "assessment": "通常TSの型・関数を利用し、private brandで検証済み状態を区別する。curryingは必須にしない。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/framework/result.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 40,
+      "topic": "classとthrowをあまり使わない",
+      "status": "design-choice",
+      "assessment": "期待する失敗はResult。例外の全面禁止や全例外の業務失敗化はしない。",
+      "evidence": [
+        "src/framework/result.ts",
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 41,
+      "topic": "タグ作成UIの例",
+      "status": "design-choice",
+      "assessment": "タグ作成・更新の業務モデルを検証対象にしている。元製品UIの複製ではない。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/feature.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 42,
+      "topic": "CreatedとDB保存を区別",
+      "status": "supported",
+      "assessment": "CreatedTagは保存前の計算結果。PersistedTagと区別する。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/repository.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 43,
+      "topic": "任意属性を持つTag class案",
+      "status": "supported",
+      "assessment": "一つの型に全段階の任意属性を詰めず、状態ごとの型へ分ける。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 44,
+      "topic": "状態未確定属性がundefinedになる問題",
+      "status": "supported",
+      "assessment": "状態ごとのpayloadで必要な属性を必須にする。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 45,
+      "topic": "状態別interfaceを定義",
+      "status": "supported",
+      "assessment": "Unvalidatedから検証済み状態へ型付き関数で進める。モデル全体Unionを全関数へ要求しない。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 46,
+      "topic": "Member|Guestによる不正状態排除",
+      "status": "supported",
+      "assessment": "単純な構造的Unionは排他的ではない。タグ・never・外部JSONの検証を併用する回帰テストがある。",
+      "evidence": [
+        "src/sum-model.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 47,
+      "topic": "全段階Tag classの再掲",
+      "status": "supported",
+      "assessment": "図の黒いコード領域はレンダリングでは判別しづらい。抽出本文で任意属性の例を読み、状態別型と比較した。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 48,
+      "topic": "状態別Tag Unionの再掲",
+      "status": "supported",
+      "assessment": "現在のタグdomainは段階別payloadとprivate brandを持つ。元製品の全属性仕様との等価性は主張しない。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 49,
+      "topic": "validateTagの入出力",
+      "status": "supported",
+      "assessment": "未検証入力から検証済み値へ変換する。例の省略validationを復元したとは扱わない。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 50,
+      "topic": "createTagと未確定値の確定",
+      "status": "supported",
+      "assessment": "IDや順番は外側で取得してsnapshotとして渡し、createTagは純粋計算にする。スライドの関数型注釈の誤記をそのまま仕様化しない。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/repository.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 51,
+      "topic": "状態と関数型で宣言する図",
+      "status": "supported",
+      "assessment": "前提状態を要求する関数同士の接続を型検査する。",
+      "evidence": [
+        "src/command-connection-types.test.ts",
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 52,
+      "topic": "計算の途中失敗を型で表す",
+      "status": "supported",
+      "assessment": "各段階がResultを返し失敗型を合成する。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 53,
+      "topic": "neverthrow andThenの数値例",
+      "status": "supported",
+      "assessment": "依存ゼロの独自Resultとruntimeで順次合成・失敗停止を提供する。neverthrowのAPI互換ではない。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 54,
+      "topic": "Resultで一つのWorkflowを作る",
+      "status": "supported",
+      "assessment": "利用者にandThen列を毎回書かせず関数列を登録できる。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 55,
+      "topic": "検証生成と固定tuple combine",
+      "status": "partial",
+      "assessment": "検証生成・複数エラー集約は表現できるが、collectは元例のcombineと同じ契約ではない。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/framework/validation.ts"
+      ],
+      "remaining": [
+        "固定tupleの先頭失敗と、フィールド別の全失敗収集を混同しない。必要な失敗規則は業務側で明示する。"
+      ]
+    },
+    {
+      "page": 56,
+      "topic": "validate→createのWorkflow",
+      "status": "supported",
+      "assessment": "関数列の成功接続と失敗伝播をruntimeへ委ねる。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 57,
+      "topic": "入力変換と保存は外界との境界",
+      "status": "supported",
+      "assessment": "認証情報を外側で渡し、loadとsaveを明示する。",
+      "evidence": [
+        "docs/business.md",
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 58,
+      "topic": "GraphQL resolverとRepositoryの接続",
+      "status": "supported",
+      "assessment": "GraphQL例で同じ業務commandを呼ぶ。例外への変換はtransportの契約として扱い、coreの全失敗をthrowへ変えない。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "src/framework/result.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 59,
+      "topic": "GraphQL→workflow→DB図",
+      "status": "supported",
+      "assessment": "業務計算をI/Oの間に置き、失敗時は保存を実行しない。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/command.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 60,
+      "topic": "遷移関数とruntimeの図再掲",
+      "status": "supported",
+      "assessment": "Program/Applicationとcommandが実行責任を引き受ける。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/framework/application.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 61,
+      "topic": "データフローと一本道の計算",
+      "status": "supported",
+      "assessment": "plain dataとResultを保持して接続する。予期しない欠陥は例外として区別し、認知負荷低下の一般的測定はない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 62,
+      "topic": "Prisma saveとPromiseのResult化",
+      "status": "supported",
+      "assessment": "外部adapterでPromiseをResultへ変換できる。既知storage失敗と予期しない欠陥を区別する。",
+      "evidence": [
+        "src/framework/result.ts",
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 63,
+      "topic": "Repositoryを維持する判断",
+      "status": "design-choice",
+      "assessment": "関数やportとしてRepositoryを利用できる。全ドメイン更新を細分化することもRepository class禁止も強制しない。",
+      "evidence": [
+        "src/tags/repository.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 64,
+      "topic": "Workflowへの集中と凝集性",
+      "status": "supported",
+      "assessment": "domain関数と実行を組み立てるapplicationを別モジュールに置ける。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 65,
+      "topic": "entity型を基点とするdomain module",
+      "status": "supported",
+      "assessment": "タグ型・検証・更新関数をdomain moduleへまとめ、他の実行APIから再利用する。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 66,
+      "topic": "WorkflowはUseCase相当",
+      "status": "supported",
+      "assessment": "既存のdomain・Repositoryを保ち、接続・実行をruntimeに委ねる。",
+      "evidence": [
+        "docs/business.md",
+        "src/tags/domain.ts",
+        "src/tags/repository.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 67,
+      "topic": "既存entityの更新",
+      "status": "supported",
+      "assessment": "復元済み状態と入力をloadで用意し、更新・保存する。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/repository.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 68,
+      "topic": "Inputと既存Tagの二つの流れ",
+      "status": "supported",
+      "assessment": "入力と復元モデルを一つの更新commandとして渡す。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 69,
+      "topic": "Commandに入力とmodelをまとめる",
+      "status": "supported",
+      "assessment": "UpdateCommandにinputとcurrentを持ち、検証済みcommandへ進む。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 70,
+      "topic": "未検証・検証済みCommandとUpdatedTag",
+      "status": "supported",
+      "assessment": "必要なpayloadと状態のbrandを段階ごとに区別する。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 71,
+      "topic": "更新Workflowの関数接続",
+      "status": "supported",
+      "assessment": "validateUpdate・checkUniqueUpdate・updateTagの接続を記述できる。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 72,
+      "topic": "更新の一方向フロー図再掲",
+      "status": "supported",
+      "assessment": "復元→検証→更新→保存を同じ実行境界で扱う。",
+      "evidence": [
+        "src/tags/repository.ts",
+        "src/tags/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 73,
+      "topic": "find・getとdomain復元",
+      "status": "supported",
+      "assessment": "欠損と不正な保存値を区別し、復元関数で外部値を検証する。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/repository.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 74,
+      "topic": "更新resolverで前処理とWorkflow接続",
+      "status": "supported",
+      "assessment": "外側loadが入力・scope・保存状態を組み立てる。GraphQL例でも業務commandとtransportの責任を分ける。",
+      "evidence": [
+        "src/tags/repository.ts",
+        "examples/leave-http/README.md",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 75,
+      "topic": "更新もI/O sandwich",
+      "status": "supported",
+      "assessment": "更新でも業務計算をload/saveから分離する。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/tags/repository.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 76,
+      "topic": "複雑なフローでも構造を維持",
+      "status": "partial",
+      "assessment": "複数集約・途中I/O・長い関数列を既存実行機構で検証している。公開PDFには動画の細かい実製品コード画像がない。",
+      "evidence": [
+        "docs/business-composition-study.md",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": [
+        "動画に出た非公開製品の全コード・全仕様との等価性は確認できない。大規模実務の負担評価も残る。"
+      ]
+    },
+    {
+      "page": 77,
+      "topic": "途中でI/Oが必要な場合",
+      "status": "supported",
+      "assessment": "Process.effectで途中の非同期依存を明示し、前後に純粋な計算を置ける。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/process-detail.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 78,
+      "topic": "DIで具象接続型から独立する",
+      "status": "supported",
+      "assessment": "関数を注入してDB型への依存を外す。ただし注入した関数がI/Oを実行すれば計算が純粋になるわけではない。",
+      "evidence": [
+        "src/framework/process.ts",
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 79,
+      "topic": "sortOrder取得関数の部分適用",
+      "status": "supported",
+      "assessment": "closureでadapterを注入できる。coreはPrisma型やcurrying規約に依存しない。",
+      "evidence": [
+        "src/tags/repository.ts",
+        "src/framework/process.ts",
+        "examples/prisma-stock/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 80,
+      "topic": "認証contextを適用した関数を渡す",
+      "status": "supported",
+      "assessment": "trusted identityを外から注入する。入力値だけでactorやscopeを自由指定させない例がある。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "src/expenses/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 81,
+      "topic": "注入された非同期関数とResultの接続",
+      "status": "supported",
+      "assessment": "ProcessはPromise<Result>を明示的なI/O段階として接続し、失敗を伝播する。DIによる交換可能性と参照透過性を区別する。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/process-detail.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 82,
+      "topic": "途中I/Oの前後をpure codeへ分離する図",
+      "status": "supported",
+      "assessment": "through→effect→through/commitで分離可能。全工程の自動transactionやrollbackは付与しない。",
+      "evidence": [
+        "src/framework/process.ts",
+        "docs/business-composition-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 83,
+      "topic": "考察の章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 84,
+      "topic": "Validate・更新の定型化とframework構想",
+      "status": "partial",
+      "assessment": "businessの通常関数列でResult接続を委譲し、Program/Applicationで実行状態とviewを管理する。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/program.ts",
+        "src/framework/application.ts",
+        "docs/business-change-study.md"
+      ],
+      "remaining": [
+        "React/Elmと同等の自然な開発体験・独立利用者の学習負担は未測定。一部generic推論の制限とhost側I/O設定は残る。"
+      ]
+    },
+    {
+      "page": 85,
+      "topic": "全体architectureを維持し内部paradigmを変える",
+      "status": "supported",
+      "assessment": "UseCase・Repository・集約を残し、型と関数で状態を遷移させる。",
+      "evidence": [
+        "docs/business.md",
+        "src/tags/domain.ts",
+        "src/tags/repository.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 86,
+      "topic": "値詰め替えと記述量の減少",
+      "status": "partial",
+      "assessment": "plain dataを運ぶ設計を採るが、外部公開や機密性のためのprojectionは残す。",
+      "evidence": [
+        "docs/business.md",
+        "docs/business-change-study.md"
+      ],
+      "remaining": [
+        "同じ保証を持つ比較対象に対する一般的な記述量・生産性優位は証明していない。"
+      ]
+    },
+    {
+      "page": 87,
+      "topic": "Result接続の負担とdo記法への希望",
+      "status": "partial",
+      "assessment": "同期Result列はbusiness、I/OはProcessで接続し、andThen/asyncAndThenの手書きを減らす。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/process.ts"
+      ],
+      "remaining": [
+        "任意のHaskell do/F#計算式互換は提供しない。generic推論・複雑な分岐での診断と書き心地の検証は残る。"
+      ]
+    },
+    {
+      "page": 88,
+      "topic": "宣言的プログラミング記事の再掲",
+      "status": "context",
+      "assessment": "外部記事を振り返るページ。参照記事全体の再実装や読了は含まない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 89,
+      "topic": "まとめ・実行調停とparadigm gap",
+      "status": "partial",
+      "assessment": "状態遷移の宣言と実行機構の分離を実装し、失敗停止と型接続を検証している。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/program.ts",
+        "src/framework/application.ts"
+      ],
+      "remaining": [
+        "普及・一般的な認知負荷削減・全backendでの優位性は未検証。"
+      ]
+    },
+    {
+      "page": 90,
+      "topic": "Resultライブラリ・currying・readonlyの補足",
+      "status": "design-choice",
+      "assessment": "外部依存ゼロのResultを提供し、Promiseの変換を明示する。readonlyは設計上使用するが深い不変性・純粋性の証明ではない。",
+      "evidence": [
+        "src/framework/result.ts",
+        "docs/business.md",
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 91,
+      "topic": "unique symbol newtypeと検証付きconstructor",
+      "status": "supported",
+      "assessment": "private brandと実行時検証からのみ検証済み値を生成する。asやanyによる脱出は型保証外。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 92,
+      "topic": "参考文献",
+      "status": "context",
+      "assessment": "参考書籍・リンク一覧。それらの全文を実装・確認したという意味ではない。",
+      "evidence": [],
+      "remaining": []
+    }
+  ]
+}
