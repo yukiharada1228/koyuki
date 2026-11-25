@@ -52,7 +52,7 @@ step・invariantは純粋な参照仕様とする。checkは同じbefore状態�
 - limited：明示した縮小回数へ到達した。最小と扱わず、その時点の反例を返す。
 
 これは全候補における最短列の証明ではない。任意の[shrinkEvent](event-payload-shrinking.md)を指定すれば、
-業務が与えるpayload候補も再検査する。初期状態は縮めない。
+業務が与えるpayload候補も再検査する。[shrinkInitial](initial-state-shrinking.md)で初期状態の候補も指定できる。
 別の理由の失敗を見つけても、元の理由の反例を縮めたことにはしない。
 モデルの例外を「無効な候補」として黙って捨てず、defectとして停止する。
 

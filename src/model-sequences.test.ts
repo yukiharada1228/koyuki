@@ -77,6 +77,64 @@ test('payload shrinking rechecks deletion minimality and owns candidate values i
   }
 });
 
+test('initial shrinking replays admissibility, revisits deletions and preserves original owned values', async () => {
+  type Origin = { armed: boolean; noise: number };
+  const initial: Origin = { armed: false, noise: 100 };
+  const model: SequenceModel<Origin, 'arm' | 'fail', string> = {
+    initial: [initial], seed: 0, limits: { cases: 1, length: 2, shrinkAttempts: 100 },
+    events: state => [state.armed ? 'fail' : 'arm'],
+    accepts: (state, event) => state.noise >= 0 && (event !== 'fail' || state.armed),
+    step: (state, event) => ({ state: { ...state, armed: true }, output: event }),
+    check: (_state, event) => event !== 'fail',
+    shrinkInitial: state => {
+      const noise = state.noise; state.noise = 999;
+      return noise > 0 ? [{ armed: true, noise: -1 }, { armed: true, noise: 0 }] : [];
+    },
+  };
+  const result = sampleModel(model); assert(result.kind === 'counterexample');
+  assert.deepEqual(result.original, { initial, events: ['arm', 'fail'] });
+  assert.deepEqual(result.witness, { initial: { armed: true, noise: 0 }, events: ['fail'] });
+  assert.equal(result.shrink, 'one-deletion-minimal'); assert.deepEqual(initial, { armed: false, noise: 100 });
+  assert.deepEqual(await sampleModelAsync({ ...model, check: async (...args) => model.check(...args) }), result);
+});
+
+test('initial shrinking handles empty counterexamples, shared limits, defects and unsafe candidates', () => {
+  const model: SequenceModel<number, never, never> = { initial: [100], seed: 0,
+    limits: { cases: 1, length: 0, shrinkAttempts: 10 }, events: () => [],
+    step: () => { throw Error('No events'); }, check: () => true,
+    invariant: state => state <= 0, shrinkInitial: state => state > 1 ? [0, 1] : [],
+  };
+  const result = sampleModel(model); assert(result.kind === 'counterexample');
+  assert.deepEqual(result.witness, { initial: 1, events: [] }); assert.equal(result.shrinkAttempts, 2);
+  assert.equal(result.reason, 'invariant'); assert.equal(result.original.initial, 100);
+  const cyclic = sampleModel({ ...model, shrinkInitial: state => [state] });
+  assert(cyclic.kind === 'counterexample'); assert.equal(cyclic.shrink, 'limited'); assert.equal(cyclic.shrinkAttempts, 10);
+  const zero = sampleModel({ ...model, limits: { ...model.limits, shrinkAttempts: 0 } });
+  assert(zero.kind === 'counterexample'); assert.equal(zero.shrink, 'limited'); assert.deepEqual(zero.witness, zero.original);
+  const cause = new Error('origin shrink defect');
+  const defect = sampleModel({ ...model, shrinkInitial: () => { throw cause; } });
+  assert(defect.kind === 'defect'); assert.equal(defect.phase, 'shrink-initial'); assert.equal(defect.cause, cause);
+  let getters = 0;
+  const unsafe = sampleModel({ ...model, shrinkInitial: () => Object.defineProperty([1], '0', { get() { getters++; return 1; } }) });
+  assert(unsafe.kind === 'defect'); assert.equal(unsafe.phase, 'snapshot'); assert.equal(getters, 0);
+  if (false) {
+    // @ts-expect-error initial shrinking must be a synchronous reference-model callback
+    sampleModel({ ...model, shrinkInitial: async state => [state] });
+  }
+});
+
+test('payload changes revisit previously unsuccessful initial candidates', () => {
+  const result = sampleModel({ initial: [100], seed: 0, limits: { cases: 1, length: 1, shrinkAttempts: 50 },
+    events: () => [1], step: (state, event) => ({ state, output: event }),
+    check: (state, event) => state < event,
+    shrinkInitial: state => state > 0 ? [0] : [], shrinkEvent: event => event > 0 ? [0] : [],
+  });
+  assert(result.kind === 'counterexample');
+  assert.deepEqual(result.original, { initial: 100, events: [1] });
+  assert.deepEqual(result.witness, { initial: 0, events: [0] });
+  assert.equal(result.shrink, 'one-deletion-minimal');
+});
+
 test('async comparisons use the identical shrinking engine and preserve rejected defects', async () => {
   const model = broken(100); let active = 0, maximum = 0;
   const result = await sampleModelAsync({ ...model, check: async (before, event, expected) => {

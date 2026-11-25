@@ -12,13 +12,15 @@ export interface SequenceModel<S, E, O> {
   readonly accepts?: (state: S, event: E) => boolean;
   /** Domain-provided simpler payload candidates, in deterministic preference order. */
   readonly shrinkEvent?: (event: E) => readonly E[];
+  /** Domain-provided simpler initial states. Replayed with the current event sequence. */
+  readonly shrinkInitial?: (initial: S) => readonly S[];
   readonly seed: number;
   readonly limits: { readonly cases: number; readonly length: number; readonly shrinkAttempts: number };
 }
 export type AsyncSequenceModel<S, E, O> = Omit<SequenceModel<S, E, O>, 'check'> & {
   readonly check: (before: S, event: E, expected: ModelStep<S, O>) => boolean | Promise<boolean>;
 };
-type Phase = 'snapshot' | 'events' | 'accepts' | 'step' | 'check' | 'invariant' | 'shrink-event';
+type Phase = 'snapshot' | 'events' | 'accepts' | 'step' | 'check' | 'invariant' | 'shrink-event' | 'shrink-initial';
 type Reason = 'invariant' | 'implementation';
 interface SequenceWitness<S, E> { readonly initial: S; readonly events: readonly E[] }
 interface SamplingCounts { readonly seed: number; readonly cases: number; readonly transitions: number; readonly shrinkAttempts: number }
@@ -28,7 +30,7 @@ export type SequenceSampling<S, E> = SamplingCounts & (
   | { readonly kind: 'defect'; readonly phase: Phase; readonly cause: unknown; readonly witness?: SequenceWitness<S, E> }
 );
 
-/** Seeded reference-model sampling and bounded deletion shrinking. Not exhaustive or a proof. */
+/** Seeded reference-model sampling and bounded witness shrinking. Not exhaustive or a proof. */
 export function sampleModel<S, E, O>(definition: SequenceModel<S, E, O>): SequenceSampling<S, E> {
   const check = definition.check, engine = samplingEngine<S, E, O>(definition);
   let pending = engine.next();
@@ -55,7 +57,7 @@ export async function sampleModelAsync<S, E, O>(definition: AsyncSequenceModel<S
 interface CheckRequest<S, E, O> { readonly before: S; readonly event: E; readonly expected: ModelStep<S, O> }
 type SamplingEngine<S, E, O, R = SequenceSampling<S, E>> = Generator<CheckRequest<S, E, O>, R, boolean>;
 function* samplingEngine<S, E, O>(definition: Omit<SequenceModel<S, E, O>, 'check'>): SamplingEngine<S, E, O> {
-  const { events, step, invariant, accepts, shrinkEvent, seed } = definition;
+  const { events, step, invariant, accepts, shrinkEvent, shrinkInitial, seed } = definition;
   const limits = { ...definition.limits };
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff ||
     !Number.isSafeInteger(limits.cases) || limits.cases < 1 ||
@@ -117,8 +119,25 @@ function* samplingEngine<S, E, O>(definition: Omit<SequenceModel<S, E, O>, 'chec
         }
         if (limited) break;
       }
-      if (limited || !shrinkEvent) break;
+      if (limited) break;
       let changed = false;
+      if (shrinkInitial) {
+        current = witness;
+        phase = 'shrink-initial'; const generated = shrinkInitial(snapshotData(witness.initial));
+        if (!Array.isArray(generated)) throw new TypeError('InitialShrinkCandidatesMustBeArray');
+        phase = 'snapshot'; const candidates: readonly S[] = snapshotData(generated);
+        for (const initial of candidates) {
+          if (shrinkAttempts >= limits.shrinkAttempts) { limited = true; break; }
+          shrinkAttempts++;
+          const result = yield* replay({ initial, events: witness.events });
+          if (result?.reason === failure.reason) {
+            phase = 'snapshot'; witness = snapshotData(result.witness); changed = true; break;
+          }
+        }
+      }
+      // A changed origin may make operations redundant or alter payload candidates.
+      if (changed) continue;
+      if (limited || !shrinkEvent) break;
       for (let index = 0; index < witness.events.length && !changed && !limited; index++) {
         current = { initial: witness.initial, events: witness.events.slice(0, index + 1) };
         phase = 'shrink-event'; const generated = shrinkEvent(snapshotData(witness.events[index]!));

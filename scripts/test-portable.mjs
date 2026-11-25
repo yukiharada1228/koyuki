@@ -18,6 +18,8 @@ export const result = (async () => {
   if (JSON.stringify(asyncSampled) !== JSON.stringify(sampled)) throw new Error('Portable async sampling failed');
   const reducedPayload = sampleModel({ initial: [0], seed: 0, events: () => [100], step: (n, e) => ({ state: n + e, output: n + e }), check: () => false, shrinkEvent: e => e > 0 ? [0] : [], limits: { cases: 1, length: 1, shrinkAttempts: 20 } });
   if (reducedPayload.kind !== 'counterexample' || reducedPayload.witness.events[0] !== 0 || reducedPayload.original.events[0] !== 100) throw new Error('Portable payload shrinking failed');
+  const reducedInitial = await sampleModelAsync({ initial: [100], seed: 0, events: () => [], step: n => ({ state: n, output: n }), check: async () => true, invariant: n => n <= 0, shrinkInitial: n => n > 1 ? [0, 1] : [], limits: { cases: 1, length: 0, shrinkAttempts: 20 } });
+  if (reducedInitial.kind !== 'counterexample' || reducedInitial.witness.initial !== 1 || reducedInitial.original.initial !== 100) throw new Error('Portable initial shrinking failed');
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   let retryCalls = 0;
   const retried = await retryEffect(async n => ++retryCalls === 1 ? err('Offline') : ok(n), { maxAttempts: 2, decide: () => ({ kind: 'retry', safety: 'not-applied', delayMs: 0 }) })(3);

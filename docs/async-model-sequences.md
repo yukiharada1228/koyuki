@@ -49,7 +49,7 @@ fixtureを開いた数と閉じた数も一致することを検査する。
 sampledは全状態の証明ではない。one-deletion-minimalは、受け付ける各1操作の削除で
 同じ理由の反例が残らないという意味であり、全候補での最短ではない。
 上限に達すればlimited、モデルや比較が壊れればdefectとして区別する。
-[payloadの候補](event-payload-shrinking.md)はshrinkEventで指定できる。初期状態の縮小やテスト雛形の生成は未提供。
+[payloadの候補](event-payload-shrinking.md)はshrinkEvent、[初期状態の候補](initial-state-shrinking.md)はshrinkInitialで指定できる。テスト雛形の生成は未提供。
 SQLiteのfixtureは:memory:で、ファイル永続化や別接続競合まで証明しない。
 同期/非同期の一致、非同期例外、同時実行、所有コピー、実adapterの反例を
 [unit検査](../src/model-sequences.test.ts)とタグの検査で確認し、実tarballにも同じ検査を含める。

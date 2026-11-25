@@ -200,15 +200,21 @@ test('seeded expense sequences cover amount boundaries, authorization, correctio
 test('seeded expense checks shrink a deliberately faulty actor adaptation to submit then self-approve', () => {
   const buggy: typeof actual = (state, event) => actual(state, event.type === 'approve' && event.actor.id === state.owner
     ? { ...event, actor: { id: 'wrong-trusted-actor', role: 'manager', active: true } } : event);
-  const result = sampleModel({ initial: initial.filter(state => state.amount === 3001 && state.receipt), seed: 7,
+  const result = sampleModel({ initial: initial.filter(state => state.amount === 100001 && state.receipt), seed: 7,
     limits: { cases: 1, length: 8, shrinkAttempts: 100 },
     events: state => events.filter(event => state.kind === 'draft' ? event.type === 'submit' && event.actor === actors[0]
       : event.type === 'approve' && event.actor === actors[7]),
     step: modelStep, invariant: noSelfApproval,
+    shrinkInitial: state => state.amount > 3001 ? [
+      { ...state, amount: 3000 }, { ...state, amount: 3001, receipt: false }, { ...state, amount: 3001 },
+    ] : [],
     check: (before, event, expected) => matchesImplementation(before, event, expected, buggy),
   });
   assert(result.kind === 'counterexample' && result.reason === 'implementation', JSON.stringify(result));
   assert.equal(result.shrink, 'one-deletion-minimal');
   assert.deepEqual(result.witness.events.map(event => event.type), ['submit', 'approve']);
   assert.equal(result.witness.events[1]!.actor.id, result.witness.initial.owner);
+  assert.equal(result.original.initial.amount, 100001);
+  assert.equal(result.witness.initial.amount, 3001);
+  assert.equal(result.witness.initial.receipt, true);
 });
