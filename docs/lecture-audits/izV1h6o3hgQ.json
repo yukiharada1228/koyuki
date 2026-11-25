@@ -100,13 +100,30 @@
         "iz-15",
         "iz-16",
         "iz-17",
+        "iz-18",
+        "iz-19",
+        "iz-20",
+        "iz-21",
         "iz-22",
+        "iz-23",
         "iz-24",
+        "iz-25",
+        "iz-26",
         "iz-27",
+        "iz-28",
+        "iz-29",
+        "iz-30",
         "iz-31",
-        "iz-36"
+        "iz-32",
+        "iz-33",
+        "iz-34",
+        "iz-35",
+        "iz-36",
+        "iz-37",
+        "iz-38",
+        "iz-39"
       ],
-      "scope": "Twenty-two paired caption/ASR windows reviewed: opening seventeen plus five earlier targeted windows. Seventeen remain. Four uncertain speech windows are retained in the record. Not direct listening or implementation completeness.",
+      "scope": "All 39 paired caption/ASR windows reviewed. Five uncertain speech windows remain explicitly recorded. Existing interpretations retained; not verified speech, direct listening or implementation completeness.",
       "record": "docs/lecture-local-asr-iz-followup.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
@@ -377,7 +394,9 @@
       "assessment": "状態と関連する業務関数をモジュールへ置き、ワークフローを手順の合成へ限定する。",
       "evidence": [
         "src/expenses/domain.ts",
-        "src/experiments/expense-business.ts"
+        "src/experiments/expense-business.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -390,7 +409,9 @@
       "assessment": "更新では取得済みモデルと入力をまとめ、検証前後のCommandを普通の関数で接続する。非公開の複雑な実製品コードの全詳細は検証対象にできない。",
       "evidence": [
         "src/experiments/expense-business.ts",
-        "src/business-api-migration.test.ts"
+        "src/business-api-migration.test.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -403,7 +424,9 @@
       "assessment": "依存関数を外で束縛してDB型の漏出を抑える。引数からDB型が消えても実際のI/Oが純粋になるわけではない。",
       "evidence": [
         "src/framework/process.ts",
-        "src/registration/delivery.ts"
+        "src/registration/delivery.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -416,7 +439,9 @@
       "assessment": "講演時には未実施の案として扱う。Processのeffectとthroughで純粋な区間とI/Oを接続する。",
       "evidence": [
         "docs/process.md",
-        "src/framework/process.ts"
+        "src/framework/process.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -469,7 +494,9 @@
       "assessment": "構成要素は既存のまま、内部表現を変えるという評価。DTO削減は公開項目の選別や秘密情報の除外を不要にしない。",
       "evidence": [
         "docs/team-development-study.md",
-        "examples/leave-http/README.md"
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -507,7 +534,9 @@
       "status": "design-choice",
       "assessment": "宣言的な開発を試した結果と将来像。講演自体も未完成の構想を含み、普及を保証していない。",
       "evidence": [
-        "docs/framework-goal.md"
+        "docs/framework-goal.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -518,7 +547,10 @@
       "topic": "質疑の導入",
       "status": "context",
       "assessment": "司会の自己紹介と質問の開始。",
-      "evidence": [],
+      "evidence": [
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
       "remaining": []
     },
     {
@@ -549,7 +581,9 @@
       "assessment": "宣言が目的で、関数型の道具一式の導入は目的ではない。通常TypeScriptと小さな実行境界を維持する。",
       "evidence": [
         "docs/business-api-study.md",
-        "src/framework/result.ts"
+        "src/framework/result.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -562,7 +596,9 @@
       "assessment": "フロントと同じ言語、当時のPrismaなどの利点。Pythonで実装不可能という主張や現在の言語ランキングにはしない。",
       "evidence": [
         "docs/business-api-study.md",
-        "examples/prisma-stock/README.md"
+        "examples/prisma-stock/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -574,7 +610,9 @@
       "status": "supported",
       "assessment": "transport非依存の業務操作を両方から呼び出す例がある。RESTでクライアントキャッシュが不可能という一般論にはしない。",
       "evidence": [
-        "examples/leave-http/README.md"
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -603,7 +641,9 @@
       "status": "experience",
       "assessment": "小さなチームの経験と型の助言。新入社員100人や別組織での習得を確認した結果ではない。",
       "evidence": [
-        "docs/team-development-study.md"
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -616,7 +656,9 @@
       "assessment": "成功時のみ次へ進む共通実行で、各関数のnullチェックや失敗伝播を繰り返さない。",
       "evidence": [
         "src/framework/workflow.ts",
-        "src/framework/group-runtime.ts"
+        "src/framework/group-runtime.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -628,7 +670,9 @@
       "status": "design-choice",
       "assessment": "モデルの発見は専門知識と対話の責務。講演でもチーム全体での理想的な実施は未達とされ、自動モデリングを実装要件にしない。",
       "evidence": [
-        "docs/team-development-study.md"
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -641,7 +685,9 @@
       "assessment": "固定フィールドはcollect、可変長の独立同期検証はcollectEach。順次依存する処理の失敗停止とは区別。",
       "evidence": [
         "src/framework/validation.ts",
-        "src/collection-validation.test.ts"
+        "src/collection-validation.test.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -670,7 +716,9 @@
       "status": "experience",
       "assessment": "概念が近くなっても実装上の差は残るという回答。将来普及やチームの受容性をコードで保証しない。",
       "evidence": [
-        "docs/team-development-study.md"
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -683,7 +731,9 @@
       "assessment": "汎用のID型などの共有と、バックエンドのドメイン・公開API境界を区別。ブラウザへドメインを自動公開しない。",
       "evidence": [
         "src/framework/identity.ts",
-        "examples/leave-http/README.md"
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
       ],
       "remaining": []
     },
@@ -694,7 +744,10 @@
       "topic": "終了と案内",
       "status": "context",
       "assessment": "登壇時の採用案内と挨拶。現在の募集状況やライブラリ機能に読み替えない。",
-      "evidence": [],
+      "evidence": [
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
       "remaining": []
     }
   ]

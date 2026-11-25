@@ -15,10 +15,11 @@
 来歴は[資料manifest](lecture-decks.json)、解釈と実装根拠は[詳細照合](lecture-audits/README.md)。
 [ローカル音声認識](lecture-local-asr.md)は全3本の別経路処理を完了し、合計9,421.599秒の音声の来歴を記録した。
 全文の読み比べや直接の音声視聴の完了とは扱わない。
-[1本目の部分照合](lecture-local-asr-iz-followup.md)は音声認識完了と39話題中22話題の読み比べを記録し、
+[1本目の照合](lecture-local-asr-iz-followup.md)は音声認識完了と全39話題の読み比べを記録し、
 認識が崩れた用語を推測で補わず追加確認の対象へ残している。
 [2本目の21話題](lecture-local-asr-qbf-followup.md)と[3本目の24話題](lecture-local-asr-w0o-followup.md)を合わせ、
-追加のペア比較は67/84話題。残る17話題は1本目。原字幕の初回全件レビューと、この追加比較の範囲は区別する。
+追加のペア文面比較は84/84話題で完了した。原字幕の初回全件レビューと、この追加比較は区別する。
+3本の記録には直接音声確認が必要な10区間を残している。文面の比較完了は発話の正確性や実装の完全性の証明ではない。
 [実行境界等の追加後の再照合](lecture-runtime-reconciliation.md)では、字幕4区間・PDF6ページへ戻り、
 trace・capture・成功監査・構成図の保証を区別した。初回の全区間・全頁レビューや未確認flagは維持している。
 check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て・根拠パス等を検査する。
