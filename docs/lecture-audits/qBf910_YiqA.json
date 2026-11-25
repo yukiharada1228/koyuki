@@ -90,10 +90,29 @@
     },
     "localAsrFollowUp": {
       "sections": [
+        "qbf-01",
+        "qbf-02",
+        "qbf-03",
+        "qbf-04",
+        "qbf-05",
+        "qbf-06",
+        "qbf-07",
+        "qbf-08",
+        "qbf-09",
+        "qbf-10",
+        "qbf-11",
         "qbf-12",
-        "qbf-19"
+        "qbf-13",
+        "qbf-14",
+        "qbf-15",
+        "qbf-16",
+        "qbf-17",
+        "qbf-18",
+        "qbf-19",
+        "qbf-20",
+        "qbf-21"
       ],
-      "scope": "Second saved video processed by local ASR; only two paired caption/ASR windows reviewed. Nineteen other paired windows remain unreviewed. Not direct listening.",
+      "scope": "All 21 paired caption/ASR windows reviewed. Previous interpretations retained. Three uncertain speech windows remain explicitly recorded; not direct audio listening or implementation completeness.",
       "record": "docs/lecture-local-asr-qbf-followup.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
@@ -113,7 +132,10 @@
       "topic": "導入と発表の対象",
       "status": "context",
       "assessment": "飲食店向けサービスの実践と、ドメイン外の実装との関係を説明する発表。フレームワークの機能要件ではない。",
-      "evidence": [],
+      "evidence": [
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
       "remaining": []
     },
     {
@@ -125,7 +147,9 @@
       "assessment": "関数型の適用で全層を置き換えない。Koyukiも通常のadapterと既存アーキテクチャを残す。",
       "evidence": [
         "src/expenses/repository.ts",
-        "examples/leave-http/http.ts"
+        "examples/leave-http/http.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -138,7 +162,9 @@
       "assessment": "型・不変な状態遷移を採り、型と振る舞いの整理は既存の集約・モジュールを維持する。",
       "evidence": [
         "src/expenses/domain.ts",
-        "src/tags/domain.ts"
+        "src/tags/domain.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -152,7 +178,9 @@
       "evidence": [
         "src/framework/workflow.ts",
         "src/business-api-types.test.ts",
-        "src/shipping.test.ts"
+        "src/shipping.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -166,7 +194,9 @@
       "evidence": [
         "src/registration/domain.ts",
         "src/expenses/domain.ts",
-        "src/business-api-types.test.ts"
+        "src/business-api-types.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -179,7 +209,9 @@
       "assessment": "業務関数の入力・出力と接続を型で表現する。仕様自体の正しさや任意の破壊的変更までの保証はない。",
       "evidence": [
         "src/expenses/domain.ts",
-        "src/business-api-types.test.ts"
+        "src/business-api-types.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -193,7 +225,9 @@
       "evidence": [
         "src/framework/model.ts",
         "src/experiments/business.ts",
-        "src/business-api-study.test.ts"
+        "src/business-api-study.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -208,7 +242,9 @@
         "examples/leave-http/http.ts",
         "examples/leave-http/graphql.ts",
         "examples/leave-http/graphql.test.ts",
-        "examples/prisma-stock/application.ts"
+        "examples/prisma-stock/application.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -223,7 +259,9 @@
         "src/framework/process.ts",
         "src/registration/delivery.ts",
         "src/shipping/feature.ts",
-        "src/process.test.ts"
+        "src/process.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -236,7 +274,9 @@
       "assessment": "型と振る舞いを近くへ置き、ドメインモデルの発見自体は利用者が行う。",
       "evidence": [
         "src/expenses/domain.ts",
-        "src/tags/domain.ts"
+        "src/tags/domain.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -250,7 +290,9 @@
       "evidence": [
         "src/business-api-types.test.ts",
         "scripts/fixtures/leave-business-diagnostics.ts",
-        "docs/business-change-study.md"
+        "docs/business-change-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -281,7 +323,9 @@
       "status": "design-choice",
       "assessment": "TypeScriptの構文拡張・HaskellやRustの再実装はしない。関数合成で定型接続を減らす。",
       "evidence": [
-        "src/experiments/business.ts"
+        "src/experiments/business.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": [
         "language-level-result-syntax"
@@ -303,7 +347,9 @@
         "src/framework/collection-effects.ts",
         "src/collection-effects.test.ts",
         "docs/collection-effects.md",
-        "docs/lecture-visual-qbf.json"
+        "docs/lecture-visual-qbf.json",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -316,7 +362,9 @@
       "assessment": "fromPromise/fromThrowableを明示的なI/O adapterで使う。未知の欠陥の自動分類や、mapperの正しさは保証しない。",
       "evidence": [
         "src/framework/result.ts",
-        "src/result-boundary.test.ts"
+        "src/result-boundary.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -329,7 +377,9 @@
       "assessment": "登壇者の約2年の経験とKoyukiの実績は別。短期速度の改善は講演でも断定されず、Koyukiの障害削減率・教育効果は未測定。",
       "evidence": [
         "docs/team-development-study.md",
-        "docs/business-change-study.md"
+        "docs/business-change-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": [
         "independent-adoption-evaluation"
@@ -344,7 +394,9 @@
       "assessment": "ガイドと実例を用意するが、独立した利用者の学習負担はまだ測定していない。",
       "evidence": [
         "docs/getting-started.md",
-        "docs/business-api-study.md"
+        "docs/business-api-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": [
         "independent-adoption-evaluation"
@@ -359,7 +411,9 @@
       "assessment": "plain dataは受け渡しを簡単にするが、HTTP/GraphQLの公開項目の投影・秘密情報の除外まで不要にはならない。",
       "evidence": [
         "examples/leave-http/graphql.ts",
-        "src/registration/domain.ts"
+        "src/registration/domain.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -413,7 +467,9 @@
       "status": "design-choice",
       "assessment": "既存の設計を残し、利用現場がどの範囲を関数型にするか決める。KoyukiがすべてのCRUDに最適とは主張しない。",
       "evidence": [
-        "docs/team-development-study.md"
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
       ],
       "remaining": []
     },
@@ -424,7 +480,10 @@
       "topic": "終了と拍手",
       "status": "context",
       "assessment": "挨拶・拍手。実装機能へ変換しない。",
-      "evidence": [],
+      "evidence": [
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
       "remaining": []
     }
   ]
