@@ -79,6 +79,14 @@
       "record": "docs/lecture-ordinary-api-observation.md",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "compilerComparisonFollowUp": {
+      "implementationBaseCommit": "0c546663fcd963c5957f7d10d0faee19755183f7",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Type-only comparison of current declarations and three new tuple-constraint candidates under TypeScript 7.0.2, 7.1.0-beta and 7.1.0-dev.20261125.1. No public declaration/runtime change, new source reread or audio/frame review.",
+      "record": "docs/transition-inference-compiler-comparison.json"
     }
   },
   "sections": [
@@ -370,7 +378,8 @@
         "src/business-operation-table.test.ts",
         "docs/business-local-load.md",
         "docs/business-scale.md",
-        "scripts/check-business-scale.mjs"
+        "scripts/check-business-scale.mjs",
+        "docs/transition-inference-compiler-comparison.json"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"

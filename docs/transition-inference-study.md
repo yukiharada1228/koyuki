@@ -1,5 +1,46 @@
 # inlineのgeneric要件と遷移callbackの推論
 
+## compilerを分けた追加検証
+
+[3 compilerの結果](transition-inference-compiler-comparison.json)を追加した。
+同じcommit・宣言・最小再現例・検査scriptを使い、7.0.2、7.1.0-beta、
+7.1.0-dev.20261125.1を比較した。後の2つは一時ディレクトリへ導入し、
+プロジェクトの依存やlockfileは変更していない。registryのversion・tarball URL・integrityと、
+実行したdarwin-arm64のnative package情報も記録する。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,raw-object-tuple-constraint,raw-unknown-tuple-constraint,stage-tuple-constraint
+node scripts/investigate-transition-inference.mjs --only current,raw-object-tuple-constraint,raw-unknown-tuple-constraint,stage-tuple-constraint --compiler /path/to/isolated/node_modules/.bin/tsc
+```
+
+--compilerは明示したcompiler実行ファイルを使う。script自身はpackageを取得・更新しない。
+省略時は従来どおり、プロジェクトにインストール済みのcompilerを使う。
+source commit・作業ツリーの状態・script/probe/modelのhashを記録する。
+比較記録の全試行は同じcommitでsourceDirty:falseだった。
+
+| 宣言候補 | 3 compilerでのinline例 | 各compilerでの既存契約の追加診断 |
+| --- | --- | ---: |
+| 現行 | 不受理 | 0 |
+| raw objectの非空tupleまたは空tupleという制約 | 不受理 | 2 |
+| raw unknownの非空tupleまたは空tupleという制約 | 不受理 | 2 |
+| 現行Stageの非空tupleまたは空tupleという制約 | 不受理 | 0 |
+
+今回の3候補は、従来の配列制約からtuple形状をヒントとして与える調査。
+withInputのcallableへpropertyを追加してgenericの入出力対応を失う回避はしていない。
+rawの2候補では、既存の通常関数の宣言にTS7024/TS2322が出た。
+2件は同じ箇所に伴う診断であり、独立した不具合数とは数えない。
+全候補を不採用とし、公開宣言・runtimeは変更していない。
+
+3 compilerすべてで、名前付き要件と直接の通常関数を使う最小例は通り、
+inlineの高階関数を含む例はTS2322/TS2339/TS2551等で失敗した。
+フレームワークをimportしない再現例にも同じ制限が残る。
+この結果は、調べたbeta/開発版へ更新するだけでは解消しないという証拠であり、
+将来の全compilerやTypeScriptでの解決不能を示すものではない。
+beta/開発版で既存ソースの型検査が通ったことも、その版で全runtime・配布consumer・CIを
+認証したという意味ではない。独立利用者のDXや、全講演の完全実現という判定も変えない。
+
+## 現在の制限
+
 この制限は未解消。新しい実行APIや、any/unknownへ広げる回避は追加していない。
 既存の一オブジェクト形式で、以下の宣言は型検査に失敗する。
 

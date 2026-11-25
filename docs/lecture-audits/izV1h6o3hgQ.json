@@ -72,6 +72,14 @@
       "record": "docs/lecture-ordinary-api-observation.md",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "compilerComparisonFollowUp": {
+      "implementationBaseCommit": "0c546663fcd963c5957f7d10d0faee19755183f7",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "Type-only comparison of current declarations and three new tuple-constraint candidates under TypeScript 7.0.2, 7.1.0-beta and 7.1.0-dev.20261125.1. No public declaration/runtime change, new source reread or audio/frame review.",
+      "record": "docs/transition-inference-compiler-comparison.json"
     }
   },
   "sections": [
@@ -409,7 +417,8 @@
         "docs/effect-projection.md",
         "src/process-projection.test.ts",
         "docs/procurement-framework-context.md",
-        "src/procurement-framework-context.test.ts"
+        "src/procurement-framework-context.test.ts",
+        "docs/transition-inference-compiler-comparison.json"
       ],
       "remaining": [
         "genericヘルパーと未注釈evolveの同時推論には制限がある。"

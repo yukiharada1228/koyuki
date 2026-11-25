@@ -76,3 +76,12 @@ classのprivate fieldを持つ操作でも通常・観察付きの呼び出し�
 配列形式の操作が一つでもあれば共通loadを必須とする。新しいbuilderや業務DSLは増やしていない。
 通常・詳細・capture・再送と、100/500操作の配布consumerで型と実行を検証した。
 不要な設定を除く改善であり、独立利用者の書き心地や全講演の完全実現を示すものではない。
+
+## 推論制限を別compilerで比較
+
+[compiler比較記録](transition-inference-compiler-comparison.json)では、同じcleanなソースから
+7.0.2・7.1 beta・7.1開発版を使い、現行宣言と新しいtuple制約3候補を検査した。
+すべての版でinlineのgeneric要件と未注釈evolveは通らず、raw制約の2候補は既存の宣言も壊す。
+調べた版への更新だけでは解消しないため、候補は不採用。通常の名前付き要件と
+genericの入力・出力型を維持する公開宣言は変更していない。
+これは型検査に限る比較であり、beta/開発版で全runtime・配布consumerを検証したとは扱わない。
