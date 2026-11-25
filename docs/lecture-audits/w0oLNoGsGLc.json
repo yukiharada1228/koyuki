@@ -17,7 +17,9 @@
     "visualFollowUpBaseCommit": "5067cc8",
     "visualFollowUp": "50 scene candidates and three extra frames inspected; see docs/lecture-visual-w0o.json. No continuous audio/video review.",
     "observationFollowUpBaseCommit": "9954b0c",
-    "observationFollowUp": "Optional projected Workflow.inspect capture and its tests accompany this update."
+    "observationFollowUp": "Optional projected Workflow.inspect capture and its tests accompany this update.",
+    "businessObservationBaseCommit": "14e6079",
+    "businessObservationChanges": "business.runDetailed capture integrates load/rules/save/receipt lookup with separate capture diagnostics."
   },
   "sections": [
     {
@@ -179,16 +181,17 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "従来traceは段階名と成否のみ。任意のWorkflow.inspect captureで、実行したRuleの入力・Resultから選んだ値をcloneして取得できるようにした。失敗停止・選択branch・transitionにも対応。business全体のI/O・再送への統合や永続履歴の保存方針は未提供。",
+      "assessment": "任意captureによりWorkflow/transitionの実行Rule前後、およびbusinessのload/Rule/save/receipt照会から選択した値をcloneして取得できる。過去のreplayで未実行の段階は捏造せず、観測失敗は業務結果から分離する。永続保存・保持方針・全アプリケーションの履歴の自動収集は未提供。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
         "docs/replay-trace.md",
         "src/workflow-observation.test.ts",
-        "docs/workflow-observation.md"
+        "docs/workflow-observation.md",
+        "src/business-observation.test.ts",
+        "src/framework/observation.ts"
       ],
       "remaining": [
-        "business-io-replay-observation-integration",
         "persistent-history-policy"
       ]
     },

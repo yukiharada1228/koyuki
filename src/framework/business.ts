@@ -1,8 +1,9 @@
 // Declare business operations over the shared command and replay runtime.
-import { workflow, type Rule } from './workflow.js';
+import { workflow, evaluateRule, type WorkflowCapture, type Rule, type StageObserver } from './workflow.js';
 import type { Result } from './result.js';
 import type { GroupExecution } from './use-case-group.js';
 import type { Receipt, Execution } from './replay.js';
+import { createObservation, observeEffect, type ObservationReport } from './observation.js';
 import { createGroupRuntime } from './group-runtime.js';
 import type { PlainCommand, ReplayCommand, ReplaySaveCheck, SelectCommand } from './use-case.js';
 type Fn = Rule<never, unknown, unknown>;
@@ -30,7 +31,12 @@ type Checked<L extends Load, E extends Entry, O> = E extends Pipeline ? Connect<
   ? { readonly load: A; readonly run: Connect<Loaded<A>, P, O> } : never;
 type Requests<L extends Load, T extends Record<string, Entry>> = { [K in keyof T]: Input<Loader<L, T[K]>> }[keyof T];
 type ReplayValue<S> = S extends Execution<infer O> ? O : never;
-type Callable<C> = C extends { run: infer R extends (...args: never[]) => unknown } ? R & C : never;
+type ObservedDetailed<I, R> = {
+  (input: I): Promise<R>;
+  <A, B>(input: I, capture: WorkflowCapture<A, B>): Promise<R & ObservationReport<A, B>>;
+};
+type Callable<C> = C extends { run: infer R extends (...args: never[]) => unknown; runDetailed(input: infer I): Promise<infer D> }
+  ? R & Omit<C, 'runDetailed'> & { readonly runDetailed: ObservedDetailed<I, D> } : never;
 type Commands<L extends Load, T extends Record<string, Entry>, S, SE, RE, D extends object> = {
   readonly [K in keyof T]: Callable<SelectCommand<D,
     PlainCommand<Input<Loader<L, T[K]>>, S, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE>,
@@ -59,23 +65,54 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
 }): Commands<L, T, S, SE, RE, D> {
   // Public checks prove adjacency. Only heterogeneous tuple positions are erased here.
   const source = definition as unknown as RuntimeDefinition;
-  const config = { operation: source.operation ?? ((name: string) => `${source.name}.${name}`), save: source.save };
-  const group = source.replay
-    ? createGroupRuntime({ ...config, save: source.save as (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<Execution<unknown>, unknown>>, replay: source.replay })
-    : createGroupRuntime(config);
+  const resolveOperation = source.operation ?? ((name: string) => `${source.name}.${name}`);
+  const ids = new Map<string, string>();
+  const save = source.save;
+  const replay = source.replay ? { lookup: source.replay.lookup, resolveAfter: Array.isArray(source.replay.resolveAfter)
+    ? [...source.replay.resolveAfter] : source.replay.resolveAfter } : undefined;
+  const config = { operation: (name: string) => {
+    if (!ids.has(name)) ids.set(name, resolveOperation(name));
+    return ids.get(name)!;
+  }, save };
+  const runtime = (observe?: StageObserver) => {
+    let lookups = 0;
+    const observedSave = observe ? (value: unknown, context: GroupExecution<string, unknown>) =>
+      observeEffect(context.operation, value, () => save(value, context), observe) : save;
+    return replay ? createGroupRuntime({ ...config,
+      save: observedSave as (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<Execution<unknown>, unknown>>,
+      replay: { ...replay, lookup: observe ? (context: GroupExecution<string, unknown>) =>
+        observeEffect(`${context.operation}:lookup:${++lookups}`, context.request, () => replay.lookup(context), observe) : replay.lookup },
+    }) : createGroupRuntime({ ...config, save: observedSave });
+  };
+  const group = runtime();
   const commands: Record<string, unknown> = {};
   for (const [name, entry] of Object.entries(source.operations)) {
     if (name === 'then') throw new Error('ReservedBusinessOperation:then');
     const custom = 'run' in entry;
     const rules = [...(custom ? entry.run : entry)];
     if (!rules.length) throw new Error('BusinessRequiresRule');
-    const first = rules[0]!;
-    let decide = workflow('run:1', first);
-    for (let index = 1; index < rules.length; index++) decide = decide.then(`run:${index + 1}`, rules[index]!);
-    const command = group.on(name, { load: custom ? entry.load : source.load, decide });
+    const load = custom ? entry.load : source.load;
+    const decide = (observe?: StageObserver) => {
+      const rule = (index: number): Rule<unknown, unknown, unknown> => observe
+        ? input => evaluateRule(`run:${index + 1}`, rules[index]!, input, observe) : rules[index]!;
+      let flow = workflow('run:1', rule(0));
+      for (let index = 1; index < rules.length; index++) flow = flow.then(`run:${index + 1}`, rule(index));
+      return flow;
+    };
+    const command = group.on(name, { load, decide: decide() });
+    const runDetailed = async <A, B>(input: unknown, capture?: WorkflowCapture<A, B>) => {
+      if (!capture) return command.runDetailed(input);
+      const recorder = createObservation(capture), id = config.operation(name);
+      const observed = runtime(recorder.observe).on(name, {
+        load: (request: unknown) => observeEffect(`${id}:load`, request, () => load(request), recorder.observe),
+        decide: decide(recorder.observe),
+      });
+      const report = await observed.runDetailed(input);
+      return { ...report, ...recorder.report() };
+    };
     const run = (input: unknown) => command.run(input);
     // Works both as expense.approve(input) and as a command for operations(...).
-    Object.defineProperty(commands, name, { value: Object.freeze(Object.assign(run, command)), enumerable: true });
+    Object.defineProperty(commands, name, { value: Object.freeze(Object.assign(run, command, { runDetailed })), enumerable: true });
   }
   return Object.freeze(commands) as Commands<L, T, S, SE, RE, D>;
 }

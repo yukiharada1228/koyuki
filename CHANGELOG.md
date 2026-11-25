@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- business.runDetailedの任意captureをload/Rule/save/receipt照会へ接続。実行しない過去段階は記録せず、不明commit後の照会も観測。取得・clone失敗は秘密情報を含まないobservationErrorsへ分離し、保存済み業務結果を維持。通常report・型・操作ID・再送契約を維持。
+
 - Workflow.inspectの任意captureで、選択した段階入力・Resultをcloneして観測可能に。Ruleの再実行なしで失敗停止・選択branch・transitionを記録。通常実行のreportを維持し、値の永続保存やbusiness全体への観測設定は未提供。
 
 - 3本目の画面変化50候補と状態観測の補足3枚を確認。省略されたUnion-Find・Maybe/GraphQL Union・文脈・ナップサックの例を記録し、教育例とframework機能要件を区別。全値履歴の未提供と連続視聴の未確認を維持。

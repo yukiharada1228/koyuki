@@ -11,6 +11,8 @@ export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   const ordinary = business({ name: 'portable-business', load: async input => ok(input), save: async value => ok(value), operations: { double: [n => ok(n * 2)] } });
   const ordinaryResult = await ordinary.double(3);
+  const ordinaryReport = await ordinary.double.runDetailed(3, { input: value => value, result: value => value.ok });
+  if (ordinaryReport.observations.length !== 3 || ordinaryReport.observationErrors.length !== 0) throw new Error('Business observation failed');
   if (!ordinaryResult.ok || ordinaryResult.value !== 6) throw new Error('Business operation failed');
   let receipt = null, writes = 0;
   const model = defineUseCaseGroup({

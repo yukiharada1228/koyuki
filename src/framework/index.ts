@@ -21,3 +21,4 @@ export { defineUseCaseGroup } from './use-case-group.js';
 export type { GroupExecution } from './use-case-group.js';
 export { business } from './business.js';
 export { collectEffects } from './collection-effects.js';
+export type { CaptureFailure, ObservationReport } from './observation.js';

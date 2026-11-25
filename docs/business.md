@@ -41,6 +41,7 @@ if (!accepted.ok || rejected.ok || saved.length !== 1) throw new Error('Unexpect
 - `save`は最後の成功値を保存する非同期Result関数。操作群で同じ保存契約を共有する。
 - 宣言時にI/Oは実行しない。`expense.approve(input)`と`.run(input)`は同じ実行入口。
 - `.runDetailed(input)`は既存commandの詳細reportを返す。通常のtrace名は`run:1`等の位置。
+- `.runDetailed(input, capture)`で、load・Rule・save・再送照会から選んだ値を[観測できる](workflow-observation.md)。観測失敗は業務結果から分離する。
 - 最初の失敗で後続とsaveを止める。予期しないthrow/rejectionは伝播し、Resultへ自動変換しない。
 
 操作ごとの入力が異なる場合は`{ load, run: [...] }`を指定する。

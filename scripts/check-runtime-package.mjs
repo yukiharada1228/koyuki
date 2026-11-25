@@ -32,7 +32,11 @@ try {
   const bundled = await build({ entryPoints: files.map(name => join(dist, name)), outdir: join(temp, 'bundle'), bundle: true, platform: 'browser', packages: 'external', format: 'esm', write: false, metafile: true });
   for (const output of Object.values(bundled.metafile.outputs)) assert.equal(output.imports.length, 0, 'runtime imports must resolve inside the package');
   for (const input of Object.keys(bundled.metafile.inputs)) assert(!relative(realpathSync(dist), realpathSync(resolve(input))).startsWith('..'), 'runtime import escapes package');
-  writeFileSync(join(temp, 'consumer.ts'), `import { workflow, defineUseCase, step, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, foldEach, collectEffects, err, type Result } from 'koyuki';
+  writeFileSync(join(temp, 'consumer.ts'), `import { business, workflow, defineUseCase, step, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, foldEach, collectEffects, err, type Result } from 'koyuki';
+const ordinary = business({ name: 'observed', load: async (n: number) => ok(n), save: async (n: number) => ok(n), operations: { go: [(n: number) => ok(n + 1)] } });
+const businessReport = await ordinary.go.runDetailed(1, { input: value => String(value), result: value => value.ok });
+const selected: string = businessReport.observations[0]!.input;
+const selectedResult: boolean = businessReport.observations[0]!.result;
 const parse = fromThrowable((text: string) => JSON.parse(text) as unknown, () => 'InvalidJson' as const);
 const read = fromPromise(async (id: string) => id.length, () => 'Unavailable' as const);
 const rows: Result<readonly string[], readonly { readonly index: number; readonly error: 'Invalid' }[]> =
