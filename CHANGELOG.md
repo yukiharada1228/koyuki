@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- defineTransitionのvalidateを先に推論してから段階の契約を検査する形へ変更。型付きのevolveと接続するcollectEach/withInputを直接記述可能にし、完全なUseCaseの入出力・エラー型と不正段階の拒否を配布consumerでも検証。generic呼び出しと未注釈evolveを組み合わせる推論制限は引き続き明記。
+
 - collectEachを追加。通常の同期Result関数から可変長配列の検証Ruleを作り、全エラーを元の要素位置付きで集約。明細・合計の検証例で集計/保存の停止、型の保持、Nodeなし実行を検証。非同期列・要素間の依存処理は対象外で、既存defineTransitionのinline推論制限を明記。
 
 - 2本目の保存済み自動字幕812行を読み直し、21区間の実装対応・判断・経験談・不足を記録。字幕hash・区間・根拠パスの検査を追加し、可変長Result列の専用合成APIが未提供である点を対応表へ明記。音声・画面・実装の完全性の証明とは区別。

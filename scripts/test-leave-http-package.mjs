@@ -28,6 +28,10 @@ try {
     copyFileSync(join(root, 'scripts/fixtures/leave-functions-application.ts'), join(dir, 'application.ts'));
     copyFileSync(join(root, 'scripts/fixtures/leave-functions-parity.test.ts'), join(dir, 'functions-parity.test.ts'));
     copyFileSync(join(root, 'scripts/fixtures/leave-application-lifecycle.test.ts'), join(dir, 'application-lifecycle.test.ts'));
+    writeFileSync(join(dir, 'transition-inference.test.ts'), readFileSync(join(root, 'src/transition-inference.test.ts'), 'utf8')
+      .replaceAll("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/order-lines.js'", "'./order-lines.js'"));
+    writeFileSync(join(dir, 'order-lines.ts'), readFileSync(join(root, 'src/examples/order-lines.ts'), 'utf8')
+      .replaceAll("'../framework/index.js'", "'koyuki'"));
   }
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
   pkg.dependencies.koyuki = dependency;

@@ -113,8 +113,15 @@ async関数は純粋な段階として受け付けない。
 ## 型推論の限界
 
 入力と戻り値を型で表した通常の業務関数を渡す使い方を推奨する。
+validateでは、検証関数を先に推論してから同期Resultの契約を検査する。
+型付きのevolve関数と接続する場合、collectEachやwithInputを直接記述できる。
+
+```ts
+defineTransition({ validate: collectEach(validateLine), evolve: priceLines });
+```
+
 単純なevolveの引数は推論するが、genericなwithInput呼び出しと未注釈のevolveを
-同じオブジェクトへ直接入れると、TypeScriptがrequireのtupleを推論できない場合がある。
+同じオブジェクトへ直接入れると、TypeScriptがvalidateの型やrequireのtupleを推論できない場合がある。
 そのときは要件の計算を名前付き変数に出すか、evolveの引数型を明示する。
 
 ```ts
@@ -151,3 +158,7 @@ npm run test:quickstart
 
 npm registryのalpha.5は比較基準のまま。新APIの検証はpackした開発版で行う。
 実ブラウザや公開Workersへこの開発版を再デプロイしたという意味ではない。
+
+追加の推論回帰試験では、collectEachを内側に直接書いたUseCaseとwithInputの直接接続を検証する。
+入力・出力・エラー型の厳密な一致に加え、空のobject、Result以外を返す関数、async関数、
+不正な名前付きstep、出力の誤接続を拒否する。生成された配布型でも同じ試験を実行する。

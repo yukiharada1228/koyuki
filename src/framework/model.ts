@@ -109,8 +109,10 @@ function named<I, O, E>(stage: Stage<I, O, E>, name: string): Step<I, O, E> {
 /** Declare ordinary domain functions, normalizing into the existing transition definition.
  * Default labels describe roles and positions; they do not depend on function names/minification.
  */
-export function defineTransition<const A extends AnyStage, const T extends readonly AnyStage[] = readonly [], O = unknown, E = never>(definition: {
-  validate: A;
+export function defineTransition<const A extends object, const T extends readonly AnyStage[] = readonly [], O = unknown, E = never>(definition: {
+  // Infer the supplied value before checking its stage contract; contextual Rule<never,...>
+  // otherwise contaminates nested generic calls such as collectEach(validateLine).
+  validate: A & NoInfer<A extends AnyStage ? unknown : never>;
   require?: T & ConnectedStages<StageOutput<NoInfer<A>>, T>;
   evolve: Stage<NoInfer<StageEnd<StageOutput<A>, T>>, O, E>;
 }): {

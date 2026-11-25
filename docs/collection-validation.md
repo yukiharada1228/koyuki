@@ -54,8 +54,16 @@ async関数や隣接する段階の誤接続を型検査で拒否する。
 入力配列・各要素・error値・成功値そのものをfreezeやdeep cloneはしない。
 純粋な検証関数の実装と、外部JSON等の実行時の構造検証は利用者の責務である。
 
-既存defineTransitionの推論では、collectEachの生成結果を上の例のように変数へ置く必要がある。
-入れ子に直接記述する場合の推論は未解決で、型をunknownやanyへ広げて回避してはいない。
+evolveへ入力型を定義した通常の業務関数を渡す場合は、次のように直接記述できる。
+
+```ts
+defineTransition({ validate: collectEach(validateLine), evolve: priceLines });
+```
+
+上の名前付き変数の形も、同じ検証を再利用するために使える。
+genericな検証の呼び出しと型注釈のないevolveコールバックを同時に入れ子にする場合は、
+推論が崩れることがある。検証を変数へ出すかevolveの入力型を明示する。
+型をunknownやanyへ広げて回避してはいない。
 
 ## 検証した明細の例
 

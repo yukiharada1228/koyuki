@@ -25,6 +25,6 @@ export function priceLines(lines: readonly ValidatedLine[]): Result<Quote, { kin
 export const validateLines = collectEach(validateLine);
 export function orderLinesOperation<S, E>(save: (quote: Quote) => Promise<Result<S, E>>) {
   return defineUseCase({ operation: 'order-lines.quote.v1', load: async (input: readonly Line[]) => ok(input),
-    transition: defineTransition({ validate: validateLines, evolve: priceLines }), save,
+    transition: defineTransition({ validate: collectEach(validateLine), evolve: priceLines }), save,
   });
 }
