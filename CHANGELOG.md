@@ -12,6 +12,11 @@
 
 移行点と失敗時の契約は[alpha.5移行ガイド](docs/migration-alpha.5.md)を参照。
 
+公開後、npmからalpha.5を新規インストールし、全14配布モジュール・外部型不要・実行依存ゼロを確認。
+チュートリアルの通常／再送／詳細記録と誤定義4件、休暇HTTPの15テスト（実TCPとプロセス再起動を含む）を再検証。
+HTTPとquickstartのサンプル依存も公開alpha.5へ切り替え。
+再現：`npm run check:package:registry`、`npm run test:quickstart:registry`、`npm run test:leave:http:registry`。
+
 ## 0.1.0-alpha.4
 
 - Web標準APIのみ・実行依存ゼロを配布契約として明記。Node型なしのビルド、全配布モジュールと型定義、実インストールの依存ツリーを検証。

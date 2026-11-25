@@ -1,6 +1,6 @@
 # 業務操作群の共通境界
 
-alpha.5で追加するAPI。`defineUseCaseGroup`で共通の保存・要求情報・再送方針を定義し、
+alpha.5で追加したAPI。`defineUseCaseGroup`で共通の保存・要求情報・再送方針を定義し、
 `.on`で操作ごとの取得と純粋な遷移を接続する。
 `defineUseCase`やTargetの代替を強制するものではない。
 

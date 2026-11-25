@@ -9,8 +9,6 @@ Node.js 22.13以上（開発・検証環境は26.12.0）が必要。
 リポジトリのルートから：
 
 ```sh
-npm ci
-npm run build
 cd examples/leave-http
 npm ci
 LEAVE_OWNER_TOKEN=owner-demo-token LEAVE_MANAGER_TOKEN=manager-demo-token npm start
@@ -121,6 +119,7 @@ callbackの同期例外・Promise拒否はHTTP結果を変えない。非同期o
 npm run check:leave:http
 npm run test:leave:http
 npm run test:leave:http:package
+npm run test:leave:http:registry
 ```
 
 15テスト：3操作と参照、過去の応答と最新状態の区別、認証失効と偽装、入力不正、
@@ -134,3 +133,7 @@ package検証では作業ツリー外へソースをコピーし、packしたKoy
 Honoの[アプリAPI](https://hono.dev/docs/api/hono)と
 [Body Limit](https://hono.dev/docs/middleware/builtin/body-limit)を参照して実装。
 今回の開発体験の評価は[FINDINGS.md](FINDINGS.md)に記録する。
+
+
+alpha.5公開後、registry検証でnpmから新規インストールし、同じ15テストを再実行した。
+このサンプルの依存先もローカルファイルから公開済み`koyuki@0.1.0-alpha.5`へ切り替えている。

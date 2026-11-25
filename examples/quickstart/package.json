@@ -8,7 +8,7 @@
     "start:replay": "tsx replay.ts"
   },
   "dependencies": {
-    "koyuki": "0.1.0-alpha.4"
+    "koyuki": "0.1.0-alpha.5"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

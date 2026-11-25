@@ -1,6 +1,6 @@
 # alpha.5への移行
 
-公開候補の移行案内。alpha.4以前から更新する場合の変更点。
+alpha.4以前からalpha.5へ更新する場合の変更点。
 
 ```sh
 npm install koyuki@0.1.0-alpha.5
