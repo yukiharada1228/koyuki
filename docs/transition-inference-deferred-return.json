@@ -1,0 +1,90 @@
+{
+  "collectedAt": "2026-11-25T18:07:18.951Z",
+  "sourceGitCommit": "53ddc8afe1e96794573cf753cc1651216897962c",
+  "sourceDirty": false,
+  "collectorSha256": "1fa65baaa4dd0f855212fb4bafa7eb1b634c314a0b6a52d94599387e14e5f581",
+  "probeSha256": "899696b841a89b581b7e17af4ab27bd52c000316d6c2a606f51a660c68a6ed5d",
+  "compiler": "Version 7.0.2",
+  "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+  "existingContractsPass": true,
+  "minimal": {
+    "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+    "baselineAccepted": true,
+    "accepted": false,
+    "diagnostics": [
+      "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+      "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+      "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+      "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+    ]
+  },
+  "results": [
+    {
+      "name": "current",
+      "accepted": false,
+      "inlineProbeAccepted": false,
+      "probeDiagnosticCodes": [
+        "TS2322",
+        "TS2339",
+        "TS2551"
+      ],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    },
+    {
+      "name": "deferred-with-input-return",
+      "accepted": false,
+      "inlineProbeAccepted": true,
+      "probeDiagnosticCodes": [],
+      "existingContractDiagnostics": 9,
+      "existingDiagnosticSites": [
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 78,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 79,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 80,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 91,
+          "code": "TS2322"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 92,
+          "code": "TS2322"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 103,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 104,
+          "code": "TS2344"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 110,
+          "code": "TS2345"
+        },
+        {
+          "file": "src/transition-inference.test.ts",
+          "line": 113,
+          "code": "TS2344"
+        }
+      ]
+    }
+  ],
+  "scope": "Current compiler and unchanged source contracts only. Candidate rejected because generic input/output correlation regresses, despite acceptance of the monomorphic inline probe. No public API or runtime change."
+}

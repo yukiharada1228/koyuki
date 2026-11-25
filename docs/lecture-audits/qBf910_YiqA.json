@@ -122,6 +122,14 @@
       "record": "docs/lecture-local-asr-run.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "deferredReturnInferenceFollowUp": {
+      "implementationBaseCommit": "53ddc8afe1e96794573cf753cc1651216897962c",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Type-only investigation of a non-distributive conditional withInput return. Inline probe passes but nine diagnostics in four existing generic-correlation tests reject the candidate. No public API/runtime change or new audio/frame review.",
+      "record": "docs/transition-inference-deferred-return.json"
     }
   },
   "sections": [

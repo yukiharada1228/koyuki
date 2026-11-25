@@ -1,5 +1,38 @@
 # inlineのgeneric要件と遷移callbackの推論
 
+## 戻り値の型計算を遅らせる候補
+
+[追加の結果](transition-inference-deferred-return.json)は、53ddc8aのクリーンなソースで
+TypeScript 7.0.2を使った比較である。withInputの戻り値を次の非分配条件型へ変える候補を調べた。
+
+```ts
+[I] extends [I]
+  ? Rule<I, Readonly<{ input: I; value: O }>, E>
+  : never
+```
+
+配列の要素へinlineでwithInput(quote)を置く例は、入力number・成功number・失敗Declinedの
+厳密一致を含めて通った。しかし、既存のtransition-inference.test.tsに9件の診断が出た。
+これらは次の4検査に属し、9個の独立した不具合を意味する数値ではない。
+
+- genericなidentity関数をnumber・string・objectへ別々に適用した際の型の対応
+- 独立したgenericな呼び出し元で、同じ型引数を入力と結果に保つこと
+- genericな入力をitemへ包む、identity以外の結果構造
+- 制約付きgeneric関数へ渡したcurrency等の追加フィールドの保持
+
+つまり、特定のinline例を通す一方で、普通のgeneric業務関数を再利用する既存契約を壊す。
+候補は不採用。publicな宣言、runtime、依存関係を変更せず、型推論の制限は未解消として残す。
+既存ソースの型検査が通る現行宣言と、inline例だけが通る候補を区別した記録であり、
+この条件型によるあらゆる改善が不可能だという結論にはしない。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current,deferred-with-input-return
+```
+
+scriptは候補を一時コピーへ適用し、通常の全ソースの型検査、inline probe、既存の最小再現例を検査する。
+ここでのminimal欄は従来の変更前fixtureの結果であり、条件型へ変更した最小例の結果ではない。
+既存の名前付き要件・型を明示した業務関数による記述は引き続き使える。
+
 ## compilerを分けた追加検証
 
 [3 compilerの結果](transition-inference-compiler-comparison.json)を追加した。
