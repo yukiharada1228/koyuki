@@ -47,6 +47,8 @@ function fields(path) {
   for (const property of path.get('properties')) {
     const key = property.node.computed ? literal(property.get('key')) : property.node.key.name ?? literal(property.get('key'));
     if (key === undefined) return;
+    // In an object literal this spelling sets the prototype rather than an own data key.
+    if (key === '__proto__' && !property.node.computed && !property.node.shorthand) return;
     result.set(key, property.get('value'));
   }
   return result;
@@ -54,9 +56,14 @@ function fields(path) {
 
 /** Parse declarations only. Never import a target module, resolve imports, or evaluate an expression. */
 export function analyzeDeclarations(files) {
-  const diagnostics = [], unresolved = [], ids = new Map(); let checkedDeclarations = 0;
+  const diagnostics = [], unresolved = [], ids = new Map(); let checkedDeclarations = 0, checkedOperationIds = 0;
   const report = (code, severity, file, path, message, related = []) => diagnostics.push({ code, severity, ...position(file, path), message, related });
   const skip = (file, path, reason) => unresolved.push({ ...position(file, path), reason });
+  const operationId = (value, file, path) => {
+    checkedOperationIds++;
+    if (ids.has(value)) report('REPEATED_OPERATION_ID', 'warning', file, path, `Operation ID ${JSON.stringify(value)} appears in another selected declaration; confirm whether the shared persistence identity is intentional.`, [ids.get(value)]);
+    else ids.set(value, position(file, path));
+  };
   for (const { file, source } of files) {
     let ast;
     try { ast = parse(source, { sourceType: 'module', sourceFilename: file, plugins: ['typescript', ...(/\.[jt]sx$/i.test(file) ? ['jsx'] : [])], attachComment: false }); }
@@ -71,8 +78,7 @@ export function analyzeDeclarations(files) {
         const operation = definition.get('operation');
         const value = operation && literal(resolveValue(operation));
         if (value === undefined) { skip(file, path, 'Operation ID is dynamic or absent'); return; }
-        if (ids.has(value)) report('REPEATED_OPERATION_ID', 'warning', file, operation, `Operation ID ${JSON.stringify(value)} appears in another selected declaration; confirm whether the shared persistence identity is intentional.`, [ids.get(value)]);
-        else ids.set(value, position(file, operation));
+        operationId(value, file, operation);
       } else if (name === 'defineApplication' || name === 'business') {
         const table = definition.get('operations');
         const operations = table && fields(table);
@@ -80,6 +86,13 @@ export function analyzeDeclarations(files) {
         // business.then is already rejected by its public type declaration.
         if (name === 'defineApplication') for (const [key, value] of operations) {
           if (key === 'dismiss' || key.startsWith('@')) report('RESERVED_APPLICATION_OPERATION', 'error', file, value.parentPath.get('key'), `Operation ${JSON.stringify(key)} is reserved by Application; rename the public operation.`);
+        }
+        if (name === 'business' && operations.size) {
+          if (definition.has('operation')) { skip(file, definition.get('operation'), 'Business operation resolver is not evaluated'); return; }
+          const prefix = definition.get('name') && resolveValue(definition.get('name'));
+          const value = prefix?.isStringLiteral() || prefix?.isTemplateLiteral() && prefix.node.expressions.length === 0 ? literal(prefix) : undefined;
+          if (value === undefined) { skip(file, path, 'Business name is dynamic or absent; default operation IDs are unresolved'); return; }
+          for (const [key, entry] of operations) operationId(`${value}.${key}`, file, entry.parentPath.get('key'));
         }
       } else {
         const labels = new Map();
@@ -106,7 +119,7 @@ export function analyzeDeclarations(files) {
       }
     } });
   }
-  return { schema: 'koyuki.declaration-diagnostics.v1', scope: 'static-source-metadata', checkedDeclarations, diagnostics, unresolved };
+  return { schema: 'koyuki.declaration-diagnostics.v1', scope: 'static-source-metadata', checkedDeclarations, checkedOperationIds, diagnostics, unresolved };
 }
 
 async function main(args) {
@@ -122,7 +135,7 @@ async function main(args) {
       for (const related of item.related) console.log(`  related: ${related.file}:${related.line}:${related.column}`);
     }
     for (const item of report.unresolved) console.log(`${item.file}:${item.line}:${item.column} unresolved: ${item.reason}`);
-    console.log(`Checked ${report.checkedDeclarations} declarations; ${report.diagnostics.length} diagnostics; ${report.unresolved.length} unresolved metadata items. This is not a type check or a proof of business correctness.`);
+    console.log(`Checked ${report.checkedDeclarations} declarations and ${report.checkedOperationIds} operation IDs; ${report.diagnostics.length} diagnostics; ${report.unresolved.length} unresolved metadata items. This is not a type check or a proof of business correctness.`);
   }
   process.exitCode = report.diagnostics.some(item => item.severity === 'error' || strict && item.severity === 'warning') ? 1 : 0;
 }

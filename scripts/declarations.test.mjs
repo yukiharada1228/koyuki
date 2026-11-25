@@ -31,6 +31,39 @@ test('operation IDs are scoped to selected source declarations and remain warnin
   assert.equal(result.diagnostics[0].severity, 'warning');
 });
 
+test('default business IDs include string and numeric keys and collide with explicit IDs at the operation position', () => {
+  const result = analyze(`import {business,defineTarget} from 'koyuki';
+const prefix='expense'; const table={approve:[approve],0:[submit]} as const;
+business({name:prefix,operations:table});
+defineTarget({operation:'expense.approve'});
+defineTarget({operation:'expense.0'});`);
+  assert.equal(result.checkedDeclarations, 3); assert.deepEqual(result.unresolved, []);
+  assert.equal(result.diagnostics.length, 2);
+  for (const item of result.diagnostics) {
+    assert.equal(item.code, 'REPEATED_OPERATION_ID'); assert.equal(item.related[0].line, 2);
+  }
+  assert.notEqual(result.diagnostics[0].related[0].column, result.diagnostics[1].related[0].column);
+});
+
+test('custom business resolvers and dynamic names remain unresolved instead of inventing default IDs', () => {
+  const result = analyze(`import {business,defineTarget} from 'koyuki';
+business({name:'expense',operation:()=>{throw new Error('must not execute')},operations:{approve:[approve]}});
+business({name:computeName(),operations:{approve:[approve]}});
+defineTarget({operation:'expense.approve'});`);
+  assert.deepEqual(result.diagnostics, []); assert.equal(result.unresolved.length, 2);
+  assert(result.unresolved.some(item => item.reason.includes('resolver')));
+  assert(result.unresolved.some(item => item.reason.includes('name')));
+});
+
+test('prototype setters are unresolved while computed prototype-like data keys keep their business IDs', () => {
+  const result = analyze(`import {business,defineTarget} from 'koyuki';
+business({name:'unsafe',operations:{__proto__:[approve]}});
+business({name:'safe',operations:{['__proto__']:[approve],constructor:[approve]}});
+defineTarget({operation:'safe.__proto__'}); defineTarget({operation:'safe.constructor'});`);
+  assert.equal(result.unresolved.length, 1); assert.equal(result.diagnostics.length, 2);
+  assert(result.diagnostics.every(item => item.code === 'REPEATED_OPERATION_ID'));
+});
+
 test('lexical shadowing, unrelated modules, and type-only imports do not masquerade as Koyuki declarations', () => {
   const result = analyze(`import {defineTarget as target} from 'koyuki';
 import * as k from 'koyuki';
@@ -82,6 +115,23 @@ test('real tag and expense declarations are parsed without loading their reposit
   const files = await Promise.all(paths.map(async file => ({ file, source: await readFile(join(root, file), 'utf8') })));
   const result = analyzeDeclarations(files);
   assert.equal(result.checkedDeclarations, 11); assert.deepEqual(result.diagnostics, []); assert.deepEqual(result.unresolved, []);
+});
+
+test('all 25 procurement business IDs are checked without executing the application', async () => {
+  const file = 'src/experiments/procurement/application.ts';
+  const source = await readFile(join(root, file), 'utf8');
+  const baseline = analyzeDeclarations([{ file, source }]);
+  assert.equal(baseline.checkedDeclarations, 6); assert.equal(baseline.checkedOperationIds, 25);
+  assert.deepEqual(baseline.diagnostics, []); assert.deepEqual(baseline.unresolved, []);
+  const expected = {
+    request: ['create', 'edit', 'withdraw', 'reject', 'return', 'reassign', 'submit', 'approve'],
+    order: ['place', 'amend', 'cancel', 'complete'], receipt: ['receive', 'return', 'correct'],
+    invoice: ['register', 'approve', 'void', 'match'], payment: ['record', 'cancel'], inventory: ['reserve', 'release', 'move', 'adjust'],
+  };
+  const duplicates = Object.entries(expected).flatMap(([model, operations]) => operations.map(name => `diagnosticTarget({operation:${JSON.stringify(`procurement.${model}.v1.${name}`)}});`)).join('\n');
+  const checked = analyzeDeclarations([{ file, source: source + `\nimport {defineTarget as diagnosticTarget} from 'koyuki';\n` + duplicates }]);
+  assert.equal(checked.checkedOperationIds, 50); assert.equal(checked.diagnostics.length, 25);
+  assert(checked.diagnostics.every(item => item.code === 'REPEATED_OPERATION_ID' && item.related.length === 1));
 });
 
 test('CLI never evaluates imports, top-level effects, or getters; JSON and strict exits are stable', async () => {

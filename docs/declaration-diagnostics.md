@@ -7,10 +7,12 @@
 ```sh
 npm run check:declarations -- src/tags/model.ts src/tags/events.ts src/expenses/application.ts
 npm run check:declarations -- --json src/expenses/application.ts
+npm run check:declarations -- --json src/experiments/procurement/application.ts
 npm run test:declarations
 ```
 
 タグと経費の11宣言を、診断・未解決項目とも0で検査する実例を含む。
+購買アプリの6つのbusiness宣言では、25操作の既定IDを検査する。
 CLI自体はリポジトリの開発ツールであり、公開npm packageのbinや実行時依存には追加しない。
 [Babel parser](https://babeljs.io/docs/babel-parser)と[traverse](https://babeljs.io/docs/babel-traverse)は固定版の開発依存。
 型チェックに使うTypeScript 7や、Web標準のみ・実行時依存ゼロのcoreは維持する。
@@ -41,6 +43,12 @@ constの参照、as/satisfies、静的な文字列・数値キーを読み、任
 
 defineTarget / defineUseCase / defineCommand / bindMutation / defineUseCaseGroupのoperation、
 defineTransitionのstep名、defineApplicationの操作名を対象とする。
+businessでは、operation resolverの指定がなく、nameと操作テーブルが静的に読めるとき、
+coreと同じ`${name}.${operationName}`の既定IDを検査する。数値名は実際の文字列キーを使う。
+明示IDとbusinessの既定IDの重複も、操作のキー位置を付けて報告する。
+checkedOperationIdsは検査したIDの出現数であり、重複や共有を除いた業務機能数ではない。
+独自resolverを呼んだり、その関数本体からIDを推測したりせず、未解決として残す。
+Object literalの__proto__ setterをownデータキーと見なさず、そのテーブルも未解決にする。
 動的なID・spread・関数で作るテーブル・import先にある段階の実体はunresolvedとして位置と理由を残す。
 通常関数か名前付きStepか判別できない値に、推測で自動ラベルを付けない。
 defineApplicationやbusinessに動的な操作テーブルを渡すこと自体は正当なので、未解決をエラーにはしない。
@@ -53,7 +61,9 @@ defineApplicationやbusinessに動的な操作テーブルを渡すこと自体�
 分岐・状態の網羅性、関数本体の純粋性や業務ルールの正しさは証明しない。
 このためIssue #6全体の完了とはしない。
 
-[9件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
+[13件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
 未解決、実例に加え、対象ファイルへ副作用・throw・存在しないimport・getterを置いても
 それらを実行しないことを確認する。CIのcore jobでも継続する。
+購買の25操作には、独立した期待ID一覧と重複する宣言をテスト用に追加し、
+各操作に対応する25件の警告が出ることも確認する。元のアプリの実行や定義変更は行わない。
 これは講演が指定したCLI仕様ではなく、Koyuki側の開発支援の具体化である。
