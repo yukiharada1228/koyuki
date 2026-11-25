@@ -234,30 +234,42 @@ export function reassignRequest(value: Loaded<SubmitInput, Request> & Readonly<{
 }
 
 export type OrderFacts = Readonly<{ receipts: readonly Receipt[]; invoices: readonly Invoice[] }>;
-function orderGuard(value: Loaded<VersionInput, Order> & OrderFacts): Result<Order, RuleError> {
+declare const orderCheck: unique symbol;
+export type CheckedOrder<T> = T & Readonly<{ [orderCheck]: true }>;
+export function checkOrder<T extends Loaded<VersionInput, Order> & OrderFacts>(value: T): Result<CheckedOrder<T>, RuleError> {
   const { input, actor, current, receipts, invoices } = value;
   if (!allowed(actor, 'buyer', current.groupId) || actor.id !== current.ownerId) return failure('Denied');
   if (current.id !== input.id || [...receipts, ...invoices].some(row => row.groupId !== current.groupId || row.orderId !== current.id)) return failure('TargetMismatch');
   if (!integer(input.expectedVersion)) return failure('InvalidInput');
   if (current.version !== input.expectedVersion) return failure('Conflict');
   if (current.state !== 'placed') return failure('WrongState');
-  return ok(current);
+  // Private compile-time proof over the same readonly loaded context.
+  return ok(value as CheckedOrder<T>);
 }
 // Commercial amounts remain those authorized in the approved request; only supplier can be amended.
 export function amendOrder(value: Loaded<AmendInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
-  const checked = orderGuard(value); if (!checked.ok) return checked;
+  const checked = checkOrder(value); if (!checked.ok) return checked;
+  return amendCheckedOrder(checked.value);
+}
+export function amendCheckedOrder(value: CheckedOrder<Loaded<AmendInput, Order> & OrderFacts>): Result<Change<Order>, RuleError> {
   if (value.receipts.length || value.invoices.length) return failure('WrongState');
   if (typeof value.input.supplier !== 'string' || !value.input.supplier.trim()) return failure('InvalidInput');
-  return ok(plan({ ...checked.value, supplier: value.input.supplier.trim(), version: checked.value.version + 1 }, [check(checked.value)]));
+  return ok(plan({ ...value.current, supplier: value.input.supplier.trim(), version: value.current.version + 1 }, [check(value.current)]));
 }
 export function cancelOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
-  const checked = orderGuard(value); if (!checked.ok) return checked;
+  const checked = checkOrder(value); if (!checked.ok) return checked;
+  return cancelCheckedOrder(checked.value);
+}
+export function cancelCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Order>, RuleError> {
   if (value.receipts.length || value.invoices.length) return failure('WrongState');
-  return ok(plan({ ...checked.value, state: 'cancelled', version: checked.value.version + 1 }, [check(checked.value)]));
+  return ok(plan({ ...value.current, state: 'cancelled', version: value.current.version + 1 }, [check(value.current)]));
 }
 export function completeOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
-  const checked = orderGuard(value); if (!checked.ok) return checked;
-  const current = checked.value;
+  const checked = checkOrder(value); if (!checked.ok) return checked;
+  return completeCheckedOrder(checked.value);
+}
+export function completeCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Order>, RuleError> {
+  const current = value.current;
   if (value.invoices.length !== 1 || (value.invoices[0]?.state !== 'matched' && value.invoices[0]?.state !== 'approved') || value.invoices[0].amountCents !== current.totalCents || current.lines.some(line => value.receipts.filter(receipt => receipt.state === 'accepted').flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
   return ok(plan({ ...current, state: 'completed', version: current.version + 1 }, [check(current), ...value.invoices.map(check)]));
 }

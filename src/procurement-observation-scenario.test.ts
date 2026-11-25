@@ -62,14 +62,16 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
           assert.equal(commits, beforeCommits + 1);
           const namespaces: Record<string, string> = { requests: 'request', orders: 'order', receipts: 'receipt', invoices: 'invoice', payments: 'payment', inventory: 'inventory' };
           const operation = `procurement.${namespaces[group]}.v1.${name}`;
-          assert.deepEqual(report.trace, [{ step: `${operation}:load`, status: 'ok' }, { step: 'run:1', status: 'ok' }, { step: operation, status: 'ok' }]);
+          const splitOrder = group === 'orders' && ['amend', 'cancel', 'complete'].includes(name);
+          const expectedSteps = [`${operation}:load`, 'run:1', ...(splitOrder ? ['run:2'] : []), operation];
+          assert.deepEqual(report.trace, expectedSteps.map(step => ({ step, status: 'ok' })));
           if (mode !== 'selected') {
             assert.deepEqual(report.observations, []);
-            assert.equal(report.observationErrors.length, 3);
+            assert.equal(report.observationErrors.length, expectedSteps.length);
             assert.deepEqual(report.observationErrors, report.trace.map(row => ({ step: row.step, phase: mode === 'input-failure' ? 'input' : 'result', kind: 'CaptureFailed' })));
             assert(!JSON.stringify(report.observationErrors).includes('private-observation-failure'));
           } else {
-            assert.deepEqual(report.observationErrors, []); assert.equal(report.observations.length, 3);
+            assert.deepEqual(report.observationErrors, []); assert.equal(report.observations.length, expectedSteps.length);
             assert(report.observations.every(row => row.input.invocation === invocation && row.result.ok));
             assert.deepEqual(report.observations.at(-1)?.result.subject, report.result.ok ? subject(report.result.value) : null);
             const saved = report.observations.at(-1)?.result.subject;
@@ -88,7 +90,7 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
     assert.equal(commits, 32);
     if (build) {
       assert.equal(reports.length, 32); assert.equal(new Set(reports.map(row => row.operation)).size, 25);
-      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 96);
+      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 99);
     }
     return { outcome, reports, commits, reads };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }

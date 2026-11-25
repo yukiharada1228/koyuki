@@ -1,7 +1,7 @@
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
 import { reserveStock, releaseStock, moveStock, adjustStock, receiveIntoStock, returnFromStock, correctInStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, ok, type Result } from '../../framework/index.js';
-import { recordPayment, cancelPayment, approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice,
+import { checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, approveInvoice, voidInvoice, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, registerInvoice, matchInvoice,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
@@ -31,9 +31,9 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   const orders = business({ name: 'procurement.order.v1', load: context.place,
     save: <T extends Order>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       place: [placeOrder],
-      amend: { load: context.order<AmendInput>, run: [amendOrder] },
-      cancel: { load: context.order<VersionInput>, run: [cancelOrder] },
-      complete: { load: context.order<VersionInput>, run: [completeOrder] },
+      amend: { load: context.order<AmendInput>, run: [checkOrder, amendCheckedOrder] },
+      cancel: { load: context.order<VersionInput>, run: [checkOrder, cancelCheckedOrder] },
+      complete: { load: context.order<VersionInput>, run: [checkOrder, completeCheckedOrder] },
     } });
   const receipts = business({ name: 'procurement.receipt.v1', load: context.receive,
     save: <T extends Receipt>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
