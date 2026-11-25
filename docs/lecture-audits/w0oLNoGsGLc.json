@@ -1,0 +1,333 @@
+{
+  "videoId": "w0oLNoGsGLc",
+  "title": "関数型プログラミングと型システムのメンタルモデル",
+  "url": "https://www.youtube.com/watch?v=w0oLNoGsGLc",
+  "source": {
+    "file": "w0oLNoGsGLc.ja-orig.txt",
+    "sha256": "9c87024d2fb0d478c272c3558ae97c13e002093edd2ee72d05f542676e6a86bc",
+    "lineCount": 964,
+    "durationSeconds": 2513
+  },
+  "review": {
+    "basis": "Saved Japanese automatic captions, manually reread in full",
+    "audioDirectlyReviewed": false,
+    "allFramesReviewed": false,
+    "implementationBaseCommit": "8291278",
+    "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation."
+  },
+  "sections": [
+    {
+      "id": "w0o-01",
+      "startSeconds": 0,
+      "endSeconds": 51,
+      "topic": "開始・画面共有",
+      "status": "context",
+      "assessment": "進行と挨拶。フレームワーク機能へ変換しない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "id": "w0o-02",
+      "startSeconds": 51,
+      "endSeconds": 116,
+      "topic": "関数と型を捉えるメンタルモデル",
+      "status": "design-choice",
+      "assessment": "関数を値の写像、型を取り得る値の集合として見る説明。APIの指定ではない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/business-api-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-03",
+      "startSeconds": 116,
+      "endSeconds": 224,
+      "topic": "型に対する見方の変化と背景",
+      "status": "experience",
+      "assessment": "登壇者の過去の言語経験と参考記事の紹介。特定の言語やIDEの現在の優劣を検証した結果ではない。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-04",
+      "startSeconds": 224,
+      "endSeconds": 319,
+      "topic": "命令から計算の定義へ",
+      "status": "design-choice",
+      "assessment": "業務計算を通常の関数の入出力で表す。Koyukiが数学的な純粋性を強制するという意味ではない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/examples/order-lines.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-05",
+      "startSeconds": 319,
+      "endSeconds": 356,
+      "topic": "関数型の無条件な優越ではない",
+      "status": "design-choice",
+      "assessment": "通常のI/Oや単純なCRUDを許容する。全実装のFP化やクラス禁止を要件にしない。",
+      "evidence": [
+        "docs/framework-goal.md",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-06",
+      "startSeconds": 356,
+      "endSeconds": 467,
+      "topic": "Reactと状態・表示の分離",
+      "status": "supported",
+      "assessment": "Applicationの業務データ・実行状態・viewを分離して購読できる。ReactのDOM rendererやReact相当の性能を提供するわけではない。",
+      "evidence": [
+        "src/framework/application.ts",
+        "src/application.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-07",
+      "startSeconds": 467,
+      "endSeconds": 570,
+      "topic": "Elmの更新・command・イベントループ",
+      "status": "supported",
+      "assessment": "defineProgramのupdate・commandとApplicationの実行委譲で対応する。インプロセスのloopであり永続schedulerではない。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/program.test.ts",
+        "src/framework/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-08",
+      "startSeconds": 570,
+      "endSeconds": 608,
+      "topic": "明示した状態遷移の意義",
+      "status": "design-choice",
+      "assessment": "状態変化を入力と戻り値に表す。UIでの事例から業務ロジックへ考え方をつなぐ説明として扱う。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-09",
+      "startSeconds": 608,
+      "endSeconds": 767,
+      "topic": "for文と計算機のモデル",
+      "status": "design-choice",
+      "assessment": "計算モデルの比較のための総和の例。フレームワーク内部のループやローカル変数の利用を禁止する要求ではない。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/examples/order-lines.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-10",
+      "startSeconds": 767,
+      "endSeconds": 916,
+      "topic": "再帰とfold/reduce",
+      "status": "design-choice",
+      "assessment": "値へ関数を繰り返し適用する説明。TypeScriptのreduceや通常関数を利用でき、新しい言語・無限の再帰実行系は実装しない。",
+      "evidence": [
+        "src/examples/order-lines.ts",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-11",
+      "startSeconds": 916,
+      "endSeconds": 1170,
+      "topic": "文・式・関数適用",
+      "status": "design-choice",
+      "assessment": "言語構文そのものの変更ではなく、業務計算を値を返す関数として構成する。式の形でも副作用があり得るため、形だけで純粋と判定しない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/framework/process.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-12",
+      "startSeconds": 1170,
+      "endSeconds": 1315,
+      "topic": "顧客の状態変更を新しい値で返す",
+      "status": "supported",
+      "assessment": "業務例の不変な遷移と元の入力を変更しないテストに対応する。浅いcopyだけで任意の入れ子の共有まで防げるとは主張しない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/collection-validation.test.ts",
+        "src/with-input.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-13",
+      "startSeconds": 1315,
+      "endSeconds": 1435,
+      "topic": "明示的な入出力と途中状態の観測",
+      "status": "partial",
+      "assessment": "traceは段階名と成否、Applicationはsnapshotを提供する。全段階の引数・戻り値のdumpや永続的な全状態履歴は自動記録していない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/framework/program.ts",
+        "docs/replay-trace.md"
+      ],
+      "remaining": [
+        "stage-value-history-policy"
+      ]
+    },
+    {
+      "id": "w0o-14",
+      "startSeconds": 1435,
+      "endSeconds": 1611,
+      "topic": "複雑な業務とI/Oの分離",
+      "status": "supported",
+      "assessment": "load・純粋な判断・save、途中I/Oのprocessで構成する。外部I/Oを型で隠すだけで消えたことにはしない。",
+      "evidence": [
+        "src/framework/command.ts",
+        "src/shipping/feature.ts",
+        "src/registration/delivery.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-15",
+      "startSeconds": 1611,
+      "endSeconds": 1717,
+      "topic": "Onionの目的と設計の選択肢",
+      "status": "design-choice",
+      "assessment": "業務をI/Oから独立させる目的に対応する。テスト容易性だけが目的とも、すべての業務を関数型にしなければならないとも解釈しない。",
+      "evidence": [
+        "docs/process.md",
+        "src/expenses/repository.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-16",
+      "startSeconds": 1717,
+      "endSeconds": 1750,
+      "topic": "状態と型の話への接続",
+      "status": "design-choice",
+      "assessment": "UIと業務の中心に計算を置く考え方の整理。認知負担の削減率をKoyukiの実測値へ読み替えない。",
+      "evidence": [
+        "docs/team-development-study.md"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-17",
+      "startSeconds": 1750,
+      "endSeconds": 1761,
+      "topic": "説明を省略したスライド",
+      "status": "context",
+      "assessment": "この付近で説明を飛ばして後日の資料参照を促す。字幕にない画面内容や未説明の命題は推測しない。",
+      "evidence": [],
+      "remaining": [
+        "omitted-slide-content-unverified"
+      ]
+    },
+    {
+      "id": "w0o-18",
+      "startSeconds": 1761,
+      "endSeconds": 1985,
+      "topic": "型を値の集合として捉える",
+      "status": "supported",
+      "assessment": "入出力の集合を型で制限し、brandやUnionを実例で使用する。number型だけでは安全な整数や業務上の範囲まで表せず実行時検証も必要。",
+      "evidence": [
+        "src/business-api-types.test.ts",
+        "src/examples/order-lines.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-19",
+      "startSeconds": 1985,
+      "endSeconds": 2118,
+      "topic": "コンパイラとツールチェーン",
+      "status": "supported",
+      "assessment": "誤接続を型検査で拒否し、配布宣言型の推論も検証する。業務仕様の形式証明や任意のIDE体験の保証ではない。",
+      "evidence": [
+        "src/transition-inference.test.ts",
+        "scripts/check-runtime-package.mjs",
+        "scripts/fixtures/leave-business-diagnostics.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-20",
+      "startSeconds": 2118,
+      "endSeconds": 2187,
+      "topic": "Resultで想定した失敗を表す",
+      "status": "supported",
+      "assessment": "宣言した成功・失敗のUnionを保持する。ただしTypeScriptのResult注釈はthrowやPromise rejectionが起きない証明ではなく、未知の欠陥は別経路で扱う。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/result-boundary.test.ts",
+        "src/process.test.ts",
+        "src/application.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-21",
+      "startSeconds": 2187,
+      "endSeconds": 2324,
+      "topic": "直和・直積と不要な組み合わせ",
+      "status": "supported",
+      "assessment": "状態ごとの必須フィールドとUnionで不正な組み合わせを減らす。任意の利用者モデルの正しさは自動生成・保証しない。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-22",
+      "startSeconds": 2324,
+      "endSeconds": 2404,
+      "topic": "似た構造の抽象化と継承の使い方",
+      "status": "design-choice",
+      "assessment": "違う役割をUnionでまとめる例。継承そのものの禁止ではなく、差分だけを目的とする安易な階層化を避ける判断として扱う。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "id": "w0o-23",
+      "startSeconds": 2404,
+      "endSeconds": 2457,
+      "topic": "直和と直積の図・後半の説明省略",
+      "status": "partial",
+      "assessment": "説明された直和・直積は状態Unionで対応するが、後半の省略された全スライドの内容まで確認したわけではない。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts"
+      ],
+      "remaining": [
+        "omitted-slide-content-unverified"
+      ]
+    },
+    {
+      "id": "w0o-24",
+      "startSeconds": 2457,
+      "endSeconds": 2513,
+      "topic": "まとめと終了",
+      "status": "context",
+      "assessment": "計算と命令を分け、関数と型の見方を変える提案のまとめ。Koyukiの完全性・優越性の実証ではない。",
+      "evidence": [],
+      "remaining": []
+    }
+  ]
+}

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 3本目の保存済み自動字幕964行を全体再読し、24区間の対応を追加。段階traceと全状態履歴、型付きResultと予期しない例外、継承への注意と禁止を区別し、省略箇所を29分台・40分台の双方で記録。音声・全画面の確認完了は主張しない。
+
 - defineTransitionのvalidateを先に推論してから段階の契約を検査する形へ変更。型付きのevolveと接続するcollectEach/withInputを直接記述可能にし、完全なUseCaseの入出力・エラー型と不正段階の拒否を配布consumerでも検証。generic呼び出しと未注釈evolveを組み合わせる推論制限は引き続き明記。
 
 - collectEachを追加。通常の同期Result関数から可変長配列の検証Ruleを作り、全エラーを元の要素位置付きで集約。明細・合計の検証例で集計/保存の停止、型の保持、Nodeなし実行を検証。非同期列・要素間の依存処理は対象外で、既存defineTransitionのinline推論制限を明記。
