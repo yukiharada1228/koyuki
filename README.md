@@ -173,3 +173,8 @@ withInputは計算結果と元の入力を保持し、業務内のResultの受�
 
 [業務宣言からApplicationまで](docs/application-development.md)に、状態・検証・遷移から
 dispatch・保存・View更新までの手順と、利用者に残るadapterの責務をまとめています。
+
+[3講演との対応と未確認事項](docs/lecture-coverage.md)を公開しています。
+開発版には[例外・Promise境界](docs/result-boundaries.md)と、
+[メール・人の確認を挟む永続イベントの実例](docs/registration-events.md)を追加しています。
+実例は別OSプロセス・rollback・再配送・workerの競合まで検証し、全内容の完全実現とは区別しています。

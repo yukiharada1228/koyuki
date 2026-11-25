@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok } from './dist/index.js';
+import { defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   let receipt = null, writes = 0;
@@ -36,6 +36,9 @@ export const result = (async () => {
   }).start();
   const event = { type: 'add', input: { amount: 3 } };
   const pending = isolated.dispatch(event); event.input.amount = 99; await pending;
+  const syncFailure = fromThrowable(() => { throw 'offline'; }, () => 'Unavailable')();
+  const asyncFailure = await fromPromise(async () => { throw 'offline'; }, () => 'Unavailable')();
+  if (syncFailure.ok || asyncFailure.ok || syncFailure.error !== 'Unavailable' || asyncFailure.error !== 'Unavailable') throw new Error('Boundary adaptation failed');
   return { queuedValue: isolated.snapshot().view, crash: crashed.snapshot().view, appValue: app.snapshot().view, first: first.result.value.kind, value: first.result.value.value, steps: first.attempt.trace.length, replay: replay.result.value.kind, attempt: replay.attempt, writes };
 })();`;
 const bundled = await build({ stdin: { contents: source, resolveDir: root, loader: 'js' }, bundle: true, platform: 'browser', format: 'iife', globalName: 'Portable', write: false, metafile: true });

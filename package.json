@@ -52,7 +52,8 @@
     "demo:leave:http": "npm --prefix examples/leave-http start",
     "test:leave:http:package": "node scripts/test-leave-http-package.mjs",
     "test:leave:http:registry": "node scripts/test-leave-http-package.mjs --registry",
-    "test:transition:package": "node scripts/test-leave-http-package.mjs --declarations"
+    "test:transition:package": "node scripts/test-leave-http-package.mjs --declarations",
+    "test:registration:package": "node scripts/test-registration-package.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",

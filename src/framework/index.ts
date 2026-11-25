@@ -1,5 +1,5 @@
 // Public entry: consumers need no experiment-specific modules or constructors.
-export { ok, err } from './result.js';
+export { ok, err, fromThrowable, fromPromise } from './result.js';
 export type { Result } from './result.js';
 export { workflow, bindMutation, describeView } from './workflow.js';
 export type { Rule, Trace, Workflow } from './workflow.js';

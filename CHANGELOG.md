@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- fromThrowable / fromPromise：既存の同期例外・Promiseを明示した境界で型付きResultへ接続。引数型を維持し、非同期境界は呼び出し時のthrowも変換する。
+- 登録→メール→人の確認を、既存のUseCase / ProcessとSQLite outboxで実装。原子保存・lease・再配送・古いclaim・別OSプロセスを配布パッケージから検証。永続workflow機能をコアへ追加したものではない。
+- [3講演との論点別対応と未確認事項](docs/lecture-coverage.md)を追加。全内容の完全実現という評価は未完了。
 - Program / Applicationはdispatch時にイベントをcloneし、待機中の入力変更から実行を保護。clone不可の入力はPromiseでrejectし、状態と後続キューを維持。
 - subscribeの初回通知が失敗した場合は購読を保持しない。配布パッケージの休暇ApplicationでView更新・失敗・再送・待機入力・stale revisionを追加検証。
 - [Application全体の開発手順と責務](docs/application-development.md)を追加。
