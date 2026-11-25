@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買plain/helperへ選択値captureを追加し、Koyukiと観測reportを比較。射影後のsnapshot・機密値の非選択・入力／結果のcapture失敗分離・保存成功の維持・並行呼出しの記録所有権を配布consumerで検証。純粋な射影と通常commandを対象とし、全観測経路や永続監査とは区別。
+
 - 購買plain/helperの独立Applicationへ現在値取得方針を追加。応答消失後の表示更新、不正patch・取得例外からの復旧、複数モデルの現在値反映、取得待ち中のqueueをKoyukiと比較し配布consumerで検証。従来の再送投影も維持し、全体同期・全障害経路の保証とは区別。
 
 - 購買の再送後に影響対象の現在値を取得するApplicationを追加。SQLite read transactionで全キーを復元し、応答消失後の空View・古い過去値の適用を改善。取得失敗・不正patch・破損時は既存表示を維持し、業務を再保存せず再取得できることを配布consumerで検証。全体同期や旧3方式比較の同等性とは区別。

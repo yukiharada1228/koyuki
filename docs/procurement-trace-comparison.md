@@ -47,3 +47,7 @@ StageSinkは比較wrapperの内部記録に使い、任意の外部observer例�
 再送・不明commit照会・Applicationの同条件比較も未実施。
 基準実装の追加基盤は再利用可能だが、保守コスト・導入負担・認知負担の増減はまだ測定していない。
 テスト時間を性能benchmarkや生産性の指標へ変換しない。
+
+
+その後、[選択値のcapture比較](procurement-observation-comparison.md)を追加した。
+通常commandの代表ケースを対象とし、全観測経路や永続監査までの同等性とは区別する。

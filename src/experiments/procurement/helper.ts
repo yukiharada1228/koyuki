@@ -1,4 +1,4 @@
-import type { StageSink } from './trace-contract.js';
+import type { StageSink, StageCapture } from './trace-contract.js';
 import { procurementContext } from './context.js';
 import type { StudyCommands } from './comparison-contract.js';
 import type { ProcurementRepository, StorageError } from './repository.js';
@@ -9,15 +9,18 @@ import { createRequest, editRequest, submitRequest, withdrawRequest, approveRequ
 import { receiveIntoStock, returnFromStock, correctInStock, reserveStock, releaseStock, moveStock, adjustStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
-export const helperProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink) => helperWithCommit(repository, identity, policy, observe);
-export function helperWithCommit<E>(repository: ProcurementRepository<E>, identity: Actor, policy: Policy, observe?: StageSink) {
+export const helperProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) => helperWithCommit(repository, identity, policy, observe, capture);
+export function helperWithCommit<E>(repository: ProcurementRepository<E>, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) {
   const context = procurementContext(repository, identity, policy);
   function action<I, C, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, decide: (context: C) => Result<Change<T>, RuleError>) {
     return async (input: I) => {
-      const loaded = await load(input); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-      const changed = decide(loaded.value); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
-      const saved = await repository.commit(changed.value, context.actor);
-      observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
+      const receiveLoad = capture?.('load', input);
+        const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
+      const receiveRule = capture?.('rule', loaded.value);
+        const changed = decide(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+      const receiveSave = capture?.('save', changed.value);
+        const saved = await repository.commit(changed.value, context.actor);
+      receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
   return {

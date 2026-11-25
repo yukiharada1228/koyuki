@@ -17,7 +17,7 @@
 | 基本trace・保存計画 | [追加比較](procurement-trace-comparison.md)で代表的な成功・失敗を検証 |
 | 永続再送 | [独立driver比較](procurement-replay-comparison.md)で代表的な要求・障害・重複を検証 |
 | Application | [独立session比較](procurement-application-comparison.md)で代表的な状態・queue・通知・再送を検証 |
-| 値の観測 | 現段階の比較対象外。Koyukiの実装検査とは分ける |
+| 選択値の観測 | [capture比較](procurement-observation-comparison.md)で代表的なsnapshot・失敗分離・並行性を検証 |
 
 通常TypeScript版は`plain.ts`で各操作にResultの分岐と保存を明記する。
 helper版は`helper.ts`のaction関数へ同じ処理をまとめ、操作ごとにloadと業務関数を渡す。
@@ -86,3 +86,8 @@ Applicationと値の観測を含む全体比較は引き続き未完了。
 
 [現在値取得付きApplicationの比較](procurement-current-comparison.md)も追加した。
 応答消失後の表示更新・不正patchの拒否・現在値取得待ちのqueueを3方式で検証する。
+
+
+[選択値観測の比較](procurement-observation-comparison.md)も追加した。
+通常業務commandのload/rule/saveで、選択・clone・観測失敗の分離・並行呼出しの記録を比較する。
+再送lookup等の全観測経路、仕様変更差分、実装負担は引き続き評価対象。
