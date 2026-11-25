@@ -67,3 +67,12 @@ withInputの直接呼出しで文脈を保持できても、business配列では
 withInputの戻り値をgenericにする候補は既存契約も壊すため不採用とした。
 購買の3つのadapterは維持し、注釈不要・任意の多相変換を実現済みとはしない。
 新たな音声確認や独立利用者の試用を行った記録ではなく、9話題のstatusも変更しない。
+
+## 名前付き段階をbusinessでも共有する
+
+[businessの名前付きstep](business-named-stages.md)を追加した。
+従来の遷移宣言と同じstepを使い、普通の関数との混在、名前付きのtrace・選択観測・構造図へ接続する。
+上の具体的な文脈を注釈したwithInputは、名前付き段階なら先行する変数束縛を省略できる。
+[同じソースでの3パターン比較](business-named-stages-inference.json)では、名前なしinlineとgenericな
+入力の組の例は不受理のまま、名前付きinlineは受理される。すべてを解消済みとはしない。
+これも独立利用者の書き心地の評価ではなく、9話題のpartialを変更する根拠にはしない。

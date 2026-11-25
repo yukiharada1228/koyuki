@@ -151,6 +151,15 @@
         "scripts/fixtures/business-input-pair.ts",
         "scripts/investigate-transition-inference.mjs"
       ]
+    },
+    "namedBusinessStagesFollowUp": {
+      "implementationBaseCommit": "7f81efee10fca8f0eefc965c5e2c045ed03a7d68",
+      "scope": "Implementation and compiler tests only; no new lecture audio or frame review; no independent user trial.",
+      "evidence": [
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts"
+      ]
     }
   },
   "sections": [
@@ -453,7 +462,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続とgeneric saveの成功型を検査する。動的に選ぶcommand/validateでは全候補が受け取れる入力を要求し、型を緩めた接続を避ける。宣言の参照保持に加え、接続ミスの操作名・段階位置・入力/保存出力の不一致を配布宣言で示すよう改善した。generic requireと未注釈evolveの推論制限、任意の複雑な型の診断品質、独立利用者のDXは未解決。 共通generic load・入力を保つ検証・privateな証明を追加する検証を、実関数の契約を確認して具体化する。購買の共通検証10操作と複合計画3操作へ適用した。実際の役割証明や在庫投影の取り違えも配布物の診断対象へ加えた。 withInputの直接呼出しでは保持するgeneric入力の対応を、business配列の中間型では保持できない例も再現した。具体的な文脈の注釈と先行する変数束縛は通るが、同じ呼出しをinlineにした例は通らない。戻り値をgenericにする候補は既存契約を壊すため不採用とした。",
+      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続とgeneric saveの成功型を検査する。動的に選ぶcommand/validateでは全候補が受け取れる入力を要求し、型を緩めた接続を避ける。宣言の参照保持に加え、接続ミスの操作名・段階位置・入力/保存出力の不一致を配布宣言で示すよう改善した。generic requireと未注釈evolveの推論制限、任意の複雑な型の診断品質、独立利用者のDXは未解決。 共通generic load・入力を保つ検証・privateな証明を追加する検証を、実関数の契約を確認して具体化する。購買の共通検証10操作と複合計画3操作へ適用した。実際の役割証明や在庫投影の取り違えも配布物の診断対象へ加えた。 withInputの直接呼出しでは保持するgeneric入力の対応を、business配列の中間型では保持できない例も再現した。具体的な文脈の注釈と先行する変数束縛は通るが、同じ呼出しをinlineにした例は通らない。戻り値をgenericにする候補は既存契約を壊すため不採用とした。 既存のstepをbusiness配列にも置けるようにし、普通の関数との混在、名前付きtrace・選択観測・構造図へ接続した。具体的な文脈を注釈したwithInputは、名前付き段階なら先に束縛せずinlineで書ける。名前なしinlineとgenericな入力保持の別例は未解消として区別した。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -496,11 +505,15 @@
         "docs/business-input-pair-inference.md",
         "docs/business-input-pair-inference.json",
         "scripts/fixtures/business-input-pair.ts",
-        "scripts/investigate-transition-inference.mjs"
+        "scripts/investigate-transition-inference.mjs",
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論、任意の多相変換・あらゆるcallback注釈の省略は未解消。操作名と段階位置の診断を、任意の複雑な型の説明品質や利用者の修正容易性の実証とは扱わない。",
-        "genericなwithInputとbusiness配列の中間型の対応、および同じ注釈付き呼出しをinlineに置く例の推論制限が残る。購買3操作の文脈注釈と先行する変数束縛は維持する。"
+        "genericなwithInputとbusiness配列の中間型の対応、および同じ注釈付き呼出しをinlineに置く例の推論制限が残る。購買3操作の文脈注釈と先行する変数束縛は維持する。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
       ]
     },
     {

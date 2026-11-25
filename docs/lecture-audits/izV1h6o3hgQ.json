@@ -194,6 +194,15 @@
         "scripts/fixtures/business-input-pair.ts",
         "scripts/investigate-transition-inference.mjs"
       ]
+    },
+    "namedBusinessStagesFollowUp": {
+      "implementationBaseCommit": "7f81efee10fca8f0eefc965c5e2c045ed03a7d68",
+      "scope": "Implementation and compiler tests only; no new lecture audio or frame review; no independent user trial.",
+      "evidence": [
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts"
+      ]
     }
   },
   "sections": [
@@ -512,7 +521,7 @@
       "endSeconds": 3139,
       "topic": "イベント接続をフレームワークへ委ねたい",
       "status": "partial",
-      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。 購買10操作の共通検証と入荷3操作の複合計画を通常関数列へ移し、宣言した段階間の接続と失敗停止をruntimeへ委譲した。独立利用者の試用記録はないとの回答であり、実装例の成立とDX実証は区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。取得位置ごとのResult失敗も加えた現在の一実行252境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。 選んだI/Oのthrow/rejectも別に比較し、直接commandは元の例外の同一性を保ってrejectすることを確認した。返されないActionReportや、Applicationの全crashed経路まで取得・検証済みとはしない。",
+      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。 購買10操作の共通検証と入荷3操作の複合計画を通常関数列へ移し、宣言した段階間の接続と失敗停止をruntimeへ委譲した。独立利用者の試用記録はないとの回答であり、実装例の成立とDX実証は区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。取得位置ごとのResult失敗も加えた現在の一実行252境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。 選んだI/Oのthrow/rejectも別に比較し、直接commandは元の例外の同一性を保ってrejectすることを確認した。返されないActionReportや、Applicationの全crashed経路まで取得・検証済みとはしない。 既存のstepをbusiness配列にも置けるようにし、普通の関数との混在、名前付きtrace・選択観測・構造図へ接続した。具体的な文脈を注釈したwithInputは、名前付き段階なら先に束縛せずinlineで書ける。名前なしinlineとgenericな入力保持の別例は未解消として区別した。",
       "evidence": [
         "docs/business-api-study.md",
         "src/experiments/business.ts",
@@ -552,10 +561,14 @@
         "src/procurement-failure-observation.test.ts",
         "docs/procurement-read-failure-observation.md",
         "docs/procurement-io-exceptions.md",
-        "src/procurement-io-exceptions.test.ts"
+        "src/procurement-io-exceptions.test.ts",
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts"
       ],
       "remaining": [
-        "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
+        "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
       ]
     },
     {
@@ -579,7 +592,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。 共通generic検証の入力型とprivateな証明の保持、既存withInputによる複合計画の接続を追加した。入荷の3つのadapterには文脈の型注釈が残る。名前付きstepで通る限定例もあるが、名前なしinline要件と未注釈evolveの制限を解消したわけではない。 withInputの直接呼出しでは保持するgeneric入力の対応を、business配列の中間型では保持できない例も再現した。具体的な文脈の注釈と先行する変数束縛は通るが、同じ呼出しをinlineにした例は通らない。戻り値をgenericにする候補は既存契約を壊すため不採用とした。",
+      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。 共通generic検証の入力型とprivateな証明の保持、既存withInputによる複合計画の接続を追加した。入荷の3つのadapterには文脈の型注釈が残る。名前付きstepで通る限定例もあるが、名前なしinline要件と未注釈evolveの制限を解消したわけではない。 withInputの直接呼出しでは保持するgeneric入力の対応を、business配列の中間型では保持できない例も再現した。具体的な文脈の注釈と先行する変数束縛は通るが、同じ呼出しをinlineにした例は通らない。戻り値をgenericにする候補は既存契約を壊すため不採用とした。 既存のstepをbusiness配列にも置けるようにし、普通の関数との混在、名前付きtrace・選択観測・構造図へ接続した。具体的な文脈を注釈したwithInputは、名前付き段階なら先に束縛せずinlineで書ける。名前なしinlineとgenericな入力保持の別例は未解消として区別した。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -602,11 +615,15 @@
         "docs/business-input-pair-inference.md",
         "docs/business-input-pair-inference.json",
         "scripts/fixtures/business-input-pair.ts",
-        "scripts/investigate-transition-inference.mjs"
+        "scripts/investigate-transition-inference.mjs",
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
-        "genericなwithInputとbusiness配列の中間型の対応、および同じ注釈付き呼出しをinlineに置く例の推論制限が残る。購買3操作の文脈注釈と先行する変数束縛は維持する。"
+        "genericなwithInputとbusiness配列の中間型の対応、および同じ注釈付き呼出しをinlineに置く例の推論制限が残る。購買3操作の文脈注釈と先行する変数束縛は維持する。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
       ]
     },
     {

@@ -59,3 +59,12 @@ Stepは宣言したI/O型を持つため、generic関数を包めば任意の型
 
 検査は保守者によるもので、配布した開発版tarballのconsumerでも同じソースを型検査・実行する。
 独立利用者の試用、学習負担の低下、生産性の優位、講演の全内容の完全実現の証拠にはしない。
+
+[推論比較の記録](business-named-stages-inference.json)は、7f81efeのクリーンなソースと
+TypeScript 7.0.2で、元の3パターンを分けた結果である。
+genericなquotedを配列へ置く例と、名前なしinlineの例は不受理のまま、名前付きinlineだけが受理される。
+いずれも既存ソースの追加診断は0である。minimal欄の旧transition fixtureは今回のbusiness例とは異なる。
+
+```sh
+node scripts/investigate-transition-inference.mjs --only current --probe business-input-pair-named-step
+```
