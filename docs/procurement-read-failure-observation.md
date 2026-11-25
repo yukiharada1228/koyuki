@@ -59,3 +59,6 @@ relatedはResultを返さない契約のため、そのthrow/reject、readのthr
 直接commandを呼ぶ比較であり、Applicationのcrashed表示・並行実行・永続再送・実DBの障害検証は別範囲。
 SQLiteは:memory:を用い、この8検査をrootと開発版tarballのconsumerで実行する。
 講演全体の完全実現や独立利用者のDX評価を完了したとはしない。
+
+後続の[read・related・commitの例外比較](procurement-io-exceptions.md)では、同期throwとPromiseのrejectも別の検査で追加した。
+Resultを得るこの検査と、元の例外でrejectしてActionReportを返さない契約を混同しない。

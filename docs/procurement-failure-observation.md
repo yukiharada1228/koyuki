@@ -54,3 +54,6 @@ SQLiteは:memory:を用い、全6モデルの状態を検査する。全DB内部
 [各read位置の同期/非同期Result失敗](procurement-read-failure-observation.md)は後続で追加済み。全エラー種別、すべてのRuleの失敗、全load分岐、throw/reject、並行競合、永続再送、Applicationの表示を含む全経路の比較は未完了。
 独立利用者の開発体験・実運用・講演全体の完全実現を証明するものではない。
 現在の8検査はrootと開発版tarballをinstallしたconsumerで実行し、npm公開は行わない。
+
+[I/Oのthrow/reject](procurement-io-exceptions.md)も、別の検査で追加した。
+上のResultによる拒否と異なり、直接commandのPromiseは元の例外でrejectし、ActionReportを得たとはしない。

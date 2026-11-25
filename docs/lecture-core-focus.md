@@ -152,3 +152,9 @@ businessの通常関数列へ直接接続した。失敗のResult接続をruntim
 失敗した位置までの呼出しだけで停止することを、3方式とメモリ/SQLiteで比較する。
 業務のConflictと観測射影の失敗を分離し、予定された保存や追加のread/relatedがないことを検査する。
 元の成功シナリオで通る位置が対象であり、throw/rejectやApplicationの全経路を比較したとはしない。
+
+## 後続のI/O例外の比較
+
+[read・related・commitのthrow/reject](procurement-io-exceptions.md)を25操作の72種類の位置で比較する。
+観測射影の失敗も重ね、元の例外の同一性、後続I/Oの停止、全6モデルの非変更、その後の正常実行を検査する。
+直接commandはActionReportを返さずrejectする契約であり、Result失敗やApplicationのcrashed表示と区別する。

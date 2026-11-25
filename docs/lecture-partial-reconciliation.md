@@ -55,3 +55,6 @@
 取得失敗については[各read位置の同期/非同期Result失敗](procurement-read-failure-observation.md)も追加した。
 repositoryを読まない申請作成を除く24操作の32種類の位置を、元シナリオの39回の取得で比較する。
 read/relatedのthrowやPromiseのrejectはこの追加検査に含めず、Result失敗との区別を維持する。
+
+さらに[I/Oのthrow/reject](procurement-io-exceptions.md)を別の検査へ追加した。
+直接commandが元の例外でrejectすることを確認し、返されていないActionReportの観測まで取得済みとは扱わない。

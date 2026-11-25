@@ -21,22 +21,10 @@ const builders: Record<string, Factory> = {
   plain: (repository, identity, policy) => baselineDetail(plainProcurement, repository, identity, policy),
   helper: (repository, identity, policy) => baselineDetail(helperProcurement, repository, identity, policy),
 };
-const operations = [
-  'requests.create', 'requests.edit', 'requests.submit', 'requests.withdraw', 'requests.approve', 'requests.reject', 'requests.return', 'requests.reassign',
-  'orders.place', 'orders.amend', 'orders.cancel', 'orders.complete', 'receipts.receive', 'receipts.return', 'receipts.correct',
-  'invoices.register', 'invoices.match', 'invoices.approve', 'invoices.void', 'payments.record', 'payments.cancel',
-  'inventory.reserve', 'inventory.release', 'inventory.move', 'inventory.adjust',
-].sort();
-const split = new Set(['requests.edit', 'requests.withdraw', 'requests.reject', 'requests.return', 'requests.reassign',
-  'orders.amend', 'orders.cancel', 'orders.complete', 'invoices.approve', 'invoices.void', 'receipts.receive', 'receipts.return', 'receipts.correct']);
+import { operations, split, readCounts } from './experiments/procurement/failure-testing.js';
 const namespaces: Record<string, string> = { requests: 'request', orders: 'order', receipts: 'receipt', invoices: 'invoice', payments: 'payment', inventory: 'inventory' };
 type Mode = 'selected' | 'input-failure' | 'result-failure';
 type Failure = 'load-sync' | 'load-async' | 'invalid' | 'save-conflict';
-// Independent expected topology of these host loaders, counting read (not related).
-const readCounts: Record<string, number> = Object.fromEntries(operations.map(name => [name, 1]));
-readCounts['requests.create'] = 0;
-for (const name of ['receipts.receive', 'invoices.match', 'invoices.approve', 'invoices.void']) readCounts[name] = 2;
-for (const name of ['receipts.return', 'receipts.correct']) readCounts[name] = 3;
 async function run(build: Factory, backend: string, mode: Mode, persistOnConflict = false) {
   const repository = backend === 'sqlite' ? new SqliteProcurement(':memory:', 'g1') : new MemoryProcurement();
   const reads: { method: string; kind: string; id: string }[] = [];

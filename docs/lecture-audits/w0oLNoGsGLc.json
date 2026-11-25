@@ -140,6 +140,16 @@
       "scope": "Test follow-up of sync and Promise-resolved Conflict at each read position exercised by the sequential story. Request creation performs no read. Tests are added by this follow-up, not claimed to exist in the base. No new source/audio/frame review or full-path completeness is claimed.",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "ioExceptionFollowUp": {
+      "implementationBaseCommit": "d8ef6aa276b9b35015eaa8d0ab66fe058f90bac5",
+      "sections": [
+        "w0o-13"
+      ],
+      "record": "docs/procurement-io-exceptions.md",
+      "scope": "Test follow-up of synchronous throw and Promise rejection before selected adapter IO. Original exception identity is checked without inventing an ActionReport. Tests are added by this follow-up, not claimed to exist in the base. No new source/audio/frame review or full-path completeness is claimed.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -327,7 +337,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。Program単体も同じ観察入口で初期化・待機・更新・command・状態受理・完了を通知する。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や分散相関は未提供。 購買の共通検証と複合計画を分けた現在の32操作シナリオでは、明示した110境界の選択値と射影失敗を3方式・2adapterで比較する。予定された第一段のwritesは保存済み履歴と区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。取得位置ごとのResult失敗も加えた現在の一実行252境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。",
+      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。Program単体も同じ観察入口で初期化・待機・更新・command・状態受理・完了を通知する。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や分散相関は未提供。 購買の共通検証と複合計画を分けた現在の32操作シナリオでは、明示した110境界の選択値と射影失敗を3方式・2adapterで比較する。予定された第一段のwritesは保存済み履歴と区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。取得位置ごとのResult失敗も加えた現在の一実行252境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。 選んだI/Oのthrow/rejectも別に比較し、直接commandは元の例外の同一性を保ってrejectすることを確認した。返されないActionReportや、Applicationの全crashed経路まで取得・検証済みとはしない。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -361,7 +371,9 @@
         "docs/lecture-partial-reconciliation.md",
         "docs/procurement-failure-observation.md",
         "src/procurement-failure-observation.test.ts",
-        "docs/procurement-read-failure-observation.md"
+        "docs/procurement-read-failure-observation.md",
+        "docs/procurement-io-exceptions.md",
+        "src/procurement-io-exceptions.test.ts"
       ],
       "remaining": [
         "全値の永続履歴の保存先・公開項目・保持削除、opaque内部・分散相関は未提供。講演のdump可能性の説明を、既定で全値を永続収集する必須仕様へ読み替えない。"
