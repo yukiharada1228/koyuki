@@ -44,10 +44,12 @@ if (!accepted.ok || rejected.ok || saved.length !== 1) throw new Error('Unexpect
 - `.runDetailed(input, capture)`で、load・Rule・save・再送照会から選んだ値を[観測できる](workflow-observation.md)。観測失敗は業務結果から分離する。
 - 最初の失敗で後続とsaveを止める。予期しないthrow/rejectionは伝播し、Resultへ自動変換しない。
 
-操作ごとの入力が異なる場合は`{ load, run: [...] }`を指定する。
+取得方法が操作ごとに異なる場合は`{ load, run: [...] }`を指定する。
 すべての操作が個別loadを持つなら、[共通loadは省略できる](business-local-load.md)。
 配列形式の操作が一つでもあれば、その取得方法として共通loadが必要。
-共有generic loaderから、個別操作の入出力の相関を自動復元する保証はない。
+[inputを含む文脈のgeneric load](business-generic-load.md)では、最初のRuleに必要な文脈を
+返せることを型で確認できる場合、共有loadから操作ごとの要求型を保持する。
+任意のgeneric loaderの相関を自動復元する保証はない。
 空配列・asyncルール・隣接型の不一致・saveに渡せない最終出力は拒否する。
 共通generic saveが操作ごとの成功型を保持する場合は、[保存後の成功型](business-save-inference.md)も保持できる。
 広い結果への変換や再送の成功型を、最後のRuleだけから狭めない。

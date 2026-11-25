@@ -44,10 +44,12 @@ operationsを一段内側に置いたのは、業務名とload / save / name等�
 ## 共通loadで推論できる範囲
 
 全操作に同じ入出力のloadが使える場合は配列だけで宣言できる。
-却下理由や編集内容のように入力が異なる操作には、その操作のloadを明示する。
+取得の契約が異なる場合やgeneric loadの相関を確認できない場合には、その操作のloadを明示する。
 これによりrejectのreasonやeditのamount / receiptを必須のまま保持する。
 
-共通のgeneric loadから、操作ごとの具体的な入力・出力の対応を自動で復元するとは主張しない。
+後続の開発版では、[inputを含む文脈のgeneric load](business-generic-load.md)について、
+最初のRuleに必要な文脈を返せる場合、共通loadから操作ごとの要求型を保持する。
+任意のgeneric loadからすべての対応を自動復元するとは主張しない。
 型をunknownやanyへ広げて単純な形に見せることは避ける。
 複数操作を全部同じ入力Unionへまとめ、必要なフィールドをoptionalへ落とす解決も採らない。
 

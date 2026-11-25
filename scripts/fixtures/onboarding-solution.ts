@@ -30,7 +30,7 @@ function reject(value: Loaded<RejectInput>): Result<Rejected, RuleError> {
   return ok({ ...current, state: 'rejected', rejectedBy: actor.id, reason, version: current.version + 1 });
 }
 export function createExpenses(ports: Ports) {
-  return business({ name: 'onboarding.expense', load: ports.load<SubmitInput>, save: ports.save, operations: {
-    submit: [submit], approve: { load: ports.load<VersionInput>, run: [approve] }, reject: { load: ports.load<RejectInput>, run: [reject] },
+  return business({ name: 'onboarding.expense', load: ports.load, save: ports.save, operations: {
+    submit: [submit], approve: [approve], reject: [reject],
   } });
 }

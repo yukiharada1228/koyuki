@@ -35,8 +35,11 @@ saveは最後の成功値を保存します。途中の失敗はそのまま返�
 ## 操作ごとに異なる入力
 
 共通loadと異なる場合、`{ load, run: [関数] }`の形式で宣言します。
-この課題のports.loadはgenericなので、例えば`ports.load<RejectInput>`と
-操作の入力に特殊化してから渡せます。型引数の型はcontracts.tsにあります。
+この課題のports.loadはgenericなので、共通loadへそのまま渡せます。
+最初のRuleを`Loaded<SubmitInput>`や`Loaded<RejectInput>`の関数として宣言すると、
+その入力に対してloadが必要な文脈を返せる場合、操作ごとの要求型を保持します。
+`ports.load<RejectInput>`のように明示的に特殊化する書き方も使えます。
+型はcontracts.tsにあり、任意のgeneric関数の相関を自動復元するという意味ではありません。
 
 型の合う関数列とsaveから、操作の入力・成功・失敗型が推論されます。
 汎用saveが実際に受け取った状態型を返す契約を持つ場合は、状態ごとの成功型も保てます。

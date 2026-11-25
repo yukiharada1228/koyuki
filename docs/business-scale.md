@@ -51,3 +51,16 @@ Koyukiへのimportすらない通常TypeScriptの対応するfixtureでも同じ
 複雑な実業務の多様性、仕様変更への強さ、独立利用者の生産性は測っていない。
 これらは[25操作の実例](procurement-study.md)や[チーム評価案](team-development-study.md)と分けて評価する。
 講演全体への[部分充足という判定](lecture-acceptance.md)も変えない。
+
+## 共通generic loadの追加検査
+
+[入力を含む文脈の推論](business-generic-load.md)にも、100/500操作の別の生成群を追加した。
+一つの`sharedLoad`を全操作へ渡し、最初の通常関数の`Loaded<Request<操作名>>`から
+各操作の要求型を保持する。操作別loadやloadの型引数は指定しない。
+この群は文脈から要求を取り出す通常関数を先頭に置くため、各操作は4段階となる。
+
+各入力・成功・失敗型、別操作の入力の拒否、認可段階を省いた100/500操作の拒否、
+全操作の成功実行を、インストールした実tarballで確認する。
+出力JSONの`results`は従来のoperation-local-only、`genericResults`は追加群、
+`genericLoaderMode`はshared-generic-input-envelopeを示す。
+両方を別々に記録し、生成操作数を実業務の機能数や導入効果へ読み替えない。

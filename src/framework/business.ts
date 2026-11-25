@@ -29,7 +29,20 @@ type LoadError<L extends Load> = Failure<LoadResult<L>>;
 type Out<F extends Fn> = Value<ReturnType<F>>;
 type ErrorOf<F extends Fn> = Failure<ReturnType<F>>;
 type Stages<E extends Entry> = E extends Pipeline ? E : E extends { run: infer P extends Pipeline } ? P : never;
-type Loader<L extends Load, E extends Entry> = E extends { load: infer P extends Load } ? P : L;
+type RawLoader<L extends Load, E extends Entry> = E extends { load: infer P extends Load } ? P : L;
+type FirstInput<E extends Entry> = Stages<E>[0] extends (input: infer I) => unknown ? I : never;
+// Keep every previously compatible loader unchanged. For an incompatible generic
+// envelope, consider the first rule's input field only as a request candidate.
+// The actual loader must guarantee the entire required context for that request;
+// an incompatible broad return or a missing proof remains rejected.
+type SpecializedLoader<L extends Load, E extends Entry> = [Loaded<L>] extends [FirstInput<E>] ? L
+  : [FirstInput<E>] extends [{ readonly input: infer I }]
+    ? [I] extends [Input<L>]
+      ? [L] extends [(input: I) => Promise<Result<FirstInput<E>, LoadError<L>>>]
+        ? (input: I) => Promise<Result<FirstInput<E>, LoadError<L>>> : L
+      : L
+    : L;
+type Loader<L extends Load, E extends Entry> = SpecializedLoader<RawLoader<L, E>, E>;
 type OperationName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
 type OperationNames<T> = OperationName<keyof T>;
 // Shift stage outputs by one position to check every input without recursive expansion.
@@ -46,8 +59,8 @@ type DiagnosticRule<F extends Fn, I, O, Operation extends string, Index extends 
 type Connect<C, P extends readonly Fn[], O, Operation extends string> = {
   readonly [K in keyof P]: DiagnosticRule<P[K], Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Out<P[K]> : O, Operation, K>
 };
-type Checked<L extends Load, E extends Entry, O, Operation extends string> = E extends Pipeline ? Connect<Loaded<L>, E, O, Operation> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
-  ? { readonly load: A; readonly run: Connect<Loaded<A>, P, O, Operation> } : never;
+type Checked<L extends Load, E extends Entry, O, Operation extends string> = E extends Pipeline ? Connect<Loaded<Loader<L, E>>, E, O, Operation> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
+  ? { readonly load: A; readonly run: Connect<Loaded<Loader<L, E>>, P, O, Operation> } : never;
 type Requests<L extends Load, T extends Record<string, Entry>> = { [K in keyof T]: Input<Loader<L, T[K]>> }[keyof T];
 type ReplayValue<S> = S extends Execution<infer O> ? O : never;
 type ObservedDetailed<I, R> = {

@@ -35,16 +35,23 @@ const permit = <N extends string>() => (input: Validated<N>): Result<Authorized<
 const approve = <N extends string>() => (input: Authorized<N>): Result<Approved<N>, \`Closed:\${N}\`> => ok({ ...input, status: 'approved' });
 const save = async <T extends Approved<string>>(value: T): Promise<Result<T, 'Conflict'>> => ok(value);
 `;
-function fixture(count, broken = false, segmented = true, plain = false) {
+function fixture(count, broken = false, segmented = true, plain = false, generic = false) {
   const keys = Array.from({ length: count }, (_, index) => `op${index}`);
   const header = plain ? prelude.replace("import { business, ok, type Result } from 'koyuki';", "type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }; const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });") : prelude;
-  const definition = plain ? 'const app = {\n' + keys.map(key => `${key}: async (input: Request<'${key}'>): Promise<Result<Approved<'${key}'>, 'NotFound:${key}' | 'Invalid:${key}' | 'Forbidden:${key}' | 'Closed:${key}' | 'Conflict'>> => ok({ ...input, status: 'approved' }),`).join('\n') + '\n};\n'
+  const genericPrelude = generic ? `
+type Loaded<N extends string> = { readonly input: Request<N> };
+const sharedLoad = async <I extends Request<string>>(input: I): Promise<Result<{ readonly input: I }, 'NotFound'>> => ok({ input });
+const unwrap = <N extends string>() => (value: Loaded<N>): Result<Request<N>, never> => ok(value.input);
+` : '';
+  const definition = generic ? `const app = business({ name: 'scale-generic', load: sharedLoad, save, operations: {\n` + keys.map(key =>
+      `${key}: [unwrap<'${key}'>(), validate<'${key}'>(), ${broken ? '' : `permit<'${key}'>(), `}approve<'${key}'>()],`).join('\n') + '\n} });\n'
+    : plain ? 'const app = {\n' + keys.map(key => `${key}: async (input: Request<'${key}'>): Promise<Result<Approved<'${key}'>, 'NotFound:${key}' | 'Invalid:${key}' | 'Forbidden:${key}' | 'Closed:${key}' | 'Conflict'>> => ok({ ...input, status: 'approved' }),`).join('\n') + '\n};\n'
     : `const app = business({ name: 'scale', save, operations: {\n` + keys.map(key =>
       `${key}: { load: load<'${key}'>(), run: [validate<'${key}'>(), ${broken ? '' : `permit<'${key}'>(), `}approve<'${key}'>()] },`).join('\n') + '\n} });\n';
-  return header + definition +
+  return header + genericPrelude + definition +
     (broken ? '' : keys.map((key, index) => `${segmented ? `function contract${index}() {` : ''}
 type Input${index} = Assert<Equal<Parameters<typeof app.${key}>[0], Request<'${key}'>>>;
-type Output${index} = Assert<Equal<Awaited<ReturnType<typeof app.${key}>>, Result<Approved<'${key}'>, 'NotFound:${key}' | 'Invalid:${key}' | 'Forbidden:${key}' | 'Closed:${key}' | 'Conflict'>>>;
+type Output${index} = Assert<Equal<Awaited<ReturnType<typeof app.${key}>>, Result<Approved<'${key}'>, '${generic ? 'NotFound' : `NotFound:${key}`}' | 'Invalid:${key}' | 'Forbidden:${key}' | 'Closed:${key}' | 'Conflict'>>>;
 if (false) {
   // @ts-expect-error input for another operation must not be accepted
   app.${key}({ operation: '${keys[(index + 1) % count]}', amount: 1 });
@@ -69,9 +76,9 @@ async function main() {
     run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--omit=dev'], directory);
     const compiler = join(root, 'node_modules/typescript/bin/tsc');
     const flags = ['--ignoreConfig', '--target', 'ES2022', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--strict', '--noUncheckedIndexedAccess', '--types', '', '--lib', 'ES2022,DOM'];
-    const results = [];
-    for (const operations of [100, 500]) {
-      const valid = fixture(operations), invalid = fixture(operations, true);
+    const results = [], genericResults = [];
+    for (const generic of [false, true]) for (const operations of [100, 500]) {
+      const valid = fixture(operations, false, true, false, generic), invalid = fixture(operations, true, true, false, generic);
       writeFileSync(join(directory, 'valid.ts'), valid); writeFileSync(join(directory, 'invalid.ts'), invalid);
       const checked = run(process.execPath, [compiler, ...flags, '--outDir', 'emitted', 'valid.ts'], directory);
       const rejected = command(process.execPath, [compiler, ...flags, '--noEmit', 'invalid.ts'], directory);
@@ -83,7 +90,7 @@ async function main() {
       assert.deepEqual(diagnostics.map(match => lines[Number(match[1]) - 1]?.match(/^(op\d+):/)?.[1]).sort(), Array.from({ length: operations }, (_, index) => `op${index}`).sort());
       const executed = run(process.execPath, [join(directory, 'emitted/valid.js')], directory);
       assert.deepEqual(JSON.parse(executed.stdout), { completed: operations });
-      results.push({ operations, validSourceSha256: hash(valid), invalidSourceSha256: hash(invalid), rejectedMissingAuthorization: diagnostics.length,
+      (generic ? genericResults : results).push({ operations, validSourceSha256: hash(valid), invalidSourceSha256: hash(invalid), rejectedMissingAuthorization: diagnostics.length,
         verifiedInputOutputPairs: operations, rejectedWrongInputs: operations, executedOperations: operations,
         validCompileAndEmitMs: checked.elapsedMs, invalidCheckMs: rejected.elapsedMs, emittedProcessMs: executed.elapsedMs });
     }
@@ -101,7 +108,7 @@ async function main() {
       compiler: JSON.parse(readFileSync(join(root, 'node_modules/typescript/package.json'), 'utf8')).version,
       source: { gitCommit, sourceDirty, hashes }, platform: process.platform, arch: process.arch,
       tarballSha256: hash(tarball), collectorSha256: hash(readFileSync(fileURLToPath(import.meta.url))),
-      results, monolithic, loaderMode: 'operation-local-only', scope: 'generated-independent-operation-types-and-success-paths',
+      results, genericResults, monolithic, loaderMode: 'operation-local-only', genericLoaderMode: 'shared-generic-input-envelope', scope: 'generated-independent-operation-types-and-success-paths',
       exclusions: ['real-business-specification', 'editor-responsiveness', 'human-productivity', 'database', 'transport', 'long-stage-chains', 'performance-comparison'] }, null, 2));
   } finally { rmSync(directory, { recursive: true, force: true }); }
 }
