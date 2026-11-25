@@ -56,6 +56,9 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 
 ## 再検証する入口
 
+[継続検査の構成](ci.md)で、core・独立consumer・永続adapterの検査をCIへ登録する。
+原文を必要とする照合は、ローカル保存先を渡して別途実行する。
+
 ```sh
 npm run check
 npm run check:package
