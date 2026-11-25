@@ -19,3 +19,4 @@ export type { RequestExecution } from './model.js';
 export { defineUseCase } from './use-case.js';
 export { defineUseCaseGroup } from './use-case-group.js';
 export type { GroupExecution } from './use-case-group.js';
+export { business } from './business.js';

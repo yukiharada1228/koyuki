@@ -1,5 +1,5 @@
-// Unpublished candidate API. Installed only in a temporary local study package.
-import { business } from 'koyuki/study';
+// Development business API tested from the actual packed package.
+import { business } from 'koyuki';
 import { type GroupExecution, replayOperations, defineApplication } from 'koyuki';
 import { validateSubmission, requireDays, submit, validateApproval, approve, validateWithdrawal, withdraw, balance,
   type Input, type SubmitInput, type Actor, type Account, type Change } from './domain.js';

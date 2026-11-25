@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- businessを開発版のルートexportへ昇格。通常の同期Result関数の配列から操作を宣言し直接呼び出す推奨入口を文書化。既存APIは維持。独立consumerは実際の開発版tarballとルートimportで検証し、利用ガイドの最小例も実行。npmへの公開は未実施。
+
 - 接続先メソッドの入力型が狭すぎても許容される型の穴を修正。Process.effect/commit・defineAction・withReplayの詳細操作を関数プロパティ契約で検査し、未検証のstring/状態Unionを狭い入力へ渡す接続を拒否。defineActionはloaderを先に推論し、既存の型引数指定と入出力・エラー推論を維持。
 
 - Process.effectにActionReportを返す操作のobject形式を追加。途中commandの詳細traceを保持し、内部失敗でも後続を停止。関数形式の挙動・例外伝播を維持し、途中planや値の自動記録は追加しない。複数集約の実例・独立配布consumer・Nodeなし実行で検証。

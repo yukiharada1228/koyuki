@@ -1,4 +1,4 @@
-import { business } from 'koyuki/study';
+import { business } from 'koyuki';
 import { ok, type Result } from 'koyuki';
 import { leaveCommands } from './application.js';
 import { validateSubmission, submit, type Loaded, type SubmitInput, type Change } from './domain.js';

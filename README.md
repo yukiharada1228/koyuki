@@ -22,8 +22,11 @@ SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用�
 大規模なチーム開発での効果はまだ未実証です。
 [比較対象・現在の証拠・次の評価仕様](docs/team-development-study.md)を公開しています。
 
-[通常の関数で業務操作を書くAPI試作](docs/business-api-study.md)も検証中です。
-この試作は公開API・npm配布には含めていません。
+開発版では、[通常関数の配列で業務操作を宣言するbusiness](docs/business.md)を推奨入口として追加しました。
+`const expense = business({ name, load, save, operations: { approve: [validateApproval, approve] } })`
+と宣言し、`await expense.approve(input)`で実行します。
+公開済みnpm alpha.5にはまだ含まれません。以下の例・チュートリアルはalpha.5でも利用できる既存APIです。
+[移行・型検査・書き心地の評価記録](docs/business-api-study.md)も参照できます。
 
 ## 最初の状態遷移
 

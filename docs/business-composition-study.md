@@ -1,7 +1,7 @@
 # 保存先の異なる業務を接続する試作
 
 在庫確保と出荷登録を、別々のbusinessとして宣言する[実行例](../src/experiments/fulfillment/application.ts)。
-非公開APIの検証であり、npmの利用例ではない。
+businessは開発版の公開入口へ昇格した。公開済みnpm alpha.5には含まれない。
 在庫の成功値はReservation、出荷の成功値はShipmentで、それぞれのsaveが自分の型だけを受け取る。
 共通saveのための巨大なUnionや、出力をunknownへ広げる宣言は不要。
 

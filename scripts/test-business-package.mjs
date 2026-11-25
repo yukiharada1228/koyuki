@@ -1,4 +1,4 @@
-// Build a PRIVATE local candidate containing the study API, never change/publish the real package.
+// Pack and install the actual development package; never publish to npm.
 import { mkdtempSync, copyFileSync, readdirSync, rmSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
@@ -13,21 +13,10 @@ function run(command, args, cwd) {
 }
 const dir = mkdtempSync(join(tmpdir(), 'koyuki-business-consumer-'));
 try {
-  const candidate = join(dir, 'candidate'), consumer = join(dir, 'consumer');
-  mkdirSync(candidate); mkdirSync(consumer);
-  const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
-  const config = join(dir, 'tsconfig.candidate.json');
-  writeFileSync(config, JSON.stringify({ compilerOptions: {
-    target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true,
-    declaration: true, rootDir: join(root, 'src'), outDir: candidate, types: [], lib: ['ES2022', 'DOM'],
-  }, files: [join(root, 'src/framework/index.ts'), join(root, 'src/experiments/business.ts')] }));
-  run(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '-p', config], root);
-  writeFileSync(join(candidate, 'package.json'), JSON.stringify({ name: 'koyuki', version, private: true, type: 'module',
-    exports: { '.': { types: './framework/index.d.ts', import: './framework/index.js' },
-      './study': { types: './experiments/business.d.ts', import: './experiments/business.js' } },
-    files: ['framework', 'experiments'],
-  }));
-  const packed = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json'], candidate))[0].filename;
+  const consumer = join(dir, 'consumer');
+  mkdirSync(consumer);
+  run('npm', ['run', 'build'], root);
+  const packed = JSON.parse(run('npm', ['pack', '--pack-destination', dir, '--ignore-scripts', '--json'], root))[0].filename;
   const source = join(root, 'examples/leave-http');
   for (const file of readdirSync(source).filter(file => file.endsWith('.ts') || ['package.json', 'tsconfig.json'].includes(file))) copyFileSync(join(source, file), join(consumer, file));
   copyFileSync(join(consumer, 'application.ts'), join(consumer, 'application-named.ts'));
@@ -38,7 +27,7 @@ try {
     ['leave-business-migration.test.ts', 'business-migration.test.ts'],
   ]) copyFileSync(join(root, 'scripts/fixtures', from), join(consumer, to));
   const pkg = JSON.parse(readFileSync(join(consumer, 'package.json'), 'utf8'));
-  pkg.dependencies.koyuki = `file:${join(candidate, packed)}`;
+  pkg.dependencies.koyuki = `file:${join(dir, packed)}`;
   pkg.scripts.test = 'tsx --test *.test.ts';
   writeFileSync(join(consumer, 'package.json'), JSON.stringify(pkg));
   // The HTTP contract is unchanged; only the two explicit domain trace labels differ.
@@ -51,15 +40,18 @@ try {
   writeFileSync(httpTest, httpSource);
   writeFileSync(join(consumer, 'process-detail.test.ts'), readFileSync(join(root, 'src/process-detail.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
-    .replace("'./experiments/business.js'", "'koyuki/study'").replace("'./framework/index.js'", "'koyuki'");
+    .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);
+  const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
+  writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   console.log(run('npm', ['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], consumer));
   console.log(run('npm', ['run', 'check'], consumer));
   console.log(run('npm', ['test'], consumer));
+  console.log(run('npm', ['exec', '--', 'tsx', 'business-quickstart.ts'], consumer));
   writeFileSync(join(consumer, 'tsconfig.no-node.json'), JSON.stringify({ compilerOptions: {
     target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true,
     noEmit: true, types: [], lib: ['ES2022', 'DOM'],
-  }, files: ['business-types.ts'] }));
+  }, files: ['business-types.ts', 'business-quickstart.ts'] }));
   console.log(run('npm', ['exec', '--', 'tsc', '-p', 'tsconfig.no-node.json'], consumer));
 
   copyFileSync(join(root, 'scripts/fixtures/leave-business-diagnostics.ts'), join(consumer, 'business-diagnostics.ts'));
@@ -70,10 +62,10 @@ try {
   const expected = lines.flatMap((line, index) => line.includes('// reject-next-line') ? [index + 2] : []);
   for (const line of expected) if (!diagnostics.includes(`business-diagnostics.ts(${line},`)) throw new Error(diagnostics);
   if (diagnostics.includes('TS7006') || diagnostics.includes('TS2305') || diagnostics.includes('TS2307')) throw new Error(diagnostics);
-  console.log(`Verified ${expected.length} invalid business definitions rejected by installed candidate declarations.`);
+  console.log(`Verified ${expected.length} invalid business definitions rejected by installed development declarations.`);
   if (process.argv.includes('--change')) {
     rmSync(join(consumer, 'business-diagnostics.ts'));
     studyApprovalChange(consumer, root, run);
   }
-  console.log('Verified unpublished business study: installed PRIVATE local candidate, leave HTTP/GraphQL/Application, parity and migration. No npm publication or supported public study export.');
+  console.log('Verified public development business API from the actual packed package: leave HTTP/GraphQL/Application, parity and migration. No npm publication.');
 } finally { rmSync(dir, { recursive: true, force: true }); }

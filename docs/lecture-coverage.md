@@ -28,7 +28,7 @@
 | 40:31–42:21 | 振る舞いをドメイン近くへ、workflowは合成 | 各domain.tsとapplication.tsを分離。業務関数をフレームワークへ移さない |
 | 42:37–46:53 | 更新対象と入力をcommandへまとめる | Loaded、検証済みcommand、既存Entityと要求を一緒に渡す |
 | 46:56–50:40 | 途中IOの関数注入・workflow分割 | shippingと登録メールのprocess.effect。直接runで不要な空の遷移を除去。注入したIOを純粋関数とは呼ばない |
-| 50:54–52:19 | Result接続の定型処理をframeworkへ | defineTransition / defineUseCaseGroup / operations、実行状態と完了イベントの自動処理 |
+| 50:54–52:19 | Result接続の定型処理をframeworkへ | 開発版のbusinessで通常関数の配列を接続し、Applicationが実行状態と完了イベントを管理。既存defineTransition / defineUseCaseGroupも維持 |
 | 54:10–54:50 | andThen/mapや入れ子の負担 | 宣言による順次接続、withInput、collect。TypeScriptのdo記法や全generic推論を提供するわけではない |
 | 56:54–58:59 | DB transaction、contextを渡す案 | SQLiteのCAS・履歴・receipt・outboxの原子保存をテスト。Prisma 7.10.1のcontextで複数更新・typed rollback・commit失敗の後処理を検証。提案は講演当時未実施。任意DBへの一括保証なし |
 | 59:07–61:00 | 関数型の全面導入より宣言に必要な範囲 | 通常の関数・Result。IO adapterは通常のTypeScript、実行時依存ゼロ |

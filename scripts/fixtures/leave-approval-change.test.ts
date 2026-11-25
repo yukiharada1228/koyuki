@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { business } from 'koyuki/study';
+import { business } from 'koyuki';
 import { ok, err, transition } from 'koyuki';
 import { validateApproval, requireApprovalLimit, approve, type Loaded, type Change } from './domain.js';
 import { inlineApproval, helperApproval } from './approval-baselines.js';

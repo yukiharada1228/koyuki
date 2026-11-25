@@ -1,7 +1,8 @@
 # 普通の関数で業務操作を書くためのAPI試作
 
 利用者から見える既定の単位を「役割ごとの段階」から「業務操作」へ寄せる試作。
-公開APIではない。npmにも配布入口にも含めず、既存APIを置き換えていない。
+現在は[開発版の推奨入口](business.md)へ昇格し、配布物のルートからexportしている。公開済みnpm alpha.5には未収録。
+以下は試作から昇格までの検証記録であり、「非公開」「候補」の記述は各検証時点の状況を表す。既存APIは維持する。
 [実装](../src/experiments/business.ts)と[実行・型テスト](../src/business-api-study.test.ts)・[接続型の回帰試験](../src/business-api-types.test.ts)で書き心地を検証する。
 新しい実行エンジンは作らず、既存のWorkflow・Command・再送・Applicationを使う。
 defineUseCaseGroupとの要求context・再送の接続部分を内部モジュールへ共通化している。
@@ -190,3 +191,15 @@ ApplicationはこれらのcommandをそのままreplayOperationsへ渡す。
 [承認ルール追加の比較](business-change-study.md)では、通常TS・helper TS・既存遷移・businessの4方式を検証した。
 すべてが証拠型の追加に伴う接続漏れを検出し、新APIだけの優位とは評価していない。
 独立consumerの既存31テストに加え、新仕様の5テストで制限検査・transport・Application・過去receiptを確認する。
+
+## 開発版への昇格
+
+経費5操作、休暇3操作、保存先の異なる集約の接続、型の接続・詳細trace・双方向receipt移行を確認したため、
+businessを開発版のルートexportへ移した。実装はframework/business.ts、実行は従来の共有runtimeを使う。
+通常関数の操作群の推奨入口とし、既存の役割別APIは互換のため維持する。
+名前の階層・then予約・操作ID・snapshot・trace・再送の契約は[利用ガイド](business.md)で定義する。
+
+test:business:package / :changeは、現在はprivateな別パッケージを合成せず、実際の開発版をpackして
+リポジトリ外へインストールする。importはkoyukiのルートのみ。ガイドの最小例もその配布物で実行する。
+通常のcheck:packageは外部依存ゼロ・全宣言のNode型なし検査を、test:portableはbusiness自体のNodeなし実行を含む。
+npm registryへの公開はこの昇格には含めない。generic推論・診断の改善と独立利用者による評価は引き続き課題。
