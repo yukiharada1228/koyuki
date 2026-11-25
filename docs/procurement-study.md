@@ -1,13 +1,13 @@
-# 購買業務の評価：最初の17操作
+# 購買業務の評価：最初の19操作
 
-25操作の評価アプリのうち、申請作成・変更・申請・取り下げ・承認・却下・差し戻し・担当変更・発注・発注変更・発注取消・発注完了・検収・請求登録・請求照合・請求承認・請求無効化を実装した。
+25操作の評価アプリのうち、申請作成・変更・申請・取り下げ・承認・却下・差し戻し・担当変更・発注・発注変更・発注取消・発注完了・検収・請求登録・請求照合・請求承認・請求無効化・支払記録・支払取消を実装した。
 これは講演の実製品を再現した仕様ではなく、Koyukiの開発体験を検証するための独自の評価仕様である。
-残り8操作と通常TypeScript／helper版との同条件比較は未実施。
+残り6操作と通常TypeScript／helper版との同条件比較は未実施。
 
 ## 実装と境界
 
 - `src/experiments/procurement/domain.ts`：状態Union、検証済み明細、検証・純粋な状態遷移。
-- `src/experiments/procurement/application.ts`：既存business APIによる4モデル・17操作の登録。新しいcore APIは追加していない。
+- `src/experiments/procurement/application.ts`：既存business APIによる5モデル・19操作の登録。新しいcore APIは追加していない。
 - `src/experiments/procurement/repository.ts`：同期／非同期の読込みを許すportと、メモリadapter。
 - `src/procurement.test.ts`：一連の成功・業務失敗・競合・複合保存の検証。
 
@@ -48,11 +48,11 @@ ReceiptだけでOrderの画面状態まで自動更新できるとは扱わな�
 
 ## 検証と次の範囲
 
-`npx tsx --test src/procurement.test.ts`で20シナリオを検証する。
+`npx tsx --test src/procurement.test.ts`で23シナリオを検証する。
 同じテストを`npm run test:business:package`の独立consumerへコピーし、実際にpackしたルート公開APIで検査する。
 競合は同一プロセスの並行呼出しであり、負荷試験ではない。
 
-次に、残り8操作、永続adapterと再送境界、Applicationの複合結果投影を実装する。
+次に、残り6操作、永続adapterと再送境界、Applicationの複合結果投影を実装する。
 その後、同じ保証を持つ通常TypeScript／helper版で仕様変更を比較する。
 現段階ではコード量・生産性・大規模チームの優位性は測定していない。
 
@@ -96,7 +96,7 @@ cancelled/completedはこの段階では終端。検収と請求登録はplaced�
 ## 請求承認・無効化
 
 financeだけがmatched → approvedへ遷移できる。approvedは承認者と照合した検収IDを保持し、
-発注完了はmatchedまたはapprovedの請求を受け付ける。支払記録はまだ未実装。
+発注完了はmatchedまたはapprovedの請求を受け付ける。支払記録はapprovedの請求だけに作成できる。
 registered/matchedの請求は、発注がplacedである間だけ理由付きでvoidedにできる。
 approved/voidedからの無効化は拒否する。無効化は照合情報を持たない状態として明示的に再構築する。
 
@@ -107,3 +107,18 @@ approved/voidedからの無効化は拒否する。無効化は照合情報を�
 新しい請求一覧を読みInvoiceMismatchで止まる場合がある。どちらも保存しない。
 さらに無効化前に作った完了Changeを直接保存し、CASが古い計画を拒否することを検証した。
 メモリadapterでの検証であり、任意のDB adapterがこの契約を満たす保証ではない。
+
+## 支払記録と取消
+
+financeはapprovedの請求に対してrecordedの支払記録を作れる。
+金額は請求から導出し、入力に追加された金額は使用しない。支払IDと参照番号は前後に空白を持たない非空文字列、
+参照番号は最大200文字とする。1請求にrecordedは1件まで、参照番号は同じgroup内で取消済みも含め再利用不可とする。
+別groupのデータと制約を共有しない。記録時には請求versionと支払IDの未使用を確認する。
+
+recorded → cancelledはfinanceが理由付きで実行する。取消は元の金額・参照番号・記録者を残し、取消者と理由を加える。
+取消後は別支払ID・別参照番号で同じ請求へ記録し直せる。二重登録と二重取消は保存時にも検査する。
+発注がcompletedでも請求のapprovedは保持され、支払記録の作成を妨げない。
+
+ここで扱うのは実行済み支払の業務記録と、その記録の取消である。銀行への送金・返金・口座残高の変更は行わない。
+請求のapprovedを支払時に別状態へ変えず、有効記録の一意性を保存境界で扱う。
+取消済みの行を保持するが、これは変更ごとの永続監査ログではない。メモリを再起動すると消える。

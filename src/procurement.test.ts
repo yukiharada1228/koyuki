@@ -300,3 +300,42 @@ test('a completion plan created before invoice voiding fails CAS without complet
   assert.deepEqual(await f.repository.commit(change.value, actor('buyer')), err({ kind: 'Conflict' }));
   const persisted = f.repository.read('order', 'po', actor('buyer')); assert(persisted.ok); assert.equal(persisted.value.state, 'placed');
 });
+
+test('payment records derive their amount from an approved invoice and can be cancelled and replaced', async () => {
+  const f = setup(); await invoiced(f);
+  assert.deepEqual(await f.finance.payments.record({ id: 'inv', expectedVersion: 2, paymentId: 'pay', reference: 'bank-1' }), err({ kind: 'WrongState' }));
+  assert((await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 })).ok);
+  const injected = { id: 'inv', expectedVersion: 3, paymentId: 'pay', reference: 'bank-1', amountCents: 1 };
+  const recorded = await f.finance.payments.record(injected);
+  assert(recorded.ok); assert.equal(recorded.value.amountCents, 1000); assert.equal(recorded.value.recordedBy, 'finance');
+  assert.deepEqual(await f.finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId: 'duplicate', reference: 'bank-2' }), err({ kind: 'AlreadyExists' }));
+  const cancelled = await f.finance.payments.cancel({ id: 'pay', expectedVersion: 1, reason: ' Wrong reference ' }); assert(cancelled.ok);
+  assert.equal(cancelled.value.state, 'cancelled');
+  if (cancelled.value.state === 'cancelled') assert.equal(cancelled.value.reason, 'Wrong reference');
+  assert.deepEqual(await f.finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId: 'reuse', reference: 'bank-1' }), err({ kind: 'Conflict' }));
+  assert((await f.finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId: 'replacement', reference: 'bank-2' })).ok);
+  assert.equal(f.repository.list('payment', actor('finance')).length, 2);
+  assert.deepEqual(await f.finance.payments.cancel({ id: 'pay', expectedVersion: 2, reason: 'again' }), err({ kind: 'WrongState' }));
+});
+test('concurrent payment records and cancellations have one winner with retained history', async () => {
+  const f = setup(); await invoiced(f); assert((await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 })).ok);
+  const results = await Promise.all(['a', 'b'].map(paymentId => f.finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId, reference: paymentId })));
+  assert.equal(results.filter(result => result.ok).length, 1); assert.deepEqual(results.find(result => !result.ok), err({ kind: 'Conflict' }));
+  const saved = f.repository.list('payment', actor('finance'))[0]; assert(saved);
+  const cancellations = await Promise.all(['one', 'two'].map(reason => f.finance.payments.cancel({ id: saved.id, expectedVersion: 1, reason })));
+  assert.equal(cancellations.filter(result => result.ok).length, 1); assert.deepEqual(cancellations.find(result => !result.ok), err({ kind: 'Conflict' }));
+  assert.equal(f.repository.list('payment', actor('finance'))[0]?.version, 2);
+});
+test('payment commands enforce finance identity, scope, versions, reference and cancellation reason', async () => {
+  const f = setup(); await invoiced(f); assert((await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 })).ok);
+  const input = { id: 'inv', expectedVersion: 3, paymentId: 'pay', reference: 'bank-1' };
+  assert.deepEqual(await f.buyer.payments.record(input), err({ kind: 'Denied' }));
+  assert.deepEqual(await f.as(actor('finance', 'finance', 'foreign')).payments.record(input), err({ kind: 'NotFound' }));
+  assert.deepEqual(await f.finance.payments.record({ ...input, reference: ' ' }), err({ kind: 'InvalidInput' }));
+  assert.deepEqual(await f.finance.payments.record({ ...input, expectedVersion: 2 }), err({ kind: 'Conflict' }));
+  assert((await f.finance.payments.record(input)).ok);
+  const before = f.repository.commits;
+  assert.deepEqual(await f.buyer.payments.cancel({ id: 'pay', expectedVersion: 1, reason: 'no' }), err({ kind: 'Denied' }));
+  assert.deepEqual(await f.finance.payments.cancel({ id: 'pay', expectedVersion: 1, reason: ' ' }), err({ kind: 'InvalidInput' }));
+  assert.equal(f.repository.commits, before);
+});

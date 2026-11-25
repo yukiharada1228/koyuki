@@ -28,6 +28,7 @@ export class MemoryProcurement implements ProcurementRepository {
       if (entity.groupId !== actor.groupId || written.has(id) || !before || !Number.isSafeInteger(entity.version) || entity.version !== (before.version ?? 0) + 1) return err({ kind: 'Conflict' });
       if (entity.kind === 'order' && entity.state !== 'cancelled' && this.list('order', actor).some(other => other.state !== 'cancelled' && other.requestId === entity.requestId && other.id !== entity.id)) return err({ kind: 'Conflict' });
       if (entity.kind === 'invoice' && entity.state !== 'voided' && this.list('invoice', actor).some(other => other.state !== 'voided' && other.orderId === entity.orderId && other.id !== entity.id)) return err({ kind: 'Conflict' });
+      if (entity.kind === 'payment' && this.list('payment', actor).some(other => other.id !== entity.id && (other.reference === entity.reference || (entity.state === 'recorded' && other.state === 'recorded' && other.invoiceId === entity.invoiceId)))) return err({ kind: 'Conflict' });
       written.add(id);
     }
     // Prepare every clone before mutating any aggregate, including the returned value.

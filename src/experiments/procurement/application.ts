@@ -1,6 +1,6 @@
 import { business, ok } from '../../framework/index.js';
-import { approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, receiveOrder, registerInvoice, matchInvoice,
-  type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
+import { recordPayment, cancelPayment, approveInvoice, voidInvoice, amendOrder, cancelOrder, completeOrder, editRequest, withdrawRequest, rejectRequest, returnRequest, reassignRequest, createRequest, submitRequest, approveRequest, placeOrder, receiveOrder, registerInvoice, matchInvoice,
+  type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export function procurement(repository: ProcurementRepository, identity: Actor, configuration: Policy) {
   const actor = Object.freeze({ ...identity });
@@ -59,5 +59,14 @@ export function procurement(repository: ProcurementRepository, identity: Actor, 
       return ok({ input, actor, current: current.value, order: order.value, receipts: (await repository.list('receipt', actor)).filter(receipt => receipt.orderId === order.value.id) });
     }, run: [matchInvoice] },
   } });
-  return { requests, orders, receipts, invoices };
+  const payments = business({ name: 'procurement.payment.v1', load: async (input: PaymentInput) => {
+    const current = await repository.read('invoice', input.id, actor); if (!current.ok) return current;
+    return ok({ input, actor, current: current.value, alreadyRecorded: (await repository.list('payment', actor)).some(payment => payment.invoiceId === input.id && payment.state === 'recorded') });
+  }, save: (change: Change<Payment>) => repository.commit(change, actor), operations: {
+    record: [recordPayment],
+    cancel: { load: async (input: ReasonInput) => {
+      const current = await repository.read('payment', input.id, actor); return current.ok ? ok({ input, actor, current: current.value }) : current;
+    }, run: [cancelPayment] },
+  } });
+  return { requests, orders, receipts, invoices, payments };
 }

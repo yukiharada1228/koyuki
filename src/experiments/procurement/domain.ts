@@ -19,7 +19,9 @@ export type Order = Base & Readonly<{ kind: 'order'; state: 'placed' | 'cancelle
 export type Receipt = Base & Readonly<{ kind: 'receipt'; state: 'accepted'; orderId: string; quantities: readonly Quantity[] }>;
 type InvoiceBase = Base & Readonly<{ kind: 'invoice'; orderId: string; amountCents: number }>;
 export type Invoice = InvoiceBase & (Readonly<{ state: 'registered' }> | Readonly<{ state: 'matched'; receiptIds: readonly string[] }> | Readonly<{ state: 'approved'; receiptIds: readonly string[]; approvedBy: string }> | Readonly<{ state: 'voided'; reason: string; voidedBy: string }>);
-export type Entity = Request | Order | Receipt | Invoice;
+type PaymentBase = Base & Readonly<{ kind: 'payment'; invoiceId: string; amountCents: number; reference: string; recordedBy: string }>;
+export type Payment = PaymentBase & (Readonly<{ state: 'recorded' }> | Readonly<{ state: 'cancelled'; reason: string; cancelledBy: string }>);
+export type Entity = Request | Order | Receipt | Invoice | Payment;
 export type Check = Readonly<{ kind: Entity['kind']; id: string; groupId: string; version: number | null }>;
 export type Change<T extends Entity> = Readonly<{ result: T; writes: readonly Entity[]; checks: readonly Check[] }>;
 export type RuleError = Readonly<{ kind: 'Denied' | 'InvalidInput' | 'WrongState' | 'Conflict' | 'BudgetExceeded' | 'AlreadyExists' | 'QuantityExceeded' | 'InvoiceMismatch' | 'TargetMismatch' }>;
@@ -32,6 +34,7 @@ export type PlaceInput = VersionInput & Readonly<{ orderId: string; supplier: st
 export type AmendInput = VersionInput & Readonly<{ supplier: string }>;
 export type ReceiveInput = VersionInput & Readonly<{ receiptId: string; quantities: unknown }>;
 export type RegisterInput = VersionInput & Readonly<{ invoiceId: string; amountCents: number }>;
+export type PaymentInput = VersionInput & Readonly<{ paymentId: string; reference: string }>;
 export type Loaded<I, T> = Readonly<{ input: I; actor: Actor; current: T }>;
 const id = (value: unknown): value is string => typeof value === 'string' && !!value && value === value.trim();
 const integer = (value: number) => Number.isSafeInteger(value) && value > 0;
@@ -243,4 +246,28 @@ export function voidInvoice(value: Loaded<ReasonInput, Invoice> & Readonly<{ ord
   const result: Invoice = { kind: 'invoice', state: 'voided', id: current.id, groupId: current.groupId, orderId: current.orderId,
     amountCents: current.amountCents, version: current.version + 1, reason: value.input.reason.trim(), voidedBy: value.actor.id };
   return ok(plan(result, [check(current), check(order)], [{ ...order, version: order.version + 1 }, result]));
+}
+
+export function recordPayment(value: Loaded<PaymentInput, Invoice> & Readonly<{ alreadyRecorded: boolean }>): Result<Change<Payment>, RuleError> {
+  const { input, actor, current } = value;
+  if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
+  if (input.id !== current.id) return failure('TargetMismatch');
+  if (!integer(input.expectedVersion)) return failure('InvalidInput');
+  if (input.expectedVersion !== current.version) return failure('Conflict');
+  if (current.state !== 'approved') return failure('WrongState');
+  if (!id(input.paymentId) || !id(input.reference) || input.reference.length > 200) return failure('InvalidInput');
+  if (value.alreadyRecorded) return failure('AlreadyExists');
+  const result: Payment = { kind: 'payment', state: 'recorded', id: input.paymentId, groupId: current.groupId, version: 1,
+    invoiceId: current.id, amountCents: current.amountCents, reference: input.reference, recordedBy: actor.id };
+  return ok(plan(result, [check(current), absent('payment', current.groupId, result.id)]));
+}
+export function cancelPayment(value: Loaded<ReasonInput, Payment>): Result<Change<Payment>, RuleError> {
+  const { input, actor, current } = value;
+  if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
+  if (input.id !== current.id) return failure('TargetMismatch');
+  if (!integer(input.expectedVersion)) return failure('InvalidInput');
+  if (input.expectedVersion !== current.version) return failure('Conflict');
+  if (current.state !== 'recorded') return failure('WrongState');
+  if (typeof input.reason !== 'string' || !input.reason.trim() || input.reason.trim().length > 1000) return failure('InvalidInput');
+  return ok(plan({ ...current, state: 'cancelled', reason: input.reason.trim(), cancelledBy: actor.id, version: current.version + 1 }, [check(current)]));
 }
