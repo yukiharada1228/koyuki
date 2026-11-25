@@ -5,21 +5,25 @@
 Issueがopenであること自体を未実装の証明にはせず、提案の完了条件と現行コードを区別する。
 ここにある将来案すべてが講演で要求された機能という意味でもない。
 
+2026-11-26（日本時間）に、公開Issue #1〜#8の本文とopen状態を再取得した。
+#1・#2・#5については、本文の完了条件と下記のコード・検査を個別に照合した。
+他DB・分散相関・保持運用の追加実装を、元の完了条件へ暗黙に追加しない。
+
 | Issue | 現在使える根拠 | 満たしたと扱えない条件 |
 | --- | --- | --- |
-| [#1 共通transaction](https://github.com/yukiharada1228/koyuki/issues/1) | `src/expenses/sqlite.ts`のsaveは状態と履歴を同一transactionで保存する。タグ・調達にも個別adapterがある | [同期共通境界](transactions.md)をタグ・経費・経費receiptへ接続済み。callback型の[非同期契約](transactions.md)もPrismaへ接続済み。Target全体の相関観察、他driverの追加検証は未完了 |
-| [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)で待機・開始・実行段階・投影後の完了を関連付ける。[Program単体](program-execution.md)にも同じ観察入口を追加 | 対応するcoreのlive timing・親子spanを追加。opaque関数内部・分散相関・永続履歴は未提供 |
+| [#1 共通transaction](https://github.com/yukiharada1228/koyuki/issues/1) | [同期共通境界](transactions.md)をタグ・経費・経費receiptへ接続し、本文の4完了条件を実例で検証。callback型の非同期契約もPrismaへ接続済み | 任意driverの原子性や分散transactionは保証しない。他driverやTarget全体の相関観察は追加範囲であり、本文の4条件の未充足とは分ける |
+| [#2 相関trace](https://github.com/yukiharada1228/koyuki/issues/2) | [Application実行IDと詳細trace](application-execution.md)、[Program](program-execution.md)、live timing・親子spanで本文の4完了条件を検証 | opaque関数内部・分散相関・永続履歴は未提供。本文が要求する対応coreの実行相関と、全関数・全システムの観察を区別する |
 | [#3 構成図](https://github.com/yukiharada1228/koyuki/issues/3) | [JSON/Mermaid構成図](flow-structure.md)で明示branch・IO・保存を保持。既存Traceの名前を重ねる | 送料関数内部のifはopaqueで、branchを捏造しない。状態図・完全なnode実行対応は未提供 |
 | [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)、[明示的なretryEffect](retry.md)で上限・待機・中断・失敗の安全条件を指定 | withReplay単体は再試行しない。未適用・冪等性はhostの保証。receiptの期限・削除・定義version移行の運用は未提供 |
-| [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続。監査障害のrollbackと再送非重複を検査 | 他DB adapter、保持・削除の実運用、改ざん耐性、拒否ログは未実装・未検証。診断traceを監査とは呼ばない |
+| [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続し、本文の5完了条件を実例と契約文書で検証 | 保持・削除と改ざん耐性の保証範囲を文書化する条件は、全運用機能を内蔵する条件とは異なる。他DB adapter・実運用・改ざん検出・拒否ログは未提供 |
 | [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例。[非実行のソース診断CLI](declaration-diagnostics.md)で明示/既定ID・段階名・Application予約名を位置付きで報告 | 独自resolver・動的定義は未解決として残す。全参照の解決、分岐・状態の網羅性、エディター診断、任意の変更解析は未提供。型・構文・メタデータ検査を業務規則の証明とは扱わない |
 | [#7 有限モデル検査](https://github.com/yukiharada1228/koyuki/issues/7) | [明示モデルの有限探索](finite-model.md)で上限・反例・実装比較を指定。[経費](expense-state-exploration.md)は最大7操作で照合 | 実験用の検査入口。モデルの同値性・抽象化・実装対応は利用者の契約。チームの保守コスト・導入効果は未測定 |
 | [#8 テスト生成](https://github.com/yukiharada1228/koyuki/issues/8) | [seed付き操作列と反例削除](model-sequences.md)で経費を独立仕様と照合。[タグ](tag-model-sequences.md)はメモリ・SQLite各320操作を比較。[非同期比較](async-model-sequences.md)と[指定payload候補の縮小](event-payload-shrinking.md)も両adapterで検査。[初期状態候補](initial-state-shrinking.md)は経費の反例でも縮小 | DB等の隔離・簡略化候補はhostの契約。雛形出力、全候補での最短列は未提供・未検証。sampledを完成・全状態の証明としない |
 
-## 次に実装する境界
+## 共通境界の実装前に固定した契約
 
-最初は#1を対象にする。#5の成功監査と#4のreceiptも、同じ保存先で状態と原子的に保存できる契約に依存するため。
-新しい業務DSLを増やす前に、タグと経費の既存業務関数を変えず、保存adapterの接続を揃える。
+以下は当初の実装順序と受入条件の記録である。#1を先行させたのは、#5の成功監査と#4のreceiptも、
+同じ保存先で状態と原子的に保存できる契約に依存するため。後続の実装状況は上表と下段に記す。
 
 実装前に固定すべき契約は次のとおり。
 
@@ -29,9 +33,46 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 4. 開始・確定・失敗の観察側の例外で、確定済み保存を失敗に置き換えない。入力や操作者情報を既定で収集しない。
 5. 経費の履歴書込み失敗、タグの保存失敗、別接続・別プロセス競合、commit障害を実際のadapterと障害注入で検証する。fakeだけでDBの原子性を証明しない。
 
-これは次の実装の受入条件であり、現在の共通transaction APIの仕様や完成報告ではない。
-共通境界を導入しただけで監査・retry・構成図・モデル検査のIssueを完了扱いにはしない。
+これは実装前の受入条件であり、現在の共通transaction APIの詳細仕様は[契約文書](transactions.md)を参照する。
+共通境界の存在だけで監査・retry・構成図・モデル検査の条件まで満たしたとは判断しない。
 また、これらを実装しても独立利用者の開発体験や全編音声との照合は別途残る。
+
+## #1・#2・#5の完了条件別の再点検
+
+参照する本文の最終更新は、#1が2026-11-24T08:47:19Z、#2が同08:47:20Z、
+#5が同08:47:24Z。下表の充足は指定した実例と契約の範囲での判定であり、
+GitHub上のIssue状態、全講演の完全実現、任意のadapterや利用者への保証とは別である。
+
+| #1の条件 | 確認した根拠 |
+| --- | --- |
+| タグ・経費の業務定義を変えず共通保存境界を使う | [タグ](../src/tags/sqlite.ts)と[経費](../src/expenses/sqlite.ts)はcreateSyncTransactionを使用。初回照合commitから現在までdomain.ts・events.tsに差分なし |
+| 状態と履歴の片方だけを残さない | [経費SQLite検査](../src/expenses-sqlite.test.ts)の履歴障害、[監査SQLite検査](../src/sqlite-audit.test.ts)のhistory/receipt/audit障害で全変更のrollbackを確認 |
+| 別接続・別プロセスの競合で一方だけ成立 | 同じ経費SQLite検査の2接続・2プロセス競合、および監査SQLite検査のタグ競合・同時再送 |
+| ネスト・Result失敗・例外・commit失敗の契約 | [同期検査](../src/transaction.test.ts)、[非同期検査](../src/async-transaction.test.ts)、[契約](transactions.md)。commit失敗を未保存と偽らずunknownとして扱う |
+
+Target専用の新しい設定欄ではなく、既存のsave adapter内で共通境界を使う具体化である。
+別DBや外部APIを暗黙に同じtransactionへ入れる実装にはしていない。
+
+| #2の条件 | 確認した根拠 |
+| --- | --- |
+| 取得から検証・要件・更新・保存・完了を同じ実行へ結ぶ | [Application検査](../src/application-execution.test.ts)に全役割を通る例を追加。単一executionId、段階列、完了、要件失敗後の保存停止を確認 |
+| 途中I/Oと選択した分岐を記録 | 同じApplication検査の詳細loader・選択branchと、[live検査](../src/live-execution.test.ts)の親子span。未実行の枝を捏造しない |
+| 観察の有無で結果とI/O回数を変えない | 同じ入力を観察あり／なしで実行し、結果とload・Rule・saveの呼出し回数を比較。run/runDetailedを二重実行しない |
+| 解除・観察失敗・機微情報の非記録 | Application・[Program検査](../src/program-execution.test.ts)の購読解除とthrow/reject分離、認証情報と例外文面が記録されない検査 |
+
+通常のResult関数が内部段階を公開しない場合まで観察できる保証ではない。
+任意の業務関数を解析する能力を、この条件の達成から導かない。
+
+| #5の条件 | 確認した根拠 |
+| --- | --- |
+| タグと経費で同じ形式を使う | [共通記録器](../src/adapters/sqlite-audit.ts)、[core検査](../src/audit.test.ts)、監査SQLite検査でkoyuki.audit.v1を比較 |
+| 保存と監査が一緒に成立・不成立となる | 監査SQLite検査のINSERT障害・履歴障害・receipt障害で状態と監査をまとめてrollback |
+| 操作者を未検証payloadから採用しない | 同検査で偽造actorIdを入力へ加えても、hostのidentityを記録する |
+| 機微項目・保持削除・改ざん耐性の範囲を明記 | [監査契約](audit.md)は許可したmetadataのみ、自動削除なし、hostの保持責任、直接SQLへの改ざん耐性なしを明記。運用済みという証拠ではない |
+| 再送で成功監査を増やさない | タグreceiptと経費receiptの再取得、2つのOSプロセスの同時再送で非重複を確認 |
+
+この3件について、元の完了条件を実例で満たす根拠があることと、より広い運用拡張が未提供なことを分ける。
+#3・#4・#6〜#8を同じ理由で完了へ変更する再判定は行っていない。
 
 ## 同期境界の実装後の差分
 

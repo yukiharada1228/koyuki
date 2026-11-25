@@ -24,6 +24,40 @@ test('Application correlates detailed IO, rules, save and completion without col
   assert(!JSON.stringify(events).includes('SECRET'));
 });
 
+test('one execution covers load, validation, requirements, evolution and save without changing IO', async () => {
+  const calls: string[] = [], events: ExecutionEvent[] = [];
+  const command = defineUseCase({ operation: 'expense.approve.v1',
+    load: async (input: { amount: number; token: string }) => { calls.push('load'); return ok(input.amount); },
+    transition: {
+      validate: step('validate', (amount: number) => { calls.push('validate'); return ok(amount); }),
+      require: [step('require-permission', (amount: number): Result<number, 'Denied'> => {
+        calls.push('require'); return amount > 0 ? ok(amount) : err('Denied');
+      })] as const,
+      evolve: step('approve', (amount: number) => { calls.push('evolve'); return ok(amount + 1); }),
+    },
+    save: async amount => { calls.push('save'); return ok(amount); },
+  });
+  const app = defineApplication({ initial: () => 0, operations: { approve: operation(command, (_: number, n) => n) }, view: state => state.data });
+  const plain = await app.start(), observed = await app.start({ sessionId: 'acceptance', observeExecution: event => events.push(event) });
+  const input = { amount: 4, token: 'PRIVATE_AUTHENTICATION' };
+  const expected = await plain.dispatch({ type: 'approve', input });
+  const actual = await observed.dispatch({ type: 'approve', input });
+  assert.deepEqual(actual, expected);
+  assert.deepEqual(calls, ['load', 'validate', 'require', 'evolve', 'save', 'load', 'validate', 'require', 'evolve', 'save']);
+  assert.deepEqual(events.filter(event => event.kind === 'step').map(event => event.step),
+    ['expense.approve.v1:load', 'validate', 'require-permission', 'approve', 'expense.approve.v1']);
+  assert(events.every(event => event.executionId === 'acceptance/1' && event.operation === 'approve'));
+  const completed = events.at(-1); assert(completed?.kind === 'completed' && completed.status === 'ok');
+  assert(!JSON.stringify(events).includes('PRIVATE_AUTHENTICATION'));
+  calls.length = 0; events.length = 0;
+  const denied = await observed.dispatch({ type: 'approve', input: { amount: 0, token: 'PRIVATE_AUTHENTICATION' } });
+  assert(denied.ok && denied.value.state.kind === 'failed');
+  assert.deepEqual(calls, ['load', 'validate', 'require']);
+  assert.deepEqual(events.filter(event => event.kind === 'step').map(event => event.step),
+    ['expense.approve.v1:load', 'validate', 'require-permission']);
+  const failed = events.at(-1); assert(failed?.kind === 'completed' && failed.status === 'error');
+});
+
 test('without execution observers the original run route remains selected; detailed methods keep their receiver', async () => {
   const command = {
     runs: 0, details: 0, value: 7,
