@@ -20,6 +20,8 @@ try {
   }
   const source = join(root, 'examples/prisma-stock');
   for (const name of readdirSync(source).filter(name => name.endsWith('.ts') || ['package.json', 'tsconfig.json'].includes(name))) copyFileSync(join(source, name), join(dir, name));
+  // The registry alpha does not export the new development transaction helper.
+  if (registry) copyFileSync(join(root, 'scripts/fixtures/prisma-registry-transaction.ts'), join(dir, 'transaction.ts'));
   cpSync(join(source, 'prisma'), join(dir, 'prisma'), { recursive: true });
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
   pkg.dependencies.koyuki = dependency;

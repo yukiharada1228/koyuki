@@ -40,6 +40,7 @@ try {
   }
   writeFileSync(httpTest, httpSource);
   writeFileSync(join(consumer, 'detailed-load.test.ts'), readFileSync(join(root, 'src/detailed-load.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'async-transaction.test.ts'), readFileSync(join(root, 'src/async-transaction.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transaction.test.ts'), readFileSync(join(root, 'src/transaction.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'process-observation.test.ts'), readFileSync(join(root, 'src/process-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'process-detail.test.ts'), readFileSync(join(root, 'src/process-detail.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));

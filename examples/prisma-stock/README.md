@@ -2,7 +2,8 @@
 
 Prisma 7.10.1＋`@prisma/adapter-better-sqlite3`による在庫移動の例。
 倉庫2件の在庫を更新し、履歴1件とまとめて保存する。
-公開npm `koyuki@0.1.0-alpha.5`だけで動く。PrismaやSQLiteの依存はサンプルに置き、コアへ追加しない。
+現行サンプルの共通`inTransaction`は未公開のcore開発版で使う。PrismaやSQLiteの依存はサンプルに置き、コアへ追加しない。
+公開npm `koyuki@0.1.0-alpha.5`の検査では、従来のサンプル専用transaction adapterをfixtureから差し替える。
 
 講演[izV1h6o3hgQ 56:54–58:59](https://www.youtube.com/watch?v=izV1h6o3hgQ&t=3414s)の、
 外側でtransactionを開始しcontextを渡す案を具体化する。
@@ -22,7 +23,7 @@ npm run check
 npm test
 ```
 
-コア開発版と公開npmのそれぞれを、リポジトリ外から検証する場合：
+現行サンプルは開発版tarballで検証する。公開npmの検査は従来のadapterでの互換性確認として分ける：
 
 ```sh
 npm run test:prisma:package
@@ -107,3 +108,10 @@ DriverAdapterErrorの識別にはバージョン固定の`@prisma/driver-adapter
 
 型検査では、検証前の値からの遷移と、txからのグローバル接続制御を拒否する。
 複数DBの分散transactionや実際のネットワーク断、他DB/他driverでの同じ挙動までは検証していない。
+
+## coreの共通境界への接続
+
+ホスト側`transaction.ts`はcoreの`inTransaction`へPrismaの`$transaction`を渡す。
+Result失敗をtransactionの中止へ変換する処理はcoreに置き、client作成・切断とPrisma例外の分類はhostに残す。
+coreはPrismaをimportしない。rollback失敗で中止マーカーが置き換わった場合は業務エラーへ復元せず、driver障害として扱う。
+公開alpha.5はこの新APIを含まないため、registry検査のadapterは`scripts/fixtures/prisma-registry-transaction.ts`を使用する。

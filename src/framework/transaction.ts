@@ -67,3 +67,33 @@ export function createSyncTransaction<C = undefined>(driver: SyncTransactionDriv
     },
   };
 }
+
+/** Host owns begin/commit/rollback and supplies a scoped connection to the callback.
+ * It must reject with the identical callback exception only after rollback completes.
+ * Wrapping or replacing that exception is treated as a host failure, never a Result.
+ */
+export interface TransactionHost<C> {
+  readonly transaction: <T>(work: (context: C) => Promise<T>) => Promise<T>;
+}
+
+/** For callback-based asynchronous drivers, including interactive ORM transactions.
+ * A failed Result aborts through an invocation-local marker; it is returned only
+ * when the host confirms that exact abort after rolling back. Driver failures reject.
+ */
+export async function inTransaction<C, R extends Result<unknown, unknown>>(
+  host: TransactionHost<C>, work: (context: C) => R | Promise<R>,
+): Promise<R> {
+  const abort = Object.freeze({});
+  let rejected: R | undefined;
+  try {
+    return await host.transaction(async context => {
+      const result = await work(context);
+      if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') throw new TypeError('Transaction work must return Result');
+      if (!result.ok) { rejected = result; throw abort; }
+      return result;
+    });
+  } catch (cause) {
+    if (cause === abort && rejected) return rejected;
+    throw cause;
+  }
+}

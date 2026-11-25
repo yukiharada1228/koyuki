@@ -73,6 +73,45 @@ observeは同期通知であり、永続監査や非同期subscriber管理では
 ブラウザー向けbundleではNode globalなしのfake driverで実行し、実行時依存と公開宣言を別途検査する。
 
 [Issue #1](https://github.com/yukiharada1228/koyuki/issues/1)の同期adapter向け部分を実装した段階。
-非同期DB向けの共通境界、Target全体の開始・確定・失敗の相関観察、共通監査形式、
+callback型の非同期DB向け共通境界は下記に追加した。Target全体の開始・確定・失敗の相関観察、共通監査形式、
 保持・削除、限定retry、自動的な分散transactionは実装していない。
 これらの完成や、あらゆるDBの原子性を主張しない。
+
+## callback型の非同期transaction
+
+開発版の`inTransaction`は、begin/commit/rollbackをホストが管理するdriverへ接続する。
+同期境界のhookをPromise化するAPIではない。Prismaのように、transaction callbackへ専用接続を渡すdriverを対象にする。
+
+```ts
+import { inTransaction } from 'koyuki';
+
+return inTransaction(
+  { transaction: callback => client.$transaction(callback) },
+  tx => stockMovement(tx).run(input),
+);
+```
+
+`client`と`stockMovement`はhost側の定義。[Prisma実例](../examples/prisma-stock/transaction.ts)では、
+clientの作成・切断と既知のPrisma例外の業務向け変換をhostに残す。
+業務関数、状態、イベント定義は変更しない。
+
+`TransactionHost<C>.transaction`の契約は次のとおり。
+
+- callbackは一つのtransaction内で一度実行し、成功値はcommit完了後に返す。
+- callbackがthrow/rejectした場合はrollbackする。rollback完了後に**同じ例外を再throw**する。
+- rollbackやcommit自身が失敗した場合は、その障害をrejectする。callbackの例外を返してrollback成功を偽らない。
+- driverがcallback例外をwrapする場合は、host adapter側でrollback成功を確かめられる範囲でこの契約に合わせる。coreは任意のcauseチェーンを検索して中止を復元しない。
+- callback内のIOは渡された接続へ束縛する。別接続・HTTP等の副作用はこのtransactionの原子性に含まれない。
+
+coreはResult失敗を各呼出し専用の中止マーカーでthrowし、hostが同じマーカーを返した場合だけ、
+元のResultを返す。別呼出しのマーカーや、rollback障害へ置き換わった例外は業務エラーとして飲み込まない。
+予期しないwork例外やdriver障害は元のidentityのままrejectする。同期版のTransactionFailureへは変換しない。
+commit失敗・切断失敗を「未保存」とは扱わず、自動retryもしない。
+
+実行間で共有する中止状態はない。別接続を使う並行実行の管理、ネスト、接続の排他、
+timeoutはhost driverの責任。同期境界のbusy保護とは契約が異なる。
+coreからdriverのrollback完了を外部検証することはできないため、adapterの契約テストが必要。
+
+[core検査](../src/async-transaction.test.ts)は中止・障害・並行実行の分離・型を検査する。
+Prismaの実driverでは途中のCAS失敗、履歴書込み失敗、callback例外、遅延制約によるcommit失敗等を検査する。
+共通の実行相関・永続監査・retry方針は依然として未提供。
