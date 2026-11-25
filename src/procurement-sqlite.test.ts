@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 import { procurement } from './experiments/procurement/application.js';
-import { restoreEntity, type Actor } from './experiments/procurement/domain.js';
+import { restoreEntity, placeOrder, registerInvoice, recordPayment, type Actor } from './experiments/procurement/domain.js';
 const actor = (role: Actor['role'], groupId = 'g1'): Actor => ({ id: role, role, groupId, active: true });
 const policy = { requestLimitCents: 1000, approverIds: ['approver'] };
 const lines = [{ sku: 'a', quantity: 2, unitCents: 500 }];
@@ -138,4 +138,47 @@ test('storage decoding accepts all sixteen state shapes and rejects corrupt fiel
     { ...stock, lastAdjustment: { reason: ' ', by: 'warehouse' } },
     { ...payment, state: 'recorded', amountCents: Number.MAX_SAFE_INTEGER + 1 },
   ]) assert.equal(restoreEntity(entity), null);
+});
+
+test('SQLite unique indexes reject stale absence facts even when the conflicting row was not a declared check', async () => {
+  const store = file(), repository = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(repository); await matched(f);
+    const request = repository.read('request', 'rq', actor('buyer')); assert(request.ok);
+    const duplicateOrder = placeOrder({ input: { id: 'rq', expectedVersion: 3, orderId: 'second', supplier: 'supplier' }, actor: actor('buyer'), current: request.value, alreadyOrdered: false }); assert(duplicateOrder.ok);
+    assert.deepEqual(await repository.commit(duplicateOrder.value, actor('buyer')), { ok: false, error: { kind: 'Conflict' } });
+    assert.equal(repository.list('order', actor('buyer')).length, 1);
+    const order = repository.read('order', 'po', actor('finance')); assert(order.ok);
+    const duplicateInvoice = registerInvoice({ input: { id: 'po', expectedVersion: 3, invoiceId: 'second', amountCents: 1000 }, actor: actor('finance'), current: order.value, alreadyInvoiced: false }); assert(duplicateInvoice.ok);
+    assert.deepEqual(await repository.commit(duplicateInvoice.value, actor('finance')), { ok: false, error: { kind: 'Conflict' } });
+    const unchangedOrder = repository.read('order', 'po', actor('buyer')); assert(unchangedOrder.ok); assert.equal(unchangedOrder.value.version, 3);
+    assert((await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 })).ok);
+    assert((await f.finance.payments.record({ id: 'inv', expectedVersion: 3, paymentId: 'pay', reference: 'bank-1' })).ok);
+    const invoice = repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok);
+    const duplicatePayment = recordPayment({ input: { id: 'inv', expectedVersion: 3, paymentId: 'second', reference: 'bank-2' }, actor: actor('finance'), current: invoice.value, alreadyRecorded: false }); assert(duplicatePayment.ok);
+    assert.deepEqual(await repository.commit(duplicatePayment.value, actor('finance')), { ok: false, error: { kind: 'Conflict' } });
+    assert((await f.finance.payments.cancel({ id: 'pay', expectedVersion: 1, reason: 'correction' })).ok);
+    const reusedReference = recordPayment({ input: { id: 'inv', expectedVersion: 3, paymentId: 'third', reference: 'bank-1' }, actor: actor('finance'), current: invoice.value, alreadyRecorded: false }); assert(reusedReference.ok);
+    assert.deepEqual(await repository.commit(reusedReference.value, actor('finance')), { ok: false, error: { kind: 'Conflict' } });
+    assert.equal(repository.list('payment', actor('finance')).length, 1);
+  } finally { repository.close(); store.clean(); }
+});
+test('an unrelated corrupt row is not read during a point-checked save, while a checked corrupt row is rejected', async () => {
+  const store = file(), repository = new SqliteProcurement(store.path, 'g1');
+  try {
+    const f = clients(repository); await ordered(f);
+    const admin = new DatabaseSync(store.path);
+    try {
+      const payload = { kind: 'stock', id: 'warehouse', groupId: 'g1', version: 1, positions: [{ sku: 'a', location: 'receiving', onHand: 0, reserved: 5 }], lastAdjustment: null };
+      admin.prepare('INSERT INTO procurement(group_id,kind,id,version,payload) VALUES(?,?,?,?,?)').run('g1', 'stock', 'warehouse', 1, JSON.stringify(payload));
+    } finally { admin.close(); }
+    assert((await f.buyer.requests.create({ id: 'independent', lines })).ok);
+    assert.throws(() => repository.read('stock', 'warehouse', actor('warehouse')), /CorruptProcurementStorage/);
+    const request = repository.read('request', 'independent', actor('buyer')); assert(request.ok);
+    await assert.rejects(repository.commit({ result: { ...request.value, version: 2 }, writes: [{ ...request.value, version: 2 }], checks: [
+      { kind: 'request', id: 'independent', groupId: 'g1', version: 1 },
+      { kind: 'stock', id: 'warehouse', groupId: 'g1', version: 1 },
+    ] }, actor('buyer')), /CorruptProcurementStorage/);
+    const persisted = repository.read('request', 'independent', actor('buyer')); assert(persisted.ok); assert.equal(persisted.value.version, 1);
+  } finally { repository.close(); store.clean(); }
 });

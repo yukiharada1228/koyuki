@@ -55,8 +55,17 @@ export class SqliteProcurement implements ProcurementRepository {
     let transaction = false;
     try {
       this.db.exec('BEGIN IMMEDIATE'); transaction = true;
-      const current = this.db.prepare('SELECT * FROM procurement WHERE group_id = ?').all(this.groupId).map(row => this.decode(row));
-      const checked = new MemoryProcurement(current).apply(change, actor);
+      // Restore only declared preconditions. Cross-row uniqueness is enforced by SQL indexes.
+      const read = this.db.prepare('SELECT * FROM procurement WHERE group_id = ? AND kind = ? AND id = ?');
+      const current = new Map<string, Entity>();
+      for (const condition of change.checks) {
+        if (condition.groupId !== this.groupId) { this.db.exec('ROLLBACK'); transaction = false; return err({ kind: 'Conflict' }); }
+        const key = JSON.stringify([condition.kind, condition.id]);
+        if (current.has(key)) continue;
+        const row = read.get(this.groupId, condition.kind, condition.id);
+        if (row) current.set(key, this.decode(row));
+      }
+      const checked = new MemoryProcurement([...current.values()]).apply(change, actor);
       if (!checked.ok) { this.db.exec('ROLLBACK'); transaction = false; return checked; }
       const save = this.db.prepare('INSERT INTO procurement(group_id,kind,id,version,payload) VALUES(?,?,?,?,?) ON CONFLICT(group_id,kind,id) DO UPDATE SET version=excluded.version,payload=excluded.payload');
       for (const { entity, payload } of writes) save.run(entity.groupId, entity.kind, entity.id, entity.version, payload);
