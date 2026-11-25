@@ -223,6 +223,17 @@
         "src/experiments/procurement/application.ts",
         "src/experiments/procurement/inventory.ts"
       ]
+    },
+    "receiptChecksFollowUp": {
+      "implementationBaseCommit": "e74d23f4c363842401aac159e4bcc9c157345a6a",
+      "scope": "Implementation and comparison tests only; receipt return and correction use three declared stages. Internal correction Result composition, explicit context annotations and independent user evaluation remain unresolved. No new lecture audio or frame review; partial topic statuses unchanged.",
+      "evidence": [
+        "docs/procurement-receipt-checks.md",
+        "src/procurement-receipt-pipeline.test.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/receipt-pipeline.ts"
+      ]
     }
   },
   "sections": [
