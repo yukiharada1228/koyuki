@@ -10,7 +10,7 @@ import { helperProcurement } from './experiments/procurement/helper.js';
 import { MemoryProcurement, type ProcurementRepository, type StorageError } from './experiments/procurement/repository.js';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 import type { StudyFactory } from './experiments/procurement/comparison-contract.js';
-import type { Actor, Approved, Entity, RuleError } from './experiments/procurement/domain.js';
+import type { Actor, Approved, FinalReview, Entity, RuleError } from './experiments/procurement/domain.js';
 const factories = { koyuki: procurement, plain: plainProcurement, helper: helperProcurement } satisfies Record<string, StudyFactory>;
 const actor = (role: Actor['role'], id: string = role): Actor => ({ id, role, groupId: 'g1', active: true });
 const policy = { requestLimitCents: 1000, approverIds: ['approver', 'other'] };
@@ -94,8 +94,8 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B 
 const plain = plainProcurement(new MemoryProcurement(), actor('approver'), policy);
 const helper = helperProcurement(new MemoryProcurement(), actor('approver'), policy);
 type Success<R> = R extends { ok: true; value: infer T } ? T : never;
-const plainExact: Equal<Success<Awaited<ReturnType<typeof plain.requests.approve>>>, Approved> = true;
-const helperExact: Equal<Success<Awaited<ReturnType<typeof helper.requests.approve>>>, Approved> = true;
+const plainExact: Equal<Success<Awaited<ReturnType<typeof plain.requests.approve>>>, Approved | FinalReview> = true;
+const helperExact: Equal<Success<Awaited<ReturnType<typeof helper.requests.approve>>>, Approved | FinalReview> = true;
 void plainExact; void helperExact;
 if (false) {
   // @ts-expect-error plain TypeScript preserves the operation's required fields

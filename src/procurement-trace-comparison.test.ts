@@ -5,7 +5,7 @@ import { plainProcurement } from './experiments/procurement/plain.js';
 import { helperProcurement } from './experiments/procurement/helper.js';
 import { baselineDetail } from './experiments/procurement/baseline-detail.js';
 import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
-import type { Actor, Approved } from './experiments/procurement/domain.js';
+import type { Actor, Approved, FinalReview } from './experiments/procurement/domain.js';
 const actor: Actor = { id: 'buyer', role: 'buyer', groupId: 'g1', active: true };
 const policy = { requestLimitCents: 1000, approverIds: ['approver'] };
 const input = { id: 'rq', lines: [{ sku: 'a', quantity: 1, unitCents: 500 }] };
@@ -53,7 +53,7 @@ for (const [name, build] of Object.entries(builders)) {
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Success<R> = R extends { ok: true; value: infer T } ? T : never;
 const detailed = builders.helper(new MemoryProcurement());
-const exact: Equal<Success<Awaited<ReturnType<typeof detailed.requests.approve.run>>>, Approved> = true;
+const exact: Equal<Success<Awaited<ReturnType<typeof detailed.requests.approve.run>>>, Approved | FinalReview> = true;
 void exact;
 if (false) {
   // @ts-expect-error diagnostic wrapping retains each operation's input contract

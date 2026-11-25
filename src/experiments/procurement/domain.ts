@@ -1,7 +1,7 @@
 // Evaluation domain, not a specification of the lecture author's product.
 import { ok, err, type Result } from '../../framework/index.js';
 export type Actor = Readonly<{ id: string; groupId: string; role: 'buyer' | 'approver' | 'warehouse' | 'finance'; active: boolean }>;
-export type Policy = Readonly<{ requestLimitCents: number; approverIds: readonly string[] }>;
+export type Policy = Readonly<{ requestLimitCents: number; approverIds: readonly string[]; secondApproval?: Readonly<{ aboveCents: number; approverId: string }> }>;
 declare const lineProof: unique symbol;
 export type Line = Readonly<{ sku: string; quantity: number; unitCents: number }> & { readonly [lineProof]: true };
 export type Quantity = Readonly<{ sku: string; quantity: number }>;
@@ -12,9 +12,15 @@ type Base = Readonly<{ id: string; groupId: string; version: number }>;
 type RequestBase = Base & Readonly<{ kind: 'request'; ownerId: string; lines: readonly Line[]; totalCents: number }>;
 export type Draft = RequestBase & Readonly<{ state: 'draft' }> & Opaque<'request-draft'>;
 export type Submitted = RequestBase & Readonly<{ state: 'submitted'; approverId: string }> & Opaque<'request-submitted'>;
-export type Approved = RequestBase & Readonly<{ state: 'approved'; approverId: string; approvedBy: string }> & Opaque<'request-approved'>;
+export type FirstReview = RequestBase & Readonly<{ state: 'first-review'; approverId: string; finalApproverId: string }> & Opaque<'request-first-review'>;
+export type FinalReview = RequestBase & Readonly<{ state: 'final-review'; approverId: string; firstApprovedBy: string }> & Opaque<'request-final-review'>;
+export type PendingApproval = Submitted | FirstReview | FinalReview;
+export type SingleApproved = RequestBase & Readonly<{ state: 'approved'; approverId: string; approvedBy: string; approval?: never; firstApprovedBy?: never }> & Opaque<'request-approved'>;
+export type DualApproved = RequestBase & Readonly<{ state: 'approved'; approval: 'dual'; approverId: string; approvedBy: string; firstApprovedBy: string }> & Opaque<'request-dual-approved'>;
+export type Approved = SingleApproved | DualApproved;
 export type Rejected = RequestBase & Readonly<{ state: 'rejected'; rejectedBy: string; reason: string }> & Opaque<'request-rejected'>;
-export type Request = Draft | Submitted | Approved | Rejected;
+export type Request = Draft | PendingApproval | Approved | Rejected;
+const pendingApproval = (current: Request): current is PendingApproval => current.state === 'submitted' || current.state === 'first-review' || current.state === 'final-review';
 export type Order = Base & Readonly<{ kind: 'order'; state: 'placed' | 'cancelled' | 'completed'; requestId: string; ownerId: string; supplier: string; lines: readonly Line[]; totalCents: number }>;
 type ReceiptBase = Base & Readonly<{ kind: 'receipt'; orderId: string; quantities: readonly Quantity[] }>;
 export type Receipt = ReceiptBase & (Readonly<{ state: 'accepted' }> | Readonly<{ state: 'returned'; reason: string; returnedBy: string }>);
@@ -70,7 +76,7 @@ export function createRequest(value: Readonly<{ input: CreateInput; actor: Actor
     lines: parsed.value, totalCents: parsed.value.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) });
   return ok(plan(result, [absent('request', actor.groupId, input.id)]));
 }
-export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<Submitted>, RuleError> {
+export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<Submitted | FirstReview>, RuleError> {
   const { input, actor, current, policy } = value;
   if (!allowed(actor, 'buyer', current.groupId) || actor.id !== current.ownerId) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
@@ -79,16 +85,35 @@ export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ p
   if (current.state !== 'draft') return failure('WrongState');
   if (!id(input.approverId) || !policy.approverIds.includes(input.approverId) || input.approverId === current.ownerId) return failure('InvalidInput');
   if (!integer(policy.requestLimitCents) || current.totalCents > policy.requestLimitCents) return failure('BudgetExceeded');
+  const second = policy.secondApproval;
+  if (second !== undefined) {
+    if (!Number.isSafeInteger(second.aboveCents) || second.aboveCents < 0 || !id(second.approverId) || !policy.approverIds.includes(second.approverId)) return failure('InvalidInput');
+    if (current.totalCents > second.aboveCents) {
+      if (second.approverId === current.ownerId || second.approverId === input.approverId) return failure('InvalidInput');
+      return ok(plan(stamp('request-first-review', { ...current, state: 'first-review', approverId: input.approverId,
+        finalApproverId: second.approverId, version: current.version + 1 }), [check(current)]));
+    }
+  }
   return ok(plan(stamp('request-submitted', { ...current, state: 'submitted', approverId: input.approverId, version: current.version + 1 }), [check(current)]));
 }
-export function approveRequest(value: Loaded<VersionInput, Request>): Result<Change<Approved>, RuleError> {
+export function approveRequest(value: Loaded<VersionInput, Request>): Result<Change<Approved | FinalReview>, RuleError> {
   const { input, actor, current } = value;
   if (!allowed(actor, 'approver', current.groupId) || actor.id === current.ownerId) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
   if (!integer(input.expectedVersion)) return failure('InvalidInput');
   if (current.version !== input.expectedVersion) return failure('Conflict');
-  if (current.state !== 'submitted') return failure('WrongState');
+  if (!pendingApproval(current)) return failure('WrongState');
   if (current.approverId !== actor.id) return failure('Denied');
+  if (current.state === 'first-review') {
+    const { finalApproverId, ...base } = current;
+    return ok(plan(stamp('request-final-review', { ...base, state: 'final-review', approverId: finalApproverId,
+      firstApprovedBy: actor.id, version: current.version + 1 }), [check(current)]));
+  }
+  if (current.state === 'final-review') {
+    if (actor.id === current.firstApprovedBy) return failure('Denied');
+    return ok(plan(stamp('request-dual-approved', { ...current, state: 'approved', approval: 'dual', approvedBy: actor.id,
+      version: current.version + 1 }), [check(current)]));
+  }
   return ok(plan(stamp('request-approved', { ...current, state: 'approved', approvedBy: actor.id, version: current.version + 1 }), [check(current)]));
 }
 export function placeOrder(value: Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>): Result<Change<Order>, RuleError> {
@@ -157,7 +182,7 @@ function requestGuard(value: Loaded<VersionInput, Request>, role: 'buyer' | 'app
   if (current.id !== input.id) return failure('TargetMismatch');
   if (!integer(input.expectedVersion)) return failure('InvalidInput');
   if (current.version !== input.expectedVersion) return failure('Conflict');
-  if (role === 'approver' && current.state === 'submitted' && current.approverId !== actor.id) return failure('Denied');
+  if (role === 'approver' && pendingApproval(current) && current.approverId !== actor.id) return failure('Denied');
   return ok(current);
 }
 function draftFrom(current: Request): Draft {
@@ -173,13 +198,13 @@ export function editRequest(value: Loaded<EditInput, Request>): Result<Change<Dr
 }
 export function withdrawRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
   const checked = requestGuard(value, 'buyer'); if (!checked.ok) return checked;
-  if (checked.value.state !== 'submitted') return failure('WrongState');
+  if (!pendingApproval(checked.value)) return failure('WrongState');
   return ok(plan(draftFrom(checked.value), [check(checked.value)]));
 }
 export function rejectRequest(value: Loaded<ReasonInput, Request>): Result<Change<Rejected>, RuleError> {
   const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
   const current = checked.value;
-  if (current.state !== 'submitted') return failure('WrongState');
+  if (!pendingApproval(current)) return failure('WrongState');
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
   const result: Rejected = stamp('request-rejected', { kind: 'request', state: 'rejected', id: current.id, groupId: current.groupId,
     ownerId: current.ownerId, lines: current.lines, totalCents: current.totalCents, version: current.version + 1,
@@ -188,14 +213,22 @@ export function rejectRequest(value: Loaded<ReasonInput, Request>): Result<Chang
 }
 export function returnRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
   const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
-  if (checked.value.state !== 'submitted') return failure('WrongState');
+  if (!pendingApproval(checked.value)) return failure('WrongState');
   return ok(plan(draftFrom(checked.value), [check(checked.value)]));
 }
-export function reassignRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<Submitted>, RuleError> {
+export function reassignRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<PendingApproval>, RuleError> {
   const checked = requestGuard(value, 'approver'); if (!checked.ok) return checked;
   const current = checked.value, next = value.input.approverId;
-  if (current.state !== 'submitted') return failure('WrongState');
+  if (!pendingApproval(current)) return failure('WrongState');
   if (!id(next) || next === current.ownerId || next === current.approverId || !value.policy.approverIds.includes(next)) return failure('InvalidInput');
+  if (current.state === 'first-review') {
+    if (next === current.finalApproverId) return failure('InvalidInput');
+    return ok(plan(stamp('request-first-review', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
+  }
+  if (current.state === 'final-review') {
+    if (next === current.firstApprovedBy) return failure('InvalidInput');
+    return ok(plan(stamp('request-final-review', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
+  }
   return ok(plan(stamp('request-submitted', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
 }
 
@@ -335,6 +368,17 @@ export function restoreEntity(value: unknown): Entity | null {
     const fields = ['state', 'ownerId', 'lines', 'totalCents'];
     if (row.state === 'draft' && exact(...fields)) return stamp('request-draft', { ...common, kind: 'request', state: 'draft' });
     if (row.state === 'submitted' && exact(...fields, 'approverId') && id(row.approverId) && row.approverId !== row.ownerId) return stamp('request-submitted', { ...common, kind: 'request', state: 'submitted', approverId: row.approverId });
+    if (row.state === 'first-review' && row.version >= 2 && exact(...fields, 'approverId', 'finalApproverId') && id(row.approverId) && id(row.finalApproverId)
+      && row.approverId !== row.ownerId && row.finalApproverId !== row.ownerId && row.approverId !== row.finalApproverId)
+      return stamp('request-first-review', { ...common, kind: 'request', state: 'first-review', approverId: row.approverId, finalApproverId: row.finalApproverId });
+    if (row.state === 'final-review' && row.version >= 3 && exact(...fields, 'approverId', 'firstApprovedBy') && id(row.approverId) && id(row.firstApprovedBy)
+      && row.approverId !== row.ownerId && row.firstApprovedBy !== row.ownerId && row.approverId !== row.firstApprovedBy)
+      return stamp('request-final-review', { ...common, kind: 'request', state: 'final-review', approverId: row.approverId, firstApprovedBy: row.firstApprovedBy });
+    if (row.state === 'approved' && row.approval === 'dual' && row.version >= 4 && exact(...fields, 'approverId', 'approvedBy', 'approval', 'firstApprovedBy')
+      && id(row.approverId) && id(row.firstApprovedBy) && row.approvedBy === row.approverId && row.approverId !== row.ownerId
+      && row.firstApprovedBy !== row.ownerId && row.approverId !== row.firstApprovedBy)
+      return stamp('request-dual-approved', { ...common, kind: 'request', state: 'approved', approval: 'dual', approverId: row.approverId,
+        approvedBy: row.approverId, firstApprovedBy: row.firstApprovedBy });
     if (row.state === 'approved' && exact(...fields, 'approverId', 'approvedBy') && id(row.approverId) && row.approvedBy === row.approverId && row.approverId !== row.ownerId) return stamp('request-approved', { ...common, kind: 'request', state: 'approved', approverId: row.approverId, approvedBy: row.approverId });
     if (row.state === 'rejected' && exact(...fields, 'rejectedBy', 'reason') && id(row.rejectedBy) && row.rejectedBy !== row.ownerId && reason(row.reason)) return stamp('request-rejected', { ...common, kind: 'request', state: 'rejected', rejectedBy: row.rejectedBy, reason: row.reason });
     return null;

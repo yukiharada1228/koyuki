@@ -5,7 +5,8 @@ import type { ProcurementRepository } from './repository.js';
 /** Shared host data preparation for all three orchestration implementations. */
 export function procurementContext<E>(repository: ProcurementRepository<E>, identity: Actor, configuration: Policy) {
   const actor = Object.freeze({ ...identity });
-  const policy = Object.freeze({ requestLimitCents: configuration.requestLimitCents, approverIds: Object.freeze([...configuration.approverIds]) });
+  const policy = Object.freeze({ requestLimitCents: configuration.requestLimitCents, approverIds: Object.freeze([...configuration.approverIds]),
+    ...(configuration.secondApproval === undefined ? {} : { secondApproval: Object.freeze({ ...configuration.secondApproval }) }) });
   const loadStock = async () => {
     const row = await repository.read('stock', stockId, actor);
     return row.ok ? ok(row.value) : row.error.kind === 'NotFound' ? ok(null) : row;
