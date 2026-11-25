@@ -168,7 +168,7 @@
       "page": 16,
       "topic": "非同期照合と状態分岐",
       "status": "partial",
-      "assessment": "非同期の照合後、状態Unionを通常TSのswitchで分解して作成・更新・変更なしを選ぶ統合例を既存Process/Workflowで検証した。businessの同期列へPromiseは混ぜない。",
+      "assessment": "非同期照合後に状態Unionで作成・更新・変更なしを選ぶ統合例を既存Process/Workflowで検証。SQLite hostで一意制約・CAS・古い変更なし判定・group分離・復元・別OSプロセスでの永続読込みを追加検証した。",
       "evidence": [
         "src/framework/process.ts",
         "src/framework/workflow.ts",
@@ -177,10 +177,13 @@
         "src/customer-import.test.ts",
         "docs/customer-import-study.md",
         "docs/typed-branch.md",
-        "src/branch-narrowing.test.ts"
+        "src/branch-narrowing.test.ts",
+        "docs/customer-import-sqlite.md",
+        "src/examples/customer-import/sqlite.ts",
+        "src/customer-import-sqlite.test.ts"
       ],
       "remaining": [
-        "名寄せの永続DB競合と、資料の予約取込・テーブル割当・影響スロット探索の全仕様は未検証。一般的なDX優位の測定はない。"
+        "SQLiteの2接続で制御した競合再現までであり、高並列負荷・他DB・storage例外の一般的分類は未検証。元製品の予約取込・テーブル割当・影響スロット探索の全仕様と一般的なDX優位の測定も残る。"
       ]
     },
     {
@@ -387,6 +390,14 @@
         "src/branch-narrowing.test.ts"
       ],
       "scope": "Removed the need to annotate inline predicate inputs for supported branch declarations; not a claim that all generic inference limitations or user-experience measurements are resolved."
+    },
+    {
+      "topic": "顧客照合のSQLite host",
+      "evidence": [
+        "docs/customer-import-sqlite.md",
+        "src/customer-import-sqlite.test.ts"
+      ],
+      "scope": "Controlled interleavings with two connections and persisted reads in another OS process; not a full reservation implementation or parallel-writer load test."
     }
   ]
 }

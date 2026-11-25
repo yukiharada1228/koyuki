@@ -42,8 +42,9 @@ Promiseを同期のbusiness関数列へ混ぜたり、終端に空の状態遷�
 2. switchは業務判断として残る。後続の[型ガード付きbranch](typed-branch.md)では、型ガードを渡せば各枝の入力型を絞り込める。
    この実例の通常switchも有効であり、業務上の選択は利用者が宣言する。
 3. traceはdecide-customerという段階を記録する。内部switchの各caseを自動で別段階としては記録しない。
-4. この検証のRepositoryはメモリ上のテストhost。scope付き照会・保存値の復元・ID採番・
-   createの一意制約・updateの原子的CASは実adapterの責任。永続DBでの名寄せ競合は未検証。
+4. メモリの単体検査に加え、[SQLite hostの検証](customer-import-sqlite.md)を追加した。
+   scope付き照会・復元・ID採番・一意制約・CASはadapterが担う。2接続で競合を制御して再現し、
+   別OSプロセスからの永続値の読込みも検査する。他DBや高並列負荷は未検証。
 5. 変更なしの再実行は、receiptによる冪等な再送と同一ではない。再照会・業務判定は実行される。
    一連の処理に対するtransaction・自動再試行・外部副作用のrollbackも付与しない。
 6. 元資料後半のテーブル割当・予約取込・影響スロット探索の全仕様はこの例に含めない。

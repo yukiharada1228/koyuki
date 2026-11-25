@@ -44,7 +44,7 @@ try {
   writeFileSync(join(consumer, 'workflow-observation.test.ts'), readFileSync(join(root, 'src/workflow-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-observation.test.ts'), readFileSync(join(root, 'src/business-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   mkdirSync(join(consumer, 'customer-import'));
-  for (const file of ['domain.ts', 'application.ts']) writeFileSync(join(consumer, 'customer-import', file),
+  for (const file of ['domain.ts', 'application.ts', 'sqlite.ts']) writeFileSync(join(consumer, 'customer-import', file),
     readFileSync(join(root, 'src/examples/customer-import', file), 'utf8').replace("'../../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'customer-import.test.ts'), readFileSync(join(root, 'src/customer-import.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
@@ -54,6 +54,7 @@ try {
   writeFileSync(join(consumer, 'combine.test.ts'), readFileSync(join(root, 'src/combine.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-inference.test.ts'), readFileSync(join(root, 'src/transition-inference.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replace("'./examples/order-lines.js'", "'./order-lines.js'"));
   writeFileSync(join(consumer, 'order-lines.ts'), readFileSync(join(root, 'src/examples/order-lines.ts'), 'utf8').replace("'../framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'customer-import-sqlite.test.ts'), readFileSync(join(root, 'src/customer-import-sqlite.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
   const types = readFileSync(join(root, 'src/business-api-types.test.ts'), 'utf8')
     .replace("'./experiments/business.js'", "'koyuki'").replace("'./framework/index.js'", "'koyuki'");
   writeFileSync(join(consumer, 'business-types.ts'), types);
