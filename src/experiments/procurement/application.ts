@@ -18,7 +18,7 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
     return ok((detailed ? { result: result.value, writes } : result.value) as Saved<T, Detailed>);
   };
   const requests = business({ name: 'procurement.request.v1', load: context.create,
-    save: (change: Change<Request>) => save(change), operations: {
+    save: <T extends Request>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       create: [createRequest],
       edit: { load: context.request<EditInput>, run: [editRequest] },
       withdraw: { load: context.request<VersionInput>, run: [withdrawRequest] },
@@ -29,31 +29,31 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
       approve: { load: context.request<VersionInput>, run: [approveRequest] },
     } });
   const orders = business({ name: 'procurement.order.v1', load: context.place,
-    save: (change: Change<Order>) => save(change), operations: {
+    save: <T extends Order>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       place: [placeOrder],
       amend: { load: context.order<AmendInput>, run: [amendOrder] },
       cancel: { load: context.order<VersionInput>, run: [cancelOrder] },
       complete: { load: context.order<VersionInput>, run: [completeOrder] },
     } });
   const receipts = business({ name: 'procurement.receipt.v1', load: context.receive,
-    save: (change: Change<Receipt>) => save(change), operations: {
+    save: <T extends Receipt>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       receive: [receiveIntoStock],
       return: { load: context.receipt<ReasonInput>, run: [returnFromStock] },
       correct: { load: context.receipt<CorrectInput>, run: [correctInStock] },
     } });
   const invoices = business({ name: 'procurement.invoice.v1', load: context.register,
-    save: (change: Change<Invoice>) => save(change), operations: {
+    save: <T extends Invoice>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       register: [registerInvoice],
       approve: { load: context.invoice<VersionInput>, run: [approveInvoice] },
       void: { load: context.invoice<ReasonInput>, run: [voidInvoice] },
       match: { load: context.match, run: [matchInvoice] },
     } });
   const payments = business({ name: 'procurement.payment.v1', load: context.record,
-    save: (change: Change<Payment>) => save(change), operations: {
+    save: <T extends Payment>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       record: [recordPayment], cancel: { load: context.payment, run: [cancelPayment] },
     } });
   const inventory = business({ name: 'procurement.inventory.v1', load: context.inventory<StockInput>,
-    save: (change: Change<Stock>) => save(change), operations: {
+    save: <T extends Stock>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       reserve: [reserveStock], release: [releaseStock],
       move: { load: context.inventory<MoveInput>, run: [moveStock] },
       adjust: { load: context.inventory<AdjustInput>, run: [adjustStock] },

@@ -42,6 +42,7 @@ try {
   writeFileSync(join(consumer, 'fold-each.test.ts'), readFileSync(join(root, 'src/fold-each.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'collection-effects.test.ts'), readFileSync(join(root, 'src/collection-effects.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'workflow-observation.test.ts'), readFileSync(join(root, 'src/workflow-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-save-inference.test.ts'), readFileSync(join(root, 'src/business-save-inference.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-observation.test.ts'), readFileSync(join(root, 'src/business-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   mkdirSync(join(consumer, 'customer-import'));
   for (const file of ['domain.ts', 'application.ts', 'sqlite.ts']) writeFileSync(join(consumer, 'customer-import', file),

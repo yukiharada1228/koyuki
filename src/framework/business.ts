@@ -37,9 +37,20 @@ type ObservedDetailed<I, R> = {
 };
 type Callable<C> = C extends { run: infer R extends (...args: never[]) => unknown; runDetailed(input: infer I): Promise<infer D> }
   ? R & Omit<C, 'runDetailed'> & { readonly runDetailed: ObservedDetailed<I, D> } : never;
+type DecisionOutput<E extends Entry> = Stages<E> extends readonly [...Fn[], infer F extends Fn] ? Out<F> : never;
+// Refine only when the actual save function accepts this decision and promises the
+// narrower output. A monomorphic broad save must keep its declared result type.
+type DirectCandidate<O, S> = O extends S ? O : O extends object ? Extract<O[keyof O], S> : never;
+type Member<O, S> = [Extract<O, S>] extends [never] ? S : Extract<O, S>;
+type Shape<O, S> = { [K in keyof S]: K extends keyof O ? Member<O[K], S[K]> : S[K] };
+type ShapeCandidate<O, S> = O extends object ? S extends object ? Shape<O, S> extends S ? Shape<O, S> : never : never : never;
+type ShapeSaved<D, O, S, SE, C> = [ShapeCandidate<O, S>] extends [never] ? S
+  : D extends { save: (value: O, context: C) => Promise<Result<ShapeCandidate<O, S>, SE>> } ? ShapeCandidate<O, S> : S;
+type Saved<D, O, S, SE, C> = [DirectCandidate<O, S>] extends [never] ? ShapeSaved<D, O, S, SE, C>
+  : D extends { save: (value: O, context: C) => Promise<Result<DirectCandidate<O, S>, SE>> } ? DirectCandidate<O, S> : ShapeSaved<D, O, S, SE, C>;
 type Commands<L extends Load, T extends Record<string, Entry>, S, SE, RE, D extends object> = {
   readonly [K in keyof T]: Callable<SelectCommand<D,
-    PlainCommand<Input<Loader<L, T[K]>>, S, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE>,
+    PlainCommand<Input<Loader<L, T[K]>>, Saved<D, DecisionOutput<T[K]>, S, SE, GroupExecution<Extract<keyof T, string>, Requests<L, T>>>, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE>,
     ReplayCommand<Input<Loader<L, T[K]>>, S, LoadError<Loader<L, T[K]>> | ErrorOf<Stages<T[K]>[number]> | SE, RE>
   >>
 };
@@ -51,6 +62,9 @@ interface RuntimeDefinition {
   operations: Record<string, readonly Rule<unknown, unknown, unknown>[] | { load: RuntimeDefinition['load']; run: readonly Rule<unknown, unknown, unknown>[] }>;
   replay?: { lookup: (context: GroupExecution<string, unknown>) => Result<Receipt<unknown>, unknown> | Promise<Result<Receipt<unknown>, unknown>>; resolveAfter: readonly string[] | ((error: unknown) => boolean) };
 }
+type SaveFn = (...args: never[]) => Promise<Result<unknown, unknown>>;
+type SaveInput<A> = Parameters<Extract<A, SaveFn>>[0];
+type SaveResult<A> = Awaited<ReturnType<Extract<A, SaveFn>>>;
 export function business<L extends Load, O, S, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
   operation?: (name: Extract<keyof T, string>) => string;
@@ -62,7 +76,20 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
     lookup: (context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
   } & ReplaySaveCheck<NoInfer<S>>;
-}): Commands<L, T, S, SE, RE, D> {
+}): Commands<L, T, S, SE, RE, D>;
+/** Infer an ordinary or generic save before checking its shared boundary contract. */
+export function business<L extends Load, const A extends object, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
+  name: string;
+  operation?: (name: Extract<keyof T, string>) => string;
+  load: L;
+  save: A & NoInfer<A extends (value: SaveInput<A>, context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Promise<Result<unknown, unknown>> ? unknown : never>;
+  operations: T & NoInfer<{ readonly [K in keyof T]: K extends 'then' ? never : Checked<L, T[K], SaveInput<A>> }>;
+  replay?: {
+    lookup: (context: GroupExecution<Extract<keyof T, string>, Requests<L, T>>) => Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE> | Promise<Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE>>;
+    resolveAfter: readonly string[] | ((error: unknown) => boolean);
+  } & ReplaySaveCheck<Value<SaveResult<A>>>;
+}): Commands<L, T, Value<SaveResult<A>>, Failure<SaveResult<A>>, RE, D>;
+export function business(definition: object) {
   // Public checks prove adjacency. Only heterogeneous tuple positions are erased here.
   const source = definition as unknown as RuntimeDefinition;
   const resolveOperation = source.operation ?? ((name: string) => `${source.name}.${name}`);
@@ -114,5 +141,5 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
     // Works both as expense.approve(input) and as a command for operations(...).
     Object.defineProperty(commands, name, { value: Object.freeze(Object.assign(run, command, { runDetailed })), enumerable: true });
   }
-  return Object.freeze(commands) as Commands<L, T, S, SE, RE, D>;
+  return Object.freeze(commands);
 }

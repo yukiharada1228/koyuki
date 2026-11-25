@@ -91,12 +91,14 @@ test('all three orchestration styles stop failed loads and rules before saving',
   }
 });
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const koyuki = procurement(new MemoryProcurement(), actor('approver'), policy);
 const plain = plainProcurement(new MemoryProcurement(), actor('approver'), policy);
 const helper = helperProcurement(new MemoryProcurement(), actor('approver'), policy);
 type Success<R> = R extends { ok: true; value: infer T } ? T : never;
+const koyukiExact: Equal<Success<Awaited<ReturnType<typeof koyuki.requests.approve>>>, Approved | FinalReview> = true;
 const plainExact: Equal<Success<Awaited<ReturnType<typeof plain.requests.approve>>>, Approved | FinalReview> = true;
 const helperExact: Equal<Success<Awaited<ReturnType<typeof helper.requests.approve>>>, Approved | FinalReview> = true;
-void plainExact; void helperExact;
+void koyukiExact; void plainExact; void helperExact;
 if (false) {
   // @ts-expect-error plain TypeScript preserves the operation's required fields
   plain.requests.submit({ id: 'rq', expectedVersion: 1 });

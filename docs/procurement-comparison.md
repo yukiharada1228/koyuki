@@ -50,17 +50,19 @@ SQLiteで全25操作の成功経路を実行する範囲も、これにより追
 ## 型で分かった違い
 
 両基準実装も入力の必須項目を保持し、不正なsubmit/moveの入力を型検査で拒否する。
-承認成功型はplain/helperではApprovedまで推論される。
-Koyukiの現在のRequest共通saveはRequest Unionを返すため、approveもRequest Unionのままである。
-この差は配布consumerの型検査へ固定し、Koyukiだけが型安全だという結論にはしない。
+二段階承認への仕様変更後、承認成功型はplain/helperではApproved | FinalReviewとなる。
+初回比較ではKoyukiの共通saveがRequest全体を返す制限があったが、
+[generic saveの推論](business-save-inference.md)を改善し、通常procurementもApproved | FinalReviewを保持する。
+3方式の成功型を配布consumerで検査し、Koyukiだけが型安全だという結論にはしない。
 
 型の記述量やエラー文面の使いやすさを独立利用者が評価したわけではない。
-Koyukiの共通saveによる型の広がりは、今後のAPI改善候補として残る。
+procurementChangesのCommitted envelopeも改善したが、任意のgeneric保存関数を特殊化する保証はない。
+core businessの再送は、現在のRuleより広い過去の成功型を許す契約を維持する。
 
 ## まだ比較していないこと
 
 - 3方式へ同じ再送・未知commit照会・実行trace・観測・Applicationを接続した全体コスト。
-- それらの方針変更、業務ルール変更、複数モデル変更を同じ条件で適用した差分。
+- 二段階承認以外の業務ルール変更と、履歴・再送方針や複数モデルの変更を同じ条件で適用した差分。
 - 共通基盤・adapter・テストを含むソース量と、導入・型検査のコスト。
 - 独立参加者の実装時間・レビュー負担・オンボーディング、実運用のバグ率。
 

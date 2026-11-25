@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { receiveIntoStock } from './experiments/procurement/inventory.js';
-import { procurement } from './experiments/procurement/application.js';
+import { procurement, procurementChanges, type Committed } from './experiments/procurement/application.js';
 import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
-import { completeOrder, receiveOrder, type Actor, type Approved, type Draft, type Request, type RuleError } from './experiments/procurement/domain.js';
+import { completeOrder, receiveOrder, type Actor, type Approved, type FinalReview, type Draft, type Request, type RuleError } from './experiments/procurement/domain.js';
 import { err, type Result } from './framework/index.js';
 const actor = (role: Actor['role'], id: string = role, groupId: string = 'g1'): Actor => ({ role, id, groupId, active: true });
 const policy = { requestLimitCents: 1000, approverIds: ['approver', 'other-boss'] };
@@ -118,10 +118,13 @@ test('the host can supply asynchronous repository reads without changing domain 
   await ordered({ repository: memory, as, buyer: as(actor('buyer')), boss: as(actor('approver')), warehouse: as(actor('warehouse')), finance: as(actor('finance')) });
   assert.equal(memory.list('order', actor('buyer')).length, 1);
 });
-// Common save promises Request, so this API honestly returns its state union, not Approved alone.
+// The generic shared save preserves this operation's actual decision result.
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 const api = setup().boss;
-const exact: Equal<Awaited<ReturnType<typeof api.requests.approve>>, Result<Request, RuleError | { readonly kind: 'NotFound' | 'Conflict' }>> = true;
+const exact: Equal<Awaited<ReturnType<typeof api.requests.approve>>, Result<Approved | FinalReview, RuleError | { readonly kind: 'NotFound' | 'Conflict' }>> = true;
+const detailedApi = procurementChanges(new MemoryProcurement(), actor('approver'), policy);
+const detailedExact: Equal<Awaited<ReturnType<typeof detailedApi.requests.approve>>, Result<Committed<Approved | FinalReview>, RuleError | { readonly kind: 'NotFound' | 'Conflict' }>> = true;
+void detailedExact;
 void exact;
 if (false) {
   // @ts-expect-error the operation keeps its own required input fields

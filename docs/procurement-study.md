@@ -13,8 +13,8 @@
 - `src/procurement.test.ts`：一連の成功・業務失敗・競合・複合保存の検証。
 
 業務の流れは、draft → submitted → approved の申請から発注を作り、分納の検収記録と請求を照合する。
-状態判別子を書き換えるだけでは承認済みの非公開brandを作れない。共通saveの戻り値はRequest Unionなので、
-承認操作の公開結果もUnionのままになる。この契約を型検査で固定し、Approvedだけを返すとは主張しない。
+状態判別子を書き換えるだけでは承認済みの非公開brandを作れない。通常procurementの[generic save](business-save-inference.md)では操作ごとの成功型を保持し、
+承認操作の公開結果はApproved | FinalReviewとなる。二段階承認の途中も成功結果なので、Approvedだけを返すとは主張しない。
 
 ## この段階で固定した仕様
 
@@ -40,7 +40,9 @@ businessが宣言したload → run → saveの実行とResultの失敗伝播、
 
 一方、複数モデルを読むloadでは依然としてResultの分岐とjoinを書いている。
 フレームワークは必要な照会や整合性境界を推測しない。全データ取得を隠したという結果ではない。
-共通saveの広い戻り値により、操作ごとの到達状態が公開結果から失われる点も残る。
+通常procurementの共通saveはgenericにし、[操作ごとの成功型](business-save-inference.md)を保持するよう改善した。
+procurementChangesのCommitted envelopeも操作ごとの成功型を保持する。
+任意のgeneric変換やcore businessの再送履歴を、現在のRuleだけから狭める保証はない。
 
 通常の検収結果はReceiptだけを返す。追加したprocurementChangesは保存したwrites全体も返し、
 [Application](procurement-projection.md)でOrder・Receipt・Invoice・Stockを同時に投影する。

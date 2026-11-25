@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { withReplay, err, type Execution, type Result } from './framework/index.js';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 import { prepareReplay, type ReplayError } from './experiments/procurement/replay-identity.js';
-import { createRequest, type Actor, type CreateInput, type RuleError } from './experiments/procurement/domain.js';
+import { createRequest, type Actor, type Request, type CreateInput, type RuleError } from './experiments/procurement/domain.js';
 import { procurementReplay, type ReplayRepository } from './experiments/procurement/replay.js';
 import { procurementReplayApplication } from './experiments/procurement/projection.js';
 import { procurement, type Committed } from './experiments/procurement/application.js';
@@ -228,3 +228,13 @@ test('a racing order that observes an existing order resolves AlreadyExists to t
     assert.equal(reports.filter(report => report.result.ok && report.result.value.kind === 'replayed').length, 1);
   } finally { releaseLookups(); releaseCommit(); repository.close(); disk.clean(); }
 });
+
+
+function historicalOutputContract(repository: ReplayRepository) {
+  const commands = procurementReplay(repository, actor, { requestLimitCents: 1000, approverIds: ['boss'] });
+  type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+  type Success<R> = R extends { ok: true; value: infer O } ? O : never;
+  const exact: Equal<Success<Awaited<ReturnType<typeof commands.requests.create.run>>>, Execution<Committed<Request>>> = true;
+  void exact;
+}
+void historicalOutputContract;

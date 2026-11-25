@@ -60,8 +60,11 @@ SQLiteは段階間でclose/openし、復元した値を次の業務関数へ渡�
 
 通常TS/helperのapproveの公開成功型はApproved | FinalReviewへ変わる。
 既存の「必ずApproved」という厳密一致検査が型エラーになり、更新が必要だった。
-Koyukiの共通saveは従来からRequest全体を返すため、操作ごとの精密な戻り値について
-通常TS/helperより優れているという結果にはならない。この制限は残る。
+比較時点（db80172）ではKoyukiの共通saveはRequest全体を返していた。
+その後、[generic saveの成功型](business-save-inference.md)を保持する改善を行い、
+通常procurementのapproveもApproved | FinalReviewになった。
+procurementChangesのCommitted envelopeもこの到達型を保持する。
+core businessの再送履歴や任意のgeneric変換を、現在のRuleだけから狭めたという意味ではない。
 
 restoreEntityは属性と局所的な整合性を検査し、過去に実際に承認イベントがあったことを証明しない。
 旧一段階形式との互換性を維持するため、DB改ざんで二段階の印まで除去した行から

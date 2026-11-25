@@ -7,11 +7,11 @@ import type { Result } from './framework/index.js';
 import { procurement } from './experiments/procurement/application.js';
 import { plainProcurement } from './experiments/procurement/plain.js';
 import { helperProcurement } from './experiments/procurement/helper.js';
-import { MemoryProcurement } from './experiments/procurement/repository.js';
+import { type StorageError, MemoryProcurement } from './experiments/procurement/repository.js';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 import { procurementReplay } from './experiments/procurement/replay.js';
 import { baselineReplay } from './experiments/procurement/baseline-replay.js';
-import { restoreEntity, type Actor, type Request, type Policy, type FirstReview, type FinalReview, type Approved } from './experiments/procurement/domain.js';
+import { restoreEntity, type Actor, type Request, type Policy, type FirstReview, type FinalReview, type Approved, type RuleError } from './experiments/procurement/domain.js';
 import type { StudyFactory } from './experiments/procurement/comparison-contract.js';
 const factories = { koyuki: procurement, plain: plainProcurement, helper: helperProcurement } satisfies Record<string, StudyFactory>;
 const actor = (id: string, role: Actor['role'] = id === 'buyer' ? 'buyer' : 'approver'): Actor => ({ id, role, groupId: 'g1', active: true });
@@ -95,7 +95,7 @@ for (const backend of ['memory', 'sqlite'] as const) for (const [name, factory] 
           const result = operation === 'withdraw' ? await commands('buyer').requests.withdraw({ id, expectedVersion })
             : operation === 'return' ? await commands(currentApprover).requests.return({ id, expectedVersion })
               : await commands(currentApprover).requests.reject({ id, expectedVersion, reason: 'revise' });
-          const reset = success(result); assert.equal(reset.state, operation === 'reject' ? 'rejected' : 'draft');
+          const reset = success<Request, RuleError | StorageError>(result); assert.equal(reset.state, operation === 'reject' ? 'rejected' : 'draft');
           assert(!Object.hasOwn(reset, 'firstApprovedBy')); assert(!Object.hasOwn(reset, 'finalApproverId'));
           assert.deepEqual(restoreEntity(JSON.parse(JSON.stringify(reset))), reset);
           if (operation !== 'reject') {
