@@ -1,0 +1,781 @@
+{
+  "videoId": "w0oLNoGsGLc",
+  "sourceManifest": "docs/lecture-decks.json",
+  "sourceSha256": "aea0edcf201795b96fe2a3bb1094cc0c8058cf04f406f47b9c0b38e299bd1017",
+  "implementationBaseCommit": "20d621a",
+  "review": {
+    "allPagesRead": true,
+    "allPagesVisuallyInspected": true,
+    "method": "Read extracted text for pages 1–74 and inspected every rendered page in nineteen four-page contact sheets (last sheet has two pages).",
+    "allCodeExecuted": false,
+    "continuousAudioVideoReviewed": false,
+    "meaning": "Each published PDF page is assessed; this is not proof of every spoken statement, original product specification, referenced work, or example execution."
+  },
+  "pages": [
+    {
+      "page": 1,
+      "topic": "表題",
+      "status": "context",
+      "assessment": "発表の識別情報。機能要件ではない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 2,
+      "topic": "関数を集合間の写像として見る図",
+      "status": "supported",
+      "assessment": "入力と成功・失敗の型を保つ通常の関数を接続する。",
+      "evidence": [
+        "docs/business.md",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 3,
+      "topic": "著者のメンタルモデルの変化",
+      "status": "experience",
+      "assessment": "著者自身の経験。Koyuki利用者の学習成果とは区別する。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 4,
+      "topic": "メンタルモデルに関する外部記事",
+      "status": "context",
+      "assessment": "背景となる参照先。リンク先全体の確認や実装要求への転換はしない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 5,
+      "topic": "値を写す関数と型",
+      "status": "supported",
+      "assessment": "型で業務状態を表し、関数の入出力として接続する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 6,
+      "topic": "関数型一強ではない",
+      "status": "design-choice",
+      "assessment": "言語や用途に合わせる方針。クラス・命令的adapterを禁止しない。",
+      "evidence": [
+        "docs/business.md",
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 7,
+      "topic": "Reactの状態更新例",
+      "status": "design-choice",
+      "assessment": "React自体の再実装ではなく、状態と実行機構を分ける着想として扱う。",
+      "evidence": [
+        "src/framework/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 8,
+      "topic": "Reactの状態を宣言する例",
+      "status": "supported",
+      "assessment": "利用者が状態からviewを導出し、実行状態管理をruntimeへ委ねられる。",
+      "evidence": [
+        "src/framework/application.ts",
+        "src/application.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 9,
+      "topic": "Elmのview",
+      "status": "supported",
+      "assessment": "状態から公開情報を導出するviewを定義できる。DOM rendererを核の必須機能にしない。",
+      "evidence": [
+        "src/framework/application.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 10,
+      "topic": "Elmのupdate",
+      "status": "supported",
+      "assessment": "イベントと現在状態から次状態・実行指示を返すProgramを提供する。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/program.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 11,
+      "topic": "Elmのruntimeループ",
+      "status": "supported",
+      "assessment": "指示の実行・イベントの配送をruntimeが担う。永続event loopではない。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/program.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 12,
+      "topic": "不変性・宣言・状態への問い",
+      "status": "context",
+      "assessment": "以後の説明への問い。全値のdeep freezeなどを暗黙の仕様にしない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 13,
+      "topic": "関数適用の章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 14,
+      "topic": "forによる総和",
+      "status": "design-choice",
+      "assessment": "命令と計算の比較例。forを禁止する機能は追加しない。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 15,
+      "topic": "再帰による総和",
+      "status": "design-choice",
+      "assessment": "値を返す計算の説明。再帰の性能優位や全コードへの強制は主張しない。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 16,
+      "topic": "再帰的な関数適用",
+      "status": "supported",
+      "assessment": "前段の成功値を次段に渡す構造をWorkflowが担う。",
+      "evidence": [
+        "src/framework/workflow.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 17,
+      "topic": "戻り値へ次の関数を適用",
+      "status": "supported",
+      "assessment": "関数列を実行機構が順次接続する。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 18,
+      "topic": "fold・reduce",
+      "status": "supported",
+      "assessment": "標準reduceに加え、失敗し得る状態依存計算にはfoldEachを提供する。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/fold-each.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 19,
+      "topic": "文と式",
+      "status": "design-choice",
+      "assessment": "言語の説明。新しい構文やトランスパイラは導入しない。",
+      "evidence": [
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 20,
+      "topic": "forの再掲",
+      "status": "design-choice",
+      "assessment": "命令的な局所処理も許容する。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 21,
+      "topic": "foldの再掲",
+      "status": "supported",
+      "assessment": "値を返す関数と通常TSの式を使う。",
+      "evidence": [
+        "docs/business.md",
+        "src/fold-each.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 22,
+      "topic": "関数適用を値の変換と見る",
+      "status": "supported",
+      "assessment": "成功出力を次段の入力として渡す。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 23,
+      "topic": "命令型と関数型の対比",
+      "status": "design-choice",
+      "assessment": "業務の計算を純粋関数へ寄せ、I/O境界では命令的実装を許容する。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 24,
+      "topic": "写像と型による設計の整理",
+      "status": "supported",
+      "assessment": "状態型・関数の接続型・失敗型を維持する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/command-connection-types.test.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 25,
+      "topic": "状態遷移の章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 26,
+      "topic": "archiveCustomerが新しい値を返す",
+      "status": "supported",
+      "assessment": "ドメイン関数が新しい状態を返す。spreadは浅いコピーであり、任意の深い不変性の保証ではない。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 27,
+      "topic": "状態変化前後を引数と戻り値へ明示",
+      "status": "partial",
+      "assessment": "Workflowとbusinessは選択した前後値を再実行せず観測できる。",
+      "evidence": [
+        "docs/workflow-observation.md",
+        "src/business-observation.test.ts"
+      ],
+      "remaining": [
+        "全業務の自動永続履歴や、保存項目・機密性・保持期間のhost方針は提供しない。"
+      ]
+    },
+    {
+      "page": 28,
+      "topic": "WebアプリのI/Oと業務計算",
+      "status": "supported",
+      "assessment": "loadとsaveの間に同期業務関数を置く。途中I/OはProcessへ明示する。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/process.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 29,
+      "topic": "Elm updateの再掲",
+      "status": "supported",
+      "assessment": "状態とイベントから次状態・指示を計算する。",
+      "evidence": [
+        "src/framework/program.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 30,
+      "topic": "イベントに伴う時系列の遷移",
+      "status": "supported",
+      "assessment": "Program/Applicationは実行と状態更新を管理する。永続履歴とは別の契約。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/framework/application.ts",
+        "src/application.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 31,
+      "topic": "遷移とruntime間のコマンド・イベント",
+      "status": "supported",
+      "assessment": "指示の実行後にイベントとして戻すループを提供する。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/program.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 32,
+      "topic": "I/O→状態遷移→I/Oの図",
+      "status": "supported",
+      "assessment": "業務計算をI/Oから分離し、実行をcommandへ委ねる。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/command.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 33,
+      "topic": "外側I/O・内側pure codeの図",
+      "status": "supported",
+      "assessment": "Repositoryやtransportを外側に置き、domainを独立させる。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 34,
+      "topic": "オニオンの目的とパラダイムの選択",
+      "status": "design-choice",
+      "assessment": "主眼はI/Oから独立して業務を考えること。テスト容易性だけに還元せずOOPも排除しない。",
+      "evidence": [
+        "docs/lecture-coverage.md",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 35,
+      "topic": "React・Elmの宣言的状態管理",
+      "status": "supported",
+      "assessment": "状態・業務関数・viewを記述し、接続と実行状態管理を委譲する。",
+      "evidence": [
+        "src/framework/application.ts",
+        "src/framework/program.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 36,
+      "topic": "写像のメンタルモデルを再掲",
+      "status": "supported",
+      "assessment": "業務状態と関数の入出力を明示する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 37,
+      "topic": "Haskellでも命令的に書ける",
+      "status": "design-choice",
+      "assessment": "I/Oや可変処理に適した命令的記述を認める。構文を禁止しない。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 38,
+      "topic": "可変・不変Union-Findの比較",
+      "status": "design-choice",
+      "assessment": "著者も可変版を採る比較例。Union-Findを内蔵せず、可変版を禁じない。両コードの実行・性能比較は未実施。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 39,
+      "topic": "写像と型の説明再掲",
+      "status": "supported",
+      "assessment": "普通のTS関数と型を中心にする。",
+      "evidence": [
+        "docs/business.md",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 40,
+      "topic": "型を集合として見る章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 41,
+      "topic": "入力・出力が属する領域",
+      "status": "supported",
+      "assessment": "各段階の入力・出力型を保つ。",
+      "evidence": [
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 42,
+      "topic": "集合を記述する型",
+      "status": "supported",
+      "assessment": "状態Unionや証拠型で入力範囲を絞る。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 43,
+      "topic": "parseHexのstring→number",
+      "status": "design-choice",
+      "assessment": "写像の説明例。number型だけではNaNや業務上の数値範囲を排除できず、実行時検証が別途必要。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 44,
+      "topic": "TypeScript公式資料のTypes as Sets画像",
+      "status": "context",
+      "assessment": "型を値の集合として考える説明の参照。画像の確認を公式資料全体の監査とは扱わない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 45,
+      "topic": "number・string・literalの集合図",
+      "status": "context",
+      "assessment": "外部記事の引用図。literal型と広い集合の関係を説明するもので、新しい機能要求ではない。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 46,
+      "topic": "型に関する書籍等の引用",
+      "status": "context",
+      "assessment": "説明を補う引用。参照書籍全体の実装・正当性の検証とは区別する。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 47,
+      "topic": "コンパイラとツールの型理解",
+      "status": "partial",
+      "assessment": "接続漏れや不正状態をコンパイル時に拒否するケースを検証する。",
+      "evidence": [
+        "src/command-connection-types.test.ts",
+        "docs/business-change-study.md"
+      ],
+      "remaining": [
+        "any・型アサーション・外部JS・不正なadapterは保証外。業務仕様の完全性・純粋性・一般的DX改善は証明していない。"
+      ]
+    },
+    {
+      "page": 48,
+      "topic": "型の二つの見方と開発体験",
+      "status": "partial",
+      "assessment": "業務語彙を型に表し、businessから操作APIを推論する。",
+      "evidence": [
+        "docs/business.md",
+        "docs/business-api-study.md"
+      ],
+      "remaining": [
+        "genericな関数と未注釈callbackの一部推論制限、独立利用者の学習・補完・診断評価が残る。"
+      ]
+    },
+    {
+      "page": 49,
+      "topic": "Colorの検証付き生成",
+      "status": "supported",
+      "assessment": "未検証のプリミティブから検証済み型へResultで変換する。全Color用途の既定仕様を内蔵しない。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 50,
+      "topic": "和の章扉",
+      "status": "context",
+      "assessment": "説明の区切り。",
+      "evidence": [],
+      "remaining": []
+    },
+    {
+      "page": 51,
+      "topic": "代数的データ型Bool・Maybe・レコード",
+      "status": "supported",
+      "assessment": "TSのタグ付きUnionとレコードで状態を表現する。Haskell処理系は要求しない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/sum-model.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 52,
+      "topic": "ANDに加えてORで組み合わせる",
+      "status": "supported",
+      "assessment": "不自然な共通親へまとめず状態ごとの構造を選べる。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/sum-model.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 53,
+      "topic": "予約者・来訪者・両方のUnion",
+      "status": "design-choice",
+      "assessment": "構造が異なる選択肢をタグで区別する。予約者モデル自体は製品固有であり一般化して内蔵しない。",
+      "evidence": [
+        "src/sum-model.test.ts",
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 54,
+      "topic": "継承の階層と並列の選択肢",
+      "status": "design-choice",
+      "assessment": "業務型のために継承を強制せず、継承そのものを禁止もしない。",
+      "evidence": [
+        "docs/business.md",
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 55,
+      "topic": "不正な会員・ゲスト状態を排除",
+      "status": "supported",
+      "assessment": "単純な構造的Unionは排他的ではない。タグ・反対側never・JSON境界検証を区別して両方/未指定を拒否する。",
+      "evidence": [
+        "src/sum-model.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 56,
+      "topic": "接続状態別のOCaml payload",
+      "status": "supported",
+      "assessment": "状態ごとに必要なpayloadを持つUnionを業務モデルへ適用する。ネット接続ライブラリの実装例とは扱わない。",
+      "evidence": [
+        "src/expenses/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 57,
+      "topic": "状態名と任意属性の直積Tag",
+      "status": "supported",
+      "assessment": "全状態の任意属性を一つに詰める形を避ける。",
+      "evidence": [
+        "src/tags/domain.ts",
+        "src/sum-model.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 58,
+      "topic": "Unvalidated・Validated・CreatedのTag Union",
+      "status": "supported",
+      "assessment": "タグの段階別状態と検証関数を既存モデルで表す。",
+      "evidence": [
+        "src/tags/domain.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 59,
+      "topic": "不要な状態を減らし接続を正しくする",
+      "status": "supported",
+      "assessment": "証拠型と接続検査で必要な前提を型へ載せる。仕様自体や実行時入力の正しさをコンパイラだけで証明しない。",
+      "evidence": [
+        "src/command-connection-types.test.ts",
+        "src/expenses/domain.ts",
+        "src/sum-model.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 60,
+      "topic": "Maybeのパターンマッチ",
+      "status": "design-choice",
+      "assessment": "普通のTS分岐とUnion narrowingを利用できる。独自Maybe構文を必須にしない。",
+      "evidence": [
+        "src/sum-model.test.ts",
+        "docs/business.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 61,
+      "topic": "再帰Listのタグ付きUnion",
+      "status": "design-choice",
+      "assessment": "TSでADTを表せる教育例。独自連結Listを全業務の標準コンテナとして導入しない。",
+      "evidence": [
+        "src/sum-model.test.ts",
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 62,
+      "topic": "List mapとassertNever",
+      "status": "supported",
+      "assessment": "タグで分岐しneverで網羅性を確認する設計を業務型でも使う。スライドのList実装全体の実行はしていない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/sum-model.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 63,
+      "topic": "GraphQL Unionと__typename",
+      "status": "supported",
+      "assessment": "外部GraphQL境界で成功・失敗Unionを扱う。schemaの自動生成や参照検索製品そのものの実装ではない。",
+      "evidence": [
+        "examples/leave-http/README.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 64,
+      "topic": "実践の別講演への案内",
+      "status": "context",
+      "assessment": "1本目の別資料として照合する。リンク先全内容の確認完了をこのページから推定しない。",
+      "evidence": [
+        "docs/lecture-decks.json"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 65,
+      "topic": "Maybe・Either・IO・Listの文脈",
+      "status": "design-choice",
+      "assessment": "失敗はResult、I/Oは明示的境界、欠損や複数値は通常TSで表す。非決定計算モナドの総合ライブラリは提供しない。",
+      "evidence": [
+        "docs/business.md",
+        "src/framework/process.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 66,
+      "topic": "型クラスの階層図",
+      "status": "design-choice",
+      "assessment": "Functor等の概念図。Haskell型クラス体系やその法則検証を丸ごとTSへ移す要件にはしない。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 67,
+      "topic": "集合と代数的構造の補足",
+      "status": "design-choice",
+      "assessment": "演算を引数に取る設計を利用できるが、結合法則等をTSの関数型だけで証明できるとはしない。",
+      "evidence": [
+        "src/framework/validation.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 68,
+      "topic": "ナップザックと半環による抽象化",
+      "status": "design-choice",
+      "assessment": "アルゴリズム抽象化の教育例。DP実装や半環ライブラリは内蔵しない。コード実行・一般的性能比較も未実施。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 69,
+      "topic": "累積演算・しゃくとり法・ダブリング",
+      "status": "design-choice",
+      "assessment": "型付き演算を受ける抽象の例。型が合うことと数学的法則を満たすことは別で、アルゴリズム一式の実装を要求へ読み替えない。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 70,
+      "topic": "集合間写像の図の再掲",
+      "status": "supported",
+      "assessment": "通常関数の型を保持して接続する。",
+      "evidence": [
+        "docs/business.md",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 71,
+      "topic": "型で設計し関数で状態遷移する総括",
+      "status": "supported",
+      "assessment": "業務状態・検証・遷移を利用者が定義し、runtimeが接続を引き受ける。",
+      "evidence": [
+        "docs/business.md",
+        "src/expenses/domain.ts",
+        "src/command-connection-types.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 72,
+      "topic": "言語の特性に合わせ無理をしない",
+      "status": "design-choice",
+      "assessment": "TSの強みを使い、通常の分岐やasync adapterを許容する。Resultの負担を隠し切れたという主張はしない。",
+      "evidence": [
+        "docs/business.md",
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 73,
+      "topic": "まとめ",
+      "status": "design-choice",
+      "assessment": "無理のない範囲で関数型の要素を採用する方針。普遍的な優位性を主張しない。",
+      "evidence": [
+        "docs/lecture-coverage.md"
+      ],
+      "remaining": []
+    },
+    {
+      "page": 74,
+      "topic": "参考文献",
+      "status": "context",
+      "assessment": "参考文献の一覧。全書籍・リンク先の監査や実装完了は含まない。",
+      "evidence": [],
+      "remaining": []
+    }
+  ]
+}
