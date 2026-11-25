@@ -53,6 +53,15 @@
       "record": "docs/lecture-ordinary-api-observation.md",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "localAsrPilot": {
+      "sections": [
+        "w0o-13"
+      ],
+      "scope": "Separate local ASR of 21:55-23:55 from saved MP4 without captions or prompt. Read ASR text against saved captions; not direct listening or verified speech. Full three-video ASR is in progress, not complete. Training-data overlap is unknown.",
+      "record": "docs/lecture-local-asr-pilot.json",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -239,7 +248,9 @@
         "docs/program-execution.md",
         "src/program-execution.test.ts",
         "docs/procurement-observation-comparison.md",
-        "src/procurement-observation-scenario.test.ts"
+        "src/procurement-observation-scenario.test.ts",
+        "docs/lecture-local-asr.md",
+        "docs/lecture-local-asr-pilot.json"
       ],
       "remaining": [
         "persistent-history-policy"
