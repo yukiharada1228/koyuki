@@ -49,7 +49,11 @@ export const result = (async () => {
   const executionEvents = [];
   const executionApp = defineApplication({ initial: () => 0, operations: { go: operation({ run: async n => ok(n), runDetailed: async n => ({ result: ok(n), trace: [{ step: 'portable-step', status: 'ok' }], plan: null }) }, (_, n) => n) }, view: state => state.data });
   const executionSession = await executionApp.start({ sessionId: 'portable', clock: () => 0, observeExecution: event => { executionEvents.push(event); } });
+  const subscriptionValues = [];
+  const disposeSubscription = executionSession.subscribe(async snapshot => { subscriptionValues.push(snapshot.view); await Promise.resolve(); throw new Error('presentation rejection'); });
   const executionResult = await executionSession.dispatch({ type: 'go', input: 3 });
+  await new Promise(resolve => setTimeout(resolve, 0)); disposeSubscription();
+  if (subscriptionValues.join(',') !== '0,0,3') throw new Error('Portable subscriber rejection changed accepted updates');
   if (!executionResult.ok || executionResult.value.state.data !== 3 || executionEvents.filter(event => !event.kind.startsWith('span-')).map(event => event.kind).join(',') !== 'queued,started,step,completed' || executionEvents.some(event => event.executionId !== 'portable/1')) throw new Error('Portable execution observation failed');
   const describedFlow = workflow('portable-rule', n => ok(n)).then('portable-next', n => ok(n + 1));
   if (describeFlow(describedFlow).nodes.length !== 2 || !flowMermaid(describedFlow).startsWith('flowchart TD')) throw new Error('Portable static flow description failed');

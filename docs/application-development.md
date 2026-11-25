@@ -70,8 +70,12 @@ return defineApplication({
 古い画面からの操作をIO前に拒否する。業務操作には通常、実行開始と完了で二回のrevision更新がある。
 このrevisionはDBのversionではない。異なるsession間の競合はrepositoryのCASで扱う。
 
-subscribeは現在のsnapshotを同期通知する。初回通知がthrowしたら登録せず、その例外を呼び出し元に返す。
-登録後の通知失敗は受理済みの業務処理を中断しない。表示側でエラーを報告し、不要になった購読は解除する。
+subscribeは現在のsnapshotを同期通知する。初回通知が同期にthrowしたら登録せず、その例外を呼び出し元に返す。
+登録後の通知失敗と、callbackが返したPromiseのrejectは受理済みの業務処理を中断しない。
+Promiseの完了は待たず、非同期の初回rejectでも登録を巻き戻さない。
+表示側でエラーを報告し、不要になった購読は解除する。解除は既に開始したcallbackの非同期処理をキャンセルしない。
+[回帰検査](../src/subscription-rejection.test.ts)は、Application/Programの結果・command実行回数・後続通知・解除と、
+初回の同期例外でlistenerが残らないことを確認する。
 
 ## 確認できる範囲
 

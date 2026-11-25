@@ -66,10 +66,16 @@ export function defineProgram<S, M extends { type: string }, E, V>(definition: {
         }
       }
       const listeners = new Set<(value: ProgramSnapshot<S, V>) => void>();
+      function notify(listener: (value: ProgramSnapshot<S, V>) => void) {
+        const pending: unknown = listener(snapshot());
+        // Start presentation synchronously. Handle returned rejections without
+        // waiting for callbacks or changing the accepted command sequence.
+        if (pending !== undefined) void Promise.resolve(pending).catch(() => {});
+      }
       function publish() {
         for (const listener of listeners) {
           // Presentation failures must not interrupt an already accepted effect sequence.
-          try { listener(snapshot()); } catch { /* observer owns its error reporting */ }
+          try { notify(listener); } catch { /* observer owns its error reporting */ }
         }
       }
       try { await settle(initial.commands, initialContext); initialContext?.emit({ kind: 'completed', status: 'ok', revision }); }
@@ -80,7 +86,7 @@ export function defineProgram<S, M extends { type: string }, E, V>(definition: {
         subscribeExecution: executions.subscribe,
         subscribe(listener: (value: ProgramSnapshot<S, V>) => void) {
           // Deliver the initial value before retaining a subscriber that may throw.
-          listener(snapshot()); listeners.add(listener); return () => { listeners.delete(listener); };
+          notify(listener); listeners.add(listener); return () => { listeners.delete(listener); };
         },
         dispatch(event: M, expectedRevision?: number): Promise<Result<ProgramSnapshot<S, V>, E | { kind: 'StaleRevision' }>> {
           // Take ownership at dispatch, before earlier commands release the queue.

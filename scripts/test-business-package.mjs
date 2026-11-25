@@ -63,6 +63,7 @@ try {
   writeFileSync(join(consumer, 'application-operation-table.test.ts'), readFileSync(join(root, 'src/application-operation-table.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'application-execution.test.ts'), readFileSync(join(root, 'src/application-execution.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'program-execution.test.ts'), readFileSync(join(root, 'src/program-execution.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'subscription-rejection.test.ts'), readFileSync(join(root, 'src/subscription-rejection.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'audit.test.ts'), readFileSync(join(root, 'src/audit.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'async-transaction.test.ts'), readFileSync(join(root, 'src/async-transaction.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transaction.test.ts'), readFileSync(join(root, 'src/transaction.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));

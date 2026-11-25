@@ -68,6 +68,22 @@
       "record": "docs/lecture-local-asr-run.json",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "localAsrFollowUp": {
+      "sections": [
+        "w0o-01",
+        "w0o-02",
+        "w0o-03",
+        "w0o-04",
+        "w0o-05",
+        "w0o-06",
+        "w0o-07",
+        "w0o-08"
+      ],
+      "scope": "Read the first eight paired caption/ASR windows. Sixteen other paired windows remain unreviewed. Retain previous interpretations; a subscriber-rejection contract bug was reproduced and corrected separately. Not direct listening.",
+      "record": "docs/lecture-local-asr-w0o-followup.json",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false
     }
   },
   "sections": [
@@ -78,7 +94,10 @@
       "topic": "開始・画面共有",
       "status": "context",
       "assessment": "進行と挨拶。フレームワーク機能へ変換しない。",
-      "evidence": [],
+      "evidence": [
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
       "remaining": []
     },
     {
@@ -90,7 +109,9 @@
       "assessment": "関数を値の写像、型を取り得る値の集合として見る説明。APIの指定ではない。",
       "evidence": [
         "src/framework/workflow.ts",
-        "src/business-api-types.test.ts"
+        "src/business-api-types.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -102,7 +123,9 @@
       "status": "experience",
       "assessment": "登壇者の過去の言語経験と参考記事の紹介。特定の言語やIDEの現在の優劣を検証した結果ではない。",
       "evidence": [
-        "docs/team-development-study.md"
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -115,7 +138,9 @@
       "assessment": "業務計算を通常の関数の入出力で表す。Koyukiが数学的な純粋性を強制するという意味ではない。",
       "evidence": [
         "src/expenses/domain.ts",
-        "src/examples/order-lines.ts"
+        "src/examples/order-lines.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -128,7 +153,9 @@
       "assessment": "通常のI/Oや単純なCRUDを許容する。全実装のFP化やクラス禁止を要件にしない。",
       "evidence": [
         "docs/framework-goal.md",
-        "src/framework/workflow.ts"
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -141,7 +168,9 @@
       "assessment": "Applicationの業務データ・実行状態・viewを分離して購読できる。ReactのDOM rendererやReact相当の性能を提供するわけではない。",
       "evidence": [
         "src/framework/application.ts",
-        "src/application.test.ts"
+        "src/application.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -155,7 +184,9 @@
       "evidence": [
         "src/framework/program.ts",
         "src/program.test.ts",
-        "src/framework/application.ts"
+        "src/framework/application.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },
@@ -167,7 +198,9 @@
       "status": "design-choice",
       "assessment": "状態変化を入力と戻り値に表す。UIでの事例から業務ロジックへ考え方をつなぐ説明として扱う。",
       "evidence": [
-        "src/expenses/domain.ts"
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
       ],
       "remaining": []
     },

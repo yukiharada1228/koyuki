@@ -17,6 +17,8 @@
 全文の読み比べや直接の音声視聴の完了とは扱わない。
 [1本目の部分照合](lecture-local-asr-iz-followup.md)は音声認識完了と39話題中5話題の読み比べを記録し、
 認識が崩れた用語を推測で補わず追加確認の対象へ残している。
+[2本目の2話題](lecture-local-asr-qbf-followup.md)と[3本目の8話題](lecture-local-asr-w0o-followup.md)を合わせ、
+追加のペア比較は15/84話題。原字幕の初回全件レビューと、この追加比較の範囲は区別する。
 [実行境界等の追加後の再照合](lecture-runtime-reconciliation.md)では、字幕4区間・PDF6ページへ戻り、
 trace・capture・成功監査・構成図の保証を区別した。初回の全区間・全頁レビューや未確認flagは維持している。
 check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て・根拠パス等を検査する。
