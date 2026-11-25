@@ -331,7 +331,7 @@
       "page": 30,
       "topic": "plain dataと記述簡素化",
       "status": "partial",
-      "assessment": "公開項目の選別を維持し、通常関数列と操作ごとの型推論で簡素化する。generic saveの成功型や、無注釈callbackによる複数readのfact保持も追加検証した。型推論一般の解決とは扱わない。",
+      "assessment": "通常関数列と型推論で公開操作を作り、generic saveの成功型や無注釈callbackのfact保持を検査する。動的command/validateの入力を全候補が受け取れる契約へ修正した。plain dataでも公開項目の選別は必要で、推論一般の解決や一般的な記述量・DX優位を主張しない。",
       "evidence": [
         "docs/business-api-study.md",
         "src/business-api-types.test.ts",
@@ -343,7 +343,10 @@
         "docs/business-save-inference.md",
         "src/business-save-inference.test.ts",
         "docs/procurement-load-composition.md",
-        "src/procurement-load-composition.test.ts"
+        "src/procurement-load-composition.test.ts",
+        "docs/application-input-contract.md",
+        "src/application-input-contract.test.ts",
+        "docs/declaration-ownership.md"
       ],
       "remaining": [
         "defineTransitionでgenericヘルパー呼出しと未注釈evolveを同時に書く場合などの推論制限、および誤定義時の診断・独立利用者の学習負担の評価が残る。Workflow.branchのinline predicate入力型は推論可能になった。"
@@ -410,6 +413,18 @@
         "src/customer-import-sqlite.test.ts"
       ],
       "scope": "Two independent writers released after both read the same prior state. Verifies one winner, one Conflict, persisted state/version and clean process exit; not a throughput or general load benchmark."
+    },
+    {
+      "topic": "共通実行境界・診断と型契約の対象再照合",
+      "evidence": [
+        "docs/lecture-acceptance.md",
+        "docs/transactions.md",
+        "docs/application-execution.md",
+        "docs/audit.md",
+        "docs/flow-structure.md",
+        "docs/declaration-ownership.md"
+      ],
+      "scope": "Implementation base 3a488fc7ec19499832165bed6a4301fd51967949; reread extracted text of pages [30]. Original all-page review base and flags retained. No status upgrade, continuous audio/video review, all-code execution, or new all-page visual review is claimed."
     }
   ]
 }

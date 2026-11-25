@@ -1,6 +1,8 @@
 # 3講演とKoyukiの対応・未確認事項
 
 [現在の要件別判定](lecture-acceptance.md)に、充足した実装・検証範囲・残課題をまとめた。
+[共通実行境界等の追加後の再照合](lecture-runtime-reconciliation.md)では、講演の主張・未実施案と、
+Koyukiのtrace・capture・成功監査・構成図がそれぞれ保証する内容を分けている。
 
 「講演の全内容を完全実現」と、個々の機能が実装・検証されていることを区別する。
 以下は保存済みの日本語自動字幕・登壇者の公開PDF・参照メモ・抽出静止画に基づく論点単位の照合。
@@ -32,7 +34,7 @@
 | 46:56–50:40 | 途中IOの関数注入・workflow分割 | shippingと登録メールのprocess.effect。直接runで不要な空の遷移を除去。注入したIOを純粋関数とは呼ばない |
 | 50:54–52:19 | Result接続の定型処理をframeworkへ | 開発版のbusinessで通常関数の配列を接続し、Applicationが実行状態と完了イベントを管理。既存defineTransition / defineUseCaseGroupも維持 |
 | 54:10–54:50 | andThen/mapや入れ子の負担 | 宣言による順次接続、withInput、collect。TypeScriptのdo記法や全generic推論を提供するわけではない |
-| 56:54–58:59 | DB transaction、contextを渡す案 | SQLiteのCAS・履歴・receipt・outboxの原子保存をテスト。Prisma 7.10.1のcontextで複数更新・typed rollback・commit失敗の後処理を検証。提案は講演当時未実施。任意DBへの一括保証なし |
+| 56:54–58:59 | DB transaction、contextを渡す案 | [同期・callback型の共通境界](transactions.md)を追加。SQLiteのCAS・履歴・receipt・outboxの原子保存と、Prisma 7.10.1の同一contextで複数更新・typed rollback・commit失敗を検証。提案は講演当時未実施。任意DBへの一括保証なし |
 | 59:07–61:00 | 関数型の全面導入より宣言に必要な範囲 | 通常の関数・Result。IO adapterは通常のTypeScript、実行時依存ゼロ |
 | 61:08–64:36 | 言語・Prisma・REST/GraphQLの選択理由 | transport非依存。HonoとGraphQL.jsとの統合を検証。全言語・全ORMを再実装する要件にはしない |
 | 64:39–66:24 | 登録・メール・人の確認から別workflowへ | 登録サンプルの永続outboxと確認command。別OSプロセス・配送失敗・ack失敗・lease競合を検証。講演では未経験の構想 |
@@ -70,12 +72,12 @@
 | 05:19–05:53 | FPの無条件な優越ではない | 通常のIO・単純なQueryを許容。単純CRUDへの導入を強制しない |
 | 06:00–09:30 | React/Elm、明示した状態遷移と実行委譲 | Application / Program、viewの導出、購読。UI rendererそのものではない |
 | 10:08–19:29 | 文と式、命令と計算、関数適用・合成 | pure workflowとeffect/processの境界。TypeScriptの構文を置換しない |
-| 19:50–23:46 | 前後の状態を値として返す、観測可能性 | immutable domain、trace、Application snapshot。任意のWorkflow.inspect captureで選択したRuleの入力・結果を取得。businessのload/Rule/save/照会も選択観測可能。永続履歴は未提供。任意の破壊的変更を静的に禁止もできない |
+| 19:50–23:46 | 前後の状態を値として返す、観測可能性 | immutable domain、trace、Application snapshot。Workflow.inspectの選択captureは例外を伝播し、business/Processの診断失敗は分離する。全段階の値の自動永続履歴は未提供。SQLiteの成功変更metadata監査は別機能。任意の破壊的変更を静的に禁止もできない |
 | 23:55–28:36 | IOと複雑な業務計算を分離する目的 | domainの独立テスト、load/save、途中effectと原子保存adapter |
 | 29:21–35:15 | 型による制約、compiler/toolの支援 | 配布d.tsの型検査と不正入力の実行時検証。仕様の正しさの形式証明はしない |
 | 35:18–40:55 | Result、直和と直積、不正な状態を表せなくする | domain states、private proof、Application状態Union。Resultの型注釈だけで予期しないthrowを排除できず、利用者の型設計の品質も自動保証しない |
 | 38:40–39:48 | 似た構造をまとめるUnionと継承の使い方 | 業務状態をUnionで表す。継承やクラス全般の禁止とは解釈しない |
-| 29分台・40分台 | 時間のため省略されたスライド | 周辺10枚の追加静止画で命令的な記述の許容と直和の図を確認。連続映像・音声や後日資料の完全照合とは区別 |
+| 29分台・40分台 | 時間のため省略されたスライド | 周辺10枚の追加静止画で命令的な記述の許容と直和の図を確認。本人公開PDFは別途全頁確認。連続映像・音声や参照先全文の確認とは区別 |
 
 ## 今回追加したもの
 

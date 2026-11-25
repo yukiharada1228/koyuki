@@ -16,7 +16,14 @@
     "implementationBaseCommit": "dc96dc0",
     "implementationChanges": "The collectEach implementation and its tests accompany this audit update in Git.",
     "followUpBaseCommit": "35e482f",
-    "followUpChanges": "Visual review identifies async task sending at 29 minutes; collectEffects and its tests accompany this update."
+    "followUpChanges": "Visual review identifies async task sending at 29 minutes; collectEffects and its tests accompany this update.",
+    "runtimeFollowUpBaseCommit": "3a488fc7ec19499832165bed6a4301fd51967949",
+    "runtimeFollowUp": {
+      "updatedSections": [
+        "qbf-19"
+      ],
+      "scope": "Targeted reread of saved captions and related published PDF text. Original full-review base is retained; no new continuous audio/video or all-page visual review is claimed."
+    }
   },
   "sections": [
     {
@@ -278,7 +285,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続を検証。generic saveを通した成功型と、複数readの無注釈コールバックの型も検査する。任意のgeneric推論・診断品質・独立利用者のDXを完全解決したわけではない。",
+      "assessment": "開発版businessの通常関数列から操作の入出力・失敗型を推論し、64段inline接続とgeneric saveの成功型を検査する。動的に選ぶcommand/validateでは全候補が受け取れる入力を要求し、型を緩めた接続を避ける。宣言の参照保持も追加したが、generic requireと未注釈evolveの推論制限・診断品質・独立利用者のDXは未解決。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -287,7 +294,11 @@
         "docs/business-save-inference.md",
         "src/business-save-inference.test.ts",
         "docs/procurement-load-composition.md",
-        "src/procurement-load-composition.test.ts"
+        "src/procurement-load-composition.test.ts",
+        "docs/application-input-contract.md",
+        "src/application-input-contract.test.ts",
+        "docs/declaration-ownership.md",
+        "src/declaration-ownership.test.ts"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"

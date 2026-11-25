@@ -13,6 +13,8 @@
 | 動画の画面 | 抽出した静止画・補足画像を確認 | 全フレーム・連続音声映像との照合 |
 
 来歴は[資料manifest](lecture-decks.json)、解釈と実装根拠は[詳細照合](lecture-audits/README.md)。
+[実行境界等の追加後の再照合](lecture-runtime-reconciliation.md)では、字幕4区間・PDF6ページへ戻り、
+trace・capture・成功監査・構成図の保証を区別した。初回の全区間・全頁レビューや未確認flagは維持している。
 check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て・根拠パス等を検査する。
 解釈・実装の完全性や視聴を自動証明するものではない。
 

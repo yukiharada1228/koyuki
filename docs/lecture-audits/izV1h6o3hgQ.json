@@ -13,7 +13,15 @@
     "audioDirectlyReviewed": false,
     "allFramesReviewed": false,
     "implementationBaseCommit": "505e0c1",
-    "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation."
+    "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation.",
+    "runtimeFollowUpBaseCommit": "3a488fc7ec19499832165bed6a4301fd51967949",
+    "runtimeFollowUp": {
+      "updatedSections": [
+        "iz-22",
+        "iz-27"
+      ],
+      "scope": "Targeted reread of saved captions and related published PDF text. Original full-review base is retained; no new continuous audio/video or all-page visual review is claimed."
+    }
   },
   "sections": [
     {
@@ -288,7 +296,7 @@
       "endSeconds": 3139,
       "topic": "イベント接続をフレームワークへ委ねたい",
       "status": "partial",
-      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。購買25操作と、通常／詳細loaderを使う4操作のメモリ・SQLite比較も追加した。公開済みnpm alpha.5への搭載や独立利用者のDX実証を意味しない。",
+      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。",
       "evidence": [
         "docs/business-api-study.md",
         "src/experiments/business.ts",
@@ -297,7 +305,13 @@
         "src/framework/business.ts",
         "docs/procurement-approval-change.md",
         "docs/procurement-load-composition.md",
-        "src/procurement-load-composition.test.ts"
+        "src/procurement-load-composition.test.ts",
+        "docs/declaration-ownership.md",
+        "src/declaration-ownership.test.ts",
+        "docs/application-execution.md",
+        "src/application-execution.test.ts",
+        "docs/flow-structure.md",
+        "src/flow-examples.test.ts"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
@@ -363,10 +377,14 @@
       "endSeconds": 3547,
       "topic": "トランザクションと共有contextの提案",
       "status": "supported",
-      "assessment": "講演時点で未実施の案。PrismaとSQLiteの実例で同じcontextに束縛しResult失敗・保存失敗・commit失敗を検証。任意のDB・driverへの保証ではない。",
+      "assessment": "講演時点では未実施の共有context案。Koyukiでは同期のcreateSyncTransactionとcallback型inTransactionを用意し、SQLiteの保存とPrismaの同一contextへ接続した。Result失敗・履歴失敗・例外・commit失敗、誤ったhostのcallback再実行等を検査する。commit結果不明を未保存と断定せず、任意DBへの原子性や外部IOの巻戻しは保証しない。",
       "evidence": [
         "examples/prisma-stock/transaction.ts",
-        "examples/prisma-stock/stock.test.ts"
+        "examples/prisma-stock/stock.test.ts",
+        "docs/transactions.md",
+        "src/framework/transaction.ts",
+        "src/transaction.test.ts",
+        "src/async-transaction.test.ts"
       ],
       "remaining": []
     },

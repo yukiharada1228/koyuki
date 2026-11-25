@@ -19,7 +19,14 @@
     "observationFollowUpBaseCommit": "9954b0c",
     "observationFollowUp": "Optional projected Workflow.inspect capture and its tests accompany this update.",
     "businessObservationBaseCommit": "14e6079",
-    "businessObservationChanges": "business.runDetailed capture integrates load/rules/save/receipt lookup with separate capture diagnostics."
+    "businessObservationChanges": "business.runDetailed capture integrates load/rules/save/receipt lookup with separate capture diagnostics.",
+    "runtimeFollowUpBaseCommit": "3a488fc7ec19499832165bed6a4301fd51967949",
+    "runtimeFollowUp": {
+      "updatedSections": [
+        "w0o-13"
+      ],
+      "scope": "Targeted reread of saved captions and related published PDF text. Original full-review base is retained; no new continuous audio/video or all-page visual review is claimed."
+    }
   },
   "sections": [
     {
@@ -181,7 +188,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "任意captureによりWorkflow/transitionの実行Rule前後、およびbusinessのload/Rule/save/receipt照会から選択した値を取得できる。情報を失うコピーはCaptureFailedとして分離する。詳細形式のloadは内部段階のtraceも再実行なしで接続するが、その全値を自動観測するわけではない。過去のreplayで未実行の段階を捏造せず、永続保存・保持方針・全履歴の自動収集は未提供。",
+      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、全段階のlive timingは未提供。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -193,7 +200,13 @@
         "docs/application-ownership.md",
         "src/application-ownership.test.ts",
         "docs/detailed-load.md",
-        "src/detailed-load.test.ts"
+        "src/detailed-load.test.ts",
+        "docs/process-observation.md",
+        "src/process-observation.test.ts",
+        "docs/application-execution.md",
+        "src/application-execution.test.ts",
+        "docs/audit.md",
+        "src/sqlite-audit.test.ts"
       ],
       "remaining": [
         "persistent-history-policy"

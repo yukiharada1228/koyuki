@@ -900,7 +900,7 @@
       "page": 84,
       "topic": "Validate・更新の定型化とframework構想",
       "status": "partial",
-      "assessment": "開発版businessで通常関数列のResult接続とload/Rule/saveを調停し、Program/Applicationで実行状態とviewを管理する。購買25操作、二段階承認への仕様変更、通常／詳細loaderを使う4操作の比較で具体化している。独立利用者のDX実証とは区別する。",
+      "assessment": "通常関数列のbusinessでResult接続とload/Rule/saveを調停し、Applicationで実行状態・完了・viewを管理する。宣言の参照保持と、実行ID付き診断・非実行の構成図も追加した。図や監査schema自体をこのページの必須要求とは読み替えず、独立利用者のDX実証とは区別する。",
       "evidence": [
         "docs/business.md",
         "src/framework/program.ts",
@@ -909,7 +909,11 @@
         "src/application-receiver.test.ts",
         "docs/procurement-study.md",
         "docs/procurement-approval-change.md",
-        "docs/procurement-load-composition.md"
+        "docs/procurement-load-composition.md",
+        "docs/declaration-ownership.md",
+        "src/declaration-ownership.test.ts",
+        "docs/application-execution.md",
+        "docs/flow-structure.md"
       ],
       "remaining": [
         "React/Elmと同等の自然な開発体験・独立利用者の学習負担は未測定。一部generic推論の制限とhost側I/O設定は残る。"
@@ -947,12 +951,14 @@
       "page": 87,
       "topic": "Result接続の負担とdo記法への希望",
       "status": "partial",
-      "assessment": "同期Result列はbusiness、I/OはProcessで接続し、andThen/asyncAndThenの手書きを減らす。複数readの分岐も共通化できるが、取得キー・順番・NotFoundの扱い等の業務判断は残す。詳細loaderでは内部traceを接続する。",
+      "assessment": "同期Result列はbusiness、途中IOはProcessで接続し、andThen/asyncAndThenの手書きを減らす。接続と実行を宣言から調停し、診断時に既存段階traceを受け取れる。取得順序・NotFoundの扱い等の業務判断を推測せず、言語レベルのdo記法や全generic推論を提供するものではない。",
       "evidence": [
         "docs/business.md",
         "src/framework/process.ts",
         "docs/procurement-load-composition.md",
-        "docs/detailed-load.md"
+        "docs/detailed-load.md",
+        "docs/application-execution.md",
+        "src/application-execution.test.ts"
       ],
       "remaining": [
         "任意のHaskell do/F#計算式互換は提供しない。generic推論・複雑な分岐での診断と書き心地の検証は残る。"
@@ -984,11 +990,13 @@
       "page": 90,
       "topic": "Resultライブラリ・currying・readonlyの補足",
       "status": "design-choice",
-      "assessment": "外部依存ゼロのResultを提供し、Promiseの変換を明示する。readonlyは設計上使用するが深い不変性・純粋性の証明ではない。",
+      "assessment": "講演ではreadonlyを使っていないという留保がある。Koyukiは独自にreadonly・宣言参照の保持・入力snapshotを採用するが、callbackのclosureや任意の深い不変性・純粋性を証明するものではない。Result/Promise境界も明示し、neverthrowやcurrying規約の全面互換を要求しない。",
       "evidence": [
         "src/framework/result.ts",
         "docs/business.md",
-        "src/tags/domain.ts"
+        "src/tags/domain.ts",
+        "docs/declaration-ownership.md",
+        "docs/application-ownership.md"
       ],
       "remaining": []
     },
@@ -1020,6 +1028,18 @@
         "src/combine.test.ts"
       ],
       "scope": "Added after the initial PDF review. Distinguishes first-failure combination of already-evaluated results from collecting all failures; not a neverthrow API compatibility claim."
+    },
+    {
+      "topic": "共通実行境界・診断と型契約の対象再照合",
+      "evidence": [
+        "docs/lecture-acceptance.md",
+        "docs/transactions.md",
+        "docs/application-execution.md",
+        "docs/audit.md",
+        "docs/flow-structure.md",
+        "docs/declaration-ownership.md"
+      ],
+      "scope": "Implementation base 3a488fc7ec19499832165bed6a4301fd51967949; reread extracted text of pages [84, 87, 90]. Original all-page review base and flags retained. No status upgrade, continuous audio/video review, all-code execution, or new all-page visual review is claimed."
     }
   ]
 }
