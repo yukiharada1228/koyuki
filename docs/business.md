@@ -45,6 +45,8 @@ if (!accepted.ok || rejected.ok || saved.length !== 1) throw new Error('Unexpect
 - 最初の失敗で後続とsaveを止める。予期しないthrow/rejectionは伝播し、Resultへ自動変換しない。
 
 操作ごとの入力が異なる場合は`{ load, run: [...] }`を指定する。
+すべての操作が個別loadを持つなら、[共通loadは省略できる](business-local-load.md)。
+配列形式の操作が一つでもあれば、その取得方法として共通loadが必要。
 共有generic loaderから、個別操作の入出力の相関を自動復元する保証はない。
 空配列・asyncルール・隣接型の不一致・saveに渡せない最終出力は拒否する。
 共通generic saveが操作ごとの成功型を保持する場合は、[保存後の成功型](business-save-inference.md)も保持できる。

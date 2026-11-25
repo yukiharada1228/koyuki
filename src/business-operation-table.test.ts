@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
-import { business, ok, type Result, type Execution, type GroupExecution } from './framework/index.js';
+import { business, ok, err, workflow, process as effectProcess, type Result, type Execution, type GroupExecution } from './framework/index.js';
 const rule = (n: number) => ok(n + 1);
 const load = async (n: number) => ok(n);
 const save = async (n: number) => ok(n);
@@ -84,7 +84,56 @@ test('the complete table is checked before resolving an earlier valid operation'
   assert.throws(() => unchecked({ good: [rule], then: [rule] }, () => { calls++; return 'id'; }), /ReservedBusinessOperation:then/);
   assert.equal(calls, 0);
 });
+test('operations with their own ordinary and detailed loaders need no shared loader', async () => {
+  type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+  const seen: string[] = [];
+  const commands = business({ name: 'local', save: async <T extends { value: number | string }>(value: T) => { seen.push('save'); return ok(value); }, operations: {
+    number: { load: async (input: { n: number }): Promise<Result<number, 'MissingNumber'>> => { seen.push('number'); return input.n < 0 ? err('MissingNumber') : ok(input.n); }, run: [(n: number) => ok({ value: n + 1 })] },
+    text: { load: effectProcess<{ text: string }>().through(workflow('length', input => ok(input.text.length))), run: [(n: number) => ok({ value: String(n) })] },
+  } });
+  const input: Equal<Parameters<typeof commands.number>[0], { n: number }> = true;
+  const output: Equal<Awaited<ReturnType<typeof commands.number>>, Result<{ value: number }, 'MissingNumber'>> = true;
+  const text: Equal<Awaited<ReturnType<typeof commands.text>>, Result<{ value: string }, never>> = true;
+  void input; void output; void text;
+  assert.deepEqual(await commands.number({ n: 2 }), ok({ value: 3 }));
+  const detail = await commands.text.runDetailed({ text: 'abc' }, { input: () => null, result: result => result.ok });
+  assert.deepEqual(detail.result, ok({ value: '3' })); assert(detail.observations.length > 0);
+  assert.deepEqual(await commands.number({ n: -1 }), err('MissingNumber'));
+  assert.deepEqual(seen, ['number', 'save', 'save', 'number']);
+});
+test('replay without a shared loader preserves request context and bypasses a cached operation', async () => {
+  let loaded = 0, saved = 0;
+  let receipt: { kind: 'missing' } | { kind: 'found'; value: number } = { kind: 'missing' };
+  const commands = business({ name: 'own-replay', operations: {
+    0: { load: async (input: { n: number }) => { loaded++; return ok(input.n); }, run: [rule] },
+  }, save: async (n: number, context): Promise<Result<Execution<number>, never>> => {
+    const name: '0' = context.name; const input: { n: number } = context.request; void name; void input;
+    saved++; receipt = { kind: 'found', value: n }; return ok({ kind: 'committed', value: n });
+  }, replay: { lookup: context => {
+    const name: '0' = context.name; const input: { n: number } = context.request; void name; void input;
+    return ok(receipt);
+  }, resolveAfter: [] } });
+  assert.deepEqual(await commands[0]({ n: 2 }), ok({ kind: 'committed', value: 3 }));
+  assert.deepEqual(await commands[0]({ n: 2 }), ok({ kind: 'replayed', value: 3 }));
+  assert.equal(loaded, 1); assert.equal(saved, 1);
+});
+test('unused shared load is not read and untyped missing shared load fails before resolver callbacks', async () => {
+  let reads = 0, resolved = 0;
+  const commands = business({ name: 'unused', get load(): typeof load { reads++; throw Error('Unused'); }, save,
+    operations: { go: { load, run: [rule] } } });
+  assert.deepEqual(await commands.go(1), ok(2)); assert.equal(reads, 0);
+  assert.throws(() => Reflect.apply(business, undefined, [{ name: 'missing', save, operation: () => { resolved++; return 'id'; }, operations: { go: [rule] } }]), /BusinessRequiresSharedLoad/);
+  assert.equal(resolved, 0);
+});
 function contracts() {
+  // @ts-expect-error an operation tuple still needs a shared loader
+  business({ name: 'missing', save, operations: { go: [rule] } });
+  // @ts-expect-error one local loader cannot provide the loader for another operation tuple
+  business({ name: 'mixed', save, operations: { own: { load, run: [rule] }, other: [rule] } });
+  // @ts-expect-error even a pipeline accepting unknown cannot omit its shared loader
+  business({ name: 'unknown', save, operations: { go: [(_input: unknown) => ok(1)] } });
+  // @ts-expect-error omitting the shared loader does not bypass stage input checks
+  business({ name: 'bad-own', save, operations: { go: { load, run: [(text: string) => ok(text.length)] } } });
   const key = Symbol('operation');
   // @ts-expect-error symbols cannot name generated business operations
   business({ name: 'symbol', load, save, operations: { [key]: [rule] } });

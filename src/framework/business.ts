@@ -14,6 +14,9 @@ type Fn = Rule<never, unknown, unknown>;
 type Load = ActionLoad<never, unknown, unknown>;
 type Pipeline = readonly [Fn, ...Fn[]];
 type Entry = Pipeline | { readonly load: Load; readonly run: Pipeline };
+// A shared loader is unnecessary only when every declared operation owns one.
+type SharedLoad<L extends Load, T extends Record<string, Entry>> =
+  [T[keyof T]] extends [{ readonly load: Load; readonly run: Pipeline }] ? unknown : { readonly load: L };
 // A dynamically selected loader must accept the request in every possible branch.
 type LoadCall<L> = L extends (input: never) => unknown ? L : L extends { runDetailed: infer F } ? F : never;
 type Input<L> = [LoadCall<L>] extends [(input: infer I) => unknown] ? I : never;
@@ -73,9 +76,9 @@ type Commands<L extends Load, T extends Record<string, Entry>, S, SE, RE, D exte
 interface RuntimeDefinition {
   name: string;
   operation?: (name: string) => string;
-  load: ActionLoad<unknown, unknown, unknown>;
+  load?: ActionLoad<unknown, unknown, unknown>;
   save: (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<unknown, unknown>>;
-  operations: Record<string, readonly Rule<unknown, unknown, unknown>[] | { load: RuntimeDefinition['load']; run: readonly Rule<unknown, unknown, unknown>[] }>;
+  operations: Record<string, readonly Rule<unknown, unknown, unknown>[] | { load: ActionLoad<unknown, unknown, unknown>; run: readonly Rule<unknown, unknown, unknown>[] }>;
   replay?: { lookup: (context: GroupExecution<string, unknown>) => Result<Receipt<unknown>, unknown> | Promise<Result<Receipt<unknown>, unknown>>; resolveAfter: readonly string[] | ((error: unknown) => boolean) };
 }
 type SaveFn = (...args: never[]) => Promise<Result<unknown, unknown>>;
@@ -87,7 +90,7 @@ type SaveResult<A> = Awaited<ReturnType<Extract<A, SaveFn>>>;
 export function business<L extends Load, O, S extends Execution<unknown>, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
   operation?: (name: OperationNames<T>) => string;
-  load: L;
+  load?: L;
   save: (value: O, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<S, SE>>;
   // Infer the user tuple first; the compatibility check must not widen it.
   operations: T & NoInfer<{ readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], O, OperationName<K>> : never }>;
@@ -95,11 +98,11 @@ export function business<L extends Load, O, S extends Execution<unknown>, SE, RE
     lookup: (context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
   };
-}): Commands<L, T, S, SE, RE, D & { replay: object }>;
+} & NoInfer<SharedLoad<L, T>>): Commands<L, T, S, SE, RE, D & { replay: object }>;
 export function business<L extends Load, O, S, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
   operation?: (name: OperationNames<T>) => string;
-  load: L;
+  load?: L;
   save: (value: O, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<S, SE>>;
   // Infer the user tuple first; the compatibility check must not widen it.
   operations: T & NoInfer<{ readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], O, OperationName<K>> : never }>;
@@ -107,19 +110,19 @@ export function business<L extends Load, O, S, SE, RE, const T extends Record<st
     lookup: (context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Result<Receipt<ReplayValue<S>>, RE> | Promise<Result<Receipt<ReplayValue<S>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
   } & ReplaySaveCheck<NoInfer<S>>;
-}): Commands<L, T, S, SE, RE, D>;
+} & NoInfer<SharedLoad<L, T>>): Commands<L, T, S, SE, RE, D>;
 /** Infer an ordinary or generic save before checking its shared boundary contract. */
 export function business<L extends Load, const A extends object, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
   name: string;
   operation?: (name: OperationNames<T>) => string;
-  load: L;
+  load?: L;
   save: A & NoInfer<A extends (value: SaveInput<A>, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<unknown, unknown>> ? unknown : never>;
   operations: T & NoInfer<{ readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], SaveInput<A>, OperationName<K>> : never }>;
   replay?: {
     lookup: (context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE> | Promise<Result<Receipt<ReplayValue<Value<SaveResult<A>>>>, RE>>;
     resolveAfter: readonly string[] | ((error: unknown) => boolean);
   } & ReplaySaveCheck<Value<SaveResult<A>>>;
-}): Commands<L, T, Value<SaveResult<A>>, Failure<SaveResult<A>>, RE, D>;
+} & NoInfer<SharedLoad<L, T>>): Commands<L, T, Value<SaveResult<A>>, Failure<SaveResult<A>>, RE, D>;
 export function business(definition: object) {
   // Public checks prove adjacency. Only heterogeneous tuple positions are erased here.
   const source = definition as unknown as RuntimeDefinition;
@@ -135,6 +138,9 @@ export function business(definition: object) {
     if (key === 'then') throw new Error('ReservedBusinessOperation:then');
     entries.push([key, descriptor.value]);
   }
+  const needsSharedLoad = entries.some(([, entry]) => !('run' in entry));
+  const sharedLoad = needsSharedLoad ? source.load : undefined;
+  if (needsSharedLoad && sharedLoad === undefined) throw new TypeError('BusinessRequiresSharedLoad');
   const resolveOperation = source.operation ?? ((name: string) => `${source.name}.${name}`);
   const ids = new Map<string, string>();
   const save = source.save;
@@ -160,7 +166,9 @@ export function business(definition: object) {
     const custom = 'run' in entry;
     const rules = [...(custom ? entry.run : entry)];
     if (!rules.length) throw new Error('BusinessRequiresRule');
-    const load = captureLoad(custom ? entry.load : source.load);
+    const selectedLoad = custom ? entry.load : sharedLoad;
+    if (selectedLoad === undefined) throw new TypeError('BusinessRequiresLoad');
+    const load = captureLoad(selectedLoad);
     const decide = (observe?: StageObserver) => {
       const rule = (index: number): Rule<unknown, unknown, unknown> => observe
         ? input => evaluateRule(`run:${index + 1}`, rules[index]!, input, observe) : rules[index]!;

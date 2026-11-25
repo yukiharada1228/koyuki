@@ -39,7 +39,7 @@ function fixture(count, broken = false, segmented = true, plain = false) {
   const keys = Array.from({ length: count }, (_, index) => `op${index}`);
   const header = plain ? prelude.replace("import { business, ok, type Result } from 'koyuki';", "type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }; const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });") : prelude;
   const definition = plain ? 'const app = {\n' + keys.map(key => `${key}: async (input: Request<'${key}'>): Promise<Result<Approved<'${key}'>, 'NotFound:${key}' | 'Invalid:${key}' | 'Forbidden:${key}' | 'Closed:${key}' | 'Conflict'>> => ok({ ...input, status: 'approved' }),`).join('\n') + '\n};\n'
-    : `const app = business({ name: 'scale', load: load<string>(), save, operations: {\n` + keys.map(key =>
+    : `const app = business({ name: 'scale', save, operations: {\n` + keys.map(key =>
       `${key}: { load: load<'${key}'>(), run: [validate<'${key}'>(), ${broken ? '' : `permit<'${key}'>(), `}approve<'${key}'>()] },`).join('\n') + '\n} });\n';
   return header + definition +
     (broken ? '' : keys.map((key, index) => `${segmented ? `function contract${index}() {` : ''}
@@ -101,7 +101,7 @@ async function main() {
       compiler: JSON.parse(readFileSync(join(root, 'node_modules/typescript/package.json'), 'utf8')).version,
       source: { gitCommit, sourceDirty, hashes }, platform: process.platform, arch: process.arch,
       tarballSha256: hash(tarball), collectorSha256: hash(readFileSync(fileURLToPath(import.meta.url))),
-      results, monolithic, scope: 'generated-independent-operation-types-and-success-paths',
+      results, monolithic, loaderMode: 'operation-local-only', scope: 'generated-independent-operation-types-and-success-paths',
       exclusions: ['real-business-specification', 'editor-responsiveness', 'human-productivity', 'database', 'transport', 'long-stage-chains', 'performance-comparison'] }, null, 2));
   } finally { rmSync(directory, { recursive: true, force: true }); }
 }

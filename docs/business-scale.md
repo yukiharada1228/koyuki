@@ -24,7 +24,8 @@ npmへの公開は行わず、生成consumerにNodeの型も要求しない。
 
 検査用のbrand生成箇所だけ型アサーションを用いる。生成した業務定義の接続を
 any/unknownや二重castで迂回していない。操作別loaderと共通generic saveを使う。
-現在のAPIが要求する共通loadも設定するが、この例では全操作が個別loadで上書きする。
+初回の記録では共通loadも設定した。後続の[個別loadのみの宣言](business-local-load.md)では
+この未使用の設定を省略できるようにし、現在のscriptは共通loadなしで同じ検査を行う。
 
 ## 記録と発見した制限
 
