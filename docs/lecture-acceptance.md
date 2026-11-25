@@ -134,3 +134,8 @@ npm run check:lecture-decks -- /path/to/functional-business-talks
 配布検査は開発版tarballを一時ディレクトリへinstallする。npm公開は行わない。
 source hashを検査する最後の2コマンドは、本人公開資料等のローカル保存先を必要とする。
 各検査の成功を、上表で対象外としている項目の証拠には使わない。
+
+追加の[入力保持とbusinessの推論調査](business-input-pair-inference.md)では、直接のgeneric関数の
+型対応が配列の中間型計算では失われる例と、注釈付き呼出しにも先行する変数束縛が必要な例を再現した。
+withInputの戻り値をgenericにする候補は既存契約を壊すため不採用とした。
+「普通のTypeScriptだけで注釈や束縛を意識せず書ける」という開発体験まで達成済みとはしない。

@@ -184,6 +184,16 @@
       "scope": "Test follow-up of synchronous throw and Promise rejection before selected adapter IO. Original exception identity is checked without inventing an ActionReport. Tests are added by this follow-up, not claimed to exist in the base. No new source/audio/frame review or full-path completeness is claimed.",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "inputPairInferenceFollowUp": {
+      "implementationBaseCommit": "7e9992d",
+      "scope": "Compiler-only investigation; no new lecture audio or frame review; no independent user trial.",
+      "evidence": [
+        "docs/business-input-pair-inference.md",
+        "docs/business-input-pair-inference.json",
+        "scripts/fixtures/business-input-pair.ts",
+        "scripts/investigate-transition-inference.mjs"
+      ]
     }
   },
   "sections": [
@@ -569,7 +579,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。 共通generic検証の入力型とprivateな証明の保持、既存withInputによる複合計画の接続を追加した。入荷の3つのadapterには文脈の型注釈が残る。名前付きstepで通る限定例もあるが、名前なしinline要件と未注釈evolveの制限を解消したわけではない。",
+      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。 共通generic検証の入力型とprivateな証明の保持、既存withInputによる複合計画の接続を追加した。入荷の3つのadapterには文脈の型注釈が残る。名前付きstepで通る限定例もあるが、名前なしinline要件と未注釈evolveの制限を解消したわけではない。 withInputの直接呼出しでは保持するgeneric入力の対応を、business配列の中間型では保持できない例も再現した。具体的な文脈の注釈と先行する変数束縛は通るが、同じ呼出しをinlineにした例は通らない。戻り値をgenericにする候補は既存契約を壊すため不採用とした。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -588,10 +598,15 @@
         "docs/procurement-receipt-pipeline.md",
         "src/experiments/procurement/receipt-pipeline.ts",
         "src/transition-inline-step.test.ts",
-        "docs/lecture-partial-reconciliation.md"
+        "docs/lecture-partial-reconciliation.md",
+        "docs/business-input-pair-inference.md",
+        "docs/business-input-pair-inference.json",
+        "scripts/fixtures/business-input-pair.ts",
+        "scripts/investigate-transition-inference.mjs"
       ],
       "remaining": [
-        "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。"
+        "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
+        "genericなwithInputとbusiness配列の中間型の対応、および同じ注釈付き呼出しをinlineに置く例の推論制限が残る。購買3操作の文脈注釈と先行する変数束縛は維持する。"
       ]
     },
     {

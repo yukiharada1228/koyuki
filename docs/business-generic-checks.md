@@ -65,6 +65,10 @@ generic loadの推論契約や、defineTransitionの名前なしinline要件と�
 業務関数の純粋性・業務仕様の正しさ、独立利用者の書き心地の優位は、この検査から保証しない。
 新しいbuilder・runtime処理・実行時依存は追加していない。
 
+[入力を残すgenericなwithInputの調査](business-input-pair-inference.md)では、直接呼出しの
+型対応がbusiness配列の中間型計算では失われる例を確認した。上の検証・証明の保持から、
+異なる構造へのgeneric変換まで対応済みとは推測しない。
+
 
 ## generic検証が証明を追加する場合
 

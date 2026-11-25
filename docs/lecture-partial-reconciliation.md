@@ -58,3 +58,12 @@ read/relatedのthrowやPromiseのrejectはこの追加検査に含めず、Resul
 
 さらに[I/Oのthrow/reject](procurement-io-exceptions.md)を別の検査へ追加した。
 直接commandが元の例外でrejectすることを確認し、返されていないActionReportの観測まで取得済みとは扱わない。
+
+## 入力を残すgeneric関数の記述負担
+
+iz-24とqbf-19の推論制限を、[businessと入力の組](business-input-pair-inference.md)で追加調査した。
+withInputの直接呼出しで文脈を保持できても、business配列ではその対応を次段へ渡せない例がある。
+具体的な文脈の注釈と先行する変数束縛は通るが、同じ呼出しをinlineにした例は通らない。
+withInputの戻り値をgenericにする候補は既存契約も壊すため不採用とした。
+購買の3つのadapterは維持し、注釈不要・任意の多相変換を実現済みとはしない。
+新たな音声確認や独立利用者の試用を行った記録ではなく、9話題のstatusも変更しない。

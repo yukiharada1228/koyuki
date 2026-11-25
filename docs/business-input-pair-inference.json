@@ -1,0 +1,881 @@
+{
+  "reports": [
+    {
+      "collectedAt": "2026-11-25T22:19:17.262Z",
+      "sourceGitCommit": "7e9992d5bd1cf5a3e7d189950b7cea150bb2cec2",
+      "sourceDirty": false,
+      "collectorSha256": "8108332c2dce52e6b5a3f8c51f19bf76c6b187cac58fac8707ba0d53fd3f7669",
+      "probeSha256": "7e732460f050f8334629705073956c387c917f2dde72cc3c47d91e83e25fe5fe",
+      "probeVariant": "business-input-pair",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 29,
+              "column": 25,
+              "code": "TS2769"
+            },
+            {
+              "line": 29,
+              "column": 33,
+              "code": "TS2769"
+            },
+            {
+              "line": 31,
+              "column": 29,
+              "code": "TS2344"
+            },
+            {
+              "line": 32,
+              "column": 30,
+              "code": "TS2344"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2769",
+            "TS2344"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        },
+        {
+          "name": "input-preserving-generic-return",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 11,
+              "column": 26,
+              "code": "TS2345"
+            },
+            {
+              "line": 13,
+              "column": 22,
+              "code": "TS2344"
+            },
+            {
+              "line": 29,
+              "column": 33,
+              "code": "TS2769"
+            },
+            {
+              "line": 32,
+              "column": 30,
+              "code": "TS2344"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2345",
+            "TS2344",
+            "TS2769"
+          ],
+          "existingContractDiagnostics": 40,
+          "existingDiagnosticSites": [
+            {
+              "file": "src/expense-replay.test.ts",
+              "line": 112,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expense-replay.test.ts",
+              "line": 132,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 32,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 42,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 48,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 51,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 53,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 58,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 61,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 87,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 125,
+              "code": "TS2578"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 4,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 4,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 31,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/domain.ts",
+              "line": 57,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/domain.ts",
+              "line": 57,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/model-testing.ts",
+              "line": 88,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/replay.ts",
+              "line": 31,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/request-model-testing.ts",
+              "line": 123,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 48,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 48,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 49,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 78,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 79,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 80,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 92,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 103,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 104,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 110,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 113,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 14,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 16,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 17,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 17,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 21,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 32,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 33,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 33,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 38,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 47,
+              "code": "TS18046"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collectedAt": "2026-11-25T22:19:17.297Z",
+      "sourceGitCommit": "7e9992d5bd1cf5a3e7d189950b7cea150bb2cec2",
+      "sourceDirty": false,
+      "collectorSha256": "8108332c2dce52e6b5a3f8c51f19bf76c6b187cac58fac8707ba0d53fd3f7669",
+      "probeSha256": "af19b623e813043f1f05d894ae70c8c0bd5f1dd4d1ce2b18acdd2b350320c951",
+      "probeVariant": "business-input-pair-explicit",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": true,
+          "inlineProbeAccepted": true,
+          "probeAccepted": true,
+          "probeDiagnosticSites": [],
+          "probeDiagnosticCodes": [],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        },
+        {
+          "name": "input-preserving-generic-return",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 11,
+              "column": 26,
+              "code": "TS2345"
+            },
+            {
+              "line": 13,
+              "column": 22,
+              "code": "TS2344"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2345",
+            "TS2344"
+          ],
+          "existingContractDiagnostics": 40,
+          "existingDiagnosticSites": [
+            {
+              "file": "src/expense-replay.test.ts",
+              "line": 112,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expense-replay.test.ts",
+              "line": 132,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 32,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 42,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 48,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 51,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 53,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 58,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 61,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 87,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 125,
+              "code": "TS2578"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 4,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 4,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 31,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/domain.ts",
+              "line": 57,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/domain.ts",
+              "line": 57,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/model-testing.ts",
+              "line": 88,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/replay.ts",
+              "line": 31,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/request-model-testing.ts",
+              "line": 123,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 48,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 48,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 49,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 78,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 79,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 80,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 92,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 103,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 104,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 110,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 113,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 14,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 16,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 17,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 17,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 21,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 32,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 33,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 33,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 38,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 47,
+              "code": "TS18046"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "collectedAt": "2026-11-25T22:19:17.297Z",
+      "sourceGitCommit": "7e9992d5bd1cf5a3e7d189950b7cea150bb2cec2",
+      "sourceDirty": false,
+      "collectorSha256": "8108332c2dce52e6b5a3f8c51f19bf76c6b187cac58fac8707ba0d53fd3f7669",
+      "probeSha256": "ce0568244d28681cf0c09832037dff4321a0dc49802a8643ffb3f5010f15c3c6",
+      "probeVariant": "business-input-pair-inline",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 21,
+              "column": 25,
+              "code": "TS2769"
+            },
+            {
+              "line": 21,
+              "column": 70,
+              "code": "TS2769"
+            },
+            {
+              "line": 23,
+              "column": 29,
+              "code": "TS2344"
+            },
+            {
+              "line": 23,
+              "column": 46,
+              "code": "TS2344"
+            },
+            {
+              "line": 24,
+              "column": 30,
+              "code": "TS2344"
+            },
+            {
+              "line": 24,
+              "column": 55,
+              "code": "TS2344"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2769",
+            "TS2344"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        },
+        {
+          "name": "input-preserving-generic-return",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 11,
+              "column": 26,
+              "code": "TS2345"
+            },
+            {
+              "line": 13,
+              "column": 22,
+              "code": "TS2344"
+            },
+            {
+              "line": 21,
+              "column": 25,
+              "code": "TS2769"
+            },
+            {
+              "line": 21,
+              "column": 70,
+              "code": "TS2769"
+            },
+            {
+              "line": 23,
+              "column": 29,
+              "code": "TS2344"
+            },
+            {
+              "line": 23,
+              "column": 46,
+              "code": "TS2344"
+            },
+            {
+              "line": 24,
+              "column": 30,
+              "code": "TS2344"
+            },
+            {
+              "line": 24,
+              "column": 55,
+              "code": "TS2344"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2345",
+            "TS2344",
+            "TS2769"
+          ],
+          "existingContractDiagnostics": 40,
+          "existingDiagnosticSites": [
+            {
+              "file": "src/expense-replay.test.ts",
+              "line": 112,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expense-replay.test.ts",
+              "line": 132,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 32,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 42,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 48,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 51,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 53,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 58,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 61,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 87,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses.test.ts",
+              "line": 125,
+              "code": "TS2578"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 4,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 4,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/expenses/application.ts",
+              "line": 31,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/domain.ts",
+              "line": 57,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/domain.ts",
+              "line": 57,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/expenses/model-testing.ts",
+              "line": 88,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/replay.ts",
+              "line": 31,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/expenses/request-model-testing.ts",
+              "line": 123,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 48,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 48,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 49,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 78,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 79,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 80,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 92,
+              "code": "TS2322"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 103,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 104,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 110,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inference.test.ts",
+              "line": 113,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 14,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 16,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 17,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 17,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 21,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 32,
+              "code": "TS2345"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 33,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 33,
+              "code": "TS18046"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 38,
+              "code": "TS2344"
+            },
+            {
+              "file": "src/transition-inline-step.test.ts",
+              "line": 47,
+              "code": "TS18046"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
