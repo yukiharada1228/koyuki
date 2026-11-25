@@ -1,5 +1,44 @@
 # inlineのgeneric要件と遷移callbackの推論
 
+## 既存のstepで書ける範囲と残る制限
+
+現行APIでも、具体的な要件関数を名前付き段階にすると、次の例はevolveの型注釈なしで通る。
+
+```ts
+const quote = (amount: number): Result<number, 'Declined'> =>
+  amount > 0 ? ok(amount * 2) : err('Declined');
+const flow = transition(defineTransition({
+  validate: (amount: number) => ok(amount),
+  require: [step('quote', withInput(quote))],
+  evolve: pair => ok(pair.input + pair.value),
+}));
+```
+
+入力number、結果Result<number, 'Declined'>の厳密一致、実行結果、要件失敗時にevolveを
+実行しないこと、不整合な入力型の拒否を[回帰検査](../src/transition-inline-step.test.ts)で確認した。
+独立したgenericな呼び出し元の例も追加フィールドを保持するが、その例ではvalidateの戻り値を
+Result<T, never>と明示する必要がある。すべての型注釈を省略できるという保証ではない。
+
+[呼び出し方の比較](transition-inference-call-sites.json)は、f8d4b19のクリーンなソースと
+TypeScript 7.0.2による結果である。先に変数へ束縛する従来の回避と、オブジェクト内で
+stepに段階名を付ける今回の書き方は区別する。
+
+| 呼び出し方 | 検査したinline例 |
+| --- | --- |
+| require配列へas constのみ追加 | 不受理 |
+| step('quote', withInput(quote)) | 受理 |
+| 即時呼び出し関数を経由 | 受理（調査用の構文） |
+| 多相identity関数をwithInputとstepへ渡す | 不受理 |
+
+したがってstepも万能な解決ではない。元の名前なしinline宣言の推論制限は未解消である。
+この記録のminimal欄は変更していない元の最小fixtureであり、各呼び出し方へ変換した結果ではない。
+
+[宣言形状の追加比較](transition-inference-callable-return.json)では、関数全体の戻り値を
+NoInferで包む候補は具体的なinline例を通したものの、既存generic契約に9件の診断を生じた。
+これは従来と同じ4検査の診断数であり、9個の独立した不具合ではない。
+引数を1要素tupleのrest引数にする候補は既存契約を維持したが、元のinline例を通せなかった。
+両案とも不採用。公開宣言・実行エンジン・依存関係は変更していない。
+
 ## 戻り値の型計算を遅らせる候補
 
 [追加の結果](transition-inference-deferred-return.json)は、53ddc8aのクリーンなソースで

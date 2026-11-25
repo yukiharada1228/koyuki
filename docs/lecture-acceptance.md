@@ -50,7 +50,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | 検証済みの前提を次段へ渡す | private brand、[配布入力契約](workflow-input-contract.md) | 業務規則そのものの正しさや純粋性を型だけで証明しない |
 | 普通の関数を並べ、Resultの接続を任せる | [business](business.md)、実tarballの型・実行検査。[取得成功値の投影](effect-projection.md)を[25操作のhost load](procurement-framework-context.md)へ適用。[全操作が個別loadを持つ場合](business-local-load.md)は未使用の共通loadを省略可能 | 書き心地の優位は未確認。工程・順番・入力構築・必要な業務判断は利用者が宣言する。通常実行はopaque値を渡せるが、診断・Application・永続adapterには別の契約がある |
 | 共通generic loadと異なる要求型を接続する | [inputを持つ文脈の推論](business-generic-load.md)で、loadが必要な文脈を保証する場合に、最初のRuleから操作ごとの要求型を保持。経費の参考実装のload特殊化を共通loadへ削減 | 任意のgeneric関数の型適用ではない。動的候補・要求条件・文脈全体の保証を検査し、成立しない場合は明示的なloadが必要。独立利用者の書き心地は未確認 |
-| 検証→要件→更新の定型処理を委譲する | [defineTransition](declarative-transitions.md) | [generic要件と未注釈evolve](transition-inference-study.md)の推論制限は未解消 |
+| 検証→要件→更新の定型処理を委譲する | [defineTransition](declarative-transitions.md) | [generic要件と未注釈evolve](transition-inference-study.md)は、具体的な関数を名前付きstepにする例を検証。ただし名前なしinlineと多相関数等の推論制限は未解消 |
 | 失敗した段階で後続計算・保存を止める | Workflow / Process / command / businessの検査 | 既に確定した別工程の副作用を自動rollbackしない |
 | 成功と失敗の型を保持する | [入力・成功・失敗型の検査](../src/business-api-types.test.ts)、[宣言の所有権](declaration-ownership.md)、[動的commandの入力契約](application-input-contract.md)、[generic saveの成功型](business-save-inference.md)、配布宣言の拒否検査。[100/500操作](business-scale.md)の全入力/出力対応と認可欠落拒否も検査 | 64段・生成500操作を無制限の保証にしない。巨大な単一モジュール本体ではTypeScriptの制御フロー解析上限も再現。実業務500種類や独立利用者の生産性の実証ではない |
 | 直和に応じて異なる関数へ分岐する | [型ガード付きbranch](typed-branch.md)、[顧客照合](customer-import-study.md) | 型ガードの真偽は利用者の責任 |

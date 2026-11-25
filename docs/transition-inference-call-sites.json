@@ -1,0 +1,142 @@
+{
+  "schema": "koyuki.transition-probe-variants.v1",
+  "scope": "selected-call-sites-with-current-declarations",
+  "minimalFixtureScope": "unchanged-original-inline-fixture",
+  "runs": [
+    {
+      "collectedAt": "2026-11-25T20:22:53.801Z",
+      "sourceGitCommit": "f8d4b19ba8d443506c686dad70b5c0cfce15e165",
+      "sourceDirty": false,
+      "collectorSha256": "c3b175c4e876e5a8a6b57950c073fa5a31d9ae2e228fe804a57da31a0534ad1d",
+      "probeSha256": "7c1ac712169750a49aa9dcf3ad813a87434e661729f8287ef1fa4467076efc8e",
+      "probeVariant": "readonly-tuple",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeDiagnosticCodes": [
+            "TS2322",
+            "TS2339",
+            "TS2551"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    },
+    {
+      "collectedAt": "2026-11-25T20:22:57.337Z",
+      "sourceGitCommit": "f8d4b19ba8d443506c686dad70b5c0cfce15e165",
+      "sourceDirty": false,
+      "collectorSha256": "c3b175c4e876e5a8a6b57950c073fa5a31d9ae2e228fe804a57da31a0534ad1d",
+      "probeSha256": "db141875890ecd0866b8c7aa23056d511ed8aabc34b513acdedf5d7ff4979eb3",
+      "probeVariant": "named-step",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": true,
+          "inlineProbeAccepted": true,
+          "probeDiagnosticCodes": [],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    },
+    {
+      "collectedAt": "2026-11-25T20:23:01.315Z",
+      "sourceGitCommit": "f8d4b19ba8d443506c686dad70b5c0cfce15e165",
+      "sourceDirty": false,
+      "collectorSha256": "c3b175c4e876e5a8a6b57950c073fa5a31d9ae2e228fe804a57da31a0534ad1d",
+      "probeSha256": "afc66857fa79d6c0b7bb452cd57b7183a66030e0c3b8cc1a892926cbb08b54e4",
+      "probeVariant": "local-factory",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": true,
+          "inlineProbeAccepted": true,
+          "probeDiagnosticCodes": [],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    },
+    {
+      "collectedAt": "2026-11-25T20:23:05.185Z",
+      "sourceGitCommit": "f8d4b19ba8d443506c686dad70b5c0cfce15e165",
+      "sourceDirty": false,
+      "collectorSha256": "c3b175c4e876e5a8a6b57950c073fa5a31d9ae2e228fe804a57da31a0534ad1d",
+      "probeSha256": "9394f4a13bfe4e661d5d3c823a1b0cd6f74d66bd2cb366794467d2c47696e6ba",
+      "probeVariant": "generic-identity-named-step",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeDiagnosticCodes": [
+            "TS18046",
+            "TS2322"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    }
+  ]
+}
