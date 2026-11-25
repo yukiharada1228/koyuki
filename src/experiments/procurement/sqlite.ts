@@ -1,3 +1,4 @@
+import type { EntityKey, ProjectionError } from './current-projection.js';
 import { replayAccess, type ReplayRequest, type ReplayError } from './replay-identity.js';
 import type { Committed } from './application.js';
 // Node host adapter, outside the Web-standard dependency-free framework core.
@@ -66,6 +67,27 @@ export class SqliteProcurement implements ProcurementRepository {
     const predicate = predicates[kind]; if (!predicate) throw new Error('InvalidProcurementRelation');
     return this.db.prepare(`SELECT * FROM procurement WHERE group_id = ? AND ${predicate} ORDER BY rowid`).all(this.groupId, parentId)
       .map(row => this.decode(row) as Extract<Entity, { kind: K }>);
+  }
+  current(keys: readonly EntityKey[], actor: Actor): Result<readonly Entity[], ProjectionError> {
+    if (actor.groupId !== this.groupId || actor.active !== true) return err({ kind: 'ProjectionUnavailable' });
+    let transaction = false;
+    try {
+      this.db.exec('BEGIN'); transaction = true;
+      const read = this.db.prepare('SELECT * FROM procurement WHERE group_id = ? AND kind = ? AND id = ?');
+      const entities = new Map<string, Entity>();
+      for (const key of keys) {
+        const identity = JSON.stringify([key.kind, key.id]); if (entities.has(identity)) continue;
+        const row = read.get(this.groupId, key.kind, key.id);
+        if (!row) { this.db.exec('ROLLBACK'); transaction = false; return err({ kind: 'ProjectionUnavailable' }); }
+        entities.set(identity, this.decode(row));
+      }
+      this.db.exec('COMMIT'); transaction = false;
+      return ok([...entities.values()]);
+    } catch (cause) {
+      if (transaction) this.db.exec('ROLLBACK');
+      if (conflict(cause)) return err({ kind: 'ProjectionUnavailable' });
+      throw cause;
+    }
   }
   lookupExecution(request: ReplayRequest, actor: Actor): Result<Receipt<Committed>, ReplayError> {
     const denied = replayAccess(request, actor); if (denied) return err(denied);

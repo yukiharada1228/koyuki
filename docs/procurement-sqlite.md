@@ -87,3 +87,7 @@ returned/cancelled/voided等の履歴も同じ親の結果に含む。どの状�
 
 親に属する行数やstock内のpositionsは増え得るため、取得量が常に一定とは主張しない。
 実測した速度改善率や高並列運用への適合性はまだ示していない。
+
+
+[current取得port](procurement-current-projection.md)は、複数キーを一つのread transactionで復元し、
+再送後の表示へ現在の影響対象を渡す。通常のread/relatedを複数回呼ぶことがsnapshotになるわけではない。

@@ -59,3 +59,7 @@ actorはsessionに固定されるため、承認者・倉庫担当等の間で�
 [独立Applicationとの比較](procurement-application-comparison.md)でも、再送時に過去値を適用しない方針を検証した。
 応答消失直後の復旧でも自動refreshしないため、初期値が空なら保存済み行がViewへ現れない場合がある。
 これは未解消のhost取得境界で、3方式の挙動一致を表示上の制約の解消とは扱わない。
+
+
+追加した[procurementCurrentApplication](procurement-current-projection.md)は再送後に影響対象の現在値を取得する。
+従来の再送投影は維持し、現在値を一貫して取得できるhostを選んだときだけ使う。

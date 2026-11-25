@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買の再送後に影響対象の現在値を取得するApplicationを追加。SQLite read transactionで全キーを復元し、応答消失後の空View・古い過去値の適用を改善。取得失敗・不正patch・破損時は既存表示を維持し、業務を再保存せず再取得できることを配布consumerで検証。全体同期や旧3方式比較の同等性とは区別。
+
 - 購買plain/helper版へ独立Application driverを追加。状態・revision・queue・入力snapshot・通知・例外復旧と再送投影をKoyukiと比較し、実配布consumerで検証。応答消失後のreplayed成功でもViewを自動refreshしない共通の制約を明記。
 
 - 購買plain/helper版へ独立した永続再送driverを追加。共有SQLite/identity境界の下でKoyuki runtimeを使わず、過去結果・要求不一致・保存競合・不明commit照会のreportを比較し、原子的な記録失敗rollbackと重複要求を配布consumerで検証。全25操作の全障害経路やApplication比較とは区別。
