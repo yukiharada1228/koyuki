@@ -15,9 +15,12 @@ type Out<F extends Fn> = Value<ReturnType<F>>;
 type ErrorOf<F extends Fn> = Failure<ReturnType<F>>;
 type Stages<E extends Entry> = E extends Pipeline ? E : E extends { run: infer P extends Pipeline } ? P : never;
 type Loader<L extends Load, E extends Entry> = E extends { load: infer P extends Load } ? P : L;
-type Connect<C, P extends readonly Fn[], O> = P extends readonly [infer H extends Fn, ...infer T extends readonly Fn[]]
-  ? T extends readonly [] ? readonly [Rule<C, O, ErrorOf<H>>] : readonly [Rule<C, Out<H>, ErrorOf<H>>, ...Connect<Out<H>, T, O>]
-  : never;
+// Accumulate in tail position to avoid constructing a nested conditional per stage.
+type Connect<C, P extends readonly Fn[], O, A extends readonly Fn[] = readonly []> =
+  P extends readonly [infer H extends Fn, ...infer T extends readonly Fn[]]
+    ? T extends readonly [] ? readonly [...A, Rule<C, O, ErrorOf<H>>]
+      : Connect<Out<H>, T, O, readonly [...A, Rule<C, Out<H>, ErrorOf<H>>]>
+    : never;
 type Checked<L extends Load, E extends Entry, O> = E extends Pipeline ? Connect<Loaded<L>, E, O> : E extends { load: infer A extends Load; run: infer P extends Pipeline }
   ? { readonly load: A; readonly run: Connect<Loaded<A>, P, O> } : never;
 type Requests<L extends Load, T extends Record<string, Entry>> = { [K in keyof T]: Input<Loader<L, T[K]>> }[keyof T];
