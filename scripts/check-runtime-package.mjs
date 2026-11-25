@@ -32,11 +32,12 @@ try {
   const bundled = await build({ entryPoints: files.map(name => join(dist, name)), outdir: join(temp, 'bundle'), bundle: true, platform: 'browser', packages: 'external', format: 'esm', write: false, metafile: true });
   for (const output of Object.values(bundled.metafile.outputs)) assert.equal(output.imports.length, 0, 'runtime imports must resolve inside the package');
   for (const input of Object.keys(bundled.metafile.inputs)) assert(!relative(realpathSync(dist), realpathSync(resolve(input))).startsWith('..'), 'runtime import escapes package');
-  writeFileSync(join(temp, 'consumer.ts'), `import { defineUseCase, step, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, foldEach, err, type Result } from 'koyuki';
+  writeFileSync(join(temp, 'consumer.ts'), `import { defineUseCase, step, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, foldEach, collectEffects, err, type Result } from 'koyuki';
 const parse = fromThrowable((text: string) => JSON.parse(text) as unknown, () => 'InvalidJson' as const);
 const read = fromPromise(async (id: string) => id.length, () => 'Unavailable' as const);
 const rows: Result<readonly string[], readonly { readonly index: number; readonly error: 'Invalid' }[]> =
   collectEach((n: number): Result<string, 'Invalid'> => n > 0 ? ok(String(n)) : err('Invalid'))([1, -1]);
+const sent: Result<readonly string[], readonly { readonly index: number; readonly error: 'Offline' }[]> = await collectEffects(async (n: number): Promise<Result<string, 'Offline'>> => ok(String(n)), { concurrency: 2 })([1, 2]);
 const total: Result<number, 'Invalid'> = foldEach(() => 0, (state, item: number): Result<number, 'Invalid'> => item < 0 ? err('Invalid') : ok(state + item))([1, 2]);
 const delivery: Result<string, never> = await effectProcess<number>().effect('send', async n => ok(String(n))).run(2);
 const parsed: Result<unknown, 'InvalidJson'> = parse('{}');

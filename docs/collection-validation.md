@@ -110,3 +110,6 @@ initial/reduceのthrowは伝播し、async reducerは型で拒否する。
 前の明細を割り当てた後の残額で次を判定し、失敗時にbusinessのsaveが一度も動かないことを確認する。
 これにより利用者がループ内でResultを取り出して分岐・再包装する定型処理を省ける。
 全エラーを集めるcollectEachとは目的が異なる。I/O・並列処理・中間保存・再開は扱わない。
+
+非同期の独立したI/Oの全失敗集約は、[collectEffects](collection-effects.md)を明示的な実行境界として使える。
+collectEach / foldEachの同期Rule契約は変えない。

@@ -1,0 +1,176 @@
+{
+  "videoId": "qBf910_YiqA",
+  "source": "qBf910_YiqA.mp4",
+  "sourceSha256": "45ad216b7386ea4dbfdeb1eda2d8243d21362877c9795cbf3cb7e33368a3dbb5",
+  "method": "Sample at 1 fps and select scene score > 0.12; manually inspect all 23 candidates in six contact sheets and four extra full-resolution frames.",
+  "allFramesReviewed": false,
+  "audioDirectlyReviewed": false,
+  "limitations": [
+    "Small changes and briefly displayed content can be missed.",
+    "This is not continuous audio/video review or verification of the complete external slide deck."
+  ],
+  "frames": [
+    {
+      "file": "slides-qbf/slide-001.jpg",
+      "timeSeconds": 43.0,
+      "sha256": "de3ab8a2dddc115e46c782d71a8a2444dc0264a3edd6fcf84b0f5c2e3375a4d4",
+      "observation": "公開スライドの案内"
+    },
+    {
+      "file": "slides-qbf/slide-002.jpg",
+      "timeSeconds": 65.0,
+      "sha256": "d1650584cc75d5be206f3f503548f2fa92d5a1c3d7ec6233825c451e296ba364",
+      "observation": "従来手法との関係"
+    },
+    {
+      "file": "slides-qbf/slide-003.jpg",
+      "timeSeconds": 155.0,
+      "sha256": "53b644682bfc9f9ce1dd55483fddd5bd3a2ee30037bc9c743fad044b79497863",
+      "observation": "参考書籍"
+    },
+    {
+      "file": "slides-qbf/slide-004.jpg",
+      "timeSeconds": 460.0,
+      "sha256": "a82606cb453e74d85e88f6ab15872165baf11e721cd239596ea7dddbde32eec1",
+      "observation": "Customerの型"
+    },
+    {
+      "file": "slides-qbf/slide-005.jpg",
+      "timeSeconds": 493.0,
+      "sha256": "b8d96949631af948e75db294f87b450b84cec911940d84b2bbde9924d56bd331",
+      "observation": "予約のdiscriminated Union"
+    },
+    {
+      "file": "slides-qbf/slide-006.jpg",
+      "timeSeconds": 523.0,
+      "sha256": "280caaf90095a11e040ade29c1997291165a9037187d3eab59f265fa6c1b7290",
+      "observation": "newtypeの実装"
+    },
+    {
+      "file": "slides-qbf/slide-007.jpg",
+      "timeSeconds": 550.0,
+      "sha256": "fe8e1cc179f774b8bc2a8f3d82a3c04959522da37b4313947179a3e3a2dd46ed",
+      "observation": "Resultを返す値の生成"
+    },
+    {
+      "file": "slides-qbf/slide-008.jpg",
+      "timeSeconds": 592.0,
+      "sha256": "ffc3fc4726c2959f7ef29fcc629d148bb84f56a53f0baf4c4ab05648b6c18d70",
+      "observation": "関数適用で次状態を返す"
+    },
+    {
+      "file": "slides-qbf/slide-009.jpg",
+      "timeSeconds": 631.0,
+      "sha256": "285128bcf012daab2f418367738bba2dd25a1dfe5d16485897ddcd43c9d1543b",
+      "observation": "命令と関数適用の対比"
+    },
+    {
+      "file": "slides-qbf/slide-010.jpg",
+      "timeSeconds": 780.0,
+      "sha256": "473e2b1c15ed53b2b35ae43584dc057cb6d67687f4e8cb40d2f22dc48cfa1286",
+      "observation": "Railwayの説明図"
+    },
+    {
+      "file": "slides-qbf/slide-011.jpg",
+      "timeSeconds": 839.0,
+      "sha256": "4c1640966127eb5c53d9997b745ae6f8f8d524f40d2fb1c46fa5d7a633391079",
+      "observation": "サブステップと型付き失敗"
+    },
+    {
+      "file": "slides-qbf/slide-012.jpg",
+      "timeSeconds": 902.0,
+      "sha256": "5d8af35e404ac237b887e998010b5f888f98eebe1a07561a559ae56fa60064d5",
+      "observation": "状態別Commandの型"
+    },
+    {
+      "file": "slides-qbf/slide-013.jpg",
+      "timeSeconds": 1012.0,
+      "sha256": "820de9f0bfa8b0efae2810ac7714f85ca6bacb8b3317a8fed54b0edbf0407322",
+      "observation": "状態別Commandの型の再掲"
+    },
+    {
+      "file": "slides-qbf/slide-014.jpg",
+      "timeSeconds": 1032.0,
+      "sha256": "526f2e0071a91bc08d778db0b7c35b3404b017217d7ee41f7d7e7a10db5f2102",
+      "observation": "非同期の顧客特定・分岐を含むworkflow"
+    },
+    {
+      "file": "slides-qbf/slide-015.jpg",
+      "timeSeconds": 1101.0,
+      "sha256": "6ca756850e86a1790b8ab7f80502802a23db32493c80a2d512fe7642ef8e4f89",
+      "observation": "GraphQL入力取得と保存の接続"
+    },
+    {
+      "file": "slides-qbf/slide-016.jpg",
+      "timeSeconds": 1206.0,
+      "sha256": "cc309411e0c861c23c9d725bb2473d2a17a05b157f9d253127f92caab4ad4bff",
+      "observation": "ドメイン層とI/Oの分離"
+    },
+    {
+      "file": "slides-qbf/slide-017.jpg",
+      "timeSeconds": 1424.0,
+      "sha256": "83daab7988153e49343c67ff8b10782e6f256278b5a3f86b51bf4461a02c05f0",
+      "observation": "型と静的検査を目的とする説明"
+    },
+    {
+      "file": "slides-qbf/slide-018.jpg",
+      "timeSeconds": 1502.0,
+      "sha256": "dff311c301088673903f1d5bb64cbf99e7888f3eb80c8c7dae9cf7901e2b989e",
+      "observation": "I/Oを分離する設計"
+    },
+    {
+      "file": "slides-qbf/slide-019.jpg",
+      "timeSeconds": 1571.0,
+      "sha256": "5d3b2b4818789104581695b3f6a347df847820398d587da7e8349a6791c2c7dd",
+      "observation": "独立した値生成Resultのcombine"
+    },
+    {
+      "file": "slides-qbf/slide-020.jpg",
+      "timeSeconds": 1684.0,
+      "sha256": "48ee9b5c2d72f3686d002eed976d998ecee295a5e7dc68661d7bac586d26382f",
+      "observation": "Haskellのdo記法"
+    },
+    {
+      "file": "slides-qbf/slide-021.jpg",
+      "timeSeconds": 1751.0,
+      "sha256": "8cf457dd31bfc27e83cc9345e44194069d700e2f4aab595b25661f384b39b274",
+      "observation": "店舗ごとの非同期送信と全失敗集約"
+    },
+    {
+      "file": "slides-qbf/slide-022.jpg",
+      "timeSeconds": 1779.0,
+      "sha256": "ee1fae4b60bfa95789423b48c4f49212b95981ab776b7e95c37e0869c3406c7c",
+      "observation": "通常の手続き的I/Oを例外境界で包む"
+    },
+    {
+      "file": "slides-qbf/slide-023.jpg",
+      "timeSeconds": 1811.0,
+      "sha256": "3544f3cd07061ab61d3fcaf78fe158fed5186579009a67f86908b1a02473f000",
+      "observation": "開発・障害・テスト・オンボーディングに関する登壇者の経験"
+    },
+    {
+      "file": "slides-qbf/extra-1635.jpg",
+      "timeSeconds": 1635,
+      "sha256": "6505c334a5a6c11dc823625ffe6f97334740228b31b3ac5e7acf37dfa683d6d8",
+      "observation": "タグの複数値生成Resultをcombineするコード。"
+    },
+    {
+      "file": "slides-qbf/extra-1655.jpg",
+      "timeSeconds": 1655,
+      "sha256": "8bd144552047e88ec5010d4137317398903f775b88337fc6346ae8356eaa4f88",
+      "observation": "同じタグ生成コード。"
+    },
+    {
+      "file": "slides-qbf/extra-1755.jpg",
+      "timeSeconds": 1755,
+      "sha256": "ebc9141d5b82df0d43ca8416d39ba86ab5f29ea1ec3bbc4be0c8ad3e5c3cae15",
+      "observation": "店舗ごとのtask送信Resultを配列にため、ResultAsync.combineWithAllErrorsで集約。"
+    },
+    {
+      "file": "slides-qbf/extra-1785.jpg",
+      "timeSeconds": 1785,
+      "sha256": "5013056d8fc31925c52b94096c6d0aed8942bab4553861b21ab4ef1688918457",
+      "observation": "Cloud Tasksの手続き的な構築とfromPromise境界。"
+    }
+  ]
+}

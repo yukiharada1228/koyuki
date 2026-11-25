@@ -15,8 +15,8 @@
     "meaningOfCoverage": "Every saved caption line has an assigned topic; this is not completeness of speech, slides, or implementation.",
     "implementationBaseCommit": "dc96dc0",
     "implementationChanges": "The collectEach implementation and its tests accompany this audit update in Git.",
-    "followUpBaseCommit": "027c03b",
-    "followUpChanges": "foldEach and dependent budget allocation accompany this update; the original caption review is unchanged."
+    "followUpBaseCommit": "35e482f",
+    "followUpChanges": "Visual review identifies async task sending at 29 minutes; collectEffects and its tests accompany this update."
   },
   "sections": [
     {
@@ -201,18 +201,20 @@
       "startSeconds": 1749,
       "endSeconds": 1776,
       "topic": "ループ内で生じるResult列",
-      "status": "partial",
-      "assessment": "collectEachで独立同期検証の全失敗を集約し、foldEachで前の状態に依存する同期Result計算を最初の失敗まで順次合成する。明細の失敗で後続・保存が止まることを検証。I/Oを含む任意のループまで自動合成したわけではない。",
+      "status": "supported",
+      "assessment": "画面で店舗ごとの非同期タスク送信と全失敗集約を確認。同期独立検証はcollectEach、依存する同期計算はfoldEach、独立I/Oの集約はcollectEffectsで接続する。後者は並列数を明示して実行し、位置付き失敗を入力順で返す。講演の無制限の一括開始と同一のスケジュールや任意のループを自動変換する保証ではない。",
       "evidence": [
         "src/framework/validation.ts",
         "src/collection-validation.test.ts",
         "src/examples/order-lines.ts",
         "docs/collection-validation.md",
-        "src/fold-each.test.ts"
+        "src/fold-each.test.ts",
+        "src/framework/collection-effects.ts",
+        "src/collection-effects.test.ts",
+        "docs/collection-effects.md",
+        "docs/lecture-visual-qbf.json"
       ],
-      "remaining": [
-        "effectful-result-collections"
-      ]
+      "remaining": []
     },
     {
       "id": "qbf-15",
