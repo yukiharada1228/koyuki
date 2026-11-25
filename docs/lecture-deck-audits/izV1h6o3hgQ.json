@@ -577,15 +577,16 @@
     {
       "page": 55,
       "topic": "検証生成と固定tuple combine",
-      "status": "partial",
-      "assessment": "検証生成・複数エラー集約は表現できるが、collectは元例のcombineと同じ契約ではない。",
+      "status": "supported",
+      "assessment": "固定tupleのcombineを追加し、位置別の成功型・brand・失敗型Unionを保持する。最初の失敗Resultを変更せず返し、全失敗収集のcollectと区別する。評価済みconstructorの実行は取り消さない。",
       "evidence": [
         "src/tags/domain.ts",
-        "src/framework/validation.ts"
+        "src/framework/validation.ts",
+        "docs/combine.md",
+        "src/combine.test.ts",
+        "scripts/fixtures/combine-types.ts"
       ],
-      "remaining": [
-        "固定tupleの先頭失敗と、フィールド別の全失敗収集を混同しない。必要な失敗規則は業務側で明示する。"
-      ]
+      "remaining": []
     },
     {
       "page": 56,
@@ -1001,6 +1002,16 @@
       "assessment": "参考書籍・リンク一覧。それらの全文を実装・確認したという意味ではない。",
       "evidence": [],
       "remaining": []
+    }
+  ],
+  "followUps": [
+    {
+      "topic": "固定tupleのResult合成",
+      "evidence": [
+        "docs/combine.md",
+        "src/combine.test.ts"
+      ],
+      "scope": "Added after the initial PDF review. Distinguishes first-failure combination of already-evaluated results from collecting all failures; not a neverthrow API compatibility claim."
     }
   ]
 }

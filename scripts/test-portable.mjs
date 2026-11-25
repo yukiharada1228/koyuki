@@ -6,9 +6,13 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { workflow, collectEffects, foldEach, business, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
+import { workflow, combine, collectEffects, foldEach, business, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
+  const firstFailure = err('Invalid');
+  if (combine([ok(1), firstFailure, err('Later')]) !== firstFailure) throw new Error('Tuple failure changed');
+  const tuple = combine([ok('label'), ok(2)]);
+  if (!tuple.ok || tuple.value[0] !== 'label' || tuple.value[1] !== 2 || !Object.isFrozen(tuple.value)) throw new Error('Tuple composition failed');
   const ordinary = business({ name: 'portable-business', load: async input => ok(input), save: async value => ok(value), operations: { double: [n => ok(n * 2)] } });
   const ordinaryResult = await ordinary.double(3);
   const ordinaryReport = await ordinary.double.runDetailed(3, { input: value => value, result: value => value.ok });

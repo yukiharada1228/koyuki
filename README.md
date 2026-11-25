@@ -190,6 +190,7 @@ dispatch・保存・View更新までの手順と、利用者に残るadapterの�
 実例は別OSプロセス・rollback・再配送・workerの競合まで検証し、全内容の完全実現とは区別しています。
 [途中のI/Oを接続するprocess](docs/process.md)は開発版で直接runでき、最終の業務遷移がない処理にも利用できます。
 [可変長の明細検証](docs/collection-validation.md)では、collectEachで位置付きのエラー収集と後続の停止を宣言します。
+[固定tupleのcombine](docs/combine.md)は、評価済みの検証結果を位置どおりにまとめ、最初の失敗を変更せず返します。
 
 [GraphQLの統合例](examples/leave-http/GRAPHQL.md)では、RESTと同じ業務宣言・保存先を使い、
 クエリ・mutation・型付き失敗・再送とトランザクション境界を検証しています。

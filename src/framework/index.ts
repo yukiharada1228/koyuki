@@ -5,7 +5,7 @@ export { workflow, bindMutation, describeView } from './workflow.js';
 export type { Rule, Trace, Workflow, WorkflowCapture, StepObservation } from './workflow.js';
 export { defineAction } from './action.js';
 export type { ActionReport } from './action.js';
-export { collect, collectEach, foldEach } from './validation.js';
+export { combine, collect, collectEach, foldEach } from './validation.js';
 export { process } from './process.js';
 export { defineCommand } from './command.js';
 export { defineTarget, defineRequestTarget, transition, step, defineTransition, withInput } from './model.js';

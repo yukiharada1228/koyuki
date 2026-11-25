@@ -271,15 +271,16 @@
     {
       "page": 25,
       "topic": "複数の値生成Result",
-      "status": "partial",
-      "assessment": "collectで固定フィールドを全失敗集約できる。資料のcombineと同じ失敗形式・短絡規則とは限らない。",
+      "status": "supported",
+      "assessment": "固定tupleのcombineを追加し、位置別の成功型・brand・失敗型Unionを保持する。最初の失敗Resultを変更せず返し、全失敗収集のcollectと区別する。評価済みconstructorの実行は取り消さない。",
       "evidence": [
         "src/framework/validation.ts",
-        "docs/collection-validation.md"
+        "docs/collection-validation.md",
+        "docs/combine.md",
+        "src/combine.test.ts",
+        "scripts/fixtures/combine-types.ts"
       ],
-      "remaining": [
-        "業務上必要な失敗停止/集約を利用者が選ぶ。言語レベルの暗黙unwrapではない。"
-      ]
+      "remaining": []
     },
     {
       "page": 26,
@@ -365,6 +366,14 @@
         "src/customer-import.test.ts"
       ],
       "scope": "Original PDF review base is unchanged; integration example added subsequently, without reproducing the full reservation product."
+    },
+    {
+      "topic": "固定tupleのResult合成",
+      "evidence": [
+        "docs/combine.md",
+        "src/combine.test.ts"
+      ],
+      "scope": "Added after the initial PDF review. Distinguishes first-failure combination of already-evaluated results from collecting all failures; not a neverthrow API compatibility claim."
     }
   ]
 }

@@ -196,3 +196,6 @@ mutation binding、Application操作、通常/再送commandの戻り値で、
 Applicationへの操作登録では、通常のオブジェクトメソッドのreceiverを保持するよう修正した。
 [登録時の契約](application-development.md)を明記し、単体・一括、通常・再送の4経路で
 実行・失敗停止・投影を確認する。業務関数を登録するためだけのラッパーを利用者に要求しない。
+
+固定tupleの[combine](combine.md)を追加した。collectで代用していた資料の例について、
+最初の失敗と全失敗収集を別の契約として選択できる。位置別の型・brand・失敗型を実配布宣言でも検査する。

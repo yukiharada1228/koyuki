@@ -229,3 +229,10 @@ anyや虚偽の型ガード、外部データ・業務仕様の正しさまで�
 [Applicationの登録契約](../application-development.md)と
 [4経路の回帰検査](../../src/application-receiver.test.ts)に記録する。
 成功時の投影・期待失敗時の状態保持・再送時の投影抑止は維持する。
+
+## 固定tupleのResult合成
+
+[combine](../combine.md)を追加し、1本目55ページ・2本目25ページの固定tuple合成に対応付けた。
+成功値の位置とbrand、失敗型のUnionを保持し、入力順の最初の失敗Resultを変更せず返す。
+collectはfield付きの全失敗収集として維持する。すべてのconstructorがすでに評価済みであること、
+言語の暗黙unwrapやneverthrowメソッド互換ではないことを明記した。

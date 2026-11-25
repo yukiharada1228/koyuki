@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 評価済みResultの固定tupleをまとめるcombineを追加。位置別の成功型・brand・失敗型Unionを維持し、最初の失敗Resultを変更せず返す。全失敗収集のcollectや遅延実行とは区別し、業務Workflowの失敗時に保存しないことを実配布consumerでも検証。
+
 - Applicationへオブジェクトメソッドを登録するとthisが失われる不具合を修正。operation/operations/replayOperation/replayOperationsで元のreceiverを保持し、追加ラッパーなしで呼び出せる。通常成功・業務失敗・再送時の投影を4経路で実配布consumerでも検証。
 
 - Workflow.runと通常/再送commandの公開型を関数プロパティへ変更し、配布宣言で入力型を広げた変数に代入して接続検査を迂回できる穴を修正。defineCommand・bindMutation・operation・replayOperationも入力契約を保持。明示的型引数と推論を検査し、Workflow.runを通常のbusiness関数として再利用する例を実配布consumerで検証。

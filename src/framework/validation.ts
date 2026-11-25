@@ -2,6 +2,21 @@ import { ok, err, type Result } from './result.js';
 import type { Rule } from './workflow.js';
 type Value<R> = R extends { ok: true; value: infer A } ? A : never;
 type Failure<R> = R extends { ok: false; error: infer E } ? E : never;
+/** Combine already-evaluated results positionally; return the first failure unchanged.
+ * This stops inspecting later results, not the computations that produced them.
+ */
+export function combine<const T extends readonly Result<unknown, unknown>[]>(results: T): Result<
+  { readonly [K in keyof T]: Value<T[K]> }, Failure<T[number]>
+> {
+  const values: unknown[] = [];
+  for (const result of results) {
+    if (!result.ok) return result as { ok: false; error: Failure<T[number]> };
+    values.push(result.value);
+  }
+  // Iteration erases tuple positions; values were copied in exactly that order.
+  return ok(Object.freeze(values)) as Result<{ readonly [K in keyof T]: Value<T[K]> }, Failure<T[number]>>;
+}
+
 /** Combine independent, already-evaluated validations. Never short-circuits. */
 export function collect<const T extends Record<string, Result<unknown, unknown>>>(fields: T): Result<
   { readonly [K in keyof T]: Value<T[K]> },

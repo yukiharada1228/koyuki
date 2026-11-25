@@ -113,3 +113,6 @@ initial/reduceのthrowは伝播し、async reducerは型で拒否する。
 
 非同期の独立したI/Oの全失敗集約は、[collectEffects](collection-effects.md)を明示的な実行境界として使える。
 collectEach / foldEachの同期Rule契約は変えない。
+
+評価済みの固定tupleをまとめて最初の失敗を返す場合は[combine](combine.md)を使う。
+collectの全失敗収集とは異なる契約であり、検証関数の遅延実行や途中中断を意味しない。
