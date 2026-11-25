@@ -13,7 +13,7 @@ function git(args) {
   if (result.status !== 0) throw Error('Cannot identify investigation source');
   return result.stdout.trim();
 }
-const sourcePaths = ['src', 'tsconfig.json', 'package.json', 'package-lock.json', 'scripts/investigate-transition-inference.mjs'];
+const sourcePaths = ['src', 'tsconfig.json', 'package.json', 'package-lock.json', 'scripts/investigate-transition-inference.mjs', 'scripts/fixtures/business-input-pair.ts'];
 const sourceGitCommit = git(['rev-parse', 'HEAD']);
 const sourceStatus = git(['status', '--porcelain', '--', ...sourcePaths]);
 const original = await readFile(resolve(root, 'src/framework/model.ts'), 'utf8');
@@ -34,6 +34,7 @@ void exactInput; void exactResult;
 `;
 const probes = {
   inline: inlineProbe,
+  'business-input-pair': await readFile(resolve(root, 'scripts/fixtures/business-input-pair.ts'), 'utf8'),
   'readonly-tuple': inlineProbe.replace('require: [withInput(quote)],', 'require: [withInput(quote)] as const,'),
   'named-step': inlineProbe.replace('withInput, transition,', 'withInput, step, transition,')
     .replace('require: [withInput(quote)],', "require: [step('quote', withInput(quote))],"),
@@ -42,6 +43,9 @@ const probes = {
     .replace(/^const quote = .*$/m, "const quote = <T>(value: T): Result<T, 'Declined'> => ok(value);")
     .replace('require: [withInput(quote)],', "require: [step('quote', withInput(quote))],"),
 };
+probes['business-input-pair-explicit'] = probes['business-input-pair'].split('// Direct generic withInput calls')[0];
+probes['business-input-pair-inline'] = probes['business-input-pair-explicit']
+  .replace('[explicitQuote, finish]', '[withInput((value: Context) => quote(value)), finish]');
 // Test whether removing the contextual call signature from the raw tuple helps
 // nested higher-order calls, without changing withInput's generic function shape.
 function rawTupleCandidate(constraint, spread = false, checked = false) {
@@ -101,6 +105,7 @@ function restConnectionCandidate(constraint) {
 }
 const candidates = [
   ['current', original],
+  ['input-preserving-generic-return', withInputReturn('<T extends I>(input: T) => Result<Readonly<{ input: T; value: O }>, E>')],
   ['whole-callable-no-infer-return', withInputReturn('NoInfer<Rule<I, Readonly<{ input: I; value: O }>, E>>')],
   ['tuple-rest-callable-return', withInputReturn('(...args: [I]) => Result<Readonly<{ input: I; value: O }>, E>')],
   ['deferred-with-input-return', deferredWithInputReturn()],
@@ -231,6 +236,12 @@ try {
     });
     results.push({ name, accepted: result.status === 0,
       inlineProbeAccepted: probeDiagnostics.length === 0,
+      probeAccepted: probeDiagnostics.length === 0,
+      probeDiagnosticSites: probeDiagnostics.map(line => {
+        const location = line.match(/inference-probe\.ts\((\d+),(\d+)\): error (TS\d+):/);
+        if (!location) throw Error('Cannot locate probe diagnostic');
+        return { line: Number(location[1]), column: Number(location[2]), code: location[3] };
+      }),
       probeDiagnosticCodes: [...new Set(probeDiagnostics.map(line => line.match(/error (TS\d+):/)[1]))],
       existingContractDiagnostics: existing.length, existingDiagnosticSites: sites });
   }
