@@ -141,3 +141,15 @@ GraphQL固有12テスト、既存RESTを含む公開npm consumer27テスト、�
 複数mutationの文全体が一つのDB transactionになるわけではないことも検証する。
 コア・domain・repositoryの変更なし。PrismaやSDLからの型生成、実運用評価は残る。
 [具体例と契約](../examples/leave-http/GRAPHQL.md)に記載。
+
+## Prisma transaction contextの検証
+
+Prisma 7.10.1＋SQLiteで在庫2件と履歴を原子的に保存する独立サンプルを追加。
+Result.errはPrismaの普通の戻り値なので、そのままではrollbackしないことを比較テストで確認した。
+adapterが失敗Resultをrollbackへ接続し、txを取得・計算・複数保存へ渡す。
+commit時の遅延制約違反では、専用Clientの後処理まで含む接続所有権を明示した。
+コアAPIの追加・Prisma依存はない。
+[再現方法と契約](../examples/prisma-stock/README.md)を参照。
+
+配布開発版・公開npm alpha.5をそれぞれリポジトリ外へインストールしたconsumerで各12テストが成功。
+配布14モジュールの外部importなし・実行時依存ゼロ・Node型不要も再確認した。

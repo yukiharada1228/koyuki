@@ -26,7 +26,7 @@
 | 46:56–50:40 | 途中IOの関数注入・workflow分割 | shippingのprocess.effect。注入したIOを純粋関数とは呼ばない |
 | 50:54–52:19 | Result接続の定型処理をframeworkへ | defineTransition / defineUseCaseGroup / operations、実行状態と完了イベントの自動処理 |
 | 54:10–54:50 | andThen/mapや入れ子の負担 | 宣言による順次接続、withInput、collect。TypeScriptのdo記法や全generic推論を提供するわけではない |
-| 56:54–58:59 | DB transaction、contextを渡す案 | SQLiteのCAS・履歴・receipt・outboxの原子保存をテスト。Prisma interactive transactionの提案は講演でも未実施。任意DBへの一括保証なし |
+| 56:54–58:59 | DB transaction、contextを渡す案 | SQLiteのCAS・履歴・receipt・outboxの原子保存をテスト。Prisma 7.10.1のcontextで複数更新・typed rollback・commit失敗の後処理を検証。提案は講演当時未実施。任意DBへの一括保証なし |
 | 59:07–61:00 | 関数型の全面導入より宣言に必要な範囲 | 通常の関数・Result。IO adapterは通常のTypeScript、実行時依存ゼロ |
 | 61:08–64:36 | 言語・Prisma・REST/GraphQLの選択理由 | transport非依存。HonoとGraphQL.jsとの統合を検証。全言語・全ORMを再実装する要件にはしない |
 | 64:39–66:24 | 登録・メール・人の確認から別workflowへ | 登録サンプルの永続outboxと確認command。別OSプロセス・配送失敗・ack失敗・lease競合を検証。講演では未経験の構想 |
@@ -82,7 +82,7 @@
 2. 独立した利用者による開発体験・学習負担の評価と、実業務での運用実績。
 3. 永続イベントを一般機能にする場合の方針決定。ホストのscheduler、dead letter、lease更新、
    外部配送先の冪等性までをどこが担うか、現在は登録サンプルで境界を示した段階。
-4. Prisma interactive transactionとの実統合。GraphQL.js / Hono / SQLiteは同じ業務宣言で検証済み。
+4. 他DB・他driverでのtransactionの検証。Prisma 7.10.1＋SQLiteでのcontext・typed rollback・commit失敗と、GraphQL.js / Honoでの統合は検証済み。
 
 したがって、現時点で「講演全内容を完全実現した」「最高と証明した」とは評価しない。
 コードとして確かめられる論点の対応を広げたことと、残る未確認事項を同時にレビューできる状態とする。
@@ -93,4 +93,14 @@
 独立consumerと公開npm alpha.5の両方で、認証・型付き業務失敗・再送・クエリ投影を検証する。
 GraphQLの複数mutationは文全体の原子性を意味しないことをテストし、DB transactionと区別した。
 RESTで保存したreceiptをサーバー再起動後のGraphQLで再利用する経路も確認する。
-コアAPI・依存・業務モデルは変更しない。Prisma、スキーマからの型生成、実運用評価は引き続き未検証。
+コアAPI・依存・既存業務モデルは変更しない。スキーマからの型生成と実運用評価は引き続き未検証。Prismaの追加検証は次節に記載。
+
+## Prismaのtransaction contextの追加検証
+
+[在庫2件と履歴の原子保存](../examples/prisma-stock/README.md)をPrisma 7.10.1で実装。
+外側のadapterがtransactionを開始し、読み書きを同じtxへ束縛する。
+通常のcallbackではErr returnでもcommitされることと、それをadapterでrollbackへ接続することを比較した。
+2件目のCAS失敗・履歴失敗・commit時の遅延制約・終了したcontext・実CLIのmigrationも検証する。
+
+commit失敗後に専用Clientを破棄する境界が必要な経路を検出し、接続所有権をサンプルの契約に含めた。
+コアにPrisma依存や新しいtransactionエンジンは追加しない。SQLite以外への一括保証は行わない。

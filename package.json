@@ -53,7 +53,9 @@
     "test:leave:http:package": "node scripts/test-leave-http-package.mjs",
     "test:leave:http:registry": "node scripts/test-leave-http-package.mjs --registry",
     "test:transition:package": "node scripts/test-leave-http-package.mjs --declarations",
-    "test:registration:package": "node scripts/test-registration-package.mjs"
+    "test:registration:package": "node scripts/test-registration-package.mjs",
+    "test:prisma:package": "node scripts/test-prisma-package.mjs",
+    "test:prisma:registry": "node scripts/test-prisma-package.mjs --registry"
   },
   "devDependencies": {
     "@types/node": "latest",

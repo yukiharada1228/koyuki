@@ -181,3 +181,6 @@ dispatch・保存・View更新までの手順と、利用者に残るadapterの�
 
 [GraphQLの統合例](examples/leave-http/GRAPHQL.md)では、RESTと同じ業務宣言・保存先を使い、
 クエリ・mutation・型付き失敗・再送とトランザクション境界を検証しています。
+
+[Prismaの統合例](examples/prisma-stock/README.md)では、外側のtransaction contextへ業務宣言を束縛し、
+失敗Resultのrollback、複数在庫と履歴の原子保存、commit失敗時の後処理を検証しています。

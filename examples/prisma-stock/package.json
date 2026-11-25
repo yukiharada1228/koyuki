@@ -1,0 +1,26 @@
+{
+  "name": "koyuki-prisma-stock-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "prisma generate",
+    "check": "tsc --noEmit",
+    "test": "tsx --test stock.test.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "@prisma/driver-adapter-utils": "7.10.1",
+    "koyuki": "0.1.0-alpha.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "26.6.6",
+    "prisma": "7.10.1",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  }
+}
