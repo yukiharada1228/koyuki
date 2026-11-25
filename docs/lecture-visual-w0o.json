@@ -1,0 +1,333 @@
+{
+  "videoId": "w0oLNoGsGLc",
+  "source": "w0oLNoGsGLc.mp4",
+  "sourceSha256": "573bd4f8aa6457afb2d198f0bc905a3a67481c2be6c69ca3a1388ff2f8de2f92",
+  "method": "Sample at 1 fps, select scene score > 0.12, manually inspect all 50 candidates in 13 contact sheets and three extra full-resolution frames.",
+  "allFramesReviewed": false,
+  "audioDirectlyReviewed": false,
+  "limitations": [
+    "Small changes, rapidly skipped slides and static text slides can be missed.",
+    "The algorithm code is reviewed as an explanatory illustration, not executed or proved correct.",
+    "No continuous audio/video review or complete external slide-deck verification."
+  ],
+  "frames": [
+    {
+      "file": "slides-w0o/slide-001.jpg",
+      "timeSeconds": 27.0,
+      "sha256": "8bb8a4f428c6fc5e1cc97e010d1ff666a5c44b4571942aae7f8d1fd5bb1ff466",
+      "observation": "画面共有の切替"
+    },
+    {
+      "file": "slides-w0o/slide-002.jpg",
+      "timeSeconds": 28.0,
+      "sha256": "b4d3e30299eb6e473bb2e265c1dc0c608b96973d09f59c8b2837e752446fcff5",
+      "observation": "講演タイトル"
+    },
+    {
+      "file": "slides-w0o/slide-003.jpg",
+      "timeSeconds": 30.0,
+      "sha256": "40e76e97315694c3d9d1d8a21792e341290969ff8be68722b36e658d451db0a5",
+      "observation": "講演タイトルの画面調整"
+    },
+    {
+      "file": "slides-w0o/slide-004.jpg",
+      "timeSeconds": 31.0,
+      "sha256": "38c810cad48374d1c1d8aee8b61b2248703d7253f74761b53532e7d45100ba10",
+      "observation": "講演タイトルの画面調整"
+    },
+    {
+      "file": "slides-w0o/slide-005.jpg",
+      "timeSeconds": 320.0,
+      "sha256": "ec136d96b724c4a07f408f16991b92a3643ca4d2713713d0868cd422a3074098",
+      "observation": "他パラダイムに対する普遍的優位を主張しない注意"
+    },
+    {
+      "file": "slides-w0o/slide-006.jpg",
+      "timeSeconds": 355.0,
+      "sha256": "16bc33b46ba692ce12419f1150dcf38b8aaa874aaedb6c24b32ac09b4ffa00b6",
+      "observation": "Reactの状態モデル"
+    },
+    {
+      "file": "slides-w0o/slide-007.jpg",
+      "timeSeconds": 415.0,
+      "sha256": "2d80cbab593d49ef84ccc3981510f0bdd39127db19cdd1c5541b52a2bcb789e7",
+      "observation": "Reactの状態更新コード"
+    },
+    {
+      "file": "slides-w0o/slide-008.jpg",
+      "timeSeconds": 464.0,
+      "sha256": "791fa34a57124ff17cdef7575fa3ca0fb7ff1cab8d42392dc643213690005871",
+      "observation": "Elmの循環図"
+    },
+    {
+      "file": "slides-w0o/slide-009.jpg",
+      "timeSeconds": 509.0,
+      "sha256": "0aeb0f71a570796f65501166dd6ad133a21bdb6401850af90d8253d5756bcbc1",
+      "observation": "Elmのview/updateコード"
+    },
+    {
+      "file": "slides-w0o/slide-010.jpg",
+      "timeSeconds": 538.0,
+      "sha256": "7a32a6c7d8f853a2d01e434521d362b6afae164f54ba8fc52313a3b0b37b7693",
+      "observation": "状態遷移と外部I/Oの循環図"
+    },
+    {
+      "file": "slides-w0o/slide-011.jpg",
+      "timeSeconds": 655.0,
+      "sha256": "6ab8d901ecb463a4b2b2629a6c88c34922414d9f10128700ae6b332356e26d41",
+      "observation": "forによる総和"
+    },
+    {
+      "file": "slides-w0o/slide-012.jpg",
+      "timeSeconds": 769.0,
+      "sha256": "38cb078a3f8a8110b376c8900eb7c4f433ec8bd65db582898b3194c64d0fbe0d",
+      "observation": "再帰適用による総和"
+    },
+    {
+      "file": "slides-w0o/slide-013.jpg",
+      "timeSeconds": 815.0,
+      "sha256": "29eeb76cf3ea55af4780dd2d93ca50f6b9c74d56fc2131d12ca8c9fac5e51f93",
+      "observation": "関数の戻り値へ再び関数を適用する例"
+    },
+    {
+      "file": "slides-w0o/slide-014.jpg",
+      "timeSeconds": 879.0,
+      "sha256": "58fd351bd2e390ca194aeeaef4fe329abb1330a59f9ee91bd0ce396fa98f4155",
+      "observation": "fold/reduceの説明"
+    },
+    {
+      "file": "slides-w0o/slide-015.jpg",
+      "timeSeconds": 916.0,
+      "sha256": "3168febf4f14c8870e55cb65035cfc8f92f260cd7e734620ed12c8a434b40f26",
+      "observation": "文と式の違い"
+    },
+    {
+      "file": "slides-w0o/slide-016.jpg",
+      "timeSeconds": 1004.0,
+      "sha256": "703f4dd3d12ec31418121ed11d54e408a52e04fc9d60a1addb55ee43b4332084",
+      "observation": "forの総和の再掲"
+    },
+    {
+      "file": "slides-w0o/slide-017.jpg",
+      "timeSeconds": 1045.0,
+      "sha256": "360cec02a7e7dbae63b354b6101d414e371a6621dd0208924136dd36fea43119",
+      "observation": "fold/reduceの再掲"
+    },
+    {
+      "file": "slides-w0o/slide-018.jpg",
+      "timeSeconds": 1064.0,
+      "sha256": "4507245067e42849ccf2e77c105fbf04f31cc481d37ee490c1d6d03fcd87e17d",
+      "observation": "forの総和の再掲"
+    },
+    {
+      "file": "slides-w0o/slide-019.jpg",
+      "timeSeconds": 1073.0,
+      "sha256": "ec2d5992d7445eefc062d18c259d25474c439742ba3c4bff56628c93bfec674b",
+      "observation": "fold/reduceの再掲"
+    },
+    {
+      "file": "slides-w0o/slide-020.jpg",
+      "timeSeconds": 1104.0,
+      "sha256": "13ce24766316218cb81655b866dcd8f6d5f8c2330a73cb41d517cf5c6d17a7a7",
+      "observation": "値の写像の図"
+    },
+    {
+      "file": "slides-w0o/slide-021.jpg",
+      "timeSeconds": 1145.0,
+      "sha256": "bd920ded93e80dcfdf717d9e640a2b587469a6bcc76000de928d8cce0ec651ca",
+      "observation": "命令型と関数型の捉え方"
+    },
+    {
+      "file": "slides-w0o/slide-022.jpg",
+      "timeSeconds": 1172.0,
+      "sha256": "ad9653b528ff8e7dd8604ae5caef31bf4c492fc56aa2b0751543461f2eb2d923",
+      "observation": "計算の定義と型の構造化"
+    },
+    {
+      "file": "slides-w0o/slide-023.jpg",
+      "timeSeconds": 1200.0,
+      "sha256": "66482d31fbe78dbb9764f654dc5556b05b25368cb522caa3afc9dfd506c50f4c",
+      "observation": "archiveCustomerの状態変化"
+    },
+    {
+      "file": "slides-w0o/slide-024.jpg",
+      "timeSeconds": 1280.0,
+      "sha256": "22ea4bcb2e9e03a73a99e8d4e7046482a8029212a4c9dbf40ad841d65b4bcf7e",
+      "observation": "メソッド呼出しと戻り値の明示性"
+    },
+    {
+      "file": "slides-w0o/slide-025.jpg",
+      "timeSeconds": 1438.0,
+      "sha256": "994858b261da47872dc6de7603543599f849309be3af265d8be947b99c9bb63d",
+      "observation": "WebアプリケーションとI/O"
+    },
+    {
+      "file": "slides-w0o/slide-026.jpg",
+      "timeSeconds": 1516.0,
+      "sha256": "522a19af6114828c264df609adc0651379366faddd96e39861644a3f87eaa50a",
+      "observation": "Elmのupdateの再掲"
+    },
+    {
+      "file": "slides-w0o/slide-027.jpg",
+      "timeSeconds": 1541.0,
+      "sha256": "e6b379b61a4f7b28f9f168c899d3eef4b4be28c6738ce1cc167d2c1376d1b169",
+      "observation": "イベントを契機にした時系列の状態遷移"
+    },
+    {
+      "file": "slides-w0o/slide-028.jpg",
+      "timeSeconds": 1657.0,
+      "sha256": "406ab8d6f1c797145dbfef717d25c656565f05d56ceb4fd43023596c700fd302",
+      "observation": "I/Oから独立した業務計算がアーキテクチャの目的"
+    },
+    {
+      "file": "slides-w0o/slide-029.jpg",
+      "timeSeconds": 1751.0,
+      "sha256": "9a2942b498d366277f0942063f64fc633c45a6698176b6bc3b08005ff5f9f4b3",
+      "observation": "forM_と命令的記述の適用"
+    },
+    {
+      "file": "slides-w0o/slide-030.jpg",
+      "timeSeconds": 1758.0,
+      "sha256": "75ac5a59299c64c4340da0c0d402130095b2d571e74d4cc794550cd019d3daf8",
+      "observation": "可変と不変のUnion-Findのコード比較"
+    },
+    {
+      "file": "slides-w0o/slide-031.jpg",
+      "timeSeconds": 1759.0,
+      "sha256": "5b3f605ed34123def3a1a71c2982bd0c08f69529ff34b7dc1c7bb8754c1716e9",
+      "observation": "計算の定義の再掲"
+    },
+    {
+      "file": "slides-w0o/slide-032.jpg",
+      "timeSeconds": 1811.0,
+      "sha256": "7734585a4fd513b1496168b87a2bbc63116d24706463b5a837395c70603c3276",
+      "observation": "parseHexの入出力型"
+    },
+    {
+      "file": "slides-w0o/slide-033.jpg",
+      "timeSeconds": 1902.0,
+      "sha256": "e06dd982b70b63058fb61463e3410e1766f95b1241bef2644b2b1c9ead985901",
+      "observation": "TypeScript公式文書のTypes as Setsの紹介"
+    },
+    {
+      "file": "slides-w0o/slide-034.jpg",
+      "timeSeconds": 1912.0,
+      "sha256": "1a93399a1d8ab8ac9bf6a6535dc9277454d0bc566a37155ed7d1e2873ad57b29",
+      "observation": "number/boolean/stringとliteralの集合図"
+    },
+    {
+      "file": "slides-w0o/slide-035.jpg",
+      "timeSeconds": 1993.0,
+      "sha256": "2bc97bc32c60c306465cd15e35563919faf8dc78bfd7e68825ea970e93b9e2e9",
+      "observation": "型とコンパイラ・ツールの支援"
+    },
+    {
+      "file": "slides-w0o/slide-036.jpg",
+      "timeSeconds": 2076.0,
+      "sha256": "88712ce3d440d70cf690876d905d82408a1f1eedd48f342de60621ef940459cd",
+      "observation": "型に対する二つの見方"
+    },
+    {
+      "file": "slides-w0o/slide-037.jpg",
+      "timeSeconds": 2119.0,
+      "sha256": "ca185e1ac982f74e0d6712b5c9d6593ffa0ff2d5bd041c94807327dfbb77a3c1",
+      "observation": "Resultを返すColor生成"
+    },
+    {
+      "file": "slides-w0o/slide-038.jpg",
+      "timeSeconds": 2173.0,
+      "sha256": "99fa9d5b78f2f267bca1f1c75ec169969538413c2af2f51376edb979ee85cb11",
+      "observation": "直和の導入"
+    },
+    {
+      "file": "slides-w0o/slide-039.jpg",
+      "timeSeconds": 2188.0,
+      "sha256": "5785ae36e2cb8a24167f705a5e7350418d5713b5a8c673f1beccfaf007459087",
+      "observation": "Bool/Maybe/UnionFindの代数的データ型"
+    },
+    {
+      "file": "slides-w0o/slide-040.jpg",
+      "timeSeconds": 2218.0,
+      "sha256": "eae0e265f73b7676cc347aea748b2ec2dbe965f6e83332f39742737d8600bc6c",
+      "observation": "和を使う型の組み合わせ"
+    },
+    {
+      "file": "slides-w0o/slide-041.jpg",
+      "timeSeconds": 2293.0,
+      "sha256": "c11754e85464db1fe30d82c30c3203f66e95487997f3166a31206f07b50fffdc",
+      "observation": "予約者と来店者の3種類のUnion"
+    },
+    {
+      "file": "slides-w0o/slide-042.jpg",
+      "timeSeconds": 2348.0,
+      "sha256": "f45c2b00721dfe2487a7984f92a88fd25fba7ff0f6918d278f949fff4603da9a",
+      "observation": "直積だけの階層と直和の柔軟性"
+    },
+    {
+      "file": "slides-w0o/slide-043.jpg",
+      "timeSeconds": 2412.0,
+      "sha256": "19faa248a2d8db45113f1cb4390679d9ee3e728874d71a81a638395e161e591c",
+      "observation": "会員とゲストの直和・直積"
+    },
+    {
+      "file": "slides-w0o/slide-044.jpg",
+      "timeSeconds": 2436.0,
+      "sha256": "43651222e6bf34d236b56295a65021778a6cf7e1c5805993236c9bb900da6ecb",
+      "observation": "optionalが多いTagクラスとの比較"
+    },
+    {
+      "file": "slides-w0o/slide-045.jpg",
+      "timeSeconds": 2437.0,
+      "sha256": "1d63725c8f83528dd58a83f713ab0fa4c887a41a670d99e36adbb5b7f143d128",
+      "observation": "状態別のTag型"
+    },
+    {
+      "file": "slides-w0o/slide-046.jpg",
+      "timeSeconds": 2438.0,
+      "sha256": "774b5a3e8c8c1002000870192a959fac603d0428f6ec564d738570bb011f514c",
+      "observation": "型で取り得る集合を制約する図"
+    },
+    {
+      "file": "slides-w0o/slide-047.jpg",
+      "timeSeconds": 2457.0,
+      "sha256": "f7ca6061a79809ae4e249b5eb71f99301410da16e3dae0ace1af1b45f5ec9d03",
+      "observation": "Maybeのパターンマッチ"
+    },
+    {
+      "file": "slides-w0o/slide-048.jpg",
+      "timeSeconds": 2458.0,
+      "sha256": "81d834606c17a73fbeac743984bfe24fcd7b9b0bbccd6189ce1ec3bce2940850",
+      "observation": "GraphQLのUnionとfragment"
+    },
+    {
+      "file": "slides-w0o/slide-049.jpg",
+      "timeSeconds": 2459.0,
+      "sha256": "17b1eca367a398099d771d6d208eca808be71fad749c021720340e55f7930cd2",
+      "observation": "Maybe/Either/IO/Listの文脈の補足"
+    },
+    {
+      "file": "slides-w0o/slide-050.jpg",
+      "timeSeconds": 2461.0,
+      "sha256": "5b5756cab4847168ccf79c6f22f9a89d8a047238a59e4ff3e576e472cf939be3",
+      "observation": "ナップサック問題のC++とHaskellの比較"
+    },
+    {
+      "file": "slides-w0o/extra-1350.jpg",
+      "timeSeconds": 1350,
+      "sha256": "818e13c2dc5886b46c680e5ad6a774900fa6371d490721c06e6cc0d4b7364ff4",
+      "observation": "状態変化前後を引数・戻り値で明示する説明の同一スライド。値の履歴の全自動保存を示すコードではない。"
+    },
+    {
+      "file": "slides-w0o/extra-1380.jpg",
+      "timeSeconds": 1380,
+      "sha256": "b0565dbd2b9ffe3c16c742efc091743a7254cd9d506c0441f1663f5dc64bd2b3",
+      "observation": "状態変化前後を引数・戻り値で明示する説明の同一スライド。値の履歴の全自動保存を示すコードではない。"
+    },
+    {
+      "file": "slides-w0o/extra-1405.jpg",
+      "timeSeconds": 1405,
+      "sha256": "d07da47ba042278b4f98bd474b209705844ce1bc108d12e4911d1e2f9d365fac",
+      "observation": "状態変化前後を引数・戻り値で明示する説明の同一スライド。値の履歴の全自動保存を示すコードではない。"
+    }
+  ]
+}
