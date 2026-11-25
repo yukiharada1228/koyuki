@@ -61,3 +61,6 @@ node --import tsx --test generated-expense-request-model.test.ts
 逐次実行・単一経費・有限の生成候補が対象で、保存後の2条件以外の喪失点・並行競合・定義version変更・
 保持期限・監査行数・Application表示をこの生成器で網羅したとはしない。
 それらの既存の個別検査は維持する。sampledは生成した範囲での一致であり、任意の再送の証明ではない。
+
+[並行要求の別契約](expense-race-model-sequences.md)では、両接続が同じ版を読み終えた
+二つの進行順を、勝者を固定しない許容結果と比較する。配送喪失モデルとの複合故障は対象外である。
