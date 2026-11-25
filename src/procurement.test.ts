@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { procurement } from './experiments/procurement/application.js';
 import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
-import { receiveOrder, type Actor, type Approved, type Draft, type Request, type RuleError } from './experiments/procurement/domain.js';
+import { completeOrder, receiveOrder, type Actor, type Approved, type Draft, type Request, type RuleError } from './experiments/procurement/domain.js';
 import { err, type Result } from './framework/index.js';
 const actor = (role: Actor['role'], id: string = role, groupId: string = 'g1'): Actor => ({ role, id, groupId, active: true });
 const policy = { requestLimitCents: 1000, approverIds: ['approver', 'other-boss'] };
@@ -243,4 +243,60 @@ test('order completion requires full receipts and a matched invoice and closes f
   assert.deepEqual(await f.buyer.orders.cancel({ id: 'po', expectedVersion: 4 }), err({ kind: 'WrongState' }));
   assert.deepEqual(await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 4, receiptId: 'extra', quantities: [{ sku: 'a', quantity: 1 }] }), err({ kind: 'WrongState' }));
   assert.equal(f.repository.commits, before);
+});
+
+async function invoiced(f: ReturnType<typeof setup>) {
+  await ordered(f);
+  assert((await f.warehouse.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: lines.map(({ sku, quantity }) => ({ sku, quantity })) })).ok);
+  assert((await f.finance.invoices.register({ id: 'po', expectedVersion: 2, invoiceId: 'inv', amountCents: 1000 })).ok);
+  assert((await f.finance.invoices.match({ id: 'inv', expectedVersion: 1 })).ok);
+}
+test('an incorrect invoice can be voided and replaced while retaining its terminal record', async () => {
+  const f = setup(); await ordered(f);
+  assert((await f.finance.invoices.register({ id: 'po', expectedVersion: 1, invoiceId: 'bad', amountCents: 999 })).ok);
+  assert.deepEqual(await f.finance.invoices.approve({ id: 'bad', expectedVersion: 1 }), err({ kind: 'WrongState' }));
+  assert.deepEqual(await f.finance.invoices.void({ id: 'bad', expectedVersion: 1, reason: ' ' }), err({ kind: 'InvalidInput' }));
+  const voided = await f.finance.invoices.void({ id: 'bad', expectedVersion: 1, reason: ' Wrong amount ' }); assert(voided.ok);
+  assert.equal(voided.value.state, 'voided'); assert.equal('receiptIds' in voided.value, false);
+  if (voided.value.state === 'voided') assert.equal(voided.value.reason, 'Wrong amount');
+  const replacements = await Promise.all(['new1', 'new2'].map(invoiceId => f.finance.invoices.register({ id: 'po', expectedVersion: 3, invoiceId, amountCents: 1000 })));
+  assert.equal(replacements.filter(result => result.ok).length, 1);
+  assert.deepEqual(replacements.find(result => !result.ok), err({ kind: 'Conflict' }));
+  assert.equal(f.repository.list('invoice', actor('finance')).length, 2);
+  assert.deepEqual(await f.finance.invoices.match({ id: 'bad', expectedVersion: 2 }), err({ kind: 'WrongState' }));
+});
+test('finance approves only matched invoices; approved invoices remain compatible with order completion', async () => {
+  const f = setup(); await invoiced(f);
+  assert.deepEqual(await f.buyer.invoices.approve({ id: 'inv', expectedVersion: 2 }), err({ kind: 'Denied' }));
+  assert.deepEqual(await f.finance.invoices.approve({ id: 'inv', expectedVersion: 1 }), err({ kind: 'Conflict' }));
+  const approved = await f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 }); assert(approved.ok);
+  assert.equal(approved.value.state, 'approved');
+  if (approved.value.state === 'approved') assert.equal(approved.value.approvedBy, 'finance');
+  assert.deepEqual(await f.finance.invoices.void({ id: 'inv', expectedVersion: 3, reason: 'no' }), err({ kind: 'WrongState' }));
+  assert((await f.buyer.orders.complete({ id: 'po', expectedVersion: 3 })).ok);
+});
+test('voiding races approval and order completion without leaving an accepted void invoice', async () => {
+  for (const rival of ['approve', 'complete']) for (const voidFirst of [true, false]) {
+    const f = setup(); await invoiced(f);
+    const voidIt = () => f.finance.invoices.void({ id: 'inv', expectedVersion: 2, reason: 'cancel' });
+    const other = () => rival === 'approve' ? f.finance.invoices.approve({ id: 'inv', expectedVersion: 2 }) : f.buyer.orders.complete({ id: 'po', expectedVersion: 3 });
+    const results = await Promise.all(voidFirst ? [voidIt(), other()] : [other(), voidIt()]);
+    assert.equal(results.filter(result => result.ok).length, 1);
+    const failed = results.find(result => !result.ok); assert(failed && !failed.ok);
+    assert(['Conflict', ...(rival === 'complete' ? ['InvoiceMismatch'] : [])].includes(failed.error.kind));
+    const invoice = f.repository.read('invoice', 'inv', actor('finance')); assert(invoice.ok);
+    const order = f.repository.read('order', 'po', actor('buyer')); assert(order.ok);
+    if (invoice.value.state === 'voided') assert.equal(order.value.state, 'placed');
+    if (order.value.state === 'completed') assert.equal(invoice.value.state, 'matched');
+  }
+});
+
+test('a completion plan created before invoice voiding fails CAS without completing the order', async () => {
+  const f = setup(); await invoiced(f);
+  const order = f.repository.read('order', 'po', actor('buyer')); assert(order.ok);
+  const change = completeOrder({ input: { id: 'po', expectedVersion: 3 }, actor: actor('buyer'), current: order.value,
+    receipts: f.repository.list('receipt', actor('buyer')), invoices: f.repository.list('invoice', actor('buyer')) }); assert(change.ok);
+  assert((await f.finance.invoices.void({ id: 'inv', expectedVersion: 2, reason: 'incorrect' })).ok);
+  assert.deepEqual(await f.repository.commit(change.value, actor('buyer')), err({ kind: 'Conflict' }));
+  const persisted = f.repository.read('order', 'po', actor('buyer')); assert(persisted.ok); assert.equal(persisted.value.state, 'placed');
 });

@@ -18,7 +18,7 @@ export type Request = Draft | Submitted | Approved | Rejected;
 export type Order = Base & Readonly<{ kind: 'order'; state: 'placed' | 'cancelled' | 'completed'; requestId: string; ownerId: string; supplier: string; lines: readonly Line[]; totalCents: number }>;
 export type Receipt = Base & Readonly<{ kind: 'receipt'; state: 'accepted'; orderId: string; quantities: readonly Quantity[] }>;
 type InvoiceBase = Base & Readonly<{ kind: 'invoice'; orderId: string; amountCents: number }>;
-export type Invoice = InvoiceBase & (Readonly<{ state: 'registered' }> | Readonly<{ state: 'matched'; receiptIds: readonly string[] }>);
+export type Invoice = InvoiceBase & (Readonly<{ state: 'registered' }> | Readonly<{ state: 'matched'; receiptIds: readonly string[] }> | Readonly<{ state: 'approved'; receiptIds: readonly string[]; approvedBy: string }> | Readonly<{ state: 'voided'; reason: string; voidedBy: string }>);
 export type Entity = Request | Order | Receipt | Invoice;
 export type Check = Readonly<{ kind: Entity['kind']; id: string; groupId: string; version: number | null }>;
 export type Change<T extends Entity> = Readonly<{ result: T; writes: readonly Entity[]; checks: readonly Check[] }>;
@@ -217,6 +217,30 @@ export function cancelOrder(value: Loaded<VersionInput, Order> & OrderFacts): Re
 export function completeOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
   const checked = orderGuard(value); if (!checked.ok) return checked;
   const current = checked.value;
-  if (value.invoices.length !== 1 || value.invoices[0]?.state !== 'matched' || value.invoices[0].amountCents !== current.totalCents || current.lines.some(line => value.receipts.flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
+  if (value.invoices.length !== 1 || (value.invoices[0]?.state !== 'matched' && value.invoices[0]?.state !== 'approved') || value.invoices[0].amountCents !== current.totalCents || current.lines.some(line => value.receipts.flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
   return ok(plan({ ...current, state: 'completed', version: current.version + 1 }, [check(current), ...value.invoices.map(check)]));
+}
+
+function invoiceGuard(value: Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>): Result<Invoice, RuleError> {
+  const { input, actor, current, order } = value;
+  if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
+  if (input.id !== current.id || order.id !== current.orderId || order.groupId !== current.groupId) return failure('TargetMismatch');
+  if (!integer(input.expectedVersion)) return failure('InvalidInput');
+  if (input.expectedVersion !== current.version) return failure('Conflict');
+  return ok(current);
+}
+export function approveInvoice(value: Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>): Result<Change<Invoice>, RuleError> {
+  const checked = invoiceGuard(value); if (!checked.ok) return checked;
+  const current = checked.value;
+  if (current.state !== 'matched' || value.order.state === 'cancelled') return failure('WrongState');
+  return ok(plan({ ...current, state: 'approved', approvedBy: value.actor.id, version: current.version + 1 }, [check(current), check(value.order)]));
+}
+export function voidInvoice(value: Loaded<ReasonInput, Invoice> & Readonly<{ order: Order }>): Result<Change<Invoice>, RuleError> {
+  const checked = invoiceGuard(value); if (!checked.ok) return checked;
+  const current = checked.value, order = value.order;
+  if ((current.state !== 'registered' && current.state !== 'matched') || order.state !== 'placed') return failure('WrongState');
+  if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
+  const result: Invoice = { kind: 'invoice', state: 'voided', id: current.id, groupId: current.groupId, orderId: current.orderId,
+    amountCents: current.amountCents, version: current.version + 1, reason: value.input.reason.trim(), voidedBy: value.actor.id };
+  return ok(plan(result, [check(current), check(order)], [{ ...order, version: order.version + 1 }, result]));
 }
