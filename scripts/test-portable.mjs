@@ -16,6 +16,8 @@ export const result = (async () => {
   let retryCalls = 0;
   const retried = await retryEffect(async n => ++retryCalls === 1 ? err('Offline') : ok(n), { maxAttempts: 2, decide: () => ({ kind: 'retry', safety: 'not-applied', delayMs: 0 }) })(3);
   if (!retried.ok || retried.value !== 3 || retryCalls !== 2) throw new Error('Portable bounded retry failed');
+  const projectedRead = await effectProcess().effect('read', async input => ok(input.id + 1), (context, row) => ({ ...context, row })).run({ id: 2, label: 'kept' });
+  if (!projectedRead.ok || projectedRead.value.row !== 3 || projectedRead.value.label !== 'kept') throw new Error('Portable effect projection failed');
   const transactionCalls = [];
   const transaction = createSyncTransaction({ begin() { transactionCalls.push('begin'); }, commit() { transactionCalls.push('commit'); }, rollback() { transactionCalls.push('rollback'); } });
   const transactionResult = transaction.run(() => ok(7));

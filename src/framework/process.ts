@@ -5,6 +5,7 @@ import { observeEvaluation, type Workflow, type Evaluation, type Trace, type Sta
 import { createObservation, type ObservationReport } from './observation.js';
 import { captureLoad, type ActionReport } from './action.js';
 interface Report<O, E> { readonly result: Result<O, E>; readonly trace: readonly Trace[] }
+type Effect<I, O, E> = ((value: I) => Promise<Result<O, E>>) | { readonly runDetailed: (value: I) => Promise<ActionReport<O, E>> };
 /** Capture overload first: ordinary loader/command ReturnType remains ActionReport. */
 function detailed<I, O, E>(perform: (input: I, observe?: StageObserver) => Promise<ActionReport<O, E>>) {
   function runDetailed<A, B>(input: I, capture: WorkflowCapture<A, B>): Promise<ActionReport<O, E> & ObservationReport<A, B>>;
@@ -36,20 +37,23 @@ class Process<I, O, E> {
       return { result: next.result, trace: [...prior.trace, ...next.trace] };
     }), structureSequence(structureOf(this), structureOf(flow)));
   }
-  /** An explicit IO boundary; the adapter returns the next workflow's complete input. */
-  effect<N, F>(name: string, perform: ((value: O) => Promise<Result<N, F>>) | { readonly runDetailed: (value: O) => Promise<ActionReport<N, F>> }): Process<I, N, E | F> {
+  /** Explicitly construct the next input from the prior context and successful IO value. */
+  effect<N, F, P>(name: string, perform: Effect<O, N, F>, project: (context: O, value: NoInfer<N>) => P): Process<I, P, E | F>;
+  /** Without a projector, the adapter returns the next workflow's complete input. */
+  effect<N, F>(name: string, perform: Effect<O, N, F>): Process<I, N, E | F>;
+  effect<N, F, P>(name: string, perform: Effect<O, N, F>, project?: (context: O, value: NoInfer<N>) => P): Process<I, N | P, E | F> {
     const effect = captureLoad(perform);
-    return registerStructure(new Process<I, N, E | F>(async (input, observe) => {
+    return registerStructure(new Process<I, N | P, E | F>(async (input, observe) => {
       const prior = await this.evaluate(input, observe);
       if (!prior.result.ok) return { result: prior.result, trace: prior.trace };
       const receive = observe?.(name, prior.result.value);
       // A function keeps its original opaque IO contract. The object form opts into detail.
-      let detail: Report<N, F>;
+      let detail: Report<N, F>, result: Result<N | P, F>;
       try { detail = typeof effect === 'function'
         ? { result: await effect(prior.result.value), trace: [] }
         : await invokeDetailed(effect.runDetailed, prior.result.value, observe);
+        result = detail.result.ok && project ? ok(project(prior.result.value, detail.result.value)) : detail.result;
       } catch (cause) { try { receive?.defect?.(); } catch {} throw cause; }
-      const { result } = detail;
       receive?.(result);
       return { result, trace: [...prior.trace, ...detail.trace, { step: name, status: result.ok ? 'ok' : 'error' }] };
     }), structureSequence(structureOf(this), ...(typeof effect === 'function' ? [] : [structureOf(effect)]), structureStep(name, 'effect')));

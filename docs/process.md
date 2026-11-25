@@ -19,6 +19,9 @@ const report = await delivery.runDetailed(anotherTick);
 成功値を次へ渡し、最初のResultの失敗で後続を止める。
 最初の入力・最後の成功値・全段階のエラー型を保持する。
 
+前のcontextも必要なら、effectの第3引数に`(context, value) => 次の入力`という普通の関数を渡せる。
+[成功値の投影](effect-projection.md)では、取得成功後だけ入力を構築し、失敗のResult接続はruntimeが扱う。
+
 through(workflow)で途中に純粋な計算を接続できる。
 最後に純粋な判断と保存が必要なら、既存のcommit(mutation)へ渡す。
 配送完了記録のような単なるI/Oのために、空のvalidate/evolveや架空のmutationを宣言する必要はない。

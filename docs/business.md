@@ -66,6 +66,8 @@ voidの検証結果から元の入力を暗黙に復元しない。必要な値�
 
 保存先・成功値の異なる集約は別のbusinessに分け、[Processで接続する](business-composition-study.md)。
 Process自体は全体transactionや永続的な再開を提供しない。
+複数の取得からloadの入力を組む場合は、[effectの成功値投影](effect-projection.md)で
+前のcontextと取得成功値から次の入力を構築でき、Resultの取り出しと失敗停止を委譲できる。
 
 ## 既存APIとの関係
 

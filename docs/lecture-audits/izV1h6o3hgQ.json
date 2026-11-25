@@ -31,6 +31,14 @@
       "record": "docs/lecture-core-focus.md",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "effectProjectionFollowUp": {
+      "implementationBaseCommit": "d184aa3862f8f4aa6aeee02d24276a9c74ddb96d",
+      "scope": "Implementation follow-up of Process effect input construction. No new source reread, audio or all-frame review is claimed.",
+      "sections": [
+        "iz-22",
+        "iz-24"
+      ]
     }
   },
   "sections": [
@@ -323,7 +331,9 @@
         "docs/flow-structure.md",
         "src/flow-examples.test.ts",
         "docs/lecture-core-focus.md",
-        "src/live-execution.test.ts"
+        "src/live-execution.test.ts",
+        "docs/effect-projection.md",
+        "src/process-projection.test.ts"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。"
@@ -348,14 +358,16 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readでも5か所のResult判定をローカルな接続へ移し、コールバック引数の型注釈なしで中間型を保持する。ただしattachは試作内のDTO用であり、言語レベルのdo記法や任意のgeneric推論は提供しない。",
+      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
         "docs/procurement-load-composition.md",
         "src/experiments/procurement/context-process.ts",
         "src/procurement-load-composition.test.ts",
-        "docs/transition-inference-study.md"
+        "docs/transition-inference-study.md",
+        "docs/effect-projection.md",
+        "src/process-projection.test.ts"
       ],
       "remaining": [
         "genericヘルパーと未注釈evolveの同時推論には制限がある。"

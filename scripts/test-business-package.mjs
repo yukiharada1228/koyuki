@@ -57,6 +57,7 @@ try {
   writeFileSync(join(consumer, 'async-transaction.test.ts'), readFileSync(join(root, 'src/async-transaction.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transaction.test.ts'), readFileSync(join(root, 'src/transaction.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'process-observation.test.ts'), readFileSync(join(root, 'src/process-observation.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'process-projection.test.ts'), readFileSync(join(root, 'src/process-projection.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'process-detail.test.ts'), readFileSync(join(root, 'src/process-detail.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'fold-each.test.ts'), readFileSync(join(root, 'src/fold-each.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'collection-effects.test.ts'), readFileSync(join(root, 'src/collection-effects.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));

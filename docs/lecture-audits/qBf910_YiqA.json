@@ -33,6 +33,13 @@
       "record": "docs/lecture-core-focus.md",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false
+    },
+    "effectProjectionFollowUp": {
+      "implementationBaseCommit": "d184aa3862f8f4aa6aeee02d24276a9c74ddb96d",
+      "scope": "Implementation follow-up of Process effect input construction. No new source reread, audio or all-frame review is claimed.",
+      "sections": [
+        "qbf-19"
+      ]
     }
   },
   "sections": [
@@ -310,7 +317,9 @@
         "docs/declaration-ownership.md",
         "src/declaration-ownership.test.ts",
         "docs/lecture-core-focus.md",
-        "docs/transition-inference-rest-checks.json"
+        "docs/transition-inference-rest-checks.json",
+        "docs/effect-projection.md",
+        "src/process-projection.test.ts"
       ],
       "remaining": [
         "generic-inference-and-diagnostics"
