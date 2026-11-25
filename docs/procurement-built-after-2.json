@@ -1,0 +1,489 @@
+{
+  "schema": "koyuki.procurement-runtime.v1",
+  "measuredAt": "2026-11-25T16:41:56.099Z",
+  "configuration": {
+    "rounds": 15,
+    "iterations": 10,
+    "warmup": 3,
+    "backend": "both"
+  },
+  "scope": "construction-of-five-identity-bound-apps-and-32-successful-operations-plus-final-snapshot",
+  "exclusions": [
+    "repository-construction",
+    "schema-creation",
+    "assertions",
+    "transport",
+    "network",
+    "file-durability",
+    "replay",
+    "application-session",
+    "capture",
+    "live-observation",
+    "cold-imports",
+    "type-checking"
+  ],
+  "environment": {
+    "node": "v26.12.0",
+    "v8": "14.6.202.34-node.39",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4",
+    "logicalCpus": 10
+  },
+  "source": {
+    "gitCommit": "fd1977b392fd7b49b3f664ad01bfb9f604191c6b",
+    "sourceDirty": true,
+    "hashes": {
+      "package-lock.json": "8efab17a72fa5d2a483dbb5cff21f1bf8e7148f5b2f3b2efebc58aa091b77f20",
+      "package.json": "6a8f3007b6f8d626340f822ae5527bb5847ff0536cf9c74df3dc0b82a07dcab4",
+      "src/experiments/procurement/application.ts": "f9afbb34d1662d29a407e9b8ff18c616bac778d003d7582e70f328d8aa625636",
+      "src/experiments/procurement/baseline-application.ts": "2f4bd61038d5ffd369342507c6f83573c892f88c2ba58ea389232ff063e9a0e9",
+      "src/experiments/procurement/baseline-detail.ts": "3e651edfbec34b69e015b3cb782f3b428e75ebf4e3b75ca9579fab7d2f55db8f",
+      "src/experiments/procurement/baseline-replay.ts": "90ab6a640e0d5e9cfd8f0b84f533e0d3a16403ff3a12be834656a6a37219c369",
+      "src/experiments/procurement/benchmark.ts": "4742e4603bf6b1e5d885d8a75a05b38c3b2bb6586f46ede0a48607212e6f0ca0",
+      "src/experiments/procurement/comparison-contract.ts": "3d5a268e2ead8332497237e91e85680c851f874e5f58fde5ed9397843d6024d9",
+      "src/experiments/procurement/comparison-scenario.ts": "fec3eb9e93545111d6dd5f765cd3488b4d413a0173ad337b3495a0db5d9035af",
+      "src/experiments/procurement/context-application.ts": "830ef7e6c9a1908353f93b46a5d5bbeeaeead531f5f079fd73ce1e152d160961",
+      "src/experiments/procurement/context-framework.ts": "9792d75a415d11004aeedbded70b6bd469e7699e1a4c4a5dd7753f3c84f39da1",
+      "src/experiments/procurement/context-process.ts": "615de1afe0daa8a3e1ac39fa354c88767402ae9fb7a9aa7e11daf192392c560a",
+      "src/experiments/procurement/context.ts": "d87a0819ca9507133a4f4811eeb36bb001942226cd98e90ac5c6c8a79994c35e",
+      "src/experiments/procurement/current-projection.ts": "6d94a5767d790281b83e62209935677287b9a0bae4bd3e0a625e49dd597cc299",
+      "src/experiments/procurement/domain.ts": "8791d61ada31c426af522363789c23a4c259f54cf0e761c8090937be9b3e0441",
+      "src/experiments/procurement/helper.ts": "e54e3f07f308aaa34b402b802589f50b0e695eb1ecc988c9c1de3fd17aa0f3d2",
+      "src/experiments/procurement/inventory.ts": "c41546dfd850fb7d6e6329a5800fde67d2de8c5752ec5fb4e8ee01420dbbbb9b",
+      "src/experiments/procurement/plain.ts": "07e16957eed80367b03a18af1629b7e258f7966362df510ebd63c7ba07de3567",
+      "src/experiments/procurement/projection.ts": "f276c1628acaf223a459f9c285976110af6d58f8e80d18a5bf1c2f6a53f5172e",
+      "src/experiments/procurement/replay-identity.ts": "6f0f7f940bf5cd3f48c5c7872e6089ed6a599d7aaa26388dbf0a03d14db73877",
+      "src/experiments/procurement/replay.ts": "f4f8a17e98a83bb332e081939194ef8a24959b9183949bdb36326603c62f1a50",
+      "src/experiments/procurement/repository.ts": "7b6ff36ddaf57b9de0bf34d92603286160f54165649c0b605baf1944f728e380",
+      "src/experiments/procurement/sqlite.ts": "3ea165e987d9719edeb1d2387033f3bef8159c4eac1048f66057e0fafb9f2e20",
+      "src/experiments/procurement/trace-contract.ts": "9667c3d527e5b91848727338d223fb8b0b989ce221d0d54e6354159e2d3cf6d0",
+      "src/framework/action.ts": "ed1126a4eabcd4569950122953e09bd9c5802274c141c5cce8e6adaac7b85863",
+      "src/framework/application.ts": "d5c3616f105fc3bcc3919f776e601a74c4b5a69450b4141b761770736a840787",
+      "src/framework/audit.ts": "2ebc27807ed51e2d87222007b816c13fb0d0b90bd74195c6153c303c5644f0e7",
+      "src/framework/business.ts": "1cffaa509b0e2d52605331d59878f76f8a8b75f6bc2d4686e97d6dfbca17b70e",
+      "src/framework/collection-effects.ts": "695d97c945479c79445aab8dbaa1068493ea045cbf0a07eb3f97cb9a01f770f8",
+      "src/framework/command.ts": "35c0e7d07a89ac9544335b4e7b043ad50d806bacd340e01419e14a1b002c5b89",
+      "src/framework/execution.ts": "36d59ebd5d6657079f4c4d7cd7fa172c6fbd65aaef1e0f584a5fd3ec7dcfe540",
+      "src/framework/experimental-jsx.ts": "b60b6d3baddfca68e158b34cf7a0e632515b16afc7eab4876a6121096babe06e",
+      "src/framework/group-runtime.ts": "832be4c081ee983282668e6aa80ddfa8f166f07178a6c95fb7c18d290c513361",
+      "src/framework/identity.ts": "095fb9f5ba28db283a953674974376a9016edc2d22aa62cb676b8ef74e14e702",
+      "src/framework/index.ts": "7b8f9ebe8873345c5728e3b3efc482827a148915c9693ffc4f3c71d2b9f261eb",
+      "src/framework/instrumentation.ts": "41abf3906082de656ae716d151f8c7468d8afb12bcca6708c197d8afc0708b34",
+      "src/framework/model.ts": "ee7d445e4803e4ab4ca95ca61057f62d8f77991be6ee63b02ad09e025b64eba7",
+      "src/framework/observation.ts": "214ce1008375a6e2539d18ca0baa8298387dbc882c83ce6f3b0acaba79fc826e",
+      "src/framework/operation-table.ts": "5679d75db937c7191ccf9eb55d5092596737bb1530b455acfded92cd49f3f431",
+      "src/framework/process.ts": "2f9e4535f8eb2d9e06fa37b958d098960c49d02c52e7433c52e53619700bc11c",
+      "src/framework/program.ts": "d5d317e6c0c4999236fe13b135c4429ca51b1f80edc12ef5c2e7c3cbda21219e",
+      "src/framework/replay.ts": "178ece86d8aca99d0917de435d7b34f75036b4ca12f5931893cb1280e11e236a",
+      "src/framework/result.ts": "fbb1144091c801e34787f52a2521612e9103f3df984f32644855eb20ab50d93e",
+      "src/framework/retry.ts": "147d52f75dce1ca6fb6c7aed6dfbf3c08f6cb0ef9e2e02a628156eb1a17eafab",
+      "src/framework/snapshot.ts": "af64c2926f405be7529e11cc665d0c5d4d3ef349390866ee64b97a4f0eca9aaa",
+      "src/framework/structure.ts": "46acd9be398a4142ae5e6e24f1874b67e8425c6dea38f192100833f2dd94f08f",
+      "src/framework/testing-sequences.ts": "55723cb08054c77943640fdba18870787dca18f5deb5ebff91e4d9eac9ee76b6",
+      "src/framework/testing.ts": "5552164ea46b41b47c2bdf31b7305ce05ad6a3fe2306691dcb457080b1910b71",
+      "src/framework/transaction.ts": "419a45b61012a3adf4207093e49f0cc6c656eadd1a7dabdcbeef9779d057f246",
+      "src/framework/use-case-group.ts": "f5a7f132f156b2a5275edf6e3f057a3be95aa00e294494c5fdfd04f1d2d1b9c4",
+      "src/framework/use-case.ts": "25c98decfdcd645f8c2a0ca667f66bc26fa3c314b1e9c909bbc92350553d923c",
+      "src/framework/validation.ts": "7e4915541dcb1381ce1dcfdd5d2337de263447ac4938a2c5a88999c9461ac8b8",
+      "src/framework/workflow.ts": "7452041483f426c0e762954e9fadea6fa8dd10f8d6638d32e19f9a2dcb6b92da"
+    },
+    "tools": {
+      "tsx": "4.23.15",
+      "esbuild": "0.28.2",
+      "typescript": "7.0.2"
+    }
+  },
+  "results": [
+    {
+      "backend": "memory",
+      "scenarioOperations": 32,
+      "distinctOperations": 25,
+      "identitiesConstructed": 5,
+      "perStyle": {
+        "plain": {
+          "measuredScenarios": 150,
+          "warmupScenarios": 30,
+          "constructionRoundMeanMs": {
+            "median": 0.0020125000000007277,
+            "q1": 0.0016271499999987783,
+            "q3": 0.0026894499999997375,
+            "p90": 0.003782640000000583,
+            "min": 0.001466699999997445,
+            "max": 0.004504199999996672
+          },
+          "executionRoundMeanMs": {
+            "median": 0.2807834000000128,
+            "q1": 0.26534385000000216,
+            "q3": 0.29502270000000264,
+            "p90": 0.5561350600000008,
+            "min": 0.2586499999999944,
+            "max": 2.157745799999998
+          },
+          "rawRoundMeans": {
+            "constructionMs": [
+              0.0022707999999937558,
+              0.0027667999999948733,
+              0.004504199999996672,
+              0.0020125000000007277,
+              0.0031250999999997476,
+              0.0042210000000011405,
+              0.0018705000000124982,
+              0.0026121000000046022,
+              0.001583400000004076,
+              0.001466699999997445,
+              0.0016708999999934804,
+              0.0017041999999889868,
+              0.001541700000018409,
+              0.0023042999999972834,
+              0.0015749000000141677
+            ],
+            "executionMs": [
+              0.260829099999998,
+              0.2910706000000033,
+              0.586975099999998,
+              0.2844000000000051,
+              0.298974800000002,
+              2.157745799999998,
+              0.26518769999999564,
+              0.28101689999999735,
+              0.27839150000000357,
+              0.2655000000000086,
+              0.2586499999999944,
+              0.2807834000000128,
+              0.2642499999999927,
+              0.5098750000000052,
+              0.2690667999999846
+            ]
+          }
+        },
+        "helper": {
+          "measuredScenarios": 150,
+          "warmupScenarios": 30,
+          "constructionRoundMeanMs": {
+            "median": 0.003216599999984737,
+            "q1": 0.0022334499999971057,
+            "q3": 0.003799949999999797,
+            "p90": 0.0042991999999969725,
+            "min": 0.002008599999993521,
+            "max": 0.00930410000000279
+          },
+          "executionRoundMeanMs": {
+            "median": 0.2744167000000175,
+            "q1": 0.2633438000000098,
+            "q3": 0.28469175000000324,
+            "p90": 0.3711258800000013,
+            "min": 0.2551499999999919,
+            "max": 0.42717090000001007
+          },
+          "rawRoundMeans": {
+            "constructionMs": [
+              0.0038417000000038116,
+              0.004529199999996081,
+              0.003954199999998309,
+              0.00930410000000279,
+              0.0037581999999957818,
+              0.003520799999995461,
+              0.003216599999984737,
+              0.0033249999999952705,
+              0.0022250000000099135,
+              0.002174999999999727,
+              0.002241899999984298,
+              0.0024372999999911827,
+              0.002008599999993521,
+              0.0023291999999969447,
+              0.0020959000000004835
+            ],
+            "executionMs": [
+              0.281304099999997,
+              0.41847920000000444,
+              0.2794499000000002,
+              0.30009589999999664,
+              0.2782834000000037,
+              0.2551499999999919,
+              0.26375010000001,
+              0.2880794000000094,
+              0.2717123999999842,
+              0.42717090000001007,
+              0.26076250000000983,
+              0.2744167000000175,
+              0.2646332000000086,
+              0.26293750000000954,
+              0.25915820000000167
+            ]
+          }
+        },
+        "koyuki": {
+          "measuredScenarios": 150,
+          "warmupScenarios": 30,
+          "constructionRoundMeanMs": {
+            "median": 0.2771708999999987,
+            "q1": 0.23732504999999549,
+            "q3": 0.41614374999999626,
+            "p90": 0.4407634999999993,
+            "min": 0.21363340000000902,
+            "max": 0.4720792000000017
+          },
+          "executionRoundMeanMs": {
+            "median": 0.8403418000000045,
+            "q1": 0.7449873500000053,
+            "q3": 0.9337312000000011,
+            "p90": 1.0463958000000013,
+            "min": 0.7264877000000013,
+            "max": 1.1051040999999997
+          },
+          "rawRoundMeans": {
+            "constructionMs": [
+              0.32362079999999765,
+              0.2771708999999987,
+              0.4720792000000017,
+              0.4085501999999991,
+              0.23867489999999805,
+              0.4263709999999918,
+              0.3755665000000022,
+              0.23651249999999208,
+              0.42373729999999343,
+              0.22286639999999808,
+              0.22743339999999534,
+              0.21363340000000902,
+              0.4503585000000044,
+              0.2381375999999989,
+              0.24022500000000377
+            ],
+            "executionMs": [
+              0.8554208000000045,
+              0.939154099999999,
+              0.8521831999999989,
+              1.1051040999999997,
+              0.7531166000000014,
+              1.0991708000000073,
+              0.8403418000000045,
+              0.7526041000000078,
+              0.7346792000000051,
+              0.7264877000000013,
+              0.9283083000000033,
+              0.9672332999999924,
+              0.773012199999988,
+              0.7373706000000027,
+              0.7350417999999876
+            ]
+          }
+        }
+      }
+    },
+    {
+      "backend": "sqlite",
+      "scenarioOperations": 32,
+      "distinctOperations": 25,
+      "identitiesConstructed": 5,
+      "perStyle": {
+        "plain": {
+          "measuredScenarios": 150,
+          "warmupScenarios": 30,
+          "constructionRoundMeanMs": {
+            "median": 0.0019459000000097149,
+            "q1": 0.0018666999999481957,
+            "q3": 0.0021355000000085056,
+            "p90": 0.002480959999998049,
+            "min": 0.0017164000000775559,
+            "max": 0.0031290999999214362
+          },
+          "executionRoundMeanMs": {
+            "median": 2.769524800000022,
+            "q1": 2.681218799999988,
+            "q3": 2.9074166499999876,
+            "p90": 3.044808259999977,
+            "min": 2.63162090000003,
+            "max": 7.076520900000082
+          },
+          "rawRoundMeans": {
+            "constructionMs": [
+              0.002308400000003985,
+              0.00204999999998563,
+              0.0031290999999214362,
+              0.001979000000005726,
+              0.0019166999999242762,
+              0.0019459000000097149,
+              0.0018624999999929059,
+              0.002212499999995998,
+              0.0019166999999697509,
+              0.0017750000000432919,
+              0.002058500000021013,
+              0.0025959999999940917,
+              0.001787400000011985,
+              0.0018708999999034858,
+              0.0017164000000775559
+            ],
+            "executionMs": [
+              2.916416700000002,
+              2.959908500000006,
+              7.076520900000082,
+              2.776920800000016,
+              2.63162090000003,
+              2.711024999999995,
+              2.6829833000000236,
+              2.769524800000022,
+              2.653904000000034,
+              2.843029000000024,
+              2.8984165999999734,
+              3.101408099999958,
+              2.737158399999953,
+              2.668833400000085,
+              2.679454299999952
+            ]
+          }
+        },
+        "helper": {
+          "measuredScenarios": 150,
+          "warmupScenarios": 30,
+          "constructionRoundMeanMs": {
+            "median": 0.002512299999989409,
+            "q1": 0.0023833499999796007,
+            "q3": 0.002691650000008394,
+            "p90": 0.002916759999961869,
+            "min": 0.0022081999999500113,
+            "max": 0.00314579999999296
+          },
+          "executionRoundMeanMs": {
+            "median": 2.7610919000000194,
+            "q1": 2.677043749999984,
+            "q3": 2.783372950000023,
+            "p90": 2.8748975199999998,
+            "min": 2.6338332000000264,
+            "max": 3.0486415000000306
+          },
+          "rawRoundMeans": {
+            "constructionMs": [
+              0.0023748999999952504,
+              0.002591599999993832,
+              0.0027082000000064,
+              0.0023415999999770063,
+              0.0028791999999612018,
+              0.0026751000000103885,
+              0.002395799999999326,
+              0.0029417999999623136,
+              0.0023917999999639506,
+              0.002425000000016553,
+              0.002650099999982558,
+              0.002512299999989409,
+              0.0022081999999500113,
+              0.0023501000000578642,
+              0.00314579999999296
+            ],
+            "executionMs": [
+              2.685391700000025,
+              2.8253625999999827,
+              2.7777750999999853,
+              2.778625100000022,
+              2.689258300000051,
+              2.907920800000011,
+              2.6729291999999987,
+              2.774158299999999,
+              2.6338332000000264,
+              2.6593376000000033,
+              2.788120800000024,
+              2.7610919000000194,
+              2.648616800000036,
+              2.68115829999997,
+              3.0486415000000306
+            ]
+          }
+        },
+        "koyuki": {
+          "measuredScenarios": 150,
+          "warmupScenarios": 30,
+          "constructionRoundMeanMs": {
+            "median": 0.2455708000000186,
+            "q1": 0.2389126000000033,
+            "q3": 0.3319333499999743,
+            "p90": 0.5556467600000314,
+            "min": 0.23371220000001358,
+            "max": 0.9196167999999943
+          },
+          "executionRoundMeanMs": {
+            "median": 3.287325100000044,
+            "q1": 3.189631349999979,
+            "q3": 3.35565405000001,
+            "p90": 3.3838065799999915,
+            "min": 3.125616500000001,
+            "max": 3.5756914999999707
+          },
+          "rawRoundMeans": {
+            "constructionMs": [
+              0.2455708000000186,
+              0.25283739999999855,
+              0.9196167999999943,
+              0.5691334000000324,
+              0.23856690000000072,
+              0.53541680000003,
+              0.23925830000000586,
+              0.27782089999998333,
+              0.23371220000001358,
+              0.23514179999999668,
+              0.24255440000004,
+              0.2659459999999626,
+              0.23705829999989875,
+              0.3860457999999653,
+              0.24416689999993652
+            ],
+            "executionMs": [
+              3.2642791999999985,
+              3.2286292999999886,
+              3.289266500000019,
+              3.354183400000011,
+              3.3571247000000084,
+              3.1590292999999745,
+              3.335233300000027,
+              3.5756914999999707,
+              3.376329200000009,
+              3.1375208999999815,
+              3.125616500000001,
+              3.2202333999999837,
+              3.287325100000044,
+              3.1458334000000834,
+              3.3887914999999795
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "runtime": {
+    "host": "TypeScript-emitted-ES2022-NodeNext",
+    "framework": "installed-development-tarball",
+    "baseCommit": "fd1977b392fd7b49b3f664ad01bfb9f604191c6b",
+    "patchSha256": "6c94990baf955743a9d8e45e84482807c8f8fd04920b95ece769ccb6a6fe3b08",
+    "tarballSha256": "e5d647161af6a9377ec72e425ac5d20c0f5faa2046bf83034fec90724ecff584",
+    "emittedFrameworkModules": {
+      "action.js": "945760ca9bcb9311467d5fdb486c3f11ab482bbb9386dba49947655dac414bc8",
+      "application.js": "0f3fbb2002c4ecf4f8a8b54412c9480e192167d4762d77b334bc3cd04675a017",
+      "audit.js": "19d05400e60bc00e77771b0cd81cf97b4383d52f4c45795d1c6d96e27597803e",
+      "business.js": "ff2f77eb3fc460f41134a91db7f932c0c5866a7381cb804baef921c310823a49",
+      "collection-effects.js": "f7e1b74497f7e7b71af4013395b2d0d4284181bfc57c2d7a7c579b550ffd6026",
+      "command.js": "7964ab7690792410572e4412a7d32847a7f86318c6e131a91a92d16a79374cd0",
+      "execution.js": "23ab942500388cb49c986aa21b2aa7783f7a876db72c00126f657b4cb65a9a83",
+      "group-runtime.js": "841cf51694096108bcd7ca3d4fd19791bd60aecf23a5ad621020da7fa7c9b3c9",
+      "identity.js": "f1557d3ee05dd006a824519390d4f7eb3a90d663f8c1dce25de44809bf9f9aa9",
+      "index.js": "d7df117b197b54a46e015e7edb1d6fbd2d31ddc609eefd5ed4adf5a536d10af2",
+      "instrumentation.js": "59e6feb9520c93a26ddc13dc653c5abb23d10a42beb2f92005a5ffaf13362508",
+      "model.js": "e09e50fdf85fa1d9b8c42cc6926e620a26d44551ceceef5e54dc6cb7a32bbe66",
+      "observation.js": "56afbed3bf9440d600561af13f3662528b1405f9f0be40b013932d3b4f6a0c10",
+      "operation-table.js": "ef8ec90e24e8a88fc8e5eddbad73635369843263eb3a0f9fc9c76eba04a5eeb5",
+      "process.js": "3612fa2df4e58521893c262cc52fac2d67dcfca71622f09f9ac8eee0be570177",
+      "program.js": "d734c329cd5b4d8191d6cc7102e6c56363627dcfbaaf40508b2de545aa2b3a58",
+      "replay.js": "0e42da7d8e6a082489a6ff42bdfef5180c9248d32222eed6c6184b949106fa55",
+      "result.js": "740adc086bdd41af5e9f54d09a157d9190bff9041ee93ab3adcb77eed0ecba7d",
+      "retry.js": "2a06ad0c25ce34ebdf8937f646b17a73fa768981362853cd9f933354add61a96",
+      "snapshot.js": "02b83d78b892e54984c1dc1dfa2382945363591707078c2d606bc941544ca635",
+      "structure.js": "6005ad1191f17f68acee9be54155dfa3d3640847906b291263184d09b24d6bf7",
+      "testing-sequences.js": "46af8f3080ad4135acd362aab25a4e7a1f02e0e3f9f3d93cef3064370db93394",
+      "testing.js": "c2f6010965d80a6c45e65deb33696a1abee96eecdc5f7f0ee95718ad09e38aa2",
+      "transaction.js": "2212a34153d62e7f7941978f3bf587f4c6ad0ab4d7f9862f719071e0c7284ca7",
+      "use-case-group.js": "458edab81e202a3dfea3a0d5eada461b75d3fc3b2306c558c092f77e59f3dccc",
+      "use-case.js": "106d889bccb6cf6beb11259a2a176ebde75e1472c3c83d027e105d3ec273e94d",
+      "validation.js": "ff99d0e58805a9546235d383de6d413313d21b89d1b4303c2ddaad137297cde2",
+      "workflow.js": "c2f018e5b2e254e1c73be50d415800ae1033e6e7d2ab82d9685206321997c280"
+    },
+    "collectorSha256": "fcd1d77af44c788518f618022b14d65c9c13e6be330c6eb8e89699b81041b5bb"
+  }
+}

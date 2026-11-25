@@ -6,12 +6,24 @@ export type Structure =
   | { readonly kind: 'sequence'; readonly children: readonly Structure[] }
   | { readonly kind: 'branch'; readonly name: string; readonly yes: Structure; readonly no: Structure };
 interface Reference { readonly key: string; readonly present: boolean; readonly value: unknown; readonly data: boolean }
-interface Registration { readonly structure: Structure; readonly references: readonly Reference[] }
+type References = readonly [Reference, Reference];
+interface Registration { readonly structure: Structure; readonly references: References }
 const structures = new WeakMap<object, Registration>();
-const references = (target: object): readonly Reference[] => ['run', 'runDetailed'].map(key => {
-  const field = Object.getOwnPropertyDescriptor(target, key);
-  return { key, present: !!field, value: field && 'value' in field ? field.value : undefined, data: !field || 'value' in field };
-});
+// Ordinary bound functions have neither capability property. Share private,
+// immutable absence records instead of allocating three objects per alias.
+const absent: References = Object.freeze([
+  Object.freeze({ key: 'run', present: false, value: undefined, data: true }),
+  Object.freeze({ key: 'runDetailed', present: false, value: undefined, data: true }),
+]);
+const reference = (key: string, field: PropertyDescriptor | undefined, missing: Reference): Reference =>
+  field ? { key, present: true, value: 'value' in field ? field.value : undefined, data: 'value' in field } : missing;
+function references(target: object): References {
+  const run = Object.getOwnPropertyDescriptor(target, 'run');
+  const detailed = Object.getOwnPropertyDescriptor(target, 'runDetailed');
+  return !run && !detailed ? absent : [reference('run', run, absent[0]), reference('runDetailed', detailed, absent[1])];
+}
+const matches = (field: PropertyDescriptor | undefined, previous: Reference): boolean =>
+  field ? previous.present && 'value' in field && field.value === previous.value : !previous.present;
 export const structureStep = (name: string, role: Role = 'rule'): Structure => Object.freeze({ kind: 'step', name, role });
 export const structureSequence = (...children: Structure[]): Structure => Object.freeze({ kind: 'sequence', children: Object.freeze(children) });
 export const structureBranch = (name: string, yes: Structure, no: Structure): Structure => Object.freeze({ kind: 'branch', name, yes, no });
@@ -20,8 +32,11 @@ export const emptyStructure: Structure = Object.freeze({ kind: 'empty' });
 export function structureOf(target: object): Structure {
   const entry = structures.get(target);
   if (entry) {
-    const current = references(target);
-    if (current.every((field, index) => field.data && field.present === entry.references[index]!.present && field.value === entry.references[index]!.value)) return entry.structure;
+    // Read both descriptors in the original order even on mismatch. Do not
+    // evaluate getters or cache a mutable capability object's current state.
+    const run = Object.getOwnPropertyDescriptor(target, 'run');
+    const detailed = Object.getOwnPropertyDescriptor(target, 'runDetailed');
+    if (matches(run, entry.references[0]) && matches(detailed, entry.references[1])) return entry.structure;
   }
   return structureStep('unknown', 'unknown');
 }

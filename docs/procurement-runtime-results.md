@@ -1,5 +1,8 @@
 # 購買シナリオの限定計測で見えた実行負担
 
+このページの2試行はソースを`tsx`で実行した開発時の計測。
+配布用JavaScriptの結果とは区別する。[配布物の比較とprofile調査](procurement-built-results.md)を追加した。
+
 計測対象commitは74ff8a58828c7f9b3e7f3b7743a79b027aeed61a。
 Node 26.12.0、Apple M4、macOS arm64で、独立した2プロセスを順に実行した。
 対象ソースは両方sourceDirty:falseで、同じhash集合だった。
