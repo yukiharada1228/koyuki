@@ -3,6 +3,7 @@
 開発版の`koyuki/testing`は業務runtimeと別の入口。公開npm alpha.5には含まれない。
 `exploreModel`は独立した参照モデルを幅優先で探索し、各辺を実装と比較する。
 関数本体から状態機械や業務仕様を推測しない。
+[seed付きの操作列と反例縮小](model-sequences.md)は別の検査。sampledという結果を、有限グラフを探索し尽くしたpassedと混同しない。
 
 ```ts
 import { exploreModel } from 'koyuki/testing';

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
-import { exploreModel, type ModelStep } from './framework/testing.js';
+import { exploreModel, sampleModel, type ModelStep } from './framework/testing.js';
 import { transition } from './framework/index.js';
 import { submitted, approved, rejected, returned, edited } from './expenses/application.js';
 import { restoreExpense, validExpenseChange, type ExpenseState, type Actor } from './expenses/domain.js';
@@ -82,10 +82,10 @@ function modelStep(state: Spec, event: Event): ModelStep<Spec, Expected> {
   const output = reference(state, event);
   return { state: 'next' in output ? output.next : state, output };
 }
-function matchesImplementation(before: Spec, event: Event, expected: ModelStep<Spec, Expected>): boolean {
+function matchesImplementation(before: Spec, event: Event, expected: ModelStep<Spec, Expected>, execute: typeof actual = actual): boolean {
   const restored = restoreExpense(before);
   if (!restored.ok) return false;
-  const previous = structuredClone(restored.value), actualResult = actual(restored.value, event);
+  const previous = structuredClone(restored.value), actualResult = execute(restored.value, event);
   if (!isDeepStrictEqual(previous, restored.value)) return false;
   if ('error' in expected.output) return !actualResult.ok && actualResult.error.kind === expected.output.error && isDeepStrictEqual(expected.state, before);
   if (!actualResult.ok || !isDeepStrictEqual(actualResult.value.next, expected.output.next)) return false;
@@ -170,6 +170,45 @@ test('the no-self-approval invariant exposes a deliberately broken reference tra
     limits: { depth: 4, states: 1000, transitions: 100000 },
   });
   assert(result.kind === 'counterexample' && result.reason === 'invariant', JSON.stringify(result));
+  assert.deepEqual(result.witness.events.map(event => event.type), ['submit', 'approve']);
+  assert.equal(result.witness.events[1]!.actor.id, result.witness.initial.owner);
+});
+
+test('seeded expense sequences cover amount boundaries, authorization, corrections and terminal states against the independent specification', t => {
+  const reached = new Set<string>(), failures = new Set<string>(), boundaryAmounts = new Set<number>();
+  for (const seed of [0, 1, 0xffffffff]) {
+    const result = sampleModel({ initial, seed, limits: { cases: 64, length: 32, shrinkAttempts: 200 },
+      events: state => state.kind === 'draft' ? events.filter(event => event.type === 'submit')
+        : state.kind === 'returned' ? events.filter(event => event.type === 'edit')
+        : state.kind === 'manager' || state.kind === 'finance' ? events.filter(event => event.type !== 'edit')
+        : events.filter(event => event.actor === actors[0] && (event.type === 'submit' || event.type === 'approve')),
+      step: modelStep, invariant: noSelfApproval,
+      check: (before, event, expected) => {
+        reached.add(before.kind); reached.add(expected.state.kind); boundaryAmounts.add(before.amount);
+        if ('error' in expected.output) failures.add(expected.output.error);
+        return matchesImplementation(before, event, expected);
+      },
+    });
+    assert.equal(result.kind, 'sampled', JSON.stringify(result));
+    t.diagnostic(JSON.stringify(result));
+  }
+  assert.deepEqual([...reached].sort(), ['approved', 'draft', 'finance', 'manager', 'rejected', 'returned']);
+  assert.deepEqual([...boundaryAmounts].sort((a, b) => a - b), [...amounts]);
+  for (const failure of ['Forbidden', 'SelfApproval', 'ReceiptRequired', 'ReasonRequired', 'InvalidState', 'InvalidExpense']) assert(failures.has(failure), failure);
+});
+
+test('seeded expense checks shrink a deliberately faulty actor adaptation to submit then self-approve', () => {
+  const buggy: typeof actual = (state, event) => actual(state, event.type === 'approve' && event.actor.id === state.owner
+    ? { ...event, actor: { id: 'wrong-trusted-actor', role: 'manager', active: true } } : event);
+  const result = sampleModel({ initial: initial.filter(state => state.amount === 3001 && state.receipt), seed: 7,
+    limits: { cases: 1, length: 8, shrinkAttempts: 100 },
+    events: state => events.filter(event => state.kind === 'draft' ? event.type === 'submit' && event.actor === actors[0]
+      : event.type === 'approve' && event.actor === actors[7]),
+    step: modelStep, invariant: noSelfApproval,
+    check: (before, event, expected) => matchesImplementation(before, event, expected, buggy),
+  });
+  assert(result.kind === 'counterexample' && result.reason === 'implementation', JSON.stringify(result));
+  assert.equal(result.shrink, 'one-deletion-minimal');
   assert.deepEqual(result.witness.events.map(event => event.type), ['submit', 'approve']);
   assert.equal(result.witness.events[1]!.actor.id, result.witness.initial.owner);
 });

@@ -30,6 +30,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | --- | --- | --- |
 | 状態を直和と必要なpayloadで表す | [domain](../src/tags/domain.ts)、[直和の検査](../src/sum-model.test.ts) | 型アサーションや外部入力は別の検証が必要 |
 | 宣言した遷移を独立仕様と照合する | [明示モデルの検査入口](finite-model.md)と[経費の有限探索](expense-state-exploration.md)。一回の承認過程は37状態・1,776操作を探索し、自己承認・終端再承認を拒否 | 編集再申請を含む全操作は深さ7によるlimited。keyの同値性・抽象化・実装対応は利用者が指定。無限状態・DB競合・任意業務の証明ではない |
+| 再現する操作列と縮小した反例を得る | [seed付きモデル検査](model-sequences.md)で独立した生成器・参照仕様・比較を指定。経費6,144操作を照合し、故意の操作者変換の不具合を申請→自己承認へ縮小 | sampledは全状態の証明ではない。縮小は予算付きの操作削除で、1削除での最小性とlimitedを区別する。全候補での最短、payload縮小、非同期adapterは未提供 |
 | 検証済みの前提を次段へ渡す | private brand、[配布入力契約](workflow-input-contract.md) | 業務規則そのものの正しさや純粋性を型だけで証明しない |
 | 普通の関数を並べ、Resultの接続を任せる | [business](business.md)、実tarballの型・実行検査。[取得成功値の投影](effect-projection.md)を[25操作のhost load](procurement-framework-context.md)へ適用し、従来の手続き型loaderとも比較 | 書き心地の優位は未確認。工程・順番・入力構築・必要な業務判断は利用者が宣言する。通常実行はopaque値を渡せるが、診断・Application・永続adapterには別の契約がある |
 | 検証→要件→更新の定型処理を委譲する | [defineTransition](declarative-transitions.md) | [generic要件と未注釈evolve](transition-inference-study.md)の推論制限は未解消 |

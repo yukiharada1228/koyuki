@@ -42,6 +42,7 @@ try {
   writeFileSync(join(consumer, 'detailed-load.test.ts'), readFileSync(join(root, 'src/detailed-load.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'live-execution.test.ts'), readFileSync(join(root, 'src/live-execution.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'finite-model.test.ts'), readFileSync(join(root, 'src/finite-model.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));
+  writeFileSync(join(consumer, 'model-sequences.test.ts'), readFileSync(join(root, 'src/model-sequences.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));
   writeFileSync(join(consumer, 'retry.test.ts'), readFileSync(join(root, 'src/retry.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-operation-table.test.ts'), readFileSync(join(root, 'src/business-operation-table.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'expense-state-exploration.test.ts'), readFileSync(join(root, 'src/expense-state-exploration.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'").replace("'./framework/index.js'", "'koyuki'"));
