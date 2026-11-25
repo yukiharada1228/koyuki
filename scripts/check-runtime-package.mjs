@@ -61,8 +61,9 @@ if (result.ok) { const n: number = result.value; console.log(n); }
   if (!registry) writeFileSync(join(temp, 'typed-branch-guide.ts'), readFileSync(join(root, 'docs/typed-branch.md'), 'utf8').split('```ts\n')[1].split('```')[0]);
   if (!registry) writeFileSync(join(temp, 'combine-types.ts'), readFileSync(join(root, 'scripts/fixtures/combine-types.ts'), 'utf8'));
   if (!registry) writeFileSync(join(temp, 'combine-guide.ts'), readFileSync(join(root, 'docs/combine.md'), 'utf8').split('```ts\n')[1].split('```')[0]);
+  if (!registry) writeFileSync(join(temp, 'finite-model-guide.ts'), readFileSync(join(root, 'docs/finite-model.md'), 'utf8').split('```ts\n')[1].split('```')[0]);
   if (!registry) writeFileSync(join(temp, 'transition-inference-limit.ts'), readFileSync(join(root, 'scripts/fixtures/transition-inference-limit.ts'), 'utf8'));
-  writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] }, include: ['consumer.ts', ...(!registry ? ['connection-types.ts', 'branch-narrowing-types.ts', 'typed-branch-guide.ts', 'combine-types.ts', 'combine-guide.ts', 'transition-inference-limit.ts'] : []), 'node_modules/koyuki/dist/**/*.d.ts'] }));
+  writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] }, include: ['consumer.ts', ...(!registry ? ['connection-types.ts', 'branch-narrowing-types.ts', 'typed-branch-guide.ts', 'combine-types.ts', 'combine-guide.ts', 'transition-inference-limit.ts', 'finite-model-guide.ts'] : []), 'node_modules/koyuki/dist/**/*.d.ts'] }));
   run(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--project', join(temp, 'tsconfig.json')], temp);
   console.log(`Verified ${manifest.name}@${manifest.version}: no runtime dependencies, ${files.length} local-only JS modules and all public declarations, consumer types without @types/node.`);
 } finally { rmSync(temp, { recursive: true, force: true }); }

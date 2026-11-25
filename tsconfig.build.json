@@ -12,6 +12,7 @@
     ]
   },
   "include": [
-    "src/framework/index.ts"
+    "src/framework/index.ts",
+    "src/framework/testing.ts"
   ]
 }

@@ -6,8 +6,11 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
+import { exploreModel } from './dist/testing.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
 export const result = (async () => {
+  const explored = exploreModel({ initial: [0], key: String, events: n => n < 2 ? [1] : [], step: (n, e) => ({ state: n + e, output: n + e }), check: (n, e, expected) => n + e === expected.output, limits: { depth: 2, states: 3, transitions: 2 } });
+  if (explored.kind !== 'passed' || explored.states !== 3 || explored.transitions !== 2) throw new Error('Portable finite exploration failed');
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
   const transactionCalls = [];
   const transaction = createSyncTransaction({ begin() { transactionCalls.push('begin'); }, commit() { transactionCalls.push('commit'); }, rollback() { transactionCalls.push('rollback'); } });

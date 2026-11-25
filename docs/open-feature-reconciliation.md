@@ -13,7 +13,7 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 | [#4 再送と限定retry](https://github.com/yukiharada1228/koyuki/issues/4) | [withReplay](replay.md)、[永続receipt](procurement-replay.md)は応答喪失・同時再送・要求不一致等を扱う | `src/framework/replay.ts`のwithReplayはcommandを再試行しない。試行上限・待機・中断・保持期限を備える共通retry方針は別途必要 |
 | [#5 共通監査](https://github.com/yukiharada1228/koyuki/issues/5) | [共通形式とSQLite原子保存](audit.md)をタグ・経費へ接続。監査障害のrollbackと再送非重複を検査 | 他DB adapter、保持・削除の実運用、改ざん耐性、拒否ログは未実装・未検証。診断traceを監査とは呼ばない |
 | [#6 宣言検査](https://github.com/yukiharada1228/koyuki/issues/6) | [接続の型検査](workflow-input-contract.md)、配布宣言の負例がある | 重複ID・未登録参照等の位置付き診断CLI。型の接続検査をメタデータの検査や業務規則の証明とは扱わない |
-| [#7 有限モデル検査](https://github.com/yukiharada1228/koyuki/issues/7) | [経費の有限探索](expense-state-exploration.md)で独立仕様と最大7操作まで照合し、不一致時の操作列を出す | 経費の有限入力集合のみ。利用者が抽象モデル・探索上限を指定する汎用検査器は未提供 |
+| [#7 有限モデル検査](https://github.com/yukiharada1228/koyuki/issues/7) | [明示モデルの有限探索](finite-model.md)で上限・反例・実装比較を指定。[経費](expense-state-exploration.md)は最大7操作で照合 | 実験用の検査入口。モデルの同値性・抽象化・実装対応は利用者の契約。チームの保守コスト・導入効果は未測定 |
 | [#8 テスト生成](https://github.com/yukiharada1228/koyuki/issues/8) | [仕様変更比較](procurement-change-measurement.md)やメモリ/SQLiteの具体例検査がある | 独立した参照仕様に基づく生成、再現seed、失敗列の縮小。既存の手書きテスト数は生成器の完成を示さない |
 
 ## 次に実装する境界
@@ -58,4 +58,5 @@ Issueがopenであること自体を未実装の証明にはせず、提案の�
 #7の一部として[経費の遷移列](expense-state-exploration.md)を有限探索した。
 初期8状態・各状態128操作・最大7操作で、到達132状態と14,464操作を照合した。
 失敗14,000件を含めて独立仕様と一致し、状態の復元と保存の遷移条件も確認した。
-coreテスト内の経費用検査であり、汎用のモデル検査器や#8のseed・縮小器の完成ではない。
+続いて[koyuki/testing](finite-model.md)へ再利用可能な明示モデル検査を追加した。
+経費の探索は深さ上限によるlimitedであり、無限の版数や#8のseed・縮小器の完成ではない。

@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { isDeepStrictEqual } from 'node:util';
+import { exploreModel } from './framework/testing.js';
 import { transition } from './framework/index.js';
 import { submitted, approved, rejected, returned, edited } from './expenses/application.js';
-import { draftExpense, restoreExpense, validExpenseChange, type ExpenseState, type Actor } from './expenses/domain.js';
+import { restoreExpense, validExpenseChange, type ExpenseState, type Actor } from './expenses/domain.js';
 
 // Independent reference specification: no domain validator, transition, routing
 // function or persistence invariant is called to calculate the expected result.
@@ -75,42 +77,41 @@ function actual(state: ExpenseState, event: Event) {
 
 test('bounded breadth-first expense exploration agrees with an independent specification', t => {
   const depthLimit = 7;
-  const queue: { actual: ExpenseState; spec: Spec; initial: Spec; path: Event[] }[] = [];
-  const seen = new Set<string>();
-  const enqueue = (state: ExpenseState, spec: Spec, path: Event[], initial: Spec = spec) => {
-    // All specification fields, including version and evidence, participate in
-    // identity. This is not a coarse abstraction that merges different actors.
-    const key = JSON.stringify(spec, (_key, value: unknown) => value && typeof value === 'object'
-      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
-    if (!seen.has(key)) { seen.add(key); queue.push({ actual: state, spec, initial, path }); }
-  };
-  for (const amount of amounts) for (const receipt of [false, true]) {
-    const draft = draftExpense({ id: 'expense', owner: 'owner', amount, receipt }); assert(draft.ok);
-    enqueue(draft.value, { id: 'expense', owner: 'owner', amount, receipt, version: 1, kind: 'draft' }, []);
-  }
-  let edges = 0, failures = 0;
+  const initial: Spec[] = amounts.flatMap(amount => [false, true].map(receipt => ({ id: 'expense', owner: 'owner', amount, receipt, version: 1, kind: 'draft' as const })));
   const reached = new Set<string>();
-  for (let cursor = 0; cursor < queue.length; cursor++) {
-    const entry = queue[cursor]!; reached.add(entry.spec.kind);
-    if (entry.path.length >= depthLimit) continue;
-    for (const event of events) {
-      const path = [...entry.path, event], context = JSON.stringify({ initial: entry.initial, path });
-      const before = JSON.stringify(entry.actual), expected = reference(entry.spec, event), result = actual(entry.actual, event);
-      edges++;
-      assert.equal(JSON.stringify(entry.actual), before, context);
-      if ('error' in expected) {
-        failures++; assert(!result.ok, context);
-        assert.equal(result.error.kind, expected.error, context); continue;
+  let failures = 0, repeatedCorrection = false, resubmission = false;
+  const result = exploreModel({
+    initial,
+    key: state => JSON.stringify(state, (_key, value: unknown) => value && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value),
+    events: () => events,
+    step: (state, event) => {
+      const output = reference(state, event);
+      return { state: 'next' in output ? output.next : state, output };
+    },
+    check: (before, event, expected) => {
+      reached.add(before.kind); reached.add(expected.state.kind);
+      repeatedCorrection ||= (expected.state.draftVersion ?? 0) >= 7;
+      resubmission ||= expected.state.kind === 'manager' && expected.state.draftVersion === 4;
+      const restored = restoreExpense(before);
+      if (!restored.ok) return false;
+      const previous = structuredClone(restored.value), actualResult = actual(restored.value, event);
+      if (!isDeepStrictEqual(previous, restored.value)) return false;
+      if ('error' in expected.output) {
+        failures++;
+        return !actualResult.ok && actualResult.error.kind === expected.output.error && isDeepStrictEqual(expected.state, before);
       }
-      assert(result.ok, context); assert.deepEqual(result.value.next, expected.next, context);
-      assert(validExpenseChange(entry.actual, result.value.next, entry.actual.version), context);
-      assert.deepEqual(restoreExpense(result.value.next), { ok: true, value: result.value.next }, context);
-      enqueue(result.value.next, expected.next, path, entry.initial);
-    }
-  }
+      if (!actualResult.ok || !isDeepStrictEqual(actualResult.value.next, expected.output.next)) return false;
+      return validExpenseChange(restored.value, actualResult.value.next, before.version)
+        && isDeepStrictEqual(restoreExpense(actualResult.value.next), { ok: true, value: actualResult.value.next });
+    },
+    limits: { depth: depthLimit, states: 1000, transitions: 100000 },
+  });
+  // Repeated correction cycles make the versioned model unbounded. Reaching the
+  // selected horizon is a LIMITED result, never a universal proof of safety.
+  assert(result.kind === 'limited' && isDeepStrictEqual(result.limits, ['depth']), JSON.stringify(result));
   assert.deepEqual([...reached].sort(), ['approved', 'draft', 'finance', 'manager', 'rejected', 'returned']);
-  assert(queue.some(entry => entry.path.filter(event => event.type === 'submit').length >= 2));
-  assert(queue.some(entry => entry.path.filter(event => event.type === 'return').length >= 2));
-  t.diagnostic(JSON.stringify({ depthLimit, reachableStates: queue.length, checkedEdges: edges, rejectedEdges: failures, eventsPerState: events.length }));
-  assert(edges > 1000 && failures > 1000);
+  assert(result.states >= 100 && result.transitions > 10000 && failures > 10000);
+  assert(repeatedCorrection && resubmission);
+  t.diagnostic(JSON.stringify({ ...result, rejectedEdges: failures, eventsPerState: events.length }));
 });
