@@ -202,6 +202,12 @@ type Connect<C, P extends readonly Stage[], O, Operation extends string, A exten
   const source = original.replace(marker, next + 'type MappedConnect<C, P extends readonly Stage[], O, Operation extends string> = {')
     .replace('Outputs<StageOutput<F, C>, R, readonly [...A, StageOutput<F, C>]>', 'Outputs<AfterStage<F, C, R>, R, readonly [...A, AfterStage<F, C, R>]>');
   candidates.splice(0, candidates.length, ['current', original], ['consumer-contract', source]);
+  const first = 'type FirstInput<E extends Entry> = RuleOf<Stages<E>[0]> extends (input: infer I) => unknown ? I : never;';
+  const input = 'type Input<L> = [LoadCall<L>] extends [(input: infer I) => unknown] ? I : never;';
+  if (!source.includes(first) || !source.includes(input)) throw Error('Re-evaluate tuple parameter inference');
+  const tupleFirst = source.replace(first, 'type FirstInput<E extends Entry> = [RuleOf<Stages<E>[0]>] extends [(...args: infer A) => unknown] ? A[0] : never;');
+  candidates.push(['consumer-and-tuple-first-input', tupleFirst], ['consumer-and-tuple-parameters', tupleFirst.replace(input,
+    'type Input<L> = [LoadCall<L>] extends [(...args: infer A) => unknown] ? A[0] : never;')]);
 }
 if (contextShapes) {
   const context = /class Context \{[\s\S]*?\n\}/;
