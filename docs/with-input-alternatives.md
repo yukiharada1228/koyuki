@@ -60,3 +60,14 @@ Promiseや非Resultを返す候補、2つ目の必須引数を持つ候補は拒
 名前なしinline要件、遷移中の深いgeneric変換、任意の多相変換には制限が残る。
 単独のwithInputが深い値を保持することと、その関数を遷移全体で未注釈接続できることは別の契約である。
 独立利用者の評価・原音確認の完了を示す変更ではなく、講演全体の判定は部分充足を維持する。
+
+## 確認結果
+
+実装基準はe963347。全体1,200件、実tarballを使うTypeScript 6.0.3/7.0.2のconsumer各856件が成功し、
+追加signatureの削除と入力の過大化の2つの対照も両版で拒否契約に検出された。
+Web標準の環境での実行、Node型なしでの本文のコード例、依存ゼロ・28モジュールを確認した。
+
+[TypeScript 6の記録](selected-requirement-context6.json)と[TypeScript 7の記録](selected-requirement-context7.json)は、
+クリーンな実装基準の同一probeによる。[前回6](inferred-error-context6.json)・[前回7](inferred-error-context7.json)と
+probeのhashが一致し、直接の関数選択だけが不受理から受理へ変わった。
+名前なしinline・遷移中の深いgeneric変換は引き続き不受理で、既存契約の追加診断はいずれも0である。

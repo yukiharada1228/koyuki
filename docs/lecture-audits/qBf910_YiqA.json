@@ -9,6 +9,25 @@
     "durationSeconds": 2019
   },
   "review": {
+    "selectedRequirementFollowUp": {
+      "implementationBaseCommit": "e963347d69e75ec05627577b1cd187b96278ab37",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "withInput accepts a selected union of synchronous Result functions without a dispatch wrapper. Keep the existing signature first for ordinary/generic propagation; a union-only fallback captures all result alternatives and requires an input accepted by every candidate. Whole parameter unions are intersected between candidates, not split internally. Runtime body and dependencies are unchanged. Five new cases and two installed-declaration mutation controls verify valid selection, closed errors, common inputs, refused one-sided/disjoint inputs, async/non-Result/second-required-argument refusal, non-saving failure and existing nested opaque generic propagation. Root tests:1200; installed TS6.0.3/7.0.2 consumers:856 each. Identical clean-source probes now accept direct selections on both versions; unnamed inline and deep generic transition probes remain refused with no existing-contract diagnostics. No independent-user trial, source/audio/frame review or completion claim.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/check-runtime-package.mjs"
+      ]
+    },
     "inferredErrorFollowUp": {
       "implementationBaseCommit": "966e9b3a8cb88e5d2fef00e38a47ec783167297f",
       "sections": [
@@ -960,7 +979,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。先に束縛したgeneric関数はstep helperでも元の型を保持し、購買の段階へ適用した。名前なしのwithInput直接呼出し、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。",
+      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。先に束縛したgeneric関数はstep helperでも元の型を保持し、購買の段階へ適用した。名前なしのwithInput直接呼出し、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -1016,7 +1035,14 @@
         "docs/development-start.md",
         "docs/business-input-retention.md",
         "src/business-input-pair.test.ts",
-        "docs/procurement-direct-receipt-stages.md"
+        "docs/procurement-direct-receipt-stages.md",
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/check-runtime-package.mjs"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",

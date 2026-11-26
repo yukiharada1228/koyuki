@@ -9,6 +9,25 @@
     "durationSeconds": 2513
   },
   "review": {
+    "selectedRequirementFollowUp": {
+      "implementationBaseCommit": "e963347d69e75ec05627577b1cd187b96278ab37",
+      "sections": [
+        "w0o-19"
+      ],
+      "scope": "withInput accepts a selected union of synchronous Result functions without a dispatch wrapper. Keep the existing signature first for ordinary/generic propagation; a union-only fallback captures all result alternatives and requires an input accepted by every candidate. Whole parameter unions are intersected between candidates, not split internally. Runtime body and dependencies are unchanged. Five new cases and two installed-declaration mutation controls verify valid selection, closed errors, common inputs, refused one-sided/disjoint inputs, async/non-Result/second-required-argument refusal, non-saving failure and existing nested opaque generic propagation. Root tests:1200; installed TS6.0.3/7.0.2 consumers:856 each. Identical clean-source probes now accept direct selections on both versions; unnamed inline and deep generic transition probes remain refused with no existing-contract diagnostics. No independent-user trial, source/audio/frame review or completion claim.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/check-runtime-package.mjs"
+      ]
+    },
     "inferredErrorFollowUp": {
       "implementationBaseCommit": "966e9b3a8cb88e5d2fef00e38a47ec783167297f",
       "sections": [
@@ -634,7 +653,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "Workflow/transition・Process・businessで選んだ段階の値をcaptureし、Application/Programでは実行IDとlive spanの親子関係・成否を観測する。business/Processのcapture失敗は業務結果から分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。購買25操作の32回シナリオは成功130境界、代表失敗274境界を3方式で比較し、選んだI/O例外とApplicationのcrashedは別に検査する。全値の自動永続収集、opaque内部、分散相関、全例外経路まで検証したとはしない。",
+      "assessment": "Workflow/transition・Process・businessで選んだ段階の値をcaptureし、Application/Programでは実行IDとlive spanの親子関係・成否を観測する。business/Processのcapture失敗は業務結果から分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。購買25操作の32回シナリオは成功135境界、代表失敗279境界を3方式で比較し、選んだI/O例外とApplicationのcrashedは別に検査する。全値の自動永続収集、opaque内部、分散相関、全例外経路まで検証したとはしない。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -775,13 +794,19 @@
       "endSeconds": 2118,
       "topic": "コンパイラとツールチェーン",
       "status": "supported",
-      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの12宣言・25操作ID・52ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。",
+      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの12宣言・25操作ID・52ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。",
       "evidence": [
         "src/transition-inference.test.ts",
         "scripts/check-runtime-package.mjs",
         "scripts/fixtures/leave-business-diagnostics.ts",
         "docs/lecture-local-asr-w0o-followup.md",
-        "docs/lecture-local-asr-w0o-followup.json"
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs"
       ],
       "remaining": []
     },

@@ -9,6 +9,25 @@
     "durationSeconds": 4890
   },
   "review": {
+    "selectedRequirementFollowUp": {
+      "implementationBaseCommit": "e963347d69e75ec05627577b1cd187b96278ab37",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "withInput accepts a selected union of synchronous Result functions without a dispatch wrapper. Keep the existing signature first for ordinary/generic propagation; a union-only fallback captures all result alternatives and requires an input accepted by every candidate. Whole parameter unions are intersected between candidates, not split internally. Runtime body and dependencies are unchanged. Five new cases and two installed-declaration mutation controls verify valid selection, closed errors, common inputs, refused one-sided/disjoint inputs, async/non-Result/second-required-argument refusal, non-saving failure and existing nested opaque generic propagation. Root tests:1200; installed TS6.0.3/7.0.2 consumers:856 each. Identical clean-source probes now accept direct selections on both versions; unnamed inline and deep generic transition probes remain refused with no existing-contract diagnostics. No independent-user trial, source/audio/frame review or completion claim.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/check-runtime-package.mjs"
+      ]
+    },
     "inferredErrorFollowUp": {
       "implementationBaseCommit": "966e9b3a8cb88e5d2fef00e38a47ec783167297f",
       "sections": [
@@ -60,7 +79,9 @@
     },
     "leaseMaintenanceFollowUp": {
       "implementationBaseCommit": "d65366896514ac7ff7c55285a707be9338748be3",
-      "sections": ["iz-31"],
+      "sections": [
+        "iz-31"
+      ],
       "scope": "Implementation-only follow-up: host-side fenced renewal before, during and after delivery. Ten new actual-SQLite tests cover independent connections, expired/stale owners, storage faults, abort notification and overlapping send completion/renewal rejection; all nineteen registration tests also pass against the packed package. No real mail provider, resident scheduler or production operation is verified. No new source, audio or frame review; partial status remains.",
       "audioDirectlyReviewed": false,
       "allFramesReviewed": false,
@@ -1121,7 +1142,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列・withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。genericなwithInputの元の文脈と、組から組への投影の内側のinputを実関数の保証で保持する。入荷・返品・数量訂正は名前付き関数列へ直接接続し、在庫文脈の重複注釈3つと4つの接続用Workflowを削除した。状態型・検証証明・段階名・失敗停止は維持する。名前なしのwithInput直接呼出し、任意の多相変換、互換入口等の接続、独立利用者の評価は残る。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。",
+      "assessment": "通常関数列・withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。genericなwithInputの元の文脈と、組から組への投影の内側のinputを実関数の保証で保持する。入荷・返品・数量訂正は名前付き関数列へ直接接続し、在庫文脈の重複注釈3つと4つの接続用Workflowを削除した。状態型・検証証明・段階名・失敗停止は維持する。名前なしのwithInput直接呼出し、任意の多相変換、互換入口等の接続、独立利用者の評価は残る。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -1158,7 +1179,14 @@
         "docs/business-pair-binding-investigation.md",
         "docs/business-input-retention.md",
         "src/business-input-pair.test.ts",
-        "docs/procurement-direct-receipt-stages.md"
+        "docs/procurement-direct-receipt-stages.md",
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/check-runtime-package.mjs"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
