@@ -359,6 +359,25 @@
         "src/tag-prepersistence.test.ts",
         "scripts/test-registration-package.mjs"
       ]
+    },
+    "stateContractAndSourcePreparationFollowUp": {
+      "implementationBaseCommit": "ef1bb4d2f73819741872399ddf62004100b9419f",
+      "scope": "Current state-contract and source-preparation evidence only; status, source identity, section intervals, direct-audio and frame-review flags unchanged.",
+      "updatedAssessmentIds": [
+        "qbf-06",
+        "qbf-19"
+      ],
+      "evidence": [
+        "docs/procurement-storage-values.md",
+        "docs/procurement-finance-state-types.md",
+        "docs/procurement-state-contract-review.md",
+        "docs/procurement-receipt-state-types.md",
+        "docs/business-raw-definition-investigation.md",
+        "docs/lecture-audio-review-preparation.md"
+      ],
+      "independentUserTrialCompleted": false,
+      "directAudioReviewedInThisFollowUp": false,
+      "allFramesReviewedInThisFollowUp": false
     }
   },
   "sections": [
@@ -446,7 +465,7 @@
       "endSeconds": 779,
       "topic": "変更前後を引数と戻り値に表す",
       "status": "supported",
-      "assessment": "業務関数の入力・出力と接続を型で表現する。登録のstartはawaitingとメールイベント、confirmはconfirmedとevent:nullの一つのChange variantを返し、広いChangeへ注釈を戻すと厳密一致の型検査が失敗する。保存adapterが広いRegistrationを返す契約はそのまま保つ。仕様自体の正しさや任意の破壊的変更までの保証はない。",
+      "assessment": "業務関数の入力・出力と接続を型で表現する。登録のChange variantと、購買の注文・財務・入荷の次状態型を厳密一致で検査し、戻り型だけを広げる対照では契約が失敗する。型保持を宣言する購買保存adapterでは、cloneが失う値を更新前に拒否する。coreのopaque値対応、monomorphicな広い保存契約、履歴再送の広い型は区別し、仕様そのものの正しさを保証しない。",
       "evidence": [
         "src/expenses/domain.ts",
         "src/business-api-types.test.ts",
@@ -670,7 +689,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。具体的な前段を持つWorkflow、および宣言したgeneric制約内のWorkflow/stepで注釈を省ける正例を追加した。一方、businessのgeneric入力保持や名前なしinline、多相identityの別例は不受理で、単独の型計算の成立をbusiness全体の成立と混同しない。購買3つの文脈注釈、任意の複雑な型の診断品質、独立利用者のDXは未解消。",
+      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。入荷の在庫投影は具体的な前段を持つWorkflowで追加callback注釈なしに次状態型を保持する。一方、普通のbusiness配列のgeneric入力保持や名前なしinline、多相identityは未解消で、設定全体の推論を分離する候補でも正例は不受理。購買3つの文脈注釈、任意の診断品質、独立利用者のDXは未検証。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",

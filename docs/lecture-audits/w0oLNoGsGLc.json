@@ -381,6 +381,24 @@
         "src/tag-prepersistence.test.ts",
         "scripts/test-registration-package.mjs"
       ]
+    },
+    "stateContractAndSourcePreparationFollowUp": {
+      "implementationBaseCommit": "ef1bb4d2f73819741872399ddf62004100b9419f",
+      "scope": "Current state-contract and source-preparation evidence only; status, source identity, section intervals, direct-audio and frame-review flags unchanged.",
+      "updatedAssessmentIds": [
+        "w0o-19"
+      ],
+      "evidence": [
+        "docs/procurement-storage-values.md",
+        "docs/procurement-finance-state-types.md",
+        "docs/procurement-state-contract-review.md",
+        "docs/procurement-receipt-state-types.md",
+        "docs/business-raw-definition-investigation.md",
+        "docs/lecture-audio-review-preparation.md"
+      ],
+      "independentUserTrialCompleted": false,
+      "directAudioReviewedInThisFollowUp": false,
+      "allFramesReviewedInThisFollowUp": false
     }
   },
   "sections": [
@@ -709,7 +727,7 @@
       "endSeconds": 2118,
       "topic": "コンパイラとツールチェーン",
       "status": "supported",
-      "assessment": "誤接続を型検査で拒否し、配布宣言型の推論も検証する。業務仕様の形式証明や任意のIDE体験の保証ではない。",
+      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの12宣言・25操作ID・52ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。",
       "evidence": [
         "src/transition-inference.test.ts",
         "scripts/check-runtime-package.mjs",
