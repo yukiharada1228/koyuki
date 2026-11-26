@@ -1,5 +1,8 @@
 # TypeScript 6と7で配布物を検査する
 
+後続の[withInputの戻り型の修正](with-input-rule-alias.md)で、単独のRule alias比較は7.0.2でも通るようにした。
+下記53a44b9の比較表は修正前の記録。business宣言全体の推論制限は修正後も残る。
+
 開発版はTypeScript 7.0.2でbuildする。生成した同じ宣言ファイルを、
 TypeScript 6.0.3と7.0.2のそれぞれのconsumerで検査した。
 任意の6系・7系バージョンでの動作や、最低対応バージョンを保証する表ではない。
