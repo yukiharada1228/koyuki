@@ -8,14 +8,15 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes', '--with-input-literal'].includes(args[0])) throw Error('Unknown investigation mode');
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes', '--with-input-literal', '--consumer-contract'].includes(args[0])) throw Error('Unknown investigation mode');
+const consumerContract = args[0] === '--consumer-contract';
 const inputLiteral = args[0] === '--with-input-literal';
 const contextShapes = args[0] === '--context-shapes';
 const literalAll = args[0] === '--literal-all';
 const unconstrained = args[0] === '--unconstrained';
 const pairFirst = args[0] === '--pair-first' || unconstrained;
 const literalConnection = args[0] === '--literal-connection' || pairFirst || literalAll;
-const binding = args[0] === '--binding' || literalConnection || contextShapes || inputLiteral;
+const binding = args[0] === '--binding' || literalConnection || contextShapes || inputLiteral || consumerContract;
 const rawDefinition = args[0] === '--raw-definition';
 const hash = value => createHash('sha256').update(value).digest('hex');
 function git(args) {
@@ -185,6 +186,23 @@ type ExactStageOutput = Assert<Equal<PairStudyStage<typeof quoted, Context>, Pai
 }
 if (unconstrained) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'unconstrained-definition'].includes(name)));
 if (literalAll) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'expanded-rule-comparisons'].includes(name)));
+if (consumerContract) {
+  const marker = 'type Connect<C, P extends readonly Stage[], O, Operation extends string> = {';
+  const next = `type AfterStage<F extends Stage, I, R extends readonly Stage[]> = R extends readonly [infer N extends Stage, ...readonly Stage[]]
+  ? [StageOutput<F, I>] extends [Parameters<RuleOf<N>>[0]] ? StageOutput<F, I> : Parameters<RuleOf<N>>[0]
+  : StageOutput<F, I>;
+type Connect<C, P extends readonly Stage[], O, Operation extends string, A extends readonly unknown[] = readonly []> =
+  number extends P['length'] ? MappedConnect<C, P, O, Operation>
+  : P extends readonly [infer F extends Stage, ...infer R extends readonly Stage[]]
+    ? Connect<AfterStage<F, C, R>, R, O, Operation, readonly [...A,
+      DiagnosticRule<F, C, R extends readonly [] ? O : AfterStage<F, C, R>, Operation, \`\${A['length']}\`>]>
+    : A;
+`;
+  if (original.split(marker).length !== 2) throw Error('Re-evaluate consumer contract candidate');
+  const source = original.replace(marker, next + 'type MappedConnect<C, P extends readonly Stage[], O, Operation extends string> = {')
+    .replace('Outputs<StageOutput<F, C>, R, readonly [...A, StageOutput<F, C>]>', 'Outputs<AfterStage<F, C, R>, R, readonly [...A, AfterStage<F, C, R>]>');
+  candidates.splice(0, candidates.length, ['current', original], ['consumer-contract', source]);
+}
 if (contextShapes) {
   const context = /class Context \{[\s\S]*?\n\}/;
   const publicClass = `class Context {
@@ -253,7 +271,7 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original
     || await readFile(resolve(root, 'src/framework/model.ts'), 'utf8') !== originalModel) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: inputLiteral ? 'with-input-signature' : contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: consumerContract ? 'consumer-contract' : inputLiteral ? 'with-input-signature' : contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), compilerEntrypointSha256: hash(await readFile(compiler)), node: process.version,
