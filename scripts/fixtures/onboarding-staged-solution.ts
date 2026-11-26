@@ -1,21 +1,23 @@
 import { business, ok, err, type Result } from 'koyuki';
 import type { Ports, Loaded, VersionInput, SubmitInput, RejectInput, Draft, Submitted, Approved, Rejected, RuleError } from './contracts.js';
 
-type Ready<I, S> = Omit<Loaded<I>, 'current'> & Readonly<{ current: S }>;
-function common<T extends Loaded<VersionInput>>(context: T): Result<T, RuleError> {
+const checked: unique symbol = Symbol('checked');
+type Checked<T> = T & Readonly<{ [checked]: true }>;
+type Ready<I, S> = Omit<Checked<Loaded<I>>, 'current'> & Readonly<{ current: S }>;
+function common<T extends Loaded<VersionInput>>(context: T): Result<Checked<T>, RuleError> {
   if (!context.actor.active) return err({ kind: 'Denied' });
   if (!Number.isSafeInteger(context.input.expectedVersion) || context.input.expectedVersion < 1) return err({ kind: 'InvalidInput' });
   if (context.input.expectedVersion !== context.current.version) return err({ kind: 'Conflict' });
-  return ok(context);
+  return ok({ ...context, [checked]: true });
 }
-function submission(context: Loaded<SubmitInput>): Result<Ready<SubmitInput, Draft>, RuleError> {
+function submission(context: Checked<Loaded<SubmitInput>>): Result<Ready<SubmitInput, Draft>, RuleError> {
   const { current, actor, input } = context;
   if (current.state !== 'draft') return err({ kind: 'WrongState' });
   if (actor.id !== current.ownerId) return err({ kind: 'Denied' });
   if (!Number.isSafeInteger(current.amountCents) || current.amountCents <= 0 || !input.approverId || input.approverId.trim() !== input.approverId || input.approverId === current.ownerId) return err({ kind: 'InvalidInput' });
   return ok({ ...context, current });
 }
-function approval<I extends VersionInput>(context: Loaded<I>): Result<Ready<I, Submitted>, RuleError> {
+function approval<I extends VersionInput>(context: Checked<Loaded<I>>): Result<Ready<I, Submitted>, RuleError> {
   const { current, actor } = context;
   if (current.state !== 'submitted') return err({ kind: 'WrongState' });
   if (actor.role !== 'manager' || actor.id !== current.approverId || actor.id === current.ownerId) return err({ kind: 'Denied' });

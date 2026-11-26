@@ -1266,7 +1266,12 @@
         "docs/business-later-request.md",
         "docs/onboarding-ai-review.md",
         "src/business-later-request.test.ts",
-        "scripts/test-onboarding.mjs"
+        "scripts/test-onboarding.mjs",
+        "docs/business-verified-request.md",
+        "src/business-verified-request.test.ts",
+        "scripts/fixtures/onboarding-staged-solution.ts",
+        "scripts/check-exported-business.mjs",
+        "scripts/fixtures/business-verified-exports.ts"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
@@ -1281,6 +1286,18 @@
           "src/business-later-request.test.ts",
           "scripts/test-business-package.mjs",
           "scripts/test-onboarding.mjs"
+        ]
+      },
+      "verifiedRequestFollowUp": {
+        "scope": "Context-preserving proof-producing checks infer later requests; AI exercise follow-up, not full lecture completion or direct audio review.",
+        "evidence": [
+          "docs/business-verified-request.md",
+          "src/business-verified-request.test.ts",
+          "scripts/fixtures/onboarding-staged-solution.ts",
+          "scripts/test-onboarding.mjs",
+          "scripts/test-business-package.mjs",
+          "scripts/check-exported-business.mjs",
+          "scripts/fixtures/business-verified-exports.ts"
         ]
       }
     },

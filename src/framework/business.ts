@@ -72,12 +72,17 @@ type LoaderWithLaterRequest<L extends Load,E extends Entry, I=PipelineRequest<St
  : AcceptsPipeline<Loaded<L>,Stages<E>> extends true ? L
  : [C] extends [Loaded<L>] ? [L] extends [(input:I)=>Promise<Result<C,LoadError<L>>>]
    ? AcceptsPipeline<C,Stages<E>> extends true ? (input:I)=>Promise<Result<C,LoadError<L>>> : L : L : L : L;
-type StartsWithIdentity<L extends Load, E extends Entry, R=RuleOf<Stages<E>[0]>, C=Loaded<L>, Err=ErrorOf<Stages<E>[0]>> =
- [C] extends [{ readonly input: unknown }] ? [R] extends [<T extends C>(input:T)=>Result<T,Err>]
- ? [<T extends C>(input:T)=>Result<T,Err>] extends [R] ? true : false : false : false;
+// Use a fresh property to check preservation independently of the generic
+// signature comparison. This evidence is type-only and adds no runtime field.
+declare const preservedContextWitness: unique symbol;
+type ContextWitness = Readonly<{ [preservedContextWitness]: typeof preservedContextWitness }>;
+type PreservedContextWitness<R, C, O, E> = [R] extends [(input: C & ContextWitness) => Result<C & ContextWitness & O, E>] ? true : false;
+type PreservesLoadedContext<L extends Load, E extends Entry, R = RuleOf<Stages<E>[0]>, C = Loaded<L>, P = DeclaredInput<R>, O = Out<Stages<E>[0]>, Err = ErrorOf<Stages<E>[0]>, Witness = PreservedContextWitness<R, P, O, Err>> =
+  [C] extends [{ readonly input: unknown }] ? [R] extends [<T extends P>(input: T) => Result<T & O, Err>]
+    ? Witness extends true ? [<T extends P>(input: T) => Result<T & O, Err>] extends [R] ? true : false : false : false : false;
 // Gate on the raw request domain before inspecting still-generic loaded values.
 // Primitive-domain pipelines cannot benefit from an object request envelope.
-type Loader<L extends Load, E extends Entry, A extends Load=SpecializedLoader<RawLoader<L,E>,E>> = [Input<RawLoader<L,E>>] extends [object] ? StartsWithIdentity<A,E> extends true ? LoaderWithLaterRequest<A,E> : A : A;
+type Loader<L extends Load, E extends Entry, A extends Load=SpecializedLoader<RawLoader<L,E>,E>> = [Input<RawLoader<L,E>>] extends [object] ? PreservesLoadedContext<A,E> extends true ? LoaderWithLaterRequest<A,E> : A : A;
 type OperationName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
 type OperationNames<T> = OperationName<keyof T>;
 // A polymorphic check may promise to return exactly its input type. Retain that
@@ -137,8 +142,10 @@ type ObservedDetailed<I, R> = {
   (input: I): Promise<R>;
   <A, B>(input: I, capture: WorkflowCapture<A, B>): Promise<R & ObservationReport<A, B>>;
 };
+// Materialize the two public methods so emitted consumer declarations need no
+// reference to the command implementation aliases in an unexported subpath.
 type Callable<C> = C extends { run: infer R extends (...args: never[]) => unknown; runDetailed(input: infer I): Promise<infer D> }
-  ? R & Omit<C, 'runDetailed'> & { readonly runDetailed: ObservedDetailed<I, D> } : never;
+  ? R & { readonly run: R } & { readonly runDetailed: ObservedDetailed<I, D> } : never;
 type DecisionOutput<L extends Load, E extends Entry> = Outputs<Loaded<Loader<L, E>>, Stages<E>> extends readonly [...unknown[], infer O] ? O : never;
 // Refine only when the actual save function accepts this decision and promises the
 // narrower output. A monomorphic broad save must keep its declared result type.

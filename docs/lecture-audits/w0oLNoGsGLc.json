@@ -887,7 +887,12 @@
         "docs/business-later-request.md",
         "docs/onboarding-ai-review.md",
         "src/business-later-request.test.ts",
-        "scripts/test-onboarding.mjs"
+        "scripts/test-onboarding.mjs",
+        "docs/business-verified-request.md",
+        "src/business-verified-request.test.ts",
+        "scripts/fixtures/onboarding-staged-solution.ts",
+        "scripts/check-exported-business.mjs",
+        "scripts/fixtures/business-verified-exports.ts"
       ],
       "remaining": [],
       "laterRequestFollowUp": {
@@ -898,6 +903,18 @@
           "src/business-later-request.test.ts",
           "scripts/test-business-package.mjs",
           "scripts/test-onboarding.mjs"
+        ]
+      },
+      "verifiedRequestFollowUp": {
+        "scope": "Context-preserving proof-producing checks infer later requests; AI exercise follow-up, not full lecture completion or direct audio review.",
+        "evidence": [
+          "docs/business-verified-request.md",
+          "src/business-verified-request.test.ts",
+          "scripts/fixtures/onboarding-staged-solution.ts",
+          "scripts/test-onboarding.mjs",
+          "scripts/test-business-package.mjs",
+          "scripts/check-exported-business.mjs",
+          "scripts/fixtures/business-verified-exports.ts"
         ]
       }
     },

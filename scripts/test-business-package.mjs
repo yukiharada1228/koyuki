@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { studyApprovalChange } from './studies/leave-approval-change.mjs';
 import { studyAuthorizationChange } from './studies/leave-authorization-change.mjs';
 import { generateModelTest } from './generate-model-test.mjs';
+import { verifyExportedBusiness } from './check-exported-business.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const compilerOption = process.argv.slice(2).find(arg => arg.startsWith('--typescript='));
 const requestedCompiler = compilerOption?.slice('--typescript='.length);
@@ -220,6 +221,7 @@ try {
   writeFileSync(join(consumer, 'with-input-alternatives.test.ts'), readFileSync(join(root, 'src/with-input-alternatives.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'generic-object-correlation.test.ts'), readFileSync(join(root, 'src/generic-object-correlation.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-later-request.test.ts'), readFileSync(join(root, 'src/business-later-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-verified-request.test.ts'), readFileSync(join(root, 'src/business-verified-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
@@ -264,6 +266,27 @@ try {
       throw Error(`Removing the actual loader promise did not expose the unsafe request refinement:\n${output}`);
     }
   } finally { writeFileSync(businessDeclarations, checkedBusiness); }
+  const preservingResult = 'Result<T & O, Err>';
+  if (checkedBusiness.split(preservingResult).length !== 3) throw Error('Preserving-context signatures changed');
+  try {
+    writeFileSync(businessDeclarations, checkedBusiness.replaceAll(preservingResult, 'Result<T, Err>'));
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || !rejected.status || !output.split('\n').some(line => line.includes('business-verified-request.test.ts') && /TS(?:2769|2344)/.test(line))) {
+      throw Error(`Discarding proof-producing producer support did not invalidate verified requests:\n${output}`);
+    }
+  } finally { writeFileSync(businessDeclarations, checkedBusiness); }
+  const producerDomain = '<T extends P>';
+  if (checkedBusiness.split(producerDomain).length !== 3) throw Error('Producer domain signatures changed');
+  try {
+    writeFileSync(businessDeclarations, checkedBusiness.replaceAll(producerDomain, '<T extends C>'));
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || !rejected.status || !output.split('\n').some(line => line.includes('business-verified-request.test.ts') && /TS(?:2769|2344)/.test(line))) {
+      throw Error(`Restricting a shared check to the loader domain did not invalidate its broader-domain contract:\n${output}`);
+    }
+  } finally { writeFileSync(businessDeclarations, checkedBusiness); }
+  console.log('Verified proof-producing checks and their declared input domains; identity-only and loader-domain reversions fail the contracts.');
   console.log('Verified later request inference and rejection of both removed inference and missing loader promise.');
   const modelDeclarations = join(consumer, 'node_modules/koyuki/dist/model.d.ts');
   const guardedModel = readFileSync(modelDeclarations, 'utf8');
@@ -493,6 +516,8 @@ try {
     noEmit: true, types: [], lib: ['ES2022', 'DOM'],
   }, files: ['business-types.ts', 'business-quickstart.ts', 'business-retention-guide.ts', 'transition-pair-guide.ts', 'ordinary-record-guide.ts'] }));
   console.log(run('npm', ['exec', '--', 'tsc', '-p', 'tsconfig.no-node.json'], consumer));
+
+  verifyExportedBusiness(consumer, root, run);
 
   copyFileSync(join(root, 'scripts/fixtures/leave-business-diagnostics.ts'), join(consumer, 'business-diagnostics.ts'));
   const result = spawnSync('npm', ['exec', '--', 'tsc', '--pretty', 'false'], { cwd: consumer, encoding: 'utf8' });
