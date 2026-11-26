@@ -163,6 +163,7 @@ try {
   writeFileSync(join(consumer, 'business-named-stages.test.ts'), readFileSync(join(root, 'src/business-named-stages.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-workflow-stages.test.ts'), readFileSync(join(root, 'src/business-workflow-stages.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-workflow-context.test.ts'), readFileSync(join(root, 'src/business-workflow-context.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'workflow-generic-first.test.ts'), readFileSync(join(root, 'src/workflow-generic-first.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-generic-check.test.ts'), readFileSync(join(root, 'src/business-generic-check.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-generic-load.test.ts'), readFileSync(join(root, 'src/business-generic-load.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-inline-step.test.ts'), readFileSync(join(root, 'src/transition-inline-step.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));

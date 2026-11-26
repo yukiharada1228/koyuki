@@ -71,6 +71,17 @@ export class Workflow<I, O, E> {
     }), structureSequence(structureOf(this), structureStep(name)));
   }
 }
+type WorkflowSuccess<R> = R extends { ok: true; value: infer O } ? O : never;
+type WorkflowFailure<R> = R extends { ok: false; error: infer E } ? E : never;
+type WorkflowRule<F> = Extract<F, Rule<never, unknown, unknown>>;
+type WorkflowInput<F extends object> = Parameters<WorkflowRule<F>>[0];
+type CheckedWorkflowRule<F extends object> = [F] extends [Rule<WorkflowInput<F>, WorkflowSuccess<ReturnType<WorkflowRule<F>>>, WorkflowFailure<ReturnType<WorkflowRule<F>>>>] ? unknown : never;
+// Keep contextual inference first. The fallback infers the actual callable
+// without a contextual call signature, then checks every candidate's contract.
+export function workflow<I, O, E>(name: string, rule: Rule<I, O, E>): Workflow<I, O, E>;
+export function workflow<F extends object>(name: string, rule: F & NoInfer<CheckedWorkflowRule<F>>): Workflow<WorkflowInput<F>, WorkflowSuccess<ReturnType<WorkflowRule<F>>>, WorkflowFailure<ReturnType<WorkflowRule<F>>>>;
+// Keep the original signature last for Parameters/ReturnType reflection too.
+export function workflow<I, O, E>(name: string, rule: Rule<I, O, E>): Workflow<I, O, E>;
 export function workflow<I, O, E>(name: string, rule: Rule<I, O, E>): Workflow<I, O, E> {
   return registerStructure(new Workflow(name, [name], (input, observe) => {
     const result = evaluateRule(name, rule, input, observe); return { result, trace: [{ step: name, status: result.ok ? 'ok' : 'error' }] };
