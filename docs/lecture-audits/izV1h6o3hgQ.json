@@ -592,6 +592,22 @@
         "src/framework/model.ts"
       ]
     },
+    "deepOutputInvestigationFollowUp": {
+      "implementationBaseCommit": "33e7546c08df21307df552181e48593397b247a2",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "Research-only follow-up. Compare unchanged source against recursive unknown-leaf path candidates in an isolated compiler copy. Record probe acceptance separately from regressions in existing source contracts. A candidate can accept the deep generic wrapper reproduction while breaking existing procurement and generic-caller contracts, so it is not adopted. Keep production runtime and inference unchanged. No source/audio/frame review or independent-user trial is added; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/deep-output-investigation.md",
+        "docs/deep-output-investigation6.json",
+        "docs/deep-output-investigation7.json",
+        "scripts/investigate-deep-output.mjs"
+      ]
+    },
     "ordinaryRecordContextFollowUp": {
       "implementationBaseCommit": "785040b770a3247a603a5e981818666599441f70",
       "sections": [

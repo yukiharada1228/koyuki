@@ -51,3 +51,16 @@ collectorは変更前の既存ソースを先に検査し、gitの基準、ソ�
 この不採用はTypeScriptでの実現不可能性の証明ではない。
 
 独立利用者の評価・直接音声確認は追加していない。9話題のpartialと、講演全体の部分充足は維持する。
+
+## 採取結果
+
+| compiler | 候補 | 深い出力の再現例 | 既存契約の診断数 |
+| --- | --- | --- | --- |
+| 6.0.3 | current | 不受理 | 0 |
+| 6.0.3 | unknown-leaf-paths-global | 不受理 | 11 |
+| 6.0.3 | unknown-leaf-paths-universal-pair | 受理 | 303 |
+| 7.0.2 | current | 不受理 | 0 |
+| 7.0.2 | unknown-leaf-paths-global | 不受理 | 11 |
+| 7.0.2 | unknown-leaf-paths-universal-pair | 受理 | 311 |
+
+全記録の基準は33e7546のクリーンなソース。現在の型契約は両版で追加診断0だが、深い出力の再現例は不受理のままである。
