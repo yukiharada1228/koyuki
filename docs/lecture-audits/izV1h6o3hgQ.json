@@ -254,6 +254,16 @@
         "src/framework/business.ts",
         "src/framework/workflow.ts"
       ]
+    },
+    "businessWorkflowDiagnosticsFollowUp": {
+      "implementationBaseCommit": "74e52c99a9075c9b5c2df2c00696f8073f20353f",
+      "scope": "Static metadata only: explicit business Workflows expand with both branch alternatives; known run functions remain opaque. Selected-source references and a shared expansion budget are checked without executing source. Dynamic metadata remains unresolved. No new lecture audio/frame review or independent user evaluation; partial topic statuses unchanged.",
+      "evidence": [
+        "docs/declaration-diagnostics.md",
+        "docs/business-workflow-stages.md",
+        "scripts/check-declarations.mjs",
+        "scripts/declarations.test.mjs"
+      ]
     }
   },
   "sections": [
