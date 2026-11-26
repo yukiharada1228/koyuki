@@ -81,3 +81,42 @@ test('a final retained pair preserves context through a generic save while broad
   type BroadOutput = Assert<Equal<Awaited<ReturnType<typeof broad.quote>>, Result<BroadPair, 'Declined' | 'Conflict'>>>;
   assert((await broad.quote(3)).ok);
 });
+
+test('loader compatibility preserves a narrower overloaded operation contract', async () => {
+  type Request = Readonly<{ id: string }>;
+  type Specific = Request & Readonly<{ reason: string }>;
+  type Loaded<I> = Readonly<{ input: I; actor: 'host' }>;
+  type Narrow = Readonly<{ kind: 'narrow' }>;
+  type Wide = Readonly<{ kind: 'narrow' | 'broad' }>;
+  function decide(value: Loaded<Request>): Result<Wide, 'InvalidReason'>;
+  function decide(value: Loaded<Specific>): Result<Narrow, 'InvalidReason'>;
+  function decide(value: Loaded<Request>): Result<Wide, 'InvalidReason'> {
+    if ('reason' in value.input) return typeof value.input.reason === 'string' && value.input.reason.trim()
+      ? ok({ kind: 'narrow' }) : err('InvalidReason');
+    return ok({ kind: 'broad' });
+  }
+  let saves = 0;
+  const load = async <I extends Request>(input: I) => ok<Loaded<I>>({ input, actor: 'host' });
+  const app = business({ name: 'overloaded', load, save: async (value: Narrow) => { saves++; return ok(value); }, operations: { decide: [decide] } });
+  type Input = Assert<Equal<Parameters<typeof app.decide>[0], Specific>>;
+  type Output = Assert<Equal<Awaited<ReturnType<typeof app.decide>>, Result<Narrow, 'InvalidReason'>>>;
+  assert.deepEqual(await app.decide({ id: 'one', reason: 'allowed' }), ok({ kind: 'narrow' }));
+  assert.deepEqual(await app.decide({ id: 'one', reason: '' }), err('InvalidReason')); assert.equal(saves, 1);
+  if (false) {
+    // @ts-expect-error the broad callable must not erase the operation's required reason
+    app.decide({ id: 'one' });
+  }
+});
+
+test('pair refinement preserves validation facts added by a normal domain function', async () => {
+  type Checked = Base & Readonly<{ validated: true }>;
+  type CheckedPair = Readonly<{ input: Checked; value: number }>;
+  const validate = (input: Base): Result<CheckedPair, 'InvalidAmount'> => input.amount > 0
+    ? ok({ input: { ...input, validated: true }, value: input.amount * 2 }) : err('InvalidAmount');
+  const consume = (pair: CheckedPair) => ok(pair.input.validated);
+  const app = business({ name: 'validated-pair', load: async (amount: number) => ok<Base>({ amount }),
+    save: async (value: true) => ok(value), operations: { go: [validate, consume] },
+  });
+  type Output = Assert<Equal<Awaited<ReturnType<typeof app.go>>, Result<true, 'InvalidAmount'>>>;
+  assert.deepEqual(await app.go(1), ok(true)); assert.deepEqual(await app.go(0), err('InvalidAmount'));
+});

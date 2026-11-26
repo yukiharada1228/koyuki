@@ -38,7 +38,11 @@ type FirstInput<E extends Entry> = RuleOf<Stages<E>[0]> extends (input: infer I)
 // envelope, consider the first rule's input field only as a request candidate.
 // The actual loader must guarantee the entire required context for that request;
 // an incompatible broad return or a missing proof remains rejected.
-type SpecializedLoader<L extends Load, E extends Entry> = [RuleOf<Stages<E>[0]>] extends [(input: Loaded<L>) => unknown] ? L
+// Capture the declared result before conditional matching refines the callable.
+// Checking only parameter compatibility can discard a narrower overload.
+type AcceptsLoaded<R extends (...args: never[]) => unknown, I, O = ReturnType<R>> = R extends (input: I) => infer A
+  ? [A] extends [O] ? true : false : false;
+type SpecializedLoader<L extends Load, E extends Entry> = AcceptsLoaded<RuleOf<Stages<E>[0]>, Loaded<L>> extends true ? L
   : [Loaded<L>] extends [FirstInput<E>] ? L
   : [FirstInput<E>] extends [{ readonly input: infer I }]
     ? [I] extends [Input<L>]
@@ -54,8 +58,12 @@ type OperationNames<T> = OperationName<keyof T>;
 // A proof-producing check may additionally retain its declared facts, but only
 // when the actual function guarantees the entire intersection. A monomorphic
 // broad return must never invent a narrower success value.
+// Refine only toward a subtype of each existing input member. A domain rule
+// may have added validation facts; never replace those with a broader context.
 type InputPairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] };
-type PairRuleOutput<R extends (...args: never[]) => unknown, I> = R extends (input: I) => Result<InputPairCandidate<Value<ReturnType<R>>, I>, Failure<ReturnType<R>>> ? InputPairCandidate<Value<ReturnType<R>>, I> : Value<ReturnType<R>>;
+// Keep the original success/error types stable while checking the candidate.
+type PairRuleOutput<R extends (...args: never[]) => unknown, I, O = Value<ReturnType<R>>, E = Failure<ReturnType<R>>> = R extends (input: I) => Result<InputPairCandidate<O, I>, E>
+  ? [InputPairCandidate<O, I>] extends [O] ? InputPairCandidate<O, I> : O : O;
 type InputPairOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }] ? PairRuleOutput<RuleOf<F>, I> : Out<F>;
 type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
   : [I] extends [Out<F>]
