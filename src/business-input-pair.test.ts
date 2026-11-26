@@ -64,6 +64,71 @@ function refusedConnections() {
 }
 void refusedConnections;
 
+type CheckedAmount = Readonly<{ amount: number; checked: true }>;
+type PlainAmount = Readonly<{ amount: number }>;
+function checkAmount<T extends Base>(input: T): Result<CheckedAmount, 'InvalidAmount'> {
+  return input.amount > 0 ? ok({ amount: input.amount, checked: true }) : err('InvalidAmount');
+}
+const checkedAmount = withInput(checkAmount);
+function finishAmount<T extends Base>({ input, value }: Readonly<{ input: T; value: CheckedAmount }>): Result<Readonly<{ input: T; value: PlainAmount }>, 'TooLarge'> {
+  return value.amount > 10 ? err('TooLarge') : ok(Object.freeze({ input, value: { amount: value.amount } }));
+}
+
+test('a pair projection retains the inner context after deliberately dropping an intermediate proof', async () => {
+  type FinishedPair = Readonly<{ input: Context; value: PlainAmount }>;
+  let saves = 0, loaded: Context | undefined;
+  const app = business({ name: 'inner-pair', load: async (amount: number) => { loaded = new Context(amount, 'JPY'); return ok(loaded); },
+    save: async <T extends Readonly<{ input: Base; value: PlainAmount }>>(pair: T): Promise<Result<T, 'Conflict'>> => {
+      saves++; assert.strictEqual(pair.input, loaded); return ok(pair);
+    }, operations: { go: [{ name: 'check', rule: checkedAmount }, { name: 'finish', rule: finishAmount }] },
+  });
+  type Exact = Assert<Equal<Awaited<ReturnType<typeof app.go>>, Result<FinishedPair, 'InvalidAmount' | 'TooLarge' | 'Conflict'>>>;
+  const success = await app.go.runDetailed(2, { input: (_value, name) => name, result: result => result.ok });
+  assert(success.result.ok); assert.strictEqual(success.result.value.input, loaded);
+  assert.equal(success.result.value.input.host(), 'trusted'); assert(Object.isFrozen(success.result.value));
+  assert.deepEqual(success.result.value.value, { amount: 2 }); assert(!('checked' in success.result.value.value));
+  assert.deepEqual(success.trace.map(row => row.step), ['inner-pair.go:load', 'check', 'finish', 'inner-pair.go']);
+  assert.deepEqual(success.observations.map(row => row.step), success.trace.map(row => row.step));
+  const invalid = await app.go.runDetailed(0), tooLarge = await app.go.runDetailed(11);
+  assert.deepEqual(invalid.result, err('InvalidAmount')); assert.equal(invalid.trace.length, 2);
+  assert.deepEqual(tooLarge.result, err('TooLarge')); assert.equal(tooLarge.trace.length, 3);
+  assert.equal(invalid.plan, null); assert.equal(tooLarge.plan, null); assert.equal(saves, 1);
+});
+
+test('nested pair refinement does not erase validation facts added to its inner input', async () => {
+  type Checked = Base & Readonly<{ validated: true }>;
+  function validate<T extends Base>({ input, value }: Readonly<{ input: T; value: CheckedAmount }>): Result<Readonly<{ input: T & Checked; value: PlainAmount }>, never> {
+    return ok({ input: { ...input, validated: true }, value: { amount: value.amount } });
+  }
+  const consume = (pair: Readonly<{ input: Checked; value: PlainAmount }>) => ok(pair.input.validated);
+  const app = business({ name: 'inner-validation', load: async (amount: number) => ok<Base>({ amount }), save: async (value: true) => ok(value),
+    operations: { go: [checkedAmount, validate, consume] },
+  });
+  type Exact = Assert<Equal<Awaited<ReturnType<typeof app.go>>, Result<true, 'InvalidAmount'>>>;
+  assert.deepEqual(await app.go(1), ok(true)); assert.deepEqual(await app.go(0), err('InvalidAmount'));
+});
+
+test('a nested pair producer with a broad input result cannot inherit the caller context', async () => {
+  type BroadPair = Readonly<{ input: Base; value: PlainAmount }>;
+  const broad = ({ input, value }: Readonly<{ input: Context; value: CheckedAmount }>): Result<BroadPair, never> =>
+    ok({ input: { amount: input.amount }, value: { amount: value.amount } });
+  const load = async (amount: number) => ok(new Context(amount, 'JPY'));
+  const app = business({ name: 'inner-broad', load, save: async <T extends BroadPair>(value: T) => ok(value), operations: { go: [checkedAmount, broad] } });
+  type Exact = Assert<Equal<Awaited<ReturnType<typeof app.go>>, Result<BroadPair, 'InvalidAmount'>>>;
+  assert.deepEqual(await app.go(1), ok({ input: { amount: 1 }, value: { amount: 1 } }));
+  const consume = (pair: Readonly<{ input: Context; value: PlainAmount }>) => ok(pair.input.host());
+  if (false) {
+    // @ts-expect-error the actual producer must promise the retained context
+    business({ name: 'inner-unsafe', load, save: async (value: string) => ok(value), operations: { go: [checkedAmount, broad, consume] } });
+    const dynamic = Math.random() < 0.5 ? finishAmount : broad;
+    // @ts-expect-error all possible producers must retain the private context
+    business({ name: 'inner-union', load, save: async (value: string) => ok(value), operations: { go: [checkedAmount, dynamic, consume] } });
+    const incomplete = async (amount: number) => ok<Base>({ amount });
+    // @ts-expect-error nested retention cannot invent class facts missing from the loader
+    business({ name: 'inner-incomplete', load: incomplete, save: async (value: string) => ok(value), operations: { go: [checkedAmount, finishAmount, consume] } });
+  }
+});
+
 type Accepted = Readonly<{ state: 'accepted'; receiptId: string }>;
 type Returned = Readonly<{ state: 'returned'; reason: string }>;
 type ReceiptState = Accepted | Returned;

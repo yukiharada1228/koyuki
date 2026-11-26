@@ -1,4 +1,4 @@
-import { receiveDecision, returnDecision, correctStockDecision } from './receipt-pipeline.js';
+import { receiveDecision, returnDecision, correctedQuantities, correctionPlan } from './receipt-pipeline.js';
 import { requestCreationDecision, requestEditDecision } from './request-pipeline.js';
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
 import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
@@ -41,7 +41,10 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
     save: <T extends Receipt>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       receive: [{ name: 'run:1', rule: receiveDecision }, { name: 'run:2', rule: includeReceivedStock }],
       return: { load: context.receipt<ReasonInput>, run: [checkReceipt, { name: 'run:2', rule: returnDecision }, { name: 'run:3', rule: includeChangedStock }] },
-      correct: { load: context.receipt<CorrectInput>, run: [checkReceipt, correctStockDecision] },
+      correct: { load: context.receipt<CorrectInput>, run: [checkReceipt,
+        { name: 'revalidate-correction', rule: correctedQuantities },
+        { name: 'correct-receipt-plan', rule: correctionPlan },
+        { name: 'run:3', rule: includeChangedStock }] },
     } });
   const invoices = business({ name: 'procurement.invoice.v1', load: context.register,
     save: <T extends Invoice>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {

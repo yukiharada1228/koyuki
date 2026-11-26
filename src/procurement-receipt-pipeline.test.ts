@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { business, err, ok } from './framework/index.js';
-import { checkReceipt, returnReceipt, correctReceipt, returnCheckedReceipt, correctCheckedReceipt, receiveOrder, receiptCorrectionInput, finishReceiptCorrection, createRequest, type ReceivedChange, type Actor, type Order, type Receipt, type Stock, type Invoice, type Change } from './experiments/procurement/domain.js';
-import { receiveDecision, returnDecision, correctDecision } from './experiments/procurement/receipt-pipeline.js';
+import { business, err, ok, workflow } from './framework/index.js';
+import { checkReceipt, returnReceipt, correctReceipt, returnCheckedReceipt, correctCheckedReceipt, receiveOrder, receiptCorrectionInput, finishReceiptCorrection, createRequest, type ReceivedChange, type Actor, type Order, type Receipt, type Stock, type Invoice, type Change, type CheckedReceipt, type CorrectInput } from './experiments/procurement/domain.js';
+import { receiveDecision, returnDecision, correctedQuantities, correctionPlan } from './experiments/procurement/receipt-pipeline.js';
 import { includeReceivedStock, includeChangedStock, receiveIntoStock, returnFromStock, correctInStock, type ReceiveStockContext, type ReceiptStockContext } from './experiments/procurement/inventory.js';
 import { procurement, procurementChanges } from './experiments/procurement/application.js';
 import { procurementReplay } from './experiments/procurement/replay.js';
@@ -12,6 +12,10 @@ const buyer: Actor = { id: 'buyer', role: 'buyer', groupId: 'g1', active: true }
 const warehouse: Actor = { ...buyer, id: 'warehouse', role: 'warehouse' };
 const policy = { requestLimitCents: 1000, approverIds: ['boss'] };
 const lines = [{ sku: 'a', quantity: 1, unitCents: 100 }];
+// A concrete test harness inspects the two production rules without IO. The
+// live application connects those rules directly and has no stock annotation.
+const correctDecision = workflow('revalidate-correction', (value: CheckedReceipt<ReceiptStockContext<CorrectInput>>) => correctedQuantities(value))
+  .then('correct-receipt-plan', pair => correctionPlan(pair));
 function fixture(): ReceiveStockContext {
   const created = createRequest({ input: { id: 'rq', lines }, actor: buyer }); assert(created.ok);
   const current: Order = { kind: 'order', id: 'po', groupId: 'g1', version: 1, state: 'placed', requestId: 'rq', ownerId: 'buyer', supplier: 'supplier', totalCents: 100, lines: created.value.result.lines };
@@ -155,12 +159,16 @@ function typeContracts() {
   const raw: Pick<ReceivedChange, 'result' | 'writes' | 'checks'> = { result: { ...receipt.current, state: 'accepted' }, writes: [], checks: [] };
   // @ts-expect-error an accepted receipt plan does not prove its quantities were validated
   finishReceiptCorrection(checked.value, raw);
+  // @ts-expect-error the direct plan rule also requires the private quantity proof
+  correctionPlan({ input: checked.value, value: raw });
   // @ts-expect-error a public marker cannot fabricate the private quantity proof
   finishReceiptCorrection(checked.value, { ...raw, receivedCheck: true });
   const withReasonOnly = checkReceipt({ ...receipt, input: { id: 'rc', expectedVersion: 1, reason: 'reason' } });
   if (withReasonOnly.ok) {
     // @ts-expect-error the generic check does not invent correction quantities
     correctDecision.run(withReasonOnly.value);
+    // @ts-expect-error the direct revalidation rule still requires correction quantities
+    correctedQuantities(withReasonOnly.value);
   }
   const save = async (change: Change<Receipt>) => ok(change.result), load = async (_input: number) => ok(receipt);
   business({ name: 'valid', load, save, operations: { return: [checkReceipt, returnDecision, includeChangedStock] } });

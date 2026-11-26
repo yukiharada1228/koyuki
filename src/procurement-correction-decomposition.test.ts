@@ -1,15 +1,16 @@
-// Compare the retained compatibility composition with flat and live Workflow composition.
+// Compare the retained compatibility, concrete Workflow and direct rule compositions.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { business, describeFlow, err, ok, withInput, type Result } from './framework/index.js';
+import { business, describeFlow, err, ok, withInput, workflow, type Result } from './framework/index.js';
 import { checkReceipt, createRequest, receiveOrder, receiptCorrectionInput, finishReceiptCorrection, correctCheckedReceipt, type Actor, type CheckedReceipt, type Change, type CorrectInput, type ReceivedChange, type Order, type Receipt, type RuleError, type Stock } from './experiments/procurement/domain.js';
-import { correctDecision } from './experiments/procurement/receipt-pipeline.js';
+import { correctedQuantities, correctionPlan } from './experiments/procurement/receipt-pipeline.js';
 import { includeChangedStock, type ReceiptStockContext } from './experiments/procurement/inventory.js';
 type Context = CheckedReceipt<ReceiptStockContext<CorrectInput>>;
 const quantities = withInput((context: Context) => receiveOrder(receiptCorrectionInput(context)));
-// Flat composition still needs a second contextual annotation for this callback.
+// Retain the old annotated flat composition as a comparison, not the live API.
 const finishFlat = ({ input, value }: Readonly<{ input: Context; value: ReceivedChange }>) => ok({ input, value: finishReceiptCorrection(input, value) });
-const nested = correctDecision;
+const nested = workflow('revalidate-correction', (value: Context) => correctedQuantities(value))
+  .then('correct-receipt-plan', pair => correctionPlan(pair));
 // Keep the pre-migration compatibility boundary as an explicit comparison.
 const legacyDecision = withInput((context: Context) => correctCheckedReceipt(context));
 
@@ -29,14 +30,18 @@ function candidates(context: ReceiptStockContext<CorrectInput>) {
   const flat = business({ name: 'probe.flat', load, save, operations: { correct: [checkReceipt, quantities, finishFlat, includeChangedStock] } });
   const composed = business({ name: 'probe.nested', load, save, operations: { correct: [checkReceipt, nested.run, includeChangedStock] } });
   const exposed = business({ name: 'probe.exposed', load, save, operations: { correct: [checkReceipt, nested, includeChangedStock] } });
+  const direct = business({ name: 'probe.direct', load, save, operations: { correct: [checkReceipt,
+    { name: 'revalidate-correction', rule: correctedQuantities },
+    { name: 'correct-receipt-plan', rule: correctionPlan },
+    { name: 'run:3', rule: includeChangedStock }] } });
   const legacy = business({ name: 'probe.legacy', load, save, operations: { correct: [checkReceipt, legacyDecision, includeChangedStock] } });
-  return { flat: flat.correct, nested: composed.correct, legacy: legacy.correct, exposed: exposed.correct, saves: () => saves };
+  return { flat: flat.correct, nested: composed.correct, legacy: legacy.correct, exposed: exposed.correct, direct: direct.correct, saves: () => saves };
 }
 
 test('flat and nested correction probes preserve the current plan and keep original input immutable', async () => {
   const context = fixture(), before = structuredClone(context), commands = candidates(context);
-  const reports = await Promise.all([commands.legacy.runDetailed(context.input), commands.flat.runDetailed(context.input), commands.nested.runDetailed(context.input), commands.exposed.runDetailed(context.input)]);
-  assert.equal(commands.saves(), 4);
+  const reports = await Promise.all([commands.legacy.runDetailed(context.input), commands.flat.runDetailed(context.input), commands.nested.runDetailed(context.input), commands.exposed.runDetailed(context.input), commands.direct.runDetailed(context.input)]);
+  assert.equal(commands.saves(), 5);
   const receipt: Receipt = { ...context.current, version: 2, quantities: [{ sku: 'a', quantity: 2 }] };
   assert(context.stock);
   const stock: Stock = { ...context.stock, version: 2, positions: [{ sku: 'a', location: 'receiving', onHand: 2, reserved: 0 }] };
@@ -57,17 +62,17 @@ test('a planned correction rejected by stock is never saved by either compositio
   const context = { ...base, current, receipts: [current], input: { ...base.input, quantities: [{ sku: 'a', quantity: 1 }] },
     stock: { ...base.stock, positions: [{ sku: 'a', location: 'receiving', onHand: 2, reserved: 2 }] } };
   const before = structuredClone(context);
-  for (const name of ['legacy', 'flat', 'nested', 'exposed'] as const) {
+  for (const name of ['legacy', 'flat', 'nested', 'exposed', 'direct'] as const) {
     const commands = candidates(context), report = await commands[name].runDetailed(context.input);
     assert.deepEqual(report.result, err({ kind: 'InsufficientStock' })); assert.equal(report.plan, null); assert.equal(commands.saves(), 0);
-    assert.deepEqual(report.trace.map(row => row.status), name === 'flat' || name === 'exposed' ? ['ok', 'ok', 'ok', 'ok', 'error'] : ['ok', 'ok', 'ok', 'error']);
+    assert.deepEqual(report.trace.map(row => row.status), name === 'flat' || name === 'exposed' || name === 'direct' ? ['ok', 'ok', 'ok', 'ok', 'error'] : ['ok', 'ok', 'ok', 'error']);
   }
   assert.deepEqual(context, before);
 });
 
 test('correction probes keep check and quantity failures before finish, stock and save', async () => {
   const context = fixture();
-  for (const name of ['legacy', 'flat', 'nested', 'exposed'] as const) {
+  for (const name of ['legacy', 'flat', 'nested', 'exposed', 'direct'] as const) {
     const commands = candidates(context), command = commands[name];
     const check = await command.runDetailed({ ...context.input, expectedVersion: -1 });
     assert.deepEqual(check.result, err({ kind: 'InvalidInput' })); assert.equal(check.trace.length, 2); assert.equal(check.plan, null);
@@ -90,6 +95,11 @@ test('flat business exposes four rules while a composed Workflow run keeps its i
   const inner = JSON.stringify(describeFlow(nested)), outer = JSON.stringify(describeFlow(commands.nested));
   assert(inner.includes('revalidate-correction') && inner.includes('correct-receipt-plan'));
   assert(!outer.includes('revalidate-correction') && !outer.includes('correct-receipt-plan'));
+  const direct = await commands.direct.runDetailed(context.input, { input: (_value, step) => step, result: result => result.ok });
+  assert.deepEqual(direct.trace.map(row => row.step), ['probe.direct.correct:load', 'run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3', 'probe.direct.correct']);
+  assert.deepEqual(direct.observations.map(row => row.step), direct.trace.map(row => row.step));
+  const live = JSON.stringify(describeFlow(commands.direct));
+  assert(live.includes('revalidate-correction') && live.includes('correct-receipt-plan'));
 });
 
 function typeContracts() {
@@ -104,5 +114,11 @@ function typeContracts() {
   void result;
   // @ts-expect-error a correction requires quantities
   commands.flat({ id: 'rc', expectedVersion: 1 });
+  // @ts-expect-error the direct declaration still requires quantities
+  commands.direct({ id: 'rc', expectedVersion: 1 });
+  // @ts-expect-error raw context cannot skip the check in the direct rule either
+  correctedQuantities(context);
+  // @ts-expect-error finishing requires a validated quantities result
+  if (checked.ok) correctionPlan(checked.value);
 }
 void typeContracts;
