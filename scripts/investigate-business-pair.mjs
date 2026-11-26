@@ -109,6 +109,18 @@ type Exact = Assert<Equal<Refined<typeof quoted, Context>, Pair>>;
 `;
   const aliased = literal.replace('F extends (input: I) => Result<PairCandidate<PairOut<F>, I>, PairFailure<ReturnType<F>>>', 'F extends Rule<I, PairCandidate<PairOut<F>, I>, PairFailure<ReturnType<F>>>');
   variants.splice(0, variants.length, ['inline-operations', fixture], ['bound-config', bound], ['isolated-literal-call', literal], ['isolated-rule-alias', aliased]);
+  if (pairFirst) {
+    const isolated = head + `
+import type { PairStudyFirst, PairStudyLoaded, PairStudyRule, PairStudyOut, PairStudyStage } from './framework/business.js';
+type Stages = readonly [typeof quoted, typeof finish];
+type ExactFirstInput = Assert<Equal<PairStudyFirst<Stages>, Base>>;
+type ExactLoaded = Assert<Equal<PairStudyLoaded<typeof load, Stages>, Context>>;
+type ExactCallable = Assert<Equal<PairStudyRule<typeof quoted>, typeof quoted>>;
+type ExactBroadOutput = Assert<Equal<PairStudyOut<typeof quoted>, Readonly<{ input: Base; value: number }>>>;
+type ExactStageOutput = Assert<Equal<PairStudyStage<typeof quoted, Context>, Pair>>;
+`;
+    variants.push(['isolated-business-aliases', isolated]);
+  }
 }
 const compiler = resolve(root, 'node_modules/.bin/tsc');
 const version = spawnSync(compiler, ['--version'], { cwd: root, encoding: 'utf8' });
@@ -131,7 +143,14 @@ try {
   try { await readFile(join(directory, 'src', probeName)); throw Error('Probe would overwrite source'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   for (const [candidate, source] of candidates) {
-    await writeFile(join(directory, 'src/framework/business.ts'), source);
+    const aliases = pairFirst ? `
+export type PairStudyFirst<P extends Pipeline> = FirstInput<P>;
+export type PairStudyLoaded<L extends Load, P extends Pipeline> = Loaded<Loader<L, P>>;
+export type PairStudyRule<F extends Stage> = RuleOf<F>;
+export type PairStudyOut<F extends Stage> = Out<F>;
+export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
+` : '';
+    await writeFile(join(directory, 'src/framework/business.ts'), source + aliases);
     const baseline = compile();
     const probes = [];
     for (const [variant, text] of variants) {
@@ -143,7 +162,7 @@ try {
       probes.push({ variant, fixtureSha256: hash(text), ...result, existingContractDiagnostics });
       await rm(join(directory, 'src', probeName));
     }
-    reports.push({ candidate, businessSourceSha256: hash(source), baseline, probes });
+    reports.push({ candidate, businessSourceSha256: hash(source + aliases), baseline, probes });
   }
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
