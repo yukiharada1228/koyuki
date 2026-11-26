@@ -46,7 +46,7 @@ SQLiteは実driverだが、ファイルの再起動や別プロセスの比較�
 操作者や任意フィールドを全収集する機能を追加したものではない。
 全32回について、次を直接検査し、report全体も独立した通常TypeScriptの詳細実装と比較する。
 
-- load・業務段階・saveのtraceが成功し、順序も一致する。[在庫を含む共通検証17操作](procurement-stock-planning.md)と入荷はrun:1とrun:2、返品はrun:3まで、[訂正](procurement-live-correction.md)は共通検証・再検証・計画作成・在庫計画の4段階、[申請作成](procurement-request-creation.md)は作成前提・明細解析・計画の3段階、それ以外はrun:1となる。
+- load・業務段階・saveのtraceが成功し、順序も一致する。[在庫を含む共通検証](procurement-stock-planning.md)のうち編集を除く16操作と入荷はrun:1とrun:2、返品はrun:3まで、[訂正](procurement-live-correction.md)は共通検証・再検証・計画作成・在庫計画の4段階、[申請作成](procurement-request-creation.md)は3段階、[編集](procurement-request-edit.md)は権限・状態・明細・計画の4段階、それ以外はrun:1となる。
 - 選択記録は各操作のtrace段階数と一致し、呼び出し番号が混ざらず、最後の成功値の対象情報が業務結果と一致する。
 - 各操作でcommitは1回だけ。最終の6モデルと32件の戻り値が、観測なしの通常実行と一致する。
 - Repositoryのread/relatedの対象と呼出し順も、観測なしの通常実行と一致し、診断用の再取得を増やさない。
@@ -54,9 +54,9 @@ SQLiteは実driverだが、ファイルの再起動や別プロセスの比較�
 - 全段階のResult射影がthrowしても、保存済み成功を失敗へ置換しない。
 - 射影の失敗は対応するstep/phase/CaptureFailedだけになり、例外の文面は残さない。
 
-成功時は1シナリオ128記録、観測失敗時は128件の観測エラーを確認する。
+成功時は1シナリオ130記録、観測失敗時は130件の観測エラーを確認する。
 [注文3操作の分離](procurement-order-guards.md)で96から99となり、[申請・請求書](procurement-shared-guards.md)の7操作も分離して106となり、[入荷・在庫の接続](procurement-receipt-pipeline.md)で110となった。
-[申請・承認・発注の追加分離](procurement-request-planning.md)で7境界が加わり、その時点では117となった。[在庫4操作](procurement-stock-planning.md)の分離で121となり、[返品・訂正の共通検証](procurement-receipt-checks.md)で123、[数量訂正の実経路](procurement-live-correction.md)で124、[申請作成](procurement-request-creation.md)で現在は128となる。
+[申請・承認・発注の追加分離](procurement-request-planning.md)で7境界が加わり、その時点では117となった。[在庫4操作](procurement-stock-planning.md)の分離で121となり、[返品・訂正の共通検証](procurement-receipt-checks.md)で123、[数量訂正の実経路](procurement-live-correction.md)で124、[申請作成](procurement-request-creation.md)で128、[申請編集](procurement-request-edit.md)で現在は130となる。
 同じコードを実tarballの独立consumerでも型検査・実行する。
 この追加は新しい観察APIの導入ではなく、既存APIの検証範囲の拡張である。
 
@@ -76,8 +76,8 @@ Koyuki本体にある他の観測テストと、この購買比較の対象を�
 ## 後続の代表失敗の比較
 
 [全25操作の代表的不正入力とcommit前Conflict](procurement-failure-observation.md)も比較する。
-32回ずつの失敗に対する194境界で、射影失敗を含め、停止・全6モデルの非変更・その後の正常実行を照合する。
-上記の128境界は正常操作の観測であり、この194境界と混ぜて全失敗・全経路の完成件数とは扱わない。
+32回ずつの失敗に対する196境界で、射影失敗を含め、停止・全6モデルの非変更・その後の正常実行を照合する。
+上記の130境界は正常操作の観測であり、この196境界と混ぜて全失敗・全経路の完成件数とは扱わない。
 
-[各read位置の取得失敗](procurement-read-failure-observation.md)も加え、現在の代表失敗観測は272境界。
-128境界は正常操作、194境界は不正入力と保存前Conflict、追加の78境界は選んだread位置のResult失敗として区別する。
+[各read位置の取得失敗](procurement-read-failure-observation.md)も加え、現在の代表失敗観測は274境界。
+130境界は正常操作、196境界は不正入力と保存前Conflict、追加の78境界は選んだread位置のResult失敗として区別する。

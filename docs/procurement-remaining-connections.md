@@ -11,7 +11,8 @@
 
 後続の[申請作成](procurement-request-creation.md)も、作成前提・明細解析・計画の宣言へ移した。
 現在は21操作が複数段階で、上記commit時点の単一段階9操作という記述は履歴である。
-createRequestの手動接続は互換入口へ残し、editCheckedRequestの解析接続と3つの文脈注釈は引き続き残る。
+createRequestの手動接続は互換入口へ残す。さらに[申請編集](procurement-request-edit.md)も状態検証・明細解析・計画の宣言へ移した。
+editCheckedRequestの手動接続は互換入口に残り、他の内部接続と3つの文脈注釈も引き続き残る。
 
 ## 操作宣言で既に委譲していること
 

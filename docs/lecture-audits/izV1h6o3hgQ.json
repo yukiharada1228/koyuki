@@ -348,6 +348,22 @@
         "scripts/declarations.test.mjs",
         "docs/procurement-request-creation.md"
       ]
+    },
+    "requestEditWorkflowFollowUp": {
+      "implementationBaseCommit": "b34d4dadc5e0635cee142c722700f3b36eaf6246",
+      "scope": "Actual request edit now declares draft-state validation, shared line parsing and pure next-version plan after the existing buyer check. No new framework API or callback annotation. Buyer, version, state and line refusal order is retained. Independent plan expectations, checked context/Draft/parsed-collection contracts and memory/SQLite refusal/non-save are checked. Compatibility edit wrappers retain manual Result composition. Plain/helper manually execute four phases. Current 25-operation/32-call scenario has 130 success boundaries and 274 representative failure boundaries (66 invalid, 130 precommit conflict, 78 read failure). IO remains 72 positions/178 injections, with input/result selections 374/196 or zero result selections. Five selected sources resolve nine declarations, 25 IDs and 52 labels. No universal value-level provenance or all-input proof. Three procurement annotations, independent user trial and partial statuses remain; no new audio/frame review.",
+      "evidence": [
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/request-pipeline.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/plain.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/procurement-request-edit.test.ts",
+        "src/procurement-failure-observation.test.ts",
+        "src/procurement-io-exceptions.test.ts",
+        "scripts/declarations.test.mjs",
+        "docs/procurement-request-edit.md"
+      ]
     }
   },
   "sections": [
