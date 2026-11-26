@@ -245,6 +245,18 @@
         "scripts/check-declarations.mjs",
         "scripts/declarations.test.mjs"
       ]
+    },
+    "liveCorrectionWorkflowFollowUp": {
+      "implementationBaseCommit": "2ed63eeef258916b442c0391d1f288f6d7cb72a9",
+      "scope": "Live procurement correction now composes quantity revalidation and a shared pure plan projection through an explicit Workflow. Producer proof, preserved context, four-way compatibility comparison and three-way repository observation comparisons are checked. Compatibility Result composition and three context annotations remain. No new lecture audio/frame review or independent user evaluation; partial topic statuses unchanged.",
+      "evidence": [
+        "docs/procurement-live-correction.md",
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/receipt-pipeline.ts",
+        "src/procurement-receipt-pipeline.test.ts",
+        "src/procurement-correction-decomposition.test.ts",
+        "scripts/declarations.test.mjs"
+      ]
     }
   },
   "sections": [
