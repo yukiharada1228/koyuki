@@ -103,10 +103,24 @@ export function Mutation({ name, children }: { name: string; children: View | re
   return { kind: 'mutation', name, child: nodes[0] };
 }
 export const Done = (): View => ({ kind: 'done' });
+type ViewPath = { readonly node: Exclude<View, { readonly kind: 'mutation' }>; readonly names: readonly string[] };
+function viewPath(view: View): ViewPath {
+  let node = view;
+  const names: string[] = [], seen = new Set<View>();
+  while (node.kind === 'mutation') {
+    if (seen.has(node)) throw new Error('CyclicView');
+    seen.add(node); names.push(node.name); node = node.child;
+  }
+  return { node, names };
+}
+function describePath({ node, names }: ViewPath): unknown {
+  let plan: unknown = node.kind === 'done' ? { kind: 'done' }
+    : { kind: node.kind, operation: node.operation, input: structuredClone(node.input) };
+  for (let index = names.length - 1; index >= 0; index--) plan = { kind: 'mutation', name: names[index], child: plan };
+  return plan;
+}
 export function describeView(view: View): unknown {
-  if (view.kind === 'mutation') return { kind: view.kind, name: view.name, child: describeView(view.child) };
-  if (view.kind === 'done') return { kind: 'done' };
-  return { kind: view.kind, operation: view.operation, input: structuredClone(view.input) };
+  return describePath(viewPath(view));
 }
 // A diagnostic snapshot is not the execution capability or the replay identity.
 // Inspect data descriptors first so reporting never invokes domain accessors.
@@ -169,23 +183,22 @@ export function bindMutation<I, O, E, S, F>(config: {
       return { result, trace: [...evaluated.trace, { step: operation, status: result.ok ? 'ok' : 'error' }], plan };
     }
     const finishRender = observe?.live ? observe.scope?.('render-and-verify') : undefined;
-    let prepared: { rendered: View; task: { execute: () => Promise<Result<unknown, unknown>> } };
+    let prepared: { plan: unknown; task: { execute: () => Promise<Result<unknown, unknown>> } };
     try {
       // Capture before invoking user rendering: comparing two aliases afterwards
       // would allow an in-place mutation to redefine the original decision.
       const expected = canonicalIdentity(decision.value);
       const rendered = view(decision.value);
-      let node = rendered;
-      while (node.kind === 'mutation') node = node.child;
+      const path = viewPath(rendered), node = path.node;
       if (node.kind !== 'write') throw new Error('WrongMutationBinding');
       const task = tasks.get(node);
       if (!task || task.identity !== identity) throw new Error('WrongMutationBinding');
       if (canonicalIdentity(node.input) !== expected || canonicalIdentity(decision.value) !== expected) throw new Error('ChangedDecision');
-      prepared = { rendered, task }; finishRender?.('ok');
+      prepared = { plan: describePath(path), task }; finishRender?.('ok');
     } catch (cause) { finishRender?.('defect'); throw cause; }
-    const { rendered, task } = prepared;
+    const { plan, task } = prepared;
     const result = (observe ? await observeEffect(operation, decision.value, () => task.execute(), observe) : await task.execute()) as Result<S, F>;
-    return { result, trace: [...evaluated.trace, { step: operation, status: result.ok ? 'ok' : 'error' }], plan: describeView(rendered) };
+    return { result, trace: [...evaluated.trace, { step: operation, status: result.ok ? 'ok' : 'error' }], plan };
   }
   const runDetailed = registerDetailed((input: I) => execute(input), execute);
   async function run(input: I): Promise<Result<S, E | F>> { return (await runDetailed(input)).result; }

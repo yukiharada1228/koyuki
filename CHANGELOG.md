@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 明示的rendererのView経路とplanを保存前に確定し、save後にchild getterや変更済みメタデータを再読しないようにした。循環Viewを保存前にCyclicViewで拒否し、単独describeViewも反復処理へ変更。4件の回帰検査を配布consumerにも追加した。
+
 - 明示的なbindMutation rendererで、判断結果のその場の変更や配列属性の差し替えを保存前に拒否する。renderer前の判断記録とdescriptorによるJSON形式検査を追加し、getterや情報を失う値は実行前に拒否。rendererなしのopaqueな通常保存は維持し、7件の回帰検査を配布consumerへ追加した。
 
 - 購買checkReceiptの成功型に、検証済みの入荷accepted・関連注文placedを反映。状態を差し替えた検証文脈の再利用を型で拒否し、状態型だけを外す対照検査も配布consumerへ追加した。実行時の検証順序は維持する。
