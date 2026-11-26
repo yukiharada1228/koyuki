@@ -128,3 +128,7 @@ w0o-17とw0o-23の[全フレーム一覧と代表画面](lecture-frame-window-su
 iz-24/qbf-19の[型推論の追加照合](workflow-context-inference.md)で、旧制限を再現し、既存のWorkflowで通る条件も確認した。
 具体的な文脈を持つ前段がある場合だけ、generic withInputの3形式で中間型を厳密に保持できる。
 最初にgeneric関数を置く例は不受理で、3つの文脈注釈や独立利用者の評価は解消せず、9話題のpartialは維持する。
+
+その後、[genericな先頭の型推論](workflow-generic-first.md)を拡張し、制約の項目だけを使う正例を受理するようにした。
+以前の先頭の例はBaseにないContext属性を要求するため、そのまま不受理である。
+不適合候補・証明の混同の拒否と元の推論例を再検査し、任意の多相変換の解消とはせず、9話題のpartialを維持する。

@@ -24,6 +24,8 @@ Workflowへ渡す最初の関数には必要に応じて引数の型を明示す
 Workflowを使うことは必須ではなく、従来の普通の関数とStepの配列も維持する。
 [具体的な前段とgeneric関数](workflow-context-inference.md)の追加検査では、前段がContextを保証する場合に
 withInputの変数・inline呼出し・無注釈callbackを接続できることを確認した。中間型の厳密な一致も検査する。
+[generic関数を先頭へ置く](workflow-generic-first.md)場合も、その関数の宣言した制約内なら追加の文脈注釈を省略できる。
+制約にない在庫・認証等の文脈まで補うものではない。
 
 ## 明示した構成だけを接続する
 

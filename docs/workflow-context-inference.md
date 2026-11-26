@@ -1,7 +1,8 @@
 # 具体的な前段がある場合のgeneric関数の接続
 
 Workflowの直接接続と数量訂正の移行後に、型推論の対応範囲を再点検した。
-新しいAPIやcoreの型宣言は追加していない。既存のthenで使える場合と、依然として通らない場合を分ける。
+この調査時点では新しいAPIやcoreの型宣言は追加していない。既存のthenで使える場合と、依然として通らない場合を分ける。
+その後、[genericな先頭関数](workflow-generic-first.md)に対応した。以下の報告は基準commit時点の記録として維持する。
 
 ## 追加のcallback注釈なしで通る条件
 
@@ -27,7 +28,7 @@ monomorphicな関数がBaseだけを返す場合は、Contextのhostメソッド
 
 ## 残る制限
 
-- 具体的な前段なしでgenericなquotedをWorkflowの先頭へ渡す例は、現在も不受理。
+- 具体的な前段なしでgenericなquotedを先頭へ渡し、BaseにないContext属性まで要求するこの例は不受理。
 - businessの普通の関数列で、genericな入力の組の対応を中間型計算へ渡す元の例も不受理。
 - 名前なしinlineのdefineTransitionと、多相identityを名前付きStepにする元の例も不受理。
 - 具体的なContextを注釈した名前付きStepは、対応済みの範囲として引き続き受理される。

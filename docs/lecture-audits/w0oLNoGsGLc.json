@@ -268,6 +268,18 @@
         "scripts/fixtures/workflow-input-pair.ts",
         "scripts/investigate-transition-inference.mjs"
       ]
+    },
+    "genericFirstWorkflowFollowUp": {
+      "implementationBaseCommit": "cc1f3b8250edaa4f9d4b07547e27f3dacff64064",
+      "scope": "Constrained generic first Workflow rules now infer the declared constraint and exact success/error types. Runtime body unchanged. Same source-archive positive probe rejected before and accepted after, with existing contracts passing. Nine previous probes rechecked on equivalent framework/configuration/dependencies; extra Context fields and prior business/transition limitations remain. Three procurement annotations remain. User confirmed no independent trial records. No new audio/frame review; partial topic statuses unchanged.",
+      "evidence": [
+        "docs/workflow-generic-first.md",
+        "docs/workflow-generic-first-inference.json",
+        "src/framework/workflow.ts",
+        "src/workflow-generic-first.test.ts",
+        "scripts/fixtures/workflow-generic-first.ts",
+        "scripts/investigate-workflow-first.mjs"
+      ]
     }
   },
   "sections": [

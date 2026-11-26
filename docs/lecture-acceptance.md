@@ -184,3 +184,7 @@ withInputの戻り値をgenericにする候補は既存契約を壊すため不�
 [Workflowの具体的な前段とgeneric関数](workflow-context-inference.md)を追加確認した。
 前段が文脈を保証する場合は、変数・inline呼出し・無注釈callbackで中間のinput/value型を保持できる。
 元のinline・generic入力の組・多相identityの制限と、購買の3つの文脈注釈は残る。新しいAPIや独立利用者の評価の追加ではない。
+
+[制約付きgeneric関数をWorkflowの先頭へ置く](workflow-generic-first.md)場合の型推論も改善した。
+制約内の項目を使う正例を変更前後で比較し、全成功/失敗型とprivateな前提・出力の証明を検査する。
+追加のContext属性や元の推論制限、3つの文脈注釈、独立利用者の評価は解消せず、部分充足の判定は維持する。
