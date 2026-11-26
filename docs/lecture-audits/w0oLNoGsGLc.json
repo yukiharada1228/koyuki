@@ -257,6 +257,17 @@
         "src/procurement-correction-decomposition.test.ts",
         "scripts/declarations.test.mjs"
       ]
+    },
+    "contextualWorkflowInferenceFollowUp": {
+      "implementationBaseCommit": "2b3bf1fb377bf2596803ba3d3595f53e90fee5ae",
+      "scope": "Revalidated old inference limitations and verified three existing contextual Workflow forms with exact intermediate input/value and error types. Core declarations unchanged. Concrete upstream context is required; generic-first and prior business/transition probes still fail. Three procurement context annotations and independent user evaluation remain. No new lecture audio/frame review; partial topic statuses unchanged.",
+      "evidence": [
+        "docs/workflow-context-inference.md",
+        "docs/workflow-context-inference.json",
+        "src/business-workflow-context.test.ts",
+        "scripts/fixtures/workflow-input-pair.ts",
+        "scripts/investigate-transition-inference.mjs"
+      ]
     }
   },
   "sections": [

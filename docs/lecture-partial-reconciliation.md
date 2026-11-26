@@ -124,3 +124,7 @@ w0o-17とw0o-23の[全フレーム一覧と代表画面](lecture-frame-window-su
 [数量訂正の実経路への移行](procurement-live-correction.md)で、再検証と計画作成の接続を宣言へ出した。
 試作の投影をdomainへ共有し、追加callback注釈なしで内部観測も維持する。
 成功124境界・代表失敗266境界へ更新したが、互換関数等の接続・文脈注釈・利用者評価は残り、9話題のpartialは維持する。
+
+iz-24/qbf-19の[型推論の追加照合](workflow-context-inference.md)で、旧制限を再現し、既存のWorkflowで通る条件も確認した。
+具体的な文脈を持つ前段がある場合だけ、generic withInputの3形式で中間型を厳密に保持できる。
+最初にgeneric関数を置く例は不受理で、3つの文脈注釈や独立利用者の評価は解消せず、9話題のpartialは維持する。

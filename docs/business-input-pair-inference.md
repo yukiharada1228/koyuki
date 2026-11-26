@@ -84,3 +84,7 @@ minimal欄は従来のtransition用の最小fixtureであり、今回のbusiness
 withInput呼出しをstepで包む場合は、inlineでも書ける検査を追加した。
 このJSONの7e9992dでの結果は当時の宣言の記録として維持する。
 名前なしinlineとgenericな入力の対応まで解消したわけではなく、現行APIの改善範囲は後続の文書で区別する。
+
+[具体的な前段があるWorkflow](workflow-context-inference.md)では、genericなwithInputを変数・inline・
+無注釈callbackで接続できる条件を追加確認した。中間型も厳密に照合する。
+この条件付きの正例と、ここで再現した普通のbusiness関数列の制限は区別する。

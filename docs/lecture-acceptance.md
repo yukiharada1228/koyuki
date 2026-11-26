@@ -180,3 +180,7 @@ withInputの戻り値をgenericにする候補は既存契約を壊すため不�
 [数量訂正の実経路](procurement-live-correction.md)へWorkflowを採用し、計画投影の重複を削除した。
 入力構築・数量再検証・計画作成を普通の関数で共有し、Resultの接続は宣言へ移した。
 成功124境界・代表失敗266境界を3方式で比較する。互換関数等の接続と3つの文脈注釈は残り、全体の部分充足は維持する。
+
+[Workflowの具体的な前段とgeneric関数](workflow-context-inference.md)を追加確認した。
+前段が文脈を保証する場合は、変数・inline呼出し・無注釈callbackで中間のinput/value型を保持できる。
+元のinline・generic入力の組・多相identityの制限と、購買の3つの文脈注釈は残る。新しいAPIや独立利用者の評価の追加ではない。

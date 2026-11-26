@@ -22,6 +22,8 @@ await counter.calculate(2);
 thenのcallbackは前段の成功型から推論する。businessの外側のload・入力・全失敗型・saveとの接続も検査する。
 Workflowへ渡す最初の関数には必要に応じて引数の型を明示する。任意のgeneric変換の推論制限を解消したものではない。
 Workflowを使うことは必須ではなく、従来の普通の関数とStepの配列も維持する。
+[具体的な前段とgeneric関数](workflow-context-inference.md)の追加検査では、前段がContextを保証する場合に
+withInputの変数・inline呼出し・無注釈callbackを接続できることを確認した。中間型の厳密な一致も検査する。
 
 ## 明示した構成だけを接続する
 
