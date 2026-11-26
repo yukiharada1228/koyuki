@@ -11,16 +11,16 @@ export function procurementProcessContext<E>(repository: ProcurementRepository<E
   const receiptDepletion = configuration.receiptDepletion;
   const initial = <I extends VersionInput>(input: I) => ({ input, actor });
   const invoiceFlow = <I extends VersionInput>() => process<Input<I>>()
-    .effect('read-invoice', async context => repository.read('invoice', context.input.id, actor), (context, current) => ({ ...context, current }))
-    .effect('read-order', async context => repository.read('order', context.current.orderId, actor), (context, order) => ({ ...context, order }));
+    .effect('read-invoice', async context => repository.read('invoice', context.input.id, actor), 'current')
+    .effect('read-order', async context => repository.read('order', context.current.orderId, actor), 'order');
   const receiptFlow = <I extends VersionInput>() => process<Input<I>>()
-    .effect('read-receipt', async context => repository.read('receipt', context.input.id, actor), (context, current) => ({ ...context, current }))
-    .effect('read-order', async context => repository.read('order', context.current.orderId, actor), (context, order) => ({ ...context, order }))
+    .effect('read-receipt', async context => repository.read('receipt', context.input.id, actor), 'current')
+    .effect('read-order', async context => repository.read('order', context.current.orderId, actor), 'order')
     .effect('read-stock', async () => {
       const row = await repository.read('stock', stockId, actor);
       // Missing stock is a domain interpretation, not an automatic error recovery policy.
       return row.ok ? ok(row.value) : row.error.kind === 'NotFound' ? ok(null) : row;
-    }, (context, stock) => ({ ...context, stock }))
+    }, 'stock')
     .effect('read-related', async context => ok({ ...context, receiptDepletion,
       receipts: await repository.related('receipt', context.order.id, actor),
       invoices: (await repository.related('invoice', context.order.id, actor)).filter(row => row.state !== 'voided'),

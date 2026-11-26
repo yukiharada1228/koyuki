@@ -1,5 +1,8 @@
 # 途中のI/Oを接続する
 
+取得結果を文脈の新しいフィールドへ加えるだけなら、
+[`effect`の第三引数にフィールド名を指定](process-fields.md)して射影callbackを省略できる。
+
 純粋な業務関数の合成にはworkflowやtransitionを使う。
 途中で外部データの取得や配送が必要な場合は、processでI/O境界を明示する。
 同期ResultとPromise<Result>を同じ純粋な関数列に混ぜない。

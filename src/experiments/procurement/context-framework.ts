@@ -17,11 +17,11 @@ export function procurementFrameworkContext<E>(repository: ProcurementRepository
     return result.ok ? ok(result.value) : result.error.kind === 'NotFound' ? ok(null) : result;
   };
   const request = <I extends VersionInput>() => process<Input<I>>()
-    .effect('read-request', async context => repository.read('request', context.input.id, actor), (context, current) => ({ ...context, current }));
+    .effect('read-request', async context => repository.read('request', context.input.id, actor), 'current');
   const order = <I extends VersionInput>() => process<Input<I>>()
-    .effect('read-order', async context => repository.read('order', context.input.id, actor), (context, current) => ({ ...context, current }));
+    .effect('read-order', async context => repository.read('order', context.input.id, actor), 'current');
   const invoice = <I extends VersionInput>() => process<Input<I>>()
-    .effect('read-invoice', async context => repository.read('invoice', context.input.id, actor), (context, current) => ({ ...context, current }));
+    .effect('read-invoice', async context => repository.read('invoice', context.input.id, actor), 'current');
   return {
     actor,
     create: async (input: CreateInput) => ok(initial(input)),
@@ -33,27 +33,27 @@ export function procurementFrameworkContext<E>(repository: ProcurementRepository
     receipt: reads.receipt,
     invoice: reads.invoice,
     inventory: <I extends StockInput>(input: I) => process<Input<I>>()
-      .effect('read-stock', stock, (context, stock) => ({ ...context, stock })).run(initial(input)),
+      .effect('read-stock', stock, 'stock').run(initial(input)),
     approval: (input: SubmitInput) => request<SubmitInput>()
       .through(workflow('approval-policy', context => ok({ ...context, policy }))).run(initial(input)),
     place: (input: PlaceInput) => request<PlaceInput>()
       .effect('read-related-orders', async context => ok((await repository.related('order', context.input.id, actor)).some(row => row.state !== 'cancelled')),
-        (context, alreadyOrdered) => ({ ...context, alreadyOrdered })).run(initial(input)),
+        'alreadyOrdered').run(initial(input)),
     receive: (input: ReceiveInput) => order<ReceiveInput>()
-      .effect('read-stock', stock, (context, stock) => ({ ...context, stock }))
+      .effect('read-stock', stock, 'stock')
       .effect('read-related-receipts', async context => ok(await repository.related('receipt', context.input.id, actor)),
-        (context, receipts) => ({ ...context, receipts })).run(initial(input)),
+        'receipts').run(initial(input)),
     register: (input: RegisterInput) => order<RegisterInput>()
       .effect('read-related-invoices', async context => ok((await repository.related('invoice', context.input.id, actor)).some(row => row.state !== 'voided')),
-        (context, alreadyInvoiced) => ({ ...context, alreadyInvoiced })).run(initial(input)),
+        'alreadyInvoiced').run(initial(input)),
     match: (input: VersionInput) => process<VersionInput>().effect('load-invoice', reads.invoice<VersionInput>)
       .effect('read-related-receipts', async context => ok(await repository.related('receipt', context.order.id, actor)),
-        (context, receipts) => ({ ...context, receipts })).run(input),
+        'receipts').run(input),
     record: (input: PaymentInput) => invoice<PaymentInput>()
       .effect('read-related-payments', async context => ok((await repository.related('payment', context.input.id, actor)).some(row => row.state === 'recorded')),
-        (context, alreadyRecorded) => ({ ...context, alreadyRecorded })).run(initial(input)),
+        'alreadyRecorded').run(initial(input)),
     payment: (input: ReasonInput) => process<Input<ReasonInput>>()
       .effect('read-payment', async context => repository.read('payment', context.input.id, actor),
-        (context, current) => ({ ...context, current })).run(initial(input)),
+        'current').run(initial(input)),
   };
 }
