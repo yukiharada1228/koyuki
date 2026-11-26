@@ -1,0 +1,181 @@
+{
+  "schema": "koyuki.lecture-audio-review-preparation-record.v1",
+  "sourceBaseCommit": "1b5a65f35538ae7841a3c087d02292ab7141fd23",
+  "localDirectory": "/Users/yukiharada/Downloads/functional-business-talks/direct-audio-review-1b5a65f",
+  "manifestSha256": "0f22ce6315412ad547d8fd3f96036d2d866c43c03da33a456434e67dbc6c2cf2",
+  "scope": "Local clip preparation and integrity checks only; all ten speech intervals remain unverified.",
+  "checks": {
+    "exactUnresolvedIntervals": 10,
+    "clipHashesVerified": true,
+    "existingDirectoryRefusedWithoutManifestChange": true,
+    "allDraftsPending": true
+  },
+  "manifest": {
+    "schema": "koyuki.lecture-audio-review-preparation.v1",
+    "status": "prepared",
+    "createdAt": "2026-11-26T03:31:14.595Z",
+    "collectorSha256": "682ed146f57036461f1ababf41697b5e113390361bbf8e90d0882076f483b4fe",
+    "ffmpegVersion": "ffmpeg version 9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+    "sources": [
+      {
+        "record": "docs/lecture-local-asr-iz-followup.json",
+        "recordSha256": "38695a6d7dffbcf7b0609f652c97c02a836b627eff86c93f7cde0a240ffbc571",
+        "videoId": "izV1h6o3hgQ",
+        "videoFile": "izV1h6o3hgQ.mp4",
+        "videoSha256": "32e6077237d786b6ed6344dedde15e5190c71923b227c79c10539757b53b5e63",
+        "durationSeconds": 4889.474
+      },
+      {
+        "record": "docs/lecture-local-asr-qbf-followup.json",
+        "recordSha256": "12a5e54f75060c472402a968b93b778b1c9a7ca8c33081eb9ed2e47dfe54bfdc",
+        "videoId": "qBf910_YiqA",
+        "videoFile": "qBf910_YiqA.mp4",
+        "videoSha256": "45ad216b7386ea4dbfdeb1eda2d8243d21362877c9795cbf3cb7e33368a3dbb5",
+        "durationSeconds": 2019.174
+      },
+      {
+        "record": "docs/lecture-local-asr-w0o-followup.json",
+        "recordSha256": "60efd886ac2f6139d9fd4818346eff1316ef6839fac41b0d3befe19568616689",
+        "videoId": "w0oLNoGsGLc",
+        "videoFile": "w0oLNoGsGLc.mp4",
+        "videoSha256": "573bd4f8aa6457afb2d198f0bc905a3a67481c2be6c69ca3a1388ff2f8de2f92",
+        "durationSeconds": 2512.954
+      }
+    ],
+    "audioDirectlyReviewed": false,
+    "allFramesReviewed": false,
+    "scope": "Prepared decoded audio clips only. No speech verified, no automatic transcript, no lecture or implementation completion claim.",
+    "clips": [
+      {
+        "videoId": "izV1h6o3hgQ",
+        "sectionId": "iz-07",
+        "startSeconds": 1015,
+        "endSeconds": 1025.1,
+        "reason": "Automatic texts corrupt the explanation of immutable data. Do not treat the exact speech as verified.",
+        "clipStartSeconds": 1007,
+        "clipEndSeconds": 1033.1,
+        "file": "01-iz-07.wav",
+        "sha256": "a0066670627b1f23e426f94288fc93c0baff85ad2f06bb60524dad3f2c7783b8",
+        "actualDurationSeconds": 26.1,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "izV1h6o3hgQ",
+        "sectionId": "iz-08",
+        "startSeconds": 1078.7,
+        "endSeconds": 1085.16,
+        "reason": "ASR says frontend where saved captions say backend in the domain-event explanation. PDF page 24 supports the written backend context, not exact speech.",
+        "clipStartSeconds": 1070.7,
+        "clipEndSeconds": 1093.16,
+        "file": "02-iz-08.wav",
+        "sha256": "9d66e70fe3df82f9f8b02a47a8bde00359da5b858fb187d82b5ff7b7640792df",
+        "actualDurationSeconds": 22.46,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "izV1h6o3hgQ",
+        "sectionId": "iz-17",
+        "startSeconds": 2388.92,
+        "endSeconds": 2396.54,
+        "reason": "Saved captions and ASR differ on synchronous versus asynchronous processing. PDF page 62 supports Promise/Result composition, not exact speech.",
+        "clipStartSeconds": 2380.92,
+        "clipEndSeconds": 2404.54,
+        "file": "03-iz-17.wav",
+        "sha256": "7897c3885463eec74395cb3d14beb94eac1c8459b264d0711afb6ef30c862616",
+        "actualDurationSeconds": 23.62,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "izV1h6o3hgQ",
+        "sectionId": "iz-27",
+        "startSeconds": 3480.88,
+        "endSeconds": 3487.14,
+        "reason": "Concurrency/control terminology is corrupted in both automatic texts. Do not infer the exact term from ORM knowledge.",
+        "clipStartSeconds": 3472.88,
+        "clipEndSeconds": 3495.14,
+        "file": "04-iz-27.wav",
+        "sha256": "815c64ae3c000e3722a1b5ec7a7850a1c2db88a80d4e44c07113e3b159ceae60",
+        "actualDurationSeconds": 22.26,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "izV1h6o3hgQ",
+        "sectionId": "iz-28",
+        "startSeconds": 3584.22,
+        "endSeconds": 3588.9,
+        "reason": "Both automatic texts lose the negation in the library-scope comparison. Do not use this as verified speech or a claim about current package capabilities.",
+        "clipStartSeconds": 3576.22,
+        "clipEndSeconds": 3596.9,
+        "file": "05-iz-28.wav",
+        "sha256": "f185164799ed8d62e1039c9db04715c759fa416f8a26ca6c03354adeb19c49b1",
+        "actualDurationSeconds": 20.68,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "qBf910_YiqA",
+        "sectionId": "qbf-05",
+        "startSeconds": 484.44,
+        "endSeconds": 490,
+        "reason": "Caption and ASR disagree on the simple union example terminology. Exact spoken term is unverified.",
+        "clipStartSeconds": 476.44,
+        "clipEndSeconds": 498,
+        "file": "06-qbf-05.wav",
+        "sha256": "c3b6cb42837cb47055bac0fffc51a46a72e559cd9e8ec4aff110f094709c4da0",
+        "actualDurationSeconds": 21.56,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "qBf910_YiqA",
+        "sectionId": "qbf-11",
+        "startSeconds": 1463.68,
+        "endSeconds": 1469.14,
+        "reason": "Negation about avoiding unnecessary states is lost in automatic text. PDF page 23 supports the written intention, not exact speech.",
+        "clipStartSeconds": 1455.68,
+        "clipEndSeconds": 1477.14,
+        "file": "07-qbf-11.wav",
+        "sha256": "67d84554d26979606e94c7a520f160c734805f396611e1a7815976957b14e5cd",
+        "actualDurationSeconds": 21.46,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "qBf910_YiqA",
+        "sectionId": "qbf-16",
+        "startSeconds": 1898.4,
+        "endSeconds": 1901.32,
+        "reason": "ASR reverses the statement that business specification tests are still needed. Published PDF and captions support the intention, not exact speech.",
+        "clipStartSeconds": 1890.4,
+        "clipEndSeconds": 1909.32,
+        "file": "08-qbf-16.wav",
+        "sha256": "d71769e80073d1928e53e0e22da60f21357a14ffa6ad85c4c4db9c11dd764d1e",
+        "actualDurationSeconds": 18.92,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "w0oLNoGsGLc",
+        "sectionId": "w0o-23",
+        "startSeconds": 2428.28,
+        "endSeconds": 2432.8,
+        "reason": "Automatic transcripts lose the negation. PDF page 55 supports the written intention, not the exact spoken words.",
+        "clipStartSeconds": 2420.28,
+        "clipEndSeconds": 2440.8,
+        "file": "09-w0o-23.wav",
+        "sha256": "e8889f319328086c740d1627f2dd577fbe0bb283188d43985cc135516beb170c",
+        "actualDurationSeconds": 20.52,
+        "audioDirectlyReviewed": false
+      },
+      {
+        "videoId": "w0oLNoGsGLc",
+        "sectionId": "w0o-24",
+        "startSeconds": 2492.46,
+        "endSeconds": 2499.18,
+        "reason": "Automatic recognition may reverse the state-cardinality claim. Exact speech remains unverified.",
+        "clipStartSeconds": 2484.46,
+        "clipEndSeconds": 2507.18,
+        "file": "10-w0o-24.wav",
+        "sha256": "9caf8d94a9f201226558ecea14315163caabdb7553beb945b2b6a1ea3a8e7666",
+        "actualDurationSeconds": 22.72,
+        "audioDirectlyReviewed": false
+      }
+    ]
+  }
+}
