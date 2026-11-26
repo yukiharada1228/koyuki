@@ -64,6 +64,61 @@ function refusedConnections() {
 }
 void refusedConnections;
 
+type Accepted = Readonly<{ state: 'accepted'; receiptId: string }>;
+type Returned = Readonly<{ state: 'returned'; reason: string }>;
+type ReceiptState = Accepted | Returned;
+type Plan<T extends ReceiptState> = Readonly<{ result: T; checks: readonly string[] }>;
+type PlanPair = Readonly<{ input: Context; value: Plan<Accepted> }>;
+const preparedPlan = withInput((input: Context): Result<Plan<Accepted>, 'InvalidAmount'> => input.amount > 0
+  ? ok({ result: { state: 'accepted', receiptId: 'receipt' }, checks: ['receipt'] }) : err('InvalidAmount'));
+function stockProjection<T extends ReceiptState>(pair: Readonly<{ input: Context; value: Plan<T> }>): Result<Plan<T>, 'StockRejected'> {
+  assert.equal(pair.input.host(), 'trusted');
+  return pair.input.amount > 10 ? err('StockRejected') : ok({ ...pair.value, checks: [...pair.value.checks, 'stock'] });
+}
+
+test('a named generic projection preserves the preceding plan state and stops before save on failure', async () => {
+  let saves = 0;
+  const app = business({ name: 'plan-projection', load: async (amount: number) => ok(new Context(amount, 'JPY')),
+    save: async <T extends ReceiptState>(value: Plan<T>): Promise<Result<Plan<T>, 'Conflict'>> => { saves++; return ok(value); },
+    operations: { receive: [{ name: 'receipt', rule: preparedPlan }, { name: 'stock', rule: stockProjection }] },
+  });
+  type Exact = Assert<Equal<Awaited<ReturnType<typeof app.receive>>, Result<Plan<Accepted>, 'InvalidAmount' | 'StockRejected' | 'Conflict'>>>;
+  const success = await app.receive.runDetailed(2);
+  assert.deepEqual(success.result, ok({ result: { state: 'accepted', receiptId: 'receipt' }, checks: ['receipt', 'stock'] }));
+  assert.deepEqual(success.trace.map(row => row.step), ['plan-projection.receive:load', 'receipt', 'stock', 'plan-projection.receive']);
+  const invalid = await app.receive.runDetailed(0), blocked = await app.receive.runDetailed(11);
+  assert.deepEqual(invalid.result, err('InvalidAmount')); assert.equal(invalid.trace.length, 2);
+  assert.deepEqual(blocked.result, err('StockRejected')); assert.equal(blocked.trace.length, 3);
+  assert.equal(invalid.plan, null); assert.equal(blocked.plan, null); assert.equal(saves, 1);
+});
+
+test('plan projection refinement keeps added validation facts and monomorphic outputs remain broad', async () => {
+  const load = async (amount: number) => ok(new Context(amount, 'JPY'));
+  function checked<T extends ReceiptState>(pair: Readonly<{ input: Context; value: Plan<T> }>): Result<Plan<T> & Readonly<{ checked: true }>, never> {
+    return ok({ ...pair.value, checked: true });
+  }
+  const precise = business({ name: 'checked-plan', load,
+    save: async <T extends Plan<ReceiptState> & Readonly<{ checked: true }>>(value: T) => ok(value),
+    operations: { receive: [preparedPlan, checked] },
+  });
+  type Output = Assert<Equal<Awaited<ReturnType<typeof precise.receive>>, Result<Readonly<{ result: Accepted; checks: readonly string[]; checked: true }>, 'InvalidAmount'>>>;
+  assert.deepEqual(await precise.receive(1), ok({ result: { state: 'accepted', receiptId: 'receipt' }, checks: ['receipt'], checked: true }));
+  const broad = (_pair: PlanPair): Result<Plan<ReceiptState>, never> => ok({ result: { state: 'returned', reason: 'replaced' }, checks: [] });
+  const app = business({ name: 'broad-projection', load, save: async <T extends ReceiptState>(value: Plan<T>) => ok(value),
+    operations: { receive: [preparedPlan, broad] },
+  });
+  type Broad = Assert<Equal<Awaited<ReturnType<typeof app.receive>>, Result<Plan<ReceiptState>, 'InvalidAmount'>>>;
+  assert.deepEqual(await app.receive(1), ok({ result: { state: 'returned', reason: 'replaced' }, checks: [] }));
+  const acceptedOnly = (plan: Plan<Accepted>) => ok(plan.result.receiptId);
+  if (false) {
+    // @ts-expect-error a broad producer cannot acquire a state from its input or next consumer
+    business({ name: 'bad-projection', load, save: async (value: string) => ok(value), operations: { receive: [preparedPlan, broad, acceptedOnly] } });
+    const dynamic = Math.random() < 0.5 ? stockProjection : broad;
+    // @ts-expect-error every possible projection must guarantee the narrower state
+    business({ name: 'union-projection', load, save: async (value: string) => ok(value), operations: { receive: [preparedPlan, dynamic, acceptedOnly] } });
+  }
+});
+
 test('a final retained pair preserves context through a generic save while broad saves stay broad', async () => {
   const context = new Context(3, 'JPY');
   type BroadPair = Readonly<{ input: Base; value: number }>;

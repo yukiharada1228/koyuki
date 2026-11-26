@@ -65,7 +65,14 @@ type InputPairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] }
 // Keep the original success/error types stable while checking the candidate.
 type PairRuleOutput<R extends (...args: never[]) => unknown, I, O = Value<ReturnType<R>>, E = Failure<ReturnType<R>>> = R extends (input: I) => Result<InputPairCandidate<O, I>, E>
   ? [InputPairCandidate<O, I>] extends [O] ? InputPairCandidate<O, I> : O : O;
-type InputPairOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }] ? PairRuleOutput<RuleOf<F>, I> : Out<F>;
+// A generic projection can preserve members of the preceding pair's value.
+// Capture the declared output first and require the actual producer to promise
+// the narrower shape; the next consumer alone cannot supply that guarantee.
+type PairValueRuleOutput<R extends Fn, I, O = Value<ReturnType<R>>, E = Failure<ReturnType<R>>> = [I] extends [{ readonly value: infer V }]
+  ? [ShapeCandidate<V, O>] extends [never] ? O
+    : R extends (input: I) => Result<ShapeCandidate<V, O>, E> ? ShapeCandidate<V, O> : O
+  : O;
+type InputPairOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }] ? PairRuleOutput<RuleOf<F>, I> : PairValueRuleOutput<RuleOf<F>, I>;
 type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
   : [I] extends [Out<F>]
     ? [RuleOf<F>] extends [Rule<I, I, ErrorOf<F>>] ? I : Out<F>

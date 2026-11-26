@@ -196,7 +196,7 @@ test('selected procurement sources resolve all 52 rule labels and detect an inje
   const paths = ['application.ts', 'domain.ts', 'inventory.ts', 'receipt-pipeline.ts', 'request-pipeline.ts'].map(name => `src/experiments/procurement/${name}`);
   const files = await Promise.all(paths.map(async file => ({ file, source: await readFile(join(root, file), 'utf8') })));
   const result = analyzeDeclarations(files);
-  assert.equal(result.checkedDeclarations, 12); assert.equal(result.checkedOperationIds, 25); assert.equal(result.checkedBusinessRuleLabels, 52);
+  assert.equal(result.checkedDeclarations, 10); assert.equal(result.checkedOperationIds, 25); assert.equal(result.checkedBusinessRuleLabels, 52);
   assert.deepEqual(result.diagnostics, []); assert.deepEqual(result.unresolved, []);
   const mutated = files.map(file => file.file !== paths[0] ? file : { ...file, source: file.source.replace('run: [checkBuyerRequest, submitCheckedRequest]', "run: [diagnosticStep('run:2', checkBuyerRequest), submitCheckedRequest]") + "\nimport {step as diagnosticStep} from 'koyuki';" });
   assert.notEqual(mutated[0].source, files[0].source);

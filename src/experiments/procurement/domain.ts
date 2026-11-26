@@ -146,7 +146,7 @@ export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Reque
 }
 declare const receivedCheck: unique symbol;
 export type ReceivedChange = Change<Extract<Receipt, { readonly state: 'accepted' }>> & Readonly<{ [receivedCheck]: true }>;
-export function receiveOrder(value: Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[] }>): Result<ReceivedChange, RuleError> {
+export function receiveOrder<T extends Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[] }>>(value: T): Result<ReceivedChange, RuleError> {
   const { input, actor, current, receipts } = value;
   if (!allowed(actor, 'warehouse', current.groupId)) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
@@ -400,7 +400,7 @@ export function returnReceipt(value: Loaded<ReasonInput, Receipt> & ReceiptFacts
   const checked = checkReceipt(value); if (!checked.ok) return checked;
   return returnCheckedReceipt(checked.value);
 }
-export function returnCheckedReceipt(value: CheckedReceipt<Loaded<ReasonInput, Receipt> & ReceiptFacts>): Result<Change<Extract<Receipt, { readonly state: 'returned' }>>, RuleError> {
+export function returnCheckedReceipt<T extends CheckedReceipt<Loaded<ReasonInput, Receipt> & ReceiptFacts>>(value: T): Result<Change<Extract<Receipt, { readonly state: 'returned' }>>, RuleError> {
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
   return ok(receiptChange({ ...value.current, state: 'returned', returnedBy: value.actor.id, reason: value.input.reason.trim(), version: value.current.version + 1 }, value.current, value));
 }
