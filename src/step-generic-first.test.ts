@@ -38,6 +38,13 @@ test('a named generic rule retains non-identity output relationships across call
   assert.deepEqual(number, ok({ item: 2 })); assert.deepEqual(text, ok({ item: 'approved' }));
 });
 
+test('a contextual Step annotation still supplies an unannotated callback input', () => {
+  type Context = Base & Readonly<{ currency: string }>;
+  const named: Step<Context, number, never> = step('contextual', input => ok(input.amount));
+  assert.deepEqual(named.rule({ amount: 3, currency: 'JPY' }), ok(3));
+  assert.equal(named.name, 'contextual');
+});
+
 for (const [name, named] of [['bound', bound], ['inline', inline]] as const) test(`a named generic input pair retains runtime identity: ${name}`, () => {
   const input = { amount: 2, extra: 'original' }, result = named.rule(input); assert(result.ok);
   assert.strictEqual(result.value.input, input); assert.equal(result.value.value, 4); assert(Object.isFrozen(result.value));
