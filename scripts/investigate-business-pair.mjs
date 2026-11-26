@@ -8,8 +8,9 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection'].includes(args[0])) throw Error('Use no arguments, --binding, --raw-definition or --literal-connection');
-const literalConnection = args[0] === '--literal-connection';
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first'].includes(args[0])) throw Error('Use no arguments, --binding, --raw-definition, --literal-connection or --pair-first');
+const pairFirst = args[0] === '--pair-first';
+const literalConnection = args[0] === '--literal-connection' || pairFirst;
 const binding = args[0] === '--binding' || literalConnection;
 const rawDefinition = args[0] === '--raw-definition';
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -76,6 +77,18 @@ if (binding) {
     const checked = "F extends Fn ? Rule<I, O, ErrorOf<F>>";
     if (candidate.split(checked).length !== 2) throw Error('Re-evaluate literal connection requirement');
     candidates.push(['literal-guard-and-connection', candidate.replace(checked, 'F extends Fn ? ((input: I) => Result<O, ErrorOf<F>>)')]);
+    if (pairFirst) {
+      // Earlier candidates placed pair specialization after generic identity/proof
+      // checks. Test the actual pair contract before those conditional branches.
+      const pair = `type StageOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }]
+  ? [RuleOf<F>] extends [(input: I) => Result<InputPairCandidate<Out<F>, I>, ErrorOf<F>>]
+    ? InputPairCandidate<Out<F>, I> : FallbackStageOutput<F, I>
+  : FallbackStageOutput<F, I>;
+`;
+      const prioritized = candidate.replace('type StageOutput<F extends Stage, I> =', pair + 'type FallbackStageOutput<F extends Stage, I> =')
+        .replace(checked, 'F extends Fn ? ((input: I) => Result<O, ErrorOf<F>>)');
+      candidates.push(['pair-before-identity-and-proof', prioritized]);
+    }
   }
   const head = fixture.split('// Direct generic withInput calls')[0];
   const bound = head + `
@@ -135,7 +148,7 @@ try {
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), node: process.version,
