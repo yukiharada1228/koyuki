@@ -187,6 +187,8 @@ type ExactStageOutput = Assert<Equal<PairStudyStage<typeof quoted, Context>, Pai
 if (unconstrained) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'unconstrained-definition'].includes(name)));
 if (literalAll) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'expanded-rule-comparisons'].includes(name)));
 if (consumerContract) {
+  const pairSource = candidates.find(([name]) => name === 'literal-call-contract')?.[1];
+  if (!pairSource) throw Error('Pair contract control unavailable');
   const marker = 'type Connect<C, P extends readonly Stage[], O, Operation extends string> = {';
   const next = `type AfterStage<F extends Stage, I, R extends readonly Stage[]> = R extends readonly [infer N extends Stage, ...readonly Stage[]]
   ? [StageOutput<F, I>] extends [Parameters<RuleOf<N>>[0]] ? StageOutput<F, I> : Parameters<RuleOf<N>>[0]
@@ -208,6 +210,10 @@ type Connect<C, P extends readonly Stage[], O, Operation extends string, A exten
   const tupleFirst = source.replace(first, 'type FirstInput<E extends Entry> = [RuleOf<Stages<E>[0]>] extends [(...args: infer A) => unknown] ? A[0] : never;');
   candidates.push(['consumer-and-tuple-first-input', tupleFirst], ['consumer-and-tuple-parameters', tupleFirst.replace(input,
     'type Input<L> = [LoadCall<L>] extends [(...args: infer A) => unknown] ? A[0] : never;')]);
+  const ready = 'type SpecializedLoader<L extends Load, E extends Entry> = [Loaded<L>] extends [FirstInput<E>] ? L';
+  const actual = 'type SpecializedLoader<L extends Load, E extends Entry> = [RuleOf<Stages<E>[0]>] extends [(input: Loaded<L>) => unknown] ? L\n  : [Loaded<L>] extends [FirstInput<E>] ? L';
+  if (!source.includes(ready) || !pairSource.includes(ready)) throw Error('Re-evaluate callable loader readiness');
+  candidates.push(['consumer-and-callable-loader', source.replace(ready, actual)], ['pair-and-callable-loader', pairSource.replace(ready, actual)]);
 }
 if (contextShapes) {
   const context = /class Context \{[\s\S]*?\n\}/;
