@@ -1,5 +1,8 @@
 # 全84話題の判定と現行実装への経路を点検する
 
+[購買6モデルの状態型の再点検](procurement-state-contract-review.md)で、注文の直和と
+検証成功後・次状態の型を揃えた。Receipt側に残る型の拡大も区別して記録する。
+
 さらに[請求書・支払の次状態型](procurement-finance-state-types.md)を精密化した。
 直和の各variantが通常の公開操作まで届くことと、再送の広い型を別々に検査する。
 

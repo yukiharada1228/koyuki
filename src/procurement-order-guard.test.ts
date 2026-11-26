@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { err } from './framework/index.js';
-import { procurement } from './experiments/procurement/application.js';
+import { err, type Result } from './framework/index.js';
+import { procurement, procurementChanges } from './experiments/procurement/application.js';
+import { procurementReplay } from './experiments/procurement/replay.js';
 import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
-import { createRequest, checkOrder, amendOrder, cancelOrder, completeOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder,
-  type Actor, type Order, type Receipt, type Invoice, type RuleError } from './experiments/procurement/domain.js';
+import { createRequest, checkOrder, placeOrder, placeCheckedOrder, amendOrder, cancelOrder, completeOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder,
+  type Actor, type Order, type Receipt, type Invoice, type RuleError, type Change } from './experiments/procurement/domain.js';
 const buyer: Actor = { id: 'buyer', role: 'buyer', groupId: 'g1', active: true };
 const policy = { requestLimitCents: 1000, approverIds: ['boss'] };
 function fixture() {
@@ -14,7 +15,8 @@ function fixture() {
   const current: Order = { kind: 'order', state: 'placed', id: 'po', groupId: 'g1', version: 1, requestId: 'rq', ownerId: 'buyer', supplier: 'old', lines: created.value.result.lines, totalCents: 100 };
   return { input: { id: 'po', expectedVersion: 1, supplier: ' new ' }, actor: buyer, current, receipts: [] as Receipt[], invoices: [] as Invoice[] };
 }
-type Context = ReturnType<typeof fixture>;
+// The refusal table deliberately includes closed orders, beyond the placed fixture.
+type Context = Omit<ReturnType<typeof fixture>, 'current'> & { current: Order };
 
 test('order guard preserves refusal priority when several checks and operation-specific rules fail', () => {
   const cases: readonly [string, (value: Context) => Context, RuleError['kind']][] = [
@@ -96,3 +98,41 @@ function typeContracts() {
   completeCheckedOrder(value);
 }
 void typeContracts;
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Assert<T extends true> = T;
+type Value<R> = R extends { ok: true; value: infer T } ? T : never;
+type Placed = Extract<Order, { state: 'placed' }>;
+type Cancelled = Extract<Order, { state: 'cancelled' }>;
+type Completed = Extract<Order, { state: 'completed' }>;
+type ProducerContracts = [
+  Assert<Equal<ReturnType<typeof placeOrder>, Result<Change<Placed>, RuleError>>>,
+  Assert<Equal<ReturnType<typeof placeCheckedOrder>, Result<Change<Placed>, RuleError>>>,
+  Assert<Equal<ReturnType<typeof amendOrder>, Result<Change<Placed>, RuleError>>>,
+  Assert<Equal<ReturnType<typeof amendCheckedOrder>, Result<Change<Placed>, RuleError>>>,
+  Assert<Equal<ReturnType<typeof cancelOrder>, Result<Change<Cancelled>, RuleError>>>,
+  Assert<Equal<ReturnType<typeof cancelCheckedOrder>, Result<Change<Cancelled>, RuleError>>>,
+  Assert<Equal<ReturnType<typeof completeOrder>, Result<Change<Completed>, RuleError>>>,
+  Assert<Equal<ReturnType<typeof completeCheckedOrder>, Result<Change<Completed>, RuleError>>>,
+];
+function stateContracts(repository: SqliteProcurement, context: Context) {
+  const checked = checkOrder(context);
+  if (checked.ok) {
+    const placed: 'placed' = checked.value.current.state;
+    // @ts-expect-error a closed order cannot reuse the placed-state proof
+    amendCheckedOrder({ ...checked.value, current: { ...checked.value.current, state: 'cancelled' } });
+  }
+  const commands = procurement(repository, buyer, policy);
+  type Success<F extends (...args: never[]) => unknown> = Value<Awaited<ReturnType<F>>>;
+  type PublicContracts = [
+    Assert<Equal<Success<typeof commands.orders.place>, Placed>>,
+    Assert<Equal<Success<typeof commands.orders.amend>, Placed>>,
+    Assert<Equal<Success<typeof commands.orders.cancel>, Cancelled>>,
+    Assert<Equal<Success<typeof commands.orders.complete>, Completed>>,
+  ];
+  const detailed = procurementChanges(repository, buyer, policy);
+  type Detail = Assert<Equal<Success<typeof detailed.orders.complete>['result'], Completed>>;
+  const replay = procurementReplay(repository, buyer, policy);
+  type History = Success<typeof replay.orders.complete.run> extends { value: { result: infer T } } ? T : never;
+  type Historical = Assert<Equal<History, Order>>;
+}

@@ -22,7 +22,8 @@ export type Approved = SingleApproved | DualApproved;
 export type Rejected = RequestBase & Readonly<{ state: 'rejected'; rejectedBy: string; reason: string }> & Opaque<'request-rejected'>;
 export type Request = Draft | PendingApproval | Approved | Rejected;
 const pendingApproval = (current: Request): current is PendingApproval => current.state === 'submitted' || current.state === 'first-review' || current.state === 'final-review';
-export type Order = Base & Readonly<{ kind: 'order'; state: 'placed' | 'cancelled' | 'completed'; requestId: string; ownerId: string; supplier: string; lines: readonly Line[]; totalCents: number }>;
+type OrderBase = Base & Readonly<{ kind: 'order'; requestId: string; ownerId: string; supplier: string; lines: readonly Line[]; totalCents: number }>;
+export type Order = OrderBase & (Readonly<{ state: 'placed' }> | Readonly<{ state: 'cancelled' }> | Readonly<{ state: 'completed' }>);
 type ReceiptBase = Base & Readonly<{ kind: 'receipt'; orderId: string; quantities: readonly Quantity[] }>;
 export type Receipt = ReceiptBase & (Readonly<{ state: 'accepted' }> | Readonly<{ state: 'returned'; reason: string; returnedBy: string }>);
 type InvoiceBase = Base & Readonly<{ kind: 'invoice'; orderId: string; amountCents: number }>;
@@ -130,11 +131,11 @@ export function approveCheckedRequest(value: CheckedRequest<Loaded<VersionInput,
   }
   return ok(plan(stamp('request-approved', { ...current, state: 'approved', approvedBy: actor.id, version: current.version + 1 }), [check(current)]));
 }
-export function placeOrder(value: Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>): Result<Change<Order>, RuleError> {
+export function placeOrder(value: Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
   const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
   return placeCheckedOrder(checked.value);
 }
-export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>, 'buyer'>): Result<Change<Order>, RuleError> {
+export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>, 'buyer'>): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
   const { input, current } = value;
   if (current.state !== 'approved') return failure('WrongState');
   if (!id(input.orderId) || typeof input.supplier !== 'string' || !input.supplier.trim()) return failure('InvalidInput');
@@ -278,7 +279,7 @@ export function reassignCheckedRequest(value: CheckedRequest<Loaded<SubmitInput,
 
 export type OrderFacts = Readonly<{ receipts: readonly Receipt[]; invoices: readonly Invoice[] }>;
 declare const orderCheck: unique symbol;
-export type CheckedOrder<T> = T & Readonly<{ [orderCheck]: true }>;
+export type CheckedOrder<T> = T & Readonly<{ current: Extract<Order, { state: 'placed' }>; [orderCheck]: true }>;
 export function checkOrder<T extends Loaded<VersionInput, Order> & OrderFacts>(value: T): Result<CheckedOrder<T>, RuleError> {
   const { input, actor, current, receipts, invoices } = value;
   if (!allowed(actor, 'buyer', current.groupId) || actor.id !== current.ownerId) return failure('Denied');
@@ -290,28 +291,28 @@ export function checkOrder<T extends Loaded<VersionInput, Order> & OrderFacts>(v
   return ok(value as CheckedOrder<T>);
 }
 // Commercial amounts remain those authorized in the approved request; only supplier can be amended.
-export function amendOrder(value: Loaded<AmendInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
+export function amendOrder(value: Loaded<AmendInput, Order> & OrderFacts): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
   const checked = checkOrder(value); if (!checked.ok) return checked;
   return amendCheckedOrder(checked.value);
 }
-export function amendCheckedOrder(value: CheckedOrder<Loaded<AmendInput, Order> & OrderFacts>): Result<Change<Order>, RuleError> {
+export function amendCheckedOrder(value: CheckedOrder<Loaded<AmendInput, Order> & OrderFacts>): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
   if (value.receipts.length || value.invoices.length) return failure('WrongState');
   if (typeof value.input.supplier !== 'string' || !value.input.supplier.trim()) return failure('InvalidInput');
   return ok(plan({ ...value.current, supplier: value.input.supplier.trim(), version: value.current.version + 1 }, [check(value.current)]));
 }
-export function cancelOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
+export function cancelOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Extract<Order, { readonly state: 'cancelled' }>>, RuleError> {
   const checked = checkOrder(value); if (!checked.ok) return checked;
   return cancelCheckedOrder(checked.value);
 }
-export function cancelCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Order>, RuleError> {
+export function cancelCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Extract<Order, { readonly state: 'cancelled' }>>, RuleError> {
   if (value.receipts.length || value.invoices.length) return failure('WrongState');
   return ok(plan({ ...value.current, state: 'cancelled', version: value.current.version + 1 }, [check(value.current)]));
 }
-export function completeOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Order>, RuleError> {
+export function completeOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Extract<Order, { readonly state: 'completed' }>>, RuleError> {
   const checked = checkOrder(value); if (!checked.ok) return checked;
   return completeCheckedOrder(checked.value);
 }
-export function completeCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Order>, RuleError> {
+export function completeCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Extract<Order, { readonly state: 'completed' }>>, RuleError> {
   const current = value.current;
   if (value.invoices.length !== 1 || (value.invoices[0]?.state !== 'matched' && value.invoices[0]?.state !== 'approved') || value.invoices[0].amountCents !== current.totalCents || current.lines.some(line => value.receipts.filter(receipt => receipt.state === 'accepted').flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
   return ok(plan({ ...current, state: 'completed', version: current.version + 1 }, [check(current), ...value.invoices.map(check)]));

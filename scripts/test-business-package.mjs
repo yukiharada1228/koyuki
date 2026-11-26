@@ -222,6 +222,25 @@ try {
     if (rejected.error || !rejected.status || contracts.length < 8) throw Error(`Broad finance types did not fail the exact-state contracts:\n${output}`);
   } finally { writeFileSync(financeDomain, preciseFinance); }
   console.log('Verified exact finance next-state contracts reject widened producer return types; historical replay remains model-wide.');
+  let widenedOrderCount = 0;
+  const widenedOrders = preciseFinance.replace(/Result<Change<Extract<Order, \{ readonly state: '[a-z]+' \}>>, RuleError>/g,
+    () => { widenedOrderCount++; return 'Result<Change<Order>, RuleError>'; });
+  if (widenedOrderCount !== 8) throw Error(`Unexpected order producer count: ${widenedOrderCount}`);
+  const checkedOrder = "Readonly<{ current: Extract<Order, { state: 'placed' }>; [orderCheck]: true }>";
+  if (preciseFinance.split(checkedOrder).length !== 2) throw Error('Re-evaluate checked-order contract control');
+  for (const [name, source, diagnostic, minimum] of [
+    ['broad order outputs', widenedOrders, 'TS2344', 8],
+    ['missing placed proof', preciseFinance.replace(checkedOrder, 'Readonly<{ [orderCheck]: true }>'), 'TS2578', 1],
+  ]) {
+    try {
+      writeFileSync(financeDomain, source);
+      const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+      const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+      const contracts = output.split('\n').filter(line => line.includes('procurement-order-guard.test.ts') && line.includes(diagnostic));
+      if (rejected.error || !rejected.status || contracts.length < minimum) throw Error(`Order control ${name} did not fail its contracts:\n${output}`);
+    } finally { writeFileSync(financeDomain, preciseFinance); }
+  }
+  console.log('Verified order variants, precise next states and placed-state proof, including both negative controls.');
   // Reintroduce the adapters' old silent clone behavior in this disposable copy.
   const storageGuard = join(consumer, 'procurement/storage-values.ts');
   const guardedStorage = readFileSync(storageGuard, 'utf8');
