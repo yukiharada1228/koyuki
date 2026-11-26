@@ -1,5 +1,5 @@
 // Pack and install the actual development package; never publish to npm.
-import { mkdtempSync, copyFileSync, readdirSync, rmSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, copyFileSync, readdirSync, rmSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +22,34 @@ try {
   writeFileSync(join(consumer, 'model-template.ts'), generateModelTest());
   run('npm', ['run', 'build'], root);
   const packed = JSON.parse(run('npm', ['pack', '--pack-destination', dir, '--ignore-scripts', '--json'], root))[0].filename;
+  // A fresh first-app project must need only the packed runtime and two dev tools.
+  // Run the actual tutorial text, not a separately maintained approximation.
+  const firstApp = join(dir, 'first-app'); mkdirSync(firstApp);
+  const guide = readFileSync(join(root, 'docs/development-start.md'), 'utf8');
+  const firstAppSource = guide.match(/```ts\n([\s\S]*?)```/)?.[1];
+  const firstAppConfig = guide.match(/```json\n([\s\S]*?)```/)?.[1];
+  if (!firstAppSource || !firstAppConfig) throw Error('First-app guide requires complete TS and JSON blocks');
+  const tools = Object.fromEntries(['typescript', 'tsx'].map(name => [name, JSON.parse(readFileSync(join(root, 'node_modules', name, 'package.json'), 'utf8')).version]));
+  if (!guide.includes(`typescript@${tools.typescript} tsx@${tools.tsx}`)) throw Error('Guide dev-tool pins differ from verified versions');
+  writeFileSync(join(firstApp, 'package.json'), JSON.stringify({ private: true, type: 'module',
+    dependencies: { koyuki: `file:${join(dir, packed)}` }, devDependencies: { typescript: tools.typescript, tsx: tools.tsx },
+  }));
+  writeFileSync(join(firstApp, 'app.ts'), firstAppSource);
+  writeFileSync(join(firstApp, 'tsconfig.json'), JSON.stringify(JSON.parse(firstAppConfig)));
+  run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], firstApp);
+  if (existsSync(join(firstApp, 'node_modules/@types/node'))) throw Error('First-app validation must not rely on installed Node types');
+  run('npm', ['exec', '--', 'tsc', '--pretty', 'false'], firstApp);
+  console.log(run('npm', ['exec', '--', 'tsx', 'app.ts'], firstApp));
+  const firstAppOmission = firstAppSource.replace('approve: [validateApproval, approve]', 'approve: [approve]');
+  if (firstAppOmission === firstAppSource) throw Error('First-app omission control did not apply');
+  try {
+    writeFileSync(join(firstApp, 'app.ts'), firstAppOmission);
+    const rejected = spawnSync('npm', ['exec', '--', 'tsc', '--pretty', 'false'], { cwd: firstApp, encoding: 'utf8' });
+    const diagnostic = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || !rejected.status || !diagnostic.includes('app.ts(') || !diagnostic.includes('input must accept prior output')
+      || /TS(2305|2307|7006):/.test(diagnostic)) throw Error(`First-app missing validation was not rejected as a typed connection:\n${diagnostic}`);
+  } finally { writeFileSync(join(firstApp, 'app.ts'), firstAppSource); }
+  console.log('Verified the development first-app code and config in a fresh installed project without @types/node; omitted validation rejected. Maintainer verification, not an independent-user trial.');
   const source = join(root, 'examples/leave-http');
   for (const file of readdirSync(source).filter(file => file.endsWith('.ts') || ['package.json', 'tsconfig.json'].includes(file))) copyFileSync(join(source, file), join(consumer, file));
   copyFileSync(join(consumer, 'application.ts'), join(consumer, 'application-named.ts'));

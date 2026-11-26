@@ -13,8 +13,10 @@ Chromium 156とCloudflare Workersの公開環境で、通常実行・再送・�
 [互換性の範囲と検証例](examples/portability/README.md)を参照してください。
 SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用します。
 
-[最小チュートリアル](docs/getting-started.md)では、タグ作成から始め、経費精算・再送へ進めます。
-推奨APIと型エラーの読み方、空のプロジェクトへの導入手順を掲載しています。
+開発版は[最初の業務アプリケーション](docs/development-start.md)から始められます。
+通常関数とbusinessを使い、取得・保存からApplicationの状態・viewまで試せます。
+公開済みalpha.5を使う場合は[公開版チュートリアル](docs/getting-started.md)へ進んでください。
+以降の「最初の状態遷移」とTargetの例は、公開版でも動く既存APIの説明です。
 
 コアはWeb標準APIのみ・実行時外部依存ゼロを方針とします。[依存の契約と自動検証](docs/runtime.md)を参照してください。
 
