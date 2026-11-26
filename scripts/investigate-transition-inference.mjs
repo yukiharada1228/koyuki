@@ -13,7 +13,7 @@ function git(args) {
   if (result.status !== 0) throw Error('Cannot identify investigation source');
   return result.stdout.trim();
 }
-const sourcePaths = ['src', 'tsconfig.json', 'package.json', 'package-lock.json', 'scripts/investigate-transition-inference.mjs', 'scripts/fixtures/business-input-pair.ts'];
+const sourcePaths = ['src', 'tsconfig.json', 'package.json', 'package-lock.json', 'scripts/investigate-transition-inference.mjs', 'scripts/fixtures/business-input-pair.ts', 'scripts/fixtures/workflow-input-pair.ts'];
 const sourceGitCommit = git(['rev-parse', 'HEAD']);
 const sourceStatus = git(['status', '--porcelain', '--', ...sourcePaths]);
 const original = await readFile(resolve(root, 'src/framework/model.ts'), 'utf8');
@@ -49,6 +49,13 @@ probes['business-input-pair-inline'] = probes['business-input-pair-explicit']
 probes['business-input-pair-named-step'] = probes['business-input-pair-explicit']
   .replace('business, withInput,', 'business, step, withInput,')
   .replace('[explicitQuote, finish]', "[step('calculate-quote', withInput((value: Context) => quote(value))), finish]");
+probes['workflow-input-pair-bound'] = await readFile(resolve(root, 'scripts/fixtures/workflow-input-pair.ts'), 'utf8');
+probes['workflow-input-pair-inline'] = probes['workflow-input-pair-bound']
+  .replace("then('quote', quoted)", "then('quote', withInput(quote))");
+probes['workflow-input-pair-callback'] = probes['workflow-input-pair-bound']
+  .replace("then('quote', quoted)", "then('quote', withInput(value => quote(value)))");
+probes['workflow-input-pair-first'] = probes['workflow-input-pair-bound']
+  .replace("workflow('currency', currency).then('quote', quoted)", "workflow('quote', quoted)");
 // Test whether removing the contextual call signature from the raw tuple helps
 // nested higher-order calls, without changing withInput's generic function shape.
 function rawTupleCandidate(constraint, spread = false, checked = false) {
