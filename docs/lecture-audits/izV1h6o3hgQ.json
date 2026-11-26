@@ -385,6 +385,24 @@
         "docs/development-start.md",
         "scripts/test-business-package.mjs"
       ]
+    },
+    "currentWholeTableFollowUp": {
+      "implementationBaseCommit": "36b2e65d101a8751ad36e99e38a20c6a7aae4a46",
+      "scope": "Reread all 84 recorded assessments and classification rationales, not all captions/audio/frames again. Supported-state evidence was strengthened with exact pure registration transitions and direct tag pre-persistence tests. Restore validates stored-data shape, not physical persistence. Stale accumulating partial assessments were replaced by current summaries; old source/review identity and topic statuses remain. No all-input, independent DX or universal proof.",
+      "assessmentReplacedIds": [
+        "iz-09",
+        "iz-12",
+        "iz-14",
+        "iz-22",
+        "iz-24"
+      ],
+      "evidence": [
+        "docs/lecture-current-evidence-review.md",
+        "src/registration/domain.ts",
+        "src/registration.test.ts",
+        "src/tag-prepersistence.test.ts",
+        "scripts/test-registration-package.mjs"
+      ]
     }
   },
   "sections": [
@@ -507,12 +525,14 @@
       "endSeconds": 1240,
       "topic": "永続化前から始まる予約のモデル",
       "status": "supported",
-      "assessment": "DBに行ができる前の未検証・検証済み・作成後を別の状態として扱う。予約アプリ全体を再現する要件ではない。",
+      "assessment": "DBに行ができる前の入力・検証済み・作成計画をタグの型と純粋な関数列で表す。candidate IDはhostがsnapshotへ供給し、CreatedTagのdataではIDを必須にする。予約アプリ全体やIDの採番時刻を一律に再現する要件ではない。",
       "evidence": [
         "src/registration/domain.ts",
         "src/expenses/domain.ts",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/tags/domain.ts",
+        "src/tag-prepersistence.test.ts"
       ],
       "remaining": []
     },
@@ -553,12 +573,15 @@
       "endSeconds": 1616,
       "topic": "タグの未検証・検証済み・作成後",
       "status": "supported",
-      "assessment": "後で決まる値を一律optionalにせず、状態ごとの必要な値を表す。",
+      "assessment": "タグの未検証・検証済み状態には完成したdataを置かず、CreatedTagではID・版・順序を必須にする。検証・一意性・上限の証明を省略する接続は拒否する。restoreTagは保存形式の値を検証するconstructorであり、戻り値名PersistedTagだけでDBへ保存済みという事実を証明しない。保存と再取得はrepositoryの契約として別に検査する。",
       "evidence": [
         "src/expenses/domain.ts",
         "src/registration/domain.ts",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/tags/domain.ts",
+        "src/tag-prepersistence.test.ts",
+        "src/tags.test.tsx"
       ],
       "remaining": []
     },
@@ -583,12 +606,15 @@
       "endSeconds": 1950,
       "topic": "状態遷移の入出力を型へ表す",
       "status": "supported",
-      "assessment": "普通の関数が変更前後の型を結び、宣言から実行へ接続する。型整合性は業務仕様の正しさそのものではない。",
+      "assessment": "普通の関数が変更前後の型を結び、宣言から実行へ接続する。登録のstart/confirmも、それぞれawaiting/confirmedを含む一つのChange variantを返すようにした。monomorphicな保存adapterの返すRegistrationを根拠なく狭めず、純粋な遷移の型と保存後の型を区別する。型整合性は業務仕様の正しさそのものではない。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/experiments/business.ts",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/registration/domain.ts",
+        "src/registration.test.ts",
+        "scripts/test-registration-package.mjs"
       ],
       "remaining": []
     },
@@ -703,7 +729,7 @@
       "endSeconds": 3139,
       "topic": "イベント接続をフレームワークへ委ねたい",
       "status": "partial",
-      "assessment": "開発版の公開入口businessが通常関数列の型接続・失敗伝播・load/Rule/saveを調停し、Applicationがdispatch・完了・状態・viewを管理する。宣言した関数・段階名・分岐先の参照を保持し、診断用には実行IDと既存段階traceを接続する。構成図は実行せず取得できるが関数内部を解析しない。これらを独立利用者のDX実証や公開npm alpha.5への搭載とは扱わない。 購買10操作の共通検証と入荷3操作の複合計画を通常関数列へ移し、宣言した段階間の接続と失敗停止をruntimeへ委譲した。独立利用者の試用記録はないとの回答であり、実装例の成立とDX実証は区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。取得位置ごとのResult失敗も加えた現在の一実行252境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。 選んだI/Oのthrow/rejectも別に比較し、直接commandは元の例外の同一性を保ってrejectすることを確認した。返されないActionReportや、Applicationの全crashed経路まで取得・検証済みとはしない。 既存のstepをbusiness配列にも置けるようにし、普通の関数との混在、名前付きtrace・選択観測・構造図へ接続した。具体的な文脈を注釈したwithInputは、名前付き段階なら先に束縛せずinlineで書ける。名前なしinlineとgenericな入力保持の別例は未解消として区別した。 申請・承認・発注も既存の共通検証と個別判断の関数列へ分け、共通検証との接続を委譲する実操作は13となった。互換の一括関数は維持しつつ、実businessは検証と変更を直接並べる。独立利用者の負担を評価した結果ではない。",
+      "assessment": "開発版businessが通常関数列・明示Workflowの型接続、load/Rule/save、Resultの失敗停止を調停し、Applicationがdispatch・実行状態・viewを管理する。購買25操作のうち21操作を複数段階で宣言し、32回の成功130境界、代表失敗274境界を通常TS/helper/Koyukiで比較する。I/O例外とApplicationのcrashedも選んだ条件で別に検査する。全経路・全内部接続・独立利用者のDXを検証した結果ではなく、公開済みnpm alpha.5への搭載とも区別する。",
       "evidence": [
         "docs/business-api-study.md",
         "src/experiments/business.ts",
@@ -750,7 +776,10 @@
         "docs/procurement-request-planning.md",
         "src/procurement-request-planning.test.ts",
         "src/experiments/procurement/application.ts",
-        "src/experiments/procurement/domain.ts"
+        "src/experiments/procurement/domain.ts",
+        "docs/development-start.md",
+        "docs/procurement-request-edit.md",
+        "src/procurement-application-io-exceptions.test.ts"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
@@ -778,7 +807,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列のbusinessとProcessで接続を委譲する。購買の複数readはeffectの成功値投影へ移し、5か所のResult判定に加え、ローカルattachとその型アサーションも除いた。コールバック引数の型注釈なしで中間型・generic入力・参照を保持し、取得成功後だけ次の入力を構築する。取得順序と入力構築は利用者が宣言する。言語レベルのdo記法や任意のgeneric推論、独立利用者のDX優位を実証したものではない。 共通generic検証の入力型とprivateな証明の保持、既存withInputによる複合計画の接続を追加した。入荷の3つのadapterには文脈の型注釈が残る。名前付きstepで通る限定例もあるが、名前なしinline要件と未注釈evolveの制限を解消したわけではない。 withInputの直接呼出しでは保持するgeneric入力の対応を、business配列の中間型では保持できない例も再現した。具体的な文脈の注釈と先行する変数束縛は通るが、同じ呼出しをinlineにした例は通らない。戻り値をgenericにする候補は既存契約を壊すため不採用とした。 既存のstepをbusiness配列にも置けるようにし、普通の関数との混在、名前付きtrace・選択観測・構造図へ接続した。具体的な文脈を注釈したwithInputは、名前付き段階なら先に束縛せずinlineで書ける。名前なしinlineとgenericな入力保持の別例は未解消として区別した。 申請・承認・発注の3操作も、共通検証と個別判断をbusiness配列へ置き、操作宣言のResult取り出しや失敗時returnをruntimeへ任せた。互換関数や業務判断内部の接続まで全て除去したという意味ではない。",
+      "assessment": "通常関数列・Workflow/withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。申請作成・編集の明細解析や訂正計画も宣言へ出した。具体的な前段が保証する文脈や、宣言したgeneric制約だけを使うWorkflow/stepの正例は通るが、business配列のgeneric入力保持、名前なしinline、多相identityの別例は未解消。購買3つの文脈注釈、互換入口等の接続、独立利用者の評価は残る。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -808,7 +837,11 @@
         "docs/procurement-request-planning.md",
         "src/procurement-request-planning.test.ts",
         "src/experiments/procurement/application.ts",
-        "src/experiments/procurement/domain.ts"
+        "src/experiments/procurement/domain.ts",
+        "docs/procurement-request-creation.md",
+        "docs/procurement-request-edit.md",
+        "docs/step-generic-first.md",
+        "docs/business-pair-binding-investigation.md"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",

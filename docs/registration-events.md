@@ -19,6 +19,11 @@ awaitingにはdigestとversion 1、confirmedには確認時刻とversion 2が必
 Changeも、初回保存とイベント作成／確認保存とイベントなしの直和で表す。
 private brandにより、検証前の構造をそのまま遷移へ渡せない。
 
+純粋なstart/confirmの戻り型も、実際に作る一つのChange variantへ絞る。
+startはawaitingとメールイベント、confirmはconfirmedとevent:nullを返す。
+保存adapterの戻り値は復元されたRegistration全体であり、純粋な出力の精度と保存後の契約を混同しない。
+型の厳密一致と広い戻り型への対照検査は[全体の根拠再点検](lecture-current-evidence-review.md)を参照する。
+
 [application.ts](../src/registration/application.ts)では二つのdefineUseCaseへ通常関数を宣言する。
 秘密tokenはホストがWeb Cryptoで生成し、確認時に比較するdigestはSHA-256で求める。
 状態保存とイベント作成は[SQLite adapter](../src/registration/repository.ts)が一つの短いDBトランザクションで行う。

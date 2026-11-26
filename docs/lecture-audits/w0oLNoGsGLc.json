@@ -366,6 +366,21 @@
         "docs/development-start.md",
         "scripts/test-business-package.mjs"
       ]
+    },
+    "currentWholeTableFollowUp": {
+      "implementationBaseCommit": "36b2e65d101a8751ad36e99e38a20c6a7aae4a46",
+      "scope": "Reread all 84 recorded assessments and classification rationales, not all captions/audio/frames again. Supported-state evidence was strengthened with exact pure registration transitions and direct tag pre-persistence tests. Restore validates stored-data shape, not physical persistence. Stale accumulating partial assessments were replaced by current summaries; old source/review identity and topic statuses remain. No all-input, independent DX or universal proof.",
+      "assessmentReplacedIds": [
+        "w0o-13",
+        "w0o-21"
+      ],
+      "evidence": [
+        "docs/lecture-current-evidence-review.md",
+        "src/registration/domain.ts",
+        "src/registration.test.ts",
+        "src/tag-prepersistence.test.ts",
+        "scripts/test-registration-package.mjs"
+      ]
     }
   },
   "sections": [
@@ -553,7 +568,7 @@
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
       "status": "partial",
-      "assessment": "Workflow/transition・Process・businessは選んだ段階の前後値をcaptureでき、Applicationでは実行IDと段階名・成否を接続できる。対応coreには処理中のlive spanと親子関係も追加したが、値をspanへ自動収集しない。Program単体も同じ観察入口で初期化・待機・更新・command・状態受理・完了を通知する。business/Processのcapture失敗は業務Resultと分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。SQLiteの成功監査は操作者・操作・対象version等のmetadataであり、段階の全引数・戻り値のdumpではない。全値の自動履歴、保持・削除の運用、opaque関数内部や分散相関は未提供。 購買の共通検証と複合計画を分けた現在の32操作シナリオでは、明示した110境界の選択値と射影失敗を3方式・2adapterで比較する。予定された第一段のwritesは保存済み履歴と区別する。 全25操作の代表的不正入力とcommit前Conflictを、3方式・メモリ/SQLiteで観測と全6モデルの非変更まで比較する。取得位置ごとのResult失敗も加えた現在の一実行252境界の失敗観測であり、全障害・全Rule・再送等の全経路を網羅したとはしない。 選んだI/Oのthrow/rejectも別に比較し、直接commandは元の例外の同一性を保ってrejectすることを確認した。返されないActionReportや、Applicationの全crashed経路まで取得・検証済みとはしない。 既存のstepをbusiness配列にも置けるようにし、普通の関数との混在、名前付きtrace・選択観測・構造図へ接続した。具体的な文脈を注釈したwithInputは、名前付き段階なら先に束縛せずinlineで書ける。名前なしinlineとgenericな入力保持の別例は未解消として区別した。 申請・承認・発注の分離後、25種類を32回実行する成功比較は117境界、代表失敗の比較は259境界となった。I/Oの72種類の位置と178回のthrow/reject注入も維持し、返されないActionReportを観測済みとは扱わない。",
+      "assessment": "Workflow/transition・Process・businessで選んだ段階の値をcaptureし、Application/Programでは実行IDとlive spanの親子関係・成否を観測する。business/Processのcapture失敗は業務結果から分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。購買25操作の32回シナリオは成功130境界、代表失敗274境界を3方式で比較し、選んだI/O例外とApplicationのcrashedは別に検査する。全値の自動永続収集、opaque内部、分散相関、全例外経路まで検証したとはしない。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -596,11 +611,14 @@
         "docs/procurement-request-planning.md",
         "src/procurement-request-planning.test.ts",
         "src/experiments/procurement/application.ts",
-        "src/experiments/procurement/domain.ts"
+        "src/experiments/procurement/domain.ts",
+        "docs/procurement-request-edit.md",
+        "src/procurement-application-io-exceptions.test.ts",
+        "docs/procurement-application-io-exceptions.md"
       ],
       "remaining": [
-        "全値の永続履歴の保存先・公開項目・保持削除、opaque内部・分散相関は未提供。講演のdump可能性の説明を、既定で全値を永続収集する必須仕様へ読み替えない。",
-        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
+        "履歴の保存先・公開項目・保持削除、opaque関数内部・分散相関はhostの設計または未提供の範囲である。講演のdump可能性を、既定の全値永続収集という必須仕様へ読み替えない。",
+        "型注釈の有無とは分け、観測対象の選択・秘密情報の公開方針・保存結果不明時の記録を運用で設計する必要がある。"
       ]
     },
     {
@@ -724,12 +742,14 @@
       "endSeconds": 2324,
       "topic": "直和・直積と不要な組み合わせ",
       "status": "supported",
-      "assessment": "状態ごとの必須フィールドとUnionで不正な組み合わせを減らす。任意の利用者モデルの正しさは自動生成・保証しない。",
+      "assessment": "状態ごとの必須フィールドとUnionで不正な組み合わせを減らす。タグの作成前後の型、登録の状態・版・イベントの対応も具体的に検査する。任意の利用者モデルの正しさを自動生成せず、型のproducer名だけで外部DBの事実まで証明するわけではない。",
       "evidence": [
         "src/registration/domain.ts",
         "src/expenses/domain.ts",
         "docs/lecture-local-asr-w0o-followup.md",
-        "docs/lecture-local-asr-w0o-followup.json"
+        "docs/lecture-local-asr-w0o-followup.json",
+        "src/tag-prepersistence.test.ts",
+        "src/registration.test.ts"
       ],
       "remaining": []
     },
