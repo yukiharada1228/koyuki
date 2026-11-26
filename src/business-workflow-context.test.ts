@@ -8,12 +8,16 @@ class Context { #host = 'trusted'; constructor(readonly amount: number, readonly
 function currency(value: Context): Result<Context, 'UnsupportedCurrency'> { return value.currency === 'JPY' ? ok(value) : err('UnsupportedCurrency'); }
 function quote<T extends Base>(value: T): Result<number, 'Declined'> { return value.amount > 0 ? ok(value.amount * 2) : err('Declined'); }
 const quoted = withInput(quote);
-const bound = workflow('currency', currency).then('quote', quoted)
-  .then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
-const inline = workflow('currency', currency).then('quote', withInput(quote))
-  .then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
-const callback = workflow('currency', currency).then('quote', withInput(value => quote(value)))
-  .then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
+const boundPair = workflow('currency', currency).then('quote', quoted);
+const inlinePair = workflow('currency', currency).then('quote', withInput(quote));
+const callbackPair = workflow('currency', currency).then('quote', withInput(value => quote(value)));
+type PairOutput = Result<Readonly<{ input: Context; value: number }>, 'UnsupportedCurrency' | 'Declined'>;
+type BoundPair = Assert<Equal<ReturnType<typeof boundPair.run>, PairOutput>>;
+type InlinePair = Assert<Equal<ReturnType<typeof inlinePair.run>, PairOutput>>;
+type CallbackPair = Assert<Equal<ReturnType<typeof callbackPair.run>, PairOutput>>;
+const bound = boundPair.then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
+const inline = inlinePair.then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
+const callback = callbackPair.then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
 
 function commands() {
   let saves = 0;

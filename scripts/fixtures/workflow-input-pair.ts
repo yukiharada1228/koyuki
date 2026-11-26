@@ -10,8 +10,9 @@ class Context {
 function quote<T extends Base>(input: T): Result<number, 'Declined'> { return input.amount > 0 ? ok(input.amount * 2) : err('Declined'); }
 function currency(input: Context): Result<Context, 'UnsupportedCurrency'> { return input.currency === 'JPY' ? ok(input) : err('UnsupportedCurrency'); }
 const quoted = withInput(quote);
-const flow = workflow('currency', currency).then('quote', quoted)
-  .then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
+const paired = workflow('currency', currency).then('quote', quoted);
+type PairOutput = Assert<Equal<ReturnType<typeof paired.run>, Result<Readonly<{ input: Context; value: number }>, 'Declined' | 'UnsupportedCurrency'>>>;
+const flow = paired.then('finish', pair => ok(`${pair.input.currency}:${pair.input.host()}:${pair.value}`));
 const app = business({ name: 'contextual', load: async (amount: number) => ok(new Context(amount, 'JPY')),
   save: async (value: string) => ok(value), operations: { quote: [flow] },
 });
