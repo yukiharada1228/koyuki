@@ -8,6 +8,7 @@ import { studyApprovalChange } from './studies/leave-approval-change.mjs';
 import { studyAuthorizationChange } from './studies/leave-authorization-change.mjs';
 import { generateModelTest } from './generate-model-test.mjs';
 import { verifyExportedBusiness } from './check-exported-business.mjs';
+import { verifyRequestPrefixScale } from './check-request-prefix-scale.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const compilerOption = process.argv.slice(2).find(arg => arg.startsWith('--typescript='));
 const requestedCompiler = compilerOption?.slice('--typescript='.length);
@@ -223,6 +224,7 @@ try {
   writeFileSync(join(consumer, 'business-later-request.test.ts'), readFileSync(join(root, 'src/business-later-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-verified-request.test.ts'), readFileSync(join(root, 'src/business-verified-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-inferred-checks.test.ts'), readFileSync(join(root, 'src/business-inferred-checks.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-request-prefix.test.ts'), readFileSync(join(root, 'src/business-request-prefix.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
@@ -289,28 +291,39 @@ try {
   } finally { writeFileSync(businessDeclarations, checkedBusiness); }
   for (const [guard, replacement, target] of [
     ['RuleVariants<T & O, Err>', 'Result<T & O, Err>', 'business-inferred-checks.test.ts'],
-    ['PreservesRequest<A> extends true ? ', '', 'procurement/application.ts'],
   ]) {
     if (checkedBusiness.split(guard).length !== 2) throw Error('Inferred-rule guard changed');
     let mutated = checkedBusiness.replace(guard, replacement);
-    if (!replacement) {
-      // Remove exactly the corresponding false branch of the extra gate.
-      const tail = ': A : A : A;';
-      if (mutated.split(tail).length !== 2) throw Error('Request-preservation gate changed');
-      mutated = mutated.replace(tail, ': A : A;');
-    }
     try {
       writeFileSync(businessDeclarations, mutated);
       const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
       const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
       if (rejected.error || !rejected.status || !output.split('\n').some(line => line.includes(target) && /TS(?:2769|2344)/.test(line))) {
-        throw Error(`Removing inferred-check support or specialized-loader preservation did not fail its contract:\n${output}`);
+        throw Error(`Reverting inferred early-return checking did not fail its positive contract:\n${output}`);
       }
     } finally { writeFileSync(businessDeclarations, checkedBusiness); }
   }
-  console.log('Verified inferred early-return checks and preservation of specialized loaders, including both negative controls.');
+  console.log('Verified inferred early-return checks and specialized-loader contracts; reverting the Result comparison rejects the inferred checks.');
   console.log('Verified proof-producing checks and their declared input domains; identity-only and loader-domain reversions fail the contracts.');
   console.log('Verified later request inference and rejection of both removed inference and missing loader promise.');
+  for (const [pattern,replacement] of [
+    [/AcceptsInput<C, DeclaredInput<RuleOf<F>>> extends true/, '[C] extends [DeclaredInput<RuleOf<F>>]'],
+    [/type StageRequest<[^;]+;/, 'type StageRequest<F extends Stage> = [DeclaredInput<RuleOf<F>>] extends [{ readonly input: infer I }] ? I : unknown;'],
+    [/type LoaderWithLaterRequest<[^;]+;/, `type PrefixRollbackRequests<P extends readonly Stage[]> = { [K in keyof P]: (input: StageRequest<P[K]>)=>void }[number] extends (input:infer R)=>void ? R : never; type LoaderWithLaterRequest<L extends Load,E extends Entry, I=PrefixRollbackRequests<Stages<E>>> = AcceptsPipeline<Loaded<L>,Stages<E>> extends true ? L : [NarrowRequest<L,E,I>] extends [never] ? L : NarrowRequest<L,E,I>;`],
+  ]) {
+    if ([...checkedBusiness.matchAll(new RegExp(pattern.source,'g'))].length!==1) throw Error('Request-prefix declaration changed');
+    try {
+      writeFileSync(businessDeclarations,checkedBusiness.replace(pattern,replacement));
+      const rejected=spawnSync('npm',['run','check'],{cwd:consumer,encoding:'utf8'});
+      const output=`${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+      if (rejected.error || !rejected.status || !output.split('\n').some(line=>(line.includes('business-request-prefix.test.ts')||line.includes('procurement/application.ts'))&&/TS(?:2769|2344)/.test(line))) {
+        throw Error(`A request-prefix reversion did not fail its positive contract:\n${output}`);
+      }
+      if (replacement.includes('PrefixRollbackRequests') && output.split('\n').some(line=>line.includes('business-later-request.test.ts')&&/error TS/.test(line))) throw Error('The full-request control must keep flat request composition valid: '+output);
+    } finally {writeFileSync(businessDeclarations,checkedBusiness);}
+  }
+  console.log('Verified request prefixes and indexed request fields, including three positive-contract reversions.');
+
   const modelDeclarations = join(consumer, 'node_modules/koyuki/dist/model.d.ts');
   const guardedModel = readFileSync(modelDeclarations, 'utf8');
   const correlationTests = readFileSync(join(consumer, 'generic-object-correlation.test.ts'), 'utf8').split('\n');
@@ -540,6 +553,7 @@ try {
   }, files: ['business-types.ts', 'business-quickstart.ts', 'business-retention-guide.ts', 'transition-pair-guide.ts', 'ordinary-record-guide.ts'] }));
   console.log(run('npm', ['exec', '--', 'tsc', '-p', 'tsconfig.no-node.json'], consumer));
 
+  verifyRequestPrefixScale(consumer, run);
   verifyExportedBusiness(consumer, root, run);
 
   copyFileSync(join(root, 'scripts/fixtures/leave-business-diagnostics.ts'), join(consumer, 'business-diagnostics.ts'));

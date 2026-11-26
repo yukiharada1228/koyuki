@@ -1163,6 +1163,18 @@
           "src/business-later-request.test.ts",
           "src/experiments/procurement/application.ts",
           "scripts/test-business-package.mjs"
+        ],
+        "supersededBy": "docs/business-request-prefix.md"
+      },
+      "requestPrefixFollowUp": {
+        "scope": "All fifteen operation-level loader type arguments in the procurement application are now omitted. Request prefixes stop before nested contexts are mistaken for raw input. The declared parameter is captured before the unchanged strict input comparison. Actual loader context guarantees, private facts, variants, error types and runtime remain unchanged. The 64-stage/62-field case is checked from the packed SDK. No full-lecture, direct-audio or new independent-user claim.",
+        "evidence": [
+          "docs/business-request-prefix.md",
+          "src/business-request-prefix.test.ts",
+          "src/framework/business.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/check-request-prefix-scale.mjs",
+          "scripts/test-business-package.mjs"
         ]
       }
     },

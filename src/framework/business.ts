@@ -62,16 +62,25 @@ type SpecializedLoader<L extends Load, E extends Entry> = AcceptsEveryInput<Rule
 // Infer a candidate only; the loader must promise the entire narrowed context,
 // and every stage must still accept the preceding producer's actual output.
 // Keep already valid pipelines unchanged, including stages that replace input.
-type StageRequest<F extends Stage> = [DeclaredInput<RuleOf<F>>] extends [{ readonly input: infer I }] ? I : unknown;
-type PipelineRequest<P extends readonly Stage[]> = { [K in keyof P]: (input: StageRequest<P[K]>) => void }[number] extends (input: infer I) => void ? I : never;
+type StageRequest<F extends Stage, P=DeclaredInput<RuleOf<F>>> = 'input' extends keyof P ? P['input'] : unknown;
 type LoadedRequest<C, I> = { [K in keyof C]: K extends 'input' ? I : C[K] };
+// Capture the declared parameter before comparing a bounded generic stage.
+// Keep the same strict relation; no structural or variance relaxation.
+type AcceptsInput<C,P> = [C] extends [P] ? true : false;
 type AcceptsPipeline<C,P extends readonly Stage[]> = P extends readonly [infer F extends Stage,...infer Rest extends readonly Stage[]]
- ? [C] extends [DeclaredInput<RuleOf<F>>] ? AcceptsPipeline<StageOutput<F,C>,Rest> : false : true;
-type LoaderWithLaterRequest<L extends Load,E extends Entry, I=PipelineRequest<Stages<E>>, C=LoadedRequest<Loaded<L>,I>> =
- [I] extends [never] ? L : [I] extends [Input<L>] ? [Input<L>] extends [I] ? L
- : AcceptsPipeline<Loaded<L>,Stages<E>> extends true ? L
- : [C] extends [Loaded<L>] ? [L] extends [(input:I)=>Promise<Result<C,LoadError<L>>>]
-   ? AcceptsPipeline<C,Stages<E>> extends true ? (input:I)=>Promise<Result<C,LoadError<L>>> : L : L : L : L;
+ ? AcceptsInput<C,DeclaredInput<RuleOf<F>>> extends true ? AcceptsPipeline<StageOutput<F,C>,Rest> : false : true;
+type NarrowRequest<L extends Load,E extends Entry,I,C=LoadedRequest<Loaded<L>,I>> =
+ [I] extends [never] ? never : [I] extends [Input<L>] ? [C] extends [Loaded<L>]
+ ? [L] extends [(input:I)=>Promise<Result<C,LoadError<L>>>]
+ ? AcceptsPipeline<C,Stages<E>> extends true ? (input:I)=>Promise<Result<C,LoadError<L>>> : never : never : never : never;
+// Stop at the first request prefix accepted by the entire pipeline. A later
+// input/value pair may carry the whole context in input, not the raw request.
+type PrefixRequest<L extends Load,E extends Entry,P extends readonly Stage[]=Stages<E>, I=unknown> =
+ P extends readonly [infer F extends Stage,...infer Rest extends readonly Stage[]]
+ ? I & StageRequest<F> extends infer N ? NarrowRequest<L,E,N> extends infer A
+ ? [A] extends [never] ? PrefixRequest<L,E,Rest,N> : Extract<A,Load> : never : never : L;
+type LoaderWithLaterRequest<L extends Load,E extends Entry> =
+ AcceptsPipeline<Loaded<L>,Stages<E>> extends true ? L : PrefixRequest<L,E>;
 // Use a fresh property to check preservation independently of the generic
 // signature comparison. This evidence is type-only and adds no runtime field.
 declare const preservedContextWitness: unique symbol;

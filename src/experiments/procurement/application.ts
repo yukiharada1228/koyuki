@@ -3,10 +3,10 @@ import { receiveDecision, returnDecision, correctedQuantities, correctionPlan } 
 import { parsedRequestInput, creationPlan, editPlan } from './request-pipeline.js';
 import { checkRequestCreation, checkRequestEdit } from './domain.js';
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
-import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
+import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock } from './inventory.js';
 import { business, step, ok, type Result } from '../../framework/index.js';
 import { checkReceipt, checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder,
-  type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
+  type Entity, type Stock, type Payment, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
 type Saved<T extends Entity, Detailed extends boolean> = Detailed extends true ? Committed<T> : T;
@@ -24,7 +24,7 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   const requests = business({ name: 'procurement.request.v1', load: context.create,
     save: <T extends Request>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       create: [step('authorize-creation', checkRequestCreation), step('parse-lines', parsedRequestInput), step('create-request-plan', creationPlan)],
-      edit: { load: context.request<EditInput>, run: [checkBuyerRequest, step('require-draft', checkRequestEdit),
+      edit: { load: context.request, run: [checkBuyerRequest, step('require-draft', checkRequestEdit),
         step('parse-lines', parsedRequestInput), step('edit-request-plan', editPlan)] },
       withdraw: { load: context.request, run: [checkBuyerRequest, withdrawCheckedRequest] },
       reject: { load: context.request, run: [checkApproverRequest, rejectCheckedRequest] },
@@ -43,8 +43,8 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   const receipts = business({ name: 'procurement.receipt.v1', load: context.receive,
     save: <T extends Receipt>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       receive: [step('run:1', receiveDecision), step('run:2', includeReceivedStock)],
-      return: { load: context.receipt<ReasonInput>, run: [checkReceipt, step('run:2', returnDecision), step('run:3', includeChangedStock)] },
-      correct: { load: context.receipt<CorrectInput>, run: [checkReceipt,
+      return: { load: context.receipt, run: [checkReceipt, step('run:2', returnDecision), step('run:3', includeChangedStock)] },
+      correct: { load: context.receipt, run: [checkReceipt,
         step('revalidate-correction', correctedQuantities),
         step('correct-receipt-plan', correctionPlan),
         step('run:3', includeChangedStock)] },

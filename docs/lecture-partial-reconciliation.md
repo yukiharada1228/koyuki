@@ -221,3 +221,5 @@ iz-24/qbf-19の[入力保持の追加調査](business-pair-binding-investigation
 [genericなフィールド対応の安全性](generic-correlation-safety.md)では、入れ子の直和containerを元の入力型と誤認する不具合を修正した。深い推論候補の採用や全体の完全実現とは区別する。
 
 [早期returnで推論された検証関数](business-inferred-checks.md)にも対応した。購買Applicationのload型引数指定を15箇所から3箇所へ削減し、残る申請編集・返品・数量訂正は区別する。業務ルールと実行runtimeは変更せず、推論の全般的な解消や原音確認の完了とは扱わない。
+
+[入れ子の段階の要求型](business-request-prefix.md)を改善し、購買の操作定義から残るload型引数指定3箇所も削除した。既存の厳密な入力比較とload全体の保証を保持し、62項目が別々に現れる64段階も検査する。一般の多相変換・原音確認等の残件と9話題のpartialは維持する。
