@@ -1,0 +1,37 @@
+{
+  "sourceGitCommit": "b92ba90e8cac9cc5e918ef0e7849819e0ec3e503",
+  "sourceDirty": false,
+  "compiler": "Version 6.0.3",
+  "collectorSha256": "3782ec1ea75d3347da4d99aab80d59f42fe2da395e0b69f237e5d1535a0836ef",
+  "patchSha256": "674835c804339dfb1d2a461c4ff560ecce2e1886c0b33897082f697ebcdfe97b",
+  "contractsSha256": "676013f7db5334d174a1105ad021beed3359716b558c1b3444045eb6d5e6d040",
+  "counterexampleSha256": "a154e5c502aea43aa6411daf73fa6d55e283c6ae9b2db29902104603885bb3b0",
+  "decision": "rejected",
+  "proposal": "Replace the reverse assignability check with exact equality to the constructed generic signature.",
+  "baselineDiagnostics": 0,
+  "validProducerDiagnostics": [
+    "src/generic-object-correlation.test.ts(14,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+    "src/transition-deep-values.test.ts(16,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+    "src/transition-deep-values.test.ts(31,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+    "src/transition-deep-values.test.ts(43,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+    "src/transition-deep-values.test.ts(85,168): error TS2769: No overload matches this call.",
+    "src/transition-deep-values.test.ts(89,23): error TS2344: Type 'false' does not satisfy the constraint 'true'."
+  ],
+  "counterexample": {
+    "additionalDuplicateGenericSignature": true,
+    "unsafeRefinementDetected": false,
+    "diagnostics": [
+      "src/generic-object-correlation.test.ts(14,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+      "src/transition-deep-values.test.ts(16,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+      "src/transition-deep-values.test.ts(31,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+      "src/transition-deep-values.test.ts(43,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+      "src/transition-deep-values.test.ts(85,168): error TS2769: No overload matches this call.",
+      "src/transition-deep-values.test.ts(89,23): error TS2344: Type 'false' does not satisfy the constraint 'true'."
+    ]
+  },
+  "reason": "The guard rejects the overload but also loses valid deep producer precision and a valid business connection.",
+  "limitations": [
+    "This comparison does not establish a universal overload detector or TypeScript soundness.",
+    "The product core, runtime, compiler installation and package are unchanged."
+  ]
+}

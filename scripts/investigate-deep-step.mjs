@@ -2,13 +2,16 @@
 import { cp, mkdtemp, readFile, writeFile, symlink, rm } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import assert from 'node:assert/strict';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length && (args.length !== 2 || args[0] !== '--compiler')) throw Error('Usage: node scripts/investigate-deep-step.mjs [--compiler /path/to/tsc]');
+const strictSignature = args.includes('--strict-signature');
+if (strictSignature) args.splice(args.indexOf('--strict-signature'), 1);
+if (args.length && (args.length !== 2 || args[0] !== '--compiler')) throw Error('Usage: node scripts/investigate-deep-step.mjs [--compiler /path/to/tsc] [--strict-signature]');
 const compiler = resolve(args[1] ?? join(root, 'node_modules/.bin/tsc'));
 const hash = value => createHash('sha256').update(value).digest('hex');
 function command(executable, args, cwd = root) {
@@ -54,12 +57,45 @@ try {
   if (baseline.length) throw Error('Baseline contracts must pass');
   const apply = command('git', ['apply', join(fixture, 'candidate.patch')], temporary);
   if (apply.status) throw Error('Candidate no longer applies: ' + apply.stderr);
+  if (strictSignature) {
+    const modelPath = join(temporary, 'src/framework/model.ts');
+    const model = await readFile(modelPath, 'utf8');
+    const reverse = 'Reverse = [<T>(input: T) => Result<NestedPairShape<R, O, V, P, T, E>, E>] extends [R] ? true : false';
+    assert.equal(model.split(reverse).length, 2, 'Research guard changed; re-inspect the candidate');
+    await writeFile(modelPath, model.replace(reverse,
+      'Reverse = NestedSame<R, <T>(input: T) => Result<NestedPairShape<R, O, V, P, T, E>, E>>'));
+  }
   const target = join(temporary, 'src/transition-deep-values.test.ts');
   await writeFile(target, contracts);
   const candidateDiagnostics = compile();
-  if (candidateDiagnostics.length) throw Error('Candidate no longer passes its initial contracts: ' + candidateDiagnostics.join('\n'));
+  if (!strictSignature && candidateDiagnostics.length) throw Error('Candidate no longer passes its initial contracts: ' + candidateDiagnostics.join('\n'));
   await writeFile(target, counterexample);
   const counterexampleDiagnostics = compile();
+  if (strictSignature) {
+    // This guard must reject the known unsafe overload without discarding the
+    // ordinary generic producers that motivated the original improvement.
+    const expected = [
+      'src/generic-object-correlation.test.ts(14,23): error TS2344:',
+      'src/transition-deep-values.test.ts(16,23): error TS2344:',
+      'src/transition-deep-values.test.ts(31,23): error TS2344:',
+      'src/transition-deep-values.test.ts(43,23): error TS2344:',
+      'src/transition-deep-values.test.ts(85,168): error TS2769:',
+      'src/transition-deep-values.test.ts(89,23): error TS2344:',
+    ];
+    assert.equal(candidateDiagnostics.length, expected.length, 'Candidate precision changed; re-evaluate the strict-signature proposal');
+    for (const prefix of expected) assert(candidateDiagnostics.some(line => line.startsWith(prefix)), candidateDiagnostics.join('\n'));
+    assert.deepEqual(counterexampleDiagnostics, candidateDiagnostics,
+      'Duplicating the overload must add no unsafe refinement; compare the actual diagnostics');
+    console.log(JSON.stringify({ ...provenance, decision: 'rejected',
+      proposal: 'Replace the reverse assignability check with exact equality to the constructed generic signature.',
+      baselineDiagnostics: baseline.length, validProducerDiagnostics: candidateDiagnostics,
+      counterexample: { additionalDuplicateGenericSignature: true, unsafeRefinementDetected: false,
+        diagnostics: counterexampleDiagnostics },
+      reason: 'The guard rejects the overload but also loses valid deep producer precision and a valid business connection.',
+      limitations: ['This comparison does not establish a universal overload detector or TypeScript soundness.',
+        'The product core, runtime, compiler installation and package are unchanged.'],
+    }, null, 2));
+  } else {
   // Use the last contract (the overloaded producer), not an unrelated failure.
   const lines = counterexample.split('\n');
   const overloadStart = lines.findIndex(line => line.startsWith("test('an earlier specialized overload"));
@@ -76,4 +112,5 @@ try {
       'The specialized overload and generic signature disagree; this is not a proof of general TypeScript soundness or impossibility.',
       'No runtime source, compiler installation, or package was modified.'],
   }, null, 2));
+  }
 } finally { await rm(temporary, { recursive: true, force: true }); }

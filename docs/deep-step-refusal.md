@@ -31,3 +31,17 @@ collectorは一時コピーで既存契約を検査し、保存した候補patch
 - [TypeScript 7の記録](deep-step-refusal7.json)
 
 講演の中心的な狙いである、接続と実行の委譲には既存の実装がある。一方、この候補で推論制限が解消したとは扱わない。独立利用者の試用、直接音声10区間、連続映像の確認も未完了のまま維持する。
+
+## genericシグネチャとの厳密一致も比較する
+
+反射するシグネチャ数を増やす代わりに、構築したgenericシグネチャとの厳密一致を要求する案も、一時コピーで比較した。
+以前の逆向きの代入可能性検査を、既存の`NestedSame`による型の一致検査へ置き換える。
+
+```sh
+node scripts/investigate-deep-step.mjs --strict-signature
+node scripts/investigate-deep-step.mjs --strict-signature --compiler /path/to/typescript6/tsc
+```
+
+この案では、genericシグネチャを重ねた反例による誤った精密化は起きなくなる。一方、通常のdeep producerにも証拠が付かなくなり、privateな入力型の保持、失敗型付きの入力保持、optional・配列を含む出力の型比較、businessへの正しい接続が失敗する。既存の型をunknownへ戻すだけでは、求める改善を満たさないため採用しない。
+
+[TypeScript 6の記録](deep-step-strict-signature6.json)と[TypeScript 7の記録](deep-step-strict-signature7.json)には、変更前の全ソースが通ること、候補の正例に現れる6件の診断、反例を加えても診断が同一であることを残した。これは厳密一致という追加案の反証であり、任意の深い推論が不可能という証明ではない。製品core・公開API・実行runtimeは変更していない。
