@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 登録サンプルに配送中のlease更新を行うworkerを追加。期限切れの復活と古いclaimによる更新を拒否し、所有権喪失・更新失敗時は送信の中断を要求して完了記録へ進まない。Web標準のタイマーをhostで使い、実SQLiteの10件を配布consumerにも追加。公開コアと従来の固定lease入口は維持する。
+
 - Process.effectの第三引数へ新しいフィールド名を指定し、取得結果を文脈へ加えられるようにした。上書きや情報を失う文脈を拒否し、購買の実経路から16個の単純な射影callbackを削減。従来の射影関数と二引数形式は維持する。
 
 - 明示的rendererのView経路とplanを保存前に確定し、save後にchild getterや変更済みメタデータを再読しないようにした。循環Viewを保存前にCyclicViewで拒否し、単独describeViewも反復処理へ変更。4件の回帰検査を配布consumerにも追加した。

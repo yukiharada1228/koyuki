@@ -58,7 +58,8 @@ processには直接run / runDetailedできる入口があり、完了記録の�
   サンプル内のSetによる重複排除テストは、この契約のモデルであり実際のメール事業者の保証ではない。
 - leaseを越える遅い配送中に別workerが再取得すれば、配送が重なることがある。claim tokenは外部メールの送信を取り消せない。
 - workerのスケジュール・再試行の待機・監視・不正イベントの隔離はホストの責務。
-  この例では期限切れleaseの再取得を使い、heartbeat・backoff・最大試行数・dead letterは未実装。
+  固定leaseの入口に加え、[配送中のlease更新](registration-lease-maintenance.md)を行う入口も追加した。
+  backoff・最大試行数・dead letterは未実装で、実provider・常駐schedulerの運用検証も残る。
 
 サンプルは実際のメールを送信しない。MailSenderをテストadapterへ注入する。
 認証済みユーザー管理、tokenの期限・再発行、メールアドレスの変更や重複規則、秘密情報の保管・削除は製品要件として別途必要。
@@ -72,7 +73,7 @@ npm exec -- tsx --test src/registration.test.ts
 npm run test:registration:package
 ```
 
-8テストでDB再接続、別OSプロセス、rollback、再配送、送信後の完了記録失敗、
+既存9件とlease更新の10件の計19テストでDB再接続、別OSプロセス、rollback、再配送、送信後の完了記録失敗、
 複数connection、古いclaim、確認の競合、不正データを検証する。
 型検査では不正な状態2件と検証を飛ばす遷移1件を拒否。
 package検証はリポジトリ外へtarballをインストールし、コアの相対importを公開koyuki importへ置き換える。

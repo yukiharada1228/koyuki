@@ -14,16 +14,17 @@ try {
   npm(['run', 'build'], root);
   const tarball = JSON.parse(npm(['pack', '--pack-destination', dir, '--ignore-scripts', '--json'], root, true))[0].filename;
   mkdirSync(join(dir, 'registration'));
-  for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'delivery.ts']) {
+  for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'delivery.ts', 'lease-delivery.ts']) {
     const source = readFileSync(join(root, 'src/registration', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'");
     writeFileSync(join(dir, 'registration', file), source);
   }
   writeFileSync(join(dir, 'registration.test.ts'), readFileSync(join(root, 'src/registration.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(dir, 'registration-lease.test.ts'), readFileSync(join(root, 'src/registration-lease.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const version = name => JSON.parse(readFileSync(join(root, 'node_modules', name, 'package.json'), 'utf8')).version;
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ private: true, type: 'module',
     dependencies: { koyuki: `file:${join(dir, tarball)}` },
     devDependencies: { tsx: version('tsx'), typescript: version('typescript'), '@types/node': version('@types/node') },
-    scripts: { check: 'tsc --noEmit', test: 'tsx --test registration.test.ts' },
+    scripts: { check: 'tsc --noEmit', test: 'tsx --test registration*.test.ts' },
   }));
   writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, types: ['node'] }, include: ['*.ts', 'registration/*.ts'] }));
   npm(['install', '--ignore-scripts', '--no-audit', '--no-fund'], dir);
@@ -49,4 +50,5 @@ try {
   } finally { writeFileSync(domainPath, domain); }
   console.log('Verified exact start/confirmation variants; broad-return negative control rejected without changing runtime behavior.');
   console.log('Verified atomic outbox, leased delivery, acknowledgement recovery and human confirmation from the packed public API, including separate OS processes.');
+  console.log('Verified fenced renewal, delayed ticks, slow-send lease maintenance, cancellation and concurrent shutdown failures against real SQLite. External mail providers and resident scheduling remain unverified.');
 } finally { rmSync(dir, { recursive: true, force: true }); }

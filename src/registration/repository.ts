@@ -61,4 +61,13 @@ export class RegistrationRepository {
       return row.changes === 1 ? ok(delivery.event.id) : err({ kind: 'Conflict' });
     } catch { return err({ kind: 'StorageUnavailable' }); }
   }
+  /** Extend only the current, still-live owner; never revive an expired lease. */
+  async renew(delivery: Delivery, now: number, leaseMs: number): Promise<Result<void, StorageError | { kind: 'InvalidLease' }>> {
+    if (!Number.isSafeInteger(now) || now < 0 || !Number.isSafeInteger(leaseMs) || leaseMs <= 0 || !Number.isSafeInteger(now + leaseMs)) return err({ kind: 'InvalidLease' });
+    try {
+      const row = this.db.prepare(`UPDATE email_outbox SET lease_until=MAX(lease_until,?)
+        WHERE id=? AND claim=? AND delivered=0 AND lease_until>?`).run(now + leaseMs, delivery.event.id, delivery.claim, now);
+      return row.changes === 1 ? ok(undefined) : err({ kind: 'Conflict' });
+    } catch { return err({ kind: 'StorageUnavailable' }); }
+  }
 }
