@@ -39,3 +39,18 @@ const failure: LoadFailure = { kind: 'LoadFailed' };
 export const plain = createPlain(failure);
 export const replayed = createReplayed(failure);
 export const optional = createOptional(failure, false);
+
+// Correlating an outer generic actor with the loaded context still needs an
+// ordinary TypeScript instantiation expression for the reusable validator.
+// It is not a final API annotation or a cast of the completed application.
+export function createForActor<A extends Actor>(actor: A) {
+  type Loaded<I> = Readonly<{ input: I; actor: A }>;
+  type Approved = Readonly<{ id: string; actor: A }>;
+  const load = async <I extends Base>(input: I): Promise<Result<Loaded<I>, LoadFailure>> =>
+    ok({ input, actor });
+  const approve = (value: Loaded<Submit> & Checked): Result<Approved, 'Refused'> =>
+    value.input.approver === value.actor.id ? ok({ id: value.input.id, actor: value.actor }) : err('Refused');
+  const save = async (value: Approved): Promise<Result<Approved, 'SaveFailed'>> => ok(value);
+  return business({ name: 'exported-actor', load, save,
+    operations: { approve: [validate<Loaded<Submit>>, approve] } });
+}

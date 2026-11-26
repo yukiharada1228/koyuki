@@ -52,6 +52,18 @@ Callableは同じ2つの公開メソッドを直接表す形に修正した。�
 
 経費課題の配布物検査では、1段の従来実装、操作別load付きの複数段実装、共通loadだけの複数段実装が同じ13件の業務テストを通る。共通検証の省略は、型が合う業務条件の削除とは別の対照として拒否する。
 
-外側のgenericなactor型との相関を持つ等の複雑なfactoryでは、検証関数を具体的な文脈型へ特殊化する記述がなお必要になる場合がある。任意の多相変換を解決したものではない。
+外側のgenericなactor型との相関を持つ等の複雑なfactoryでは、検証関数を具体的な文脈型へ特殊化する記述がなお必要になる場合がある。今回のexport例はこの場合も含む。
+
+```ts
+function createForActor<A extends Actor>(actor: A) {
+  type Loaded<I> = Readonly<{ input: I; actor: A }>;
+  // load・approve・saveは通常の業務関数として定義する。
+  return business({ load, save, operations: {
+    approve: [validate<Loaded<Submit>>, approve],
+  } });
+}
+```
+
+これはTypeScriptのinstantiation expressionであり、フレームワークの新しい接続APIや完成したAPIへの型アサーションではない。配布物検査では、このfactoryが生成した.d.tsだけを読み直し、操作固有の入力項目、成功値のactorの具体型、閉じたエラー型を厳密に確認する。最終APIの戻り型注釈は不要だが、この1箇所の特殊化は残る。任意の多相変換を解決したものではない。
 
 実行runtimeや公開APIの追加はない。名前なしinlineや一般の深いgeneric変換、原音等の未確認部分は別の残件であり、講演全体の完全実現を主張するものではない。

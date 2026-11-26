@@ -25,7 +25,7 @@ export function verifyExportedBusiness(consumer, root, run) {
     check(sourceConfig); check(emitConfig);
     const generated = readFileSync(join(emitted, 'verified-exports.d.ts'), 'utf8');
     assert(!generated.includes('preservedContextWitness') && !generated.includes('node_modules'), 'A private SDK reference leaked into emitted declarations');
-    writeFileSync(client, `import { plain, replayed, optional, createPlain, type Submit, type LoadFailure } from './verified-declarations/verified-exports.js';
+    writeFileSync(client, `import { plain, replayed, optional, createPlain, createForActor, type Submit, type LoadFailure } from './verified-declarations/verified-exports.js';
 import type { Result, Execution, ReplayInputError } from 'koyuki';
 type Equal<A,B>=(<T>()=>T extends A?1:2) extends (<T>()=>T extends B?1:2)?true:false;
 type Assert<T extends true>=T;
@@ -41,12 +41,18 @@ type Error<R>=R extends {ok:false;error:infer E}?E:never;
 type OptionalErrors=Assert<Equal<Error<Awaited<ReturnType<typeof optional.approve>>>,Failure|'LookupFailed'|ReplayInputError>>;
 const another=createPlain({kind:'OtherLoadFailure'} as const);
 type Generic=Assert<Equal<Awaited<ReturnType<typeof another.approve>>,Result<string,Readonly<{kind:'OtherLoadFailure'}>|'Denied'|'Refused'|'SaveFailed'>>>;
+const actor={id:'boss',active:true,department:'finance'} as const;
+const forActor=createForActor(actor);
+type ActorInput=Assert<Equal<Parameters<typeof forActor.approve>[0],Submit>>;
+type ActorResult=Assert<Equal<Awaited<ReturnType<typeof forActor.approve>>,Result<Readonly<{id:string;actor:typeof actor}>,LoadFailure|'Denied'|'Refused'|'SaveFailed'>>>;
 if(false){
  // @ts-expect-error The generated API still requires the operation-specific field.
  void plain.approve({id:'one'});
  void optional.approve({id:'one',approver:'boss'});
  // @ts-expect-error Every optional-mode branch still requires the operation field.
  void optional.approve({id:'one'});
+ // @ts-expect-error Actor-generic factories must still require the request-specific field.
+ void forActor.approve({id:'one'});
 }
 `);
     writeFileSync(clientConfig, JSON.stringify({ compilerOptions: { ...options, noEmit: true }, files: ['verified-exports-consumer.ts'] }));
@@ -63,7 +69,7 @@ if(false){
     const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
     assert(!rejected.error && rejected.status !== null && rejected.status !== 0);
     assert(output.includes('verified-exports.ts(') && /TS(?:2742|2883|4023|4058):/.test(output) && /PlainCommand|ReplayCommand/.test(output), output);
-    console.log('Verified exported constants, generic-error factories and plain/replay/optional APIs: emitted declarations compile in a separate consumer without Node types; the private-Omit representation passes normal checking but fails declaration emission.');
+    console.log('Verified exported constants, generic-error/actor factories and plain/replay/optional APIs: emitted declarations compile in a separate consumer without Node types; the private-Omit representation passes normal checking but fails declaration emission.');
   } finally {
     writeFileSync(declarations, original);
     for (const path of created) rmSync(path, { recursive: true, force: true });
