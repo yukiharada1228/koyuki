@@ -1,5 +1,8 @@
 # 未確定10区間の原音確認資料
 
+[開発上の判断](lecture-uncertain-speech-decisions.md)では、未確認の正確な発話と、
+資料に基づいて進められる実装を分けた。原音の逐語確認だけを開発全体の停止条件にはしない。
+
 原音確認の残件を、実際に聞いて判断できる形に準備した。
 これは直接音声を確認した記録ではない。全10件の確認票はpendingであり、
 既存のaudioDirectlyReviewed/allFramesReviewedと講演のstatusは変更しない。
