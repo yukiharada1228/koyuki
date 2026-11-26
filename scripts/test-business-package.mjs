@@ -142,6 +142,7 @@ try {
   writeFileSync(join(consumer, 'procurement-observation-comparison.test.ts'), readFileSync(join(root, 'src/procurement-observation-comparison.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   writeFileSync(join(consumer, 'procurement-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
+  writeFileSync(join(consumer, 'procurement-application-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-application-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-failure-observation.test.ts'), readFileSync(join(root, 'src/procurement-failure-observation.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-observation-scenario.test.ts'), readFileSync(join(root, 'src/procurement-observation-scenario.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
