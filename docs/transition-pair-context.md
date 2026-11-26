@@ -65,10 +65,17 @@ inputだけを保持する場合と、identityのようにvalueも同じ型を�
 15個の不正宣言と、finance/order/receipt/storageの既存対照検査も維持する。
 実行時のJavaScriptモジュールは28のままで、外部実行依存やNode型の要求は追加していない。
 
+[6.0.3の記録](transition-pair-context6.json)と[7.0.2の記録](transition-pair-context7.json)は、
+eba9335のクリーンなソースで、元の名前付きidentity probeを再検査した結果である。
+[以前の6.0.3](step-generic-identity6.json)・[7.0.2](step-generic-identity7.json)とprobeのhashは一致し、
+不受理から受理へ変わった。既存契約の追加診断は0。
+minimal欄は変更していない名前なしの最小fixtureであり、名前付きの修正済み宣言ではない。
+
 一般の多相変換を適用できるという保証ではない。
 名前なしのwithInput直接呼出しと、未確定のTを使う別のgeneric呼び出し元でのidentityの厳密一致は未解消である。
 後者の再現はcollectorの`--probe generic-identity-scoped-caller`で検査できる。
 以前から通っているscoped generic callbackの例まで不受理になったという意味ではない。
+[6.0.3](transition-pair-limits6.json)・[7.0.2](transition-pair-limits7.json)で両残件を同じソースから再現し、既存契約の追加診断が0であることも記録した。
 
 collectorの過去の宣言変更候補は、元のcommitで再現する。新しい宣言形状へ部分的に適用しないよう拒否する。
 現在の宣言は`--only current`で検査する。

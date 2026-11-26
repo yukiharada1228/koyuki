@@ -553,6 +553,25 @@
         "src/step-generic-first.test.ts",
         "src/framework/model.ts"
       ]
+    },
+    "transitionPairContextFollowUp": {
+      "implementationBaseCommit": "eba9335e9df26655dc7ab0e40bbfb75a70778ab7",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up: specialize wider input/value pairs only when the actual producer guarantees the candidate and its declared output facts are retained. Already-concrete pairs keep their original exact type. The original named polymorphic identity plus unannotated evolve probe is now accepted on TypeScript 6.0.3 and 7.0.2 with the same probe hash as the historical refusal. Five additional runtime/static consumer tests cover bound/inline identity, multiple generic requirements, literal extra context, opaque classes, failure stopping and preserved output facts. Broad producers, unsafe dynamic alternatives, incompatible inputs and unknown-value correlation remain rejected. Scoped generic callback contracts remain intact, while a distinct still-generic identity caller and unnamed inline calls remain limits. No runtime execution body, new public API, dependency, source/audio/frame review or independent-user evidence is added. Partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/transition-pair-context.md",
+        "docs/transition-pair-context6.json",
+        "docs/transition-pair-context7.json",
+        "docs/transition-pair-limits6.json",
+        "docs/transition-pair-limits7.json",
+        "src/transition-inline-step.test.ts",
+        "src/framework/model.ts"
+      ]
     }
   },
   "sections": [

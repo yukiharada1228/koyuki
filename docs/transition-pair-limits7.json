@@ -1,0 +1,107 @@
+{
+  "schema": "koyuki.transition-pair-limits.v1",
+  "scope": "Current-source compiler probes only. These two limits remain; not a runtime or user-experience evaluation.",
+  "records": [
+    {
+      "collectedAt": "2026-11-26T16:20:35.944Z",
+      "sourceGitCommit": "eba9335e9df26655dc7ab0e40bbfb75a70778ab7",
+      "sourceDirty": false,
+      "collectorSha256": "7ed89432d49db7c94626ed48f0a0ea2e0506e5c422d4f64f402426e870db67db",
+      "probeSha256": "899696b841a89b581b7e17af4ab27bd52c000316d6c2a606f51a660c68a6ed5d",
+      "probeVariant": "inline",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "5f47edc981691ddeaae2d9c24e89b4684a56e8ea93e40facd5509153812ca6db",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 6,
+              "column": 13,
+              "code": "TS2322"
+            },
+            {
+              "line": 7,
+              "column": 27,
+              "code": "TS2339"
+            },
+            {
+              "line": 7,
+              "column": 40,
+              "code": "TS2551"
+            },
+            {
+              "line": 11,
+              "column": 7,
+              "code": "TS2322"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2322",
+            "TS2339",
+            "TS2551"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    },
+    {
+      "collectedAt": "2026-11-26T16:20:38.312Z",
+      "sourceGitCommit": "eba9335e9df26655dc7ab0e40bbfb75a70778ab7",
+      "sourceDirty": false,
+      "collectorSha256": "7ed89432d49db7c94626ed48f0a0ea2e0506e5c422d4f64f402426e870db67db",
+      "probeSha256": "3187f06a8664375e8bc0c5f9e18a3b38cb98765494c3b8e56994f726bbbdc329",
+      "probeVariant": "generic-identity-scoped-caller",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "5f47edc981691ddeaae2d9c24e89b4684a56e8ea93e40facd5509153812ca6db",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 14,
+              "column": 7,
+              "code": "TS2322"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2322"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    }
+  ]
+}
