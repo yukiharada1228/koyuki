@@ -38,7 +38,8 @@ type FirstInput<E extends Entry> = RuleOf<Stages<E>[0]> extends (input: infer I)
 // envelope, consider the first rule's input field only as a request candidate.
 // The actual loader must guarantee the entire required context for that request;
 // an incompatible broad return or a missing proof remains rejected.
-type SpecializedLoader<L extends Load, E extends Entry> = [Loaded<L>] extends [FirstInput<E>] ? L
+type SpecializedLoader<L extends Load, E extends Entry> = [RuleOf<Stages<E>[0]>] extends [(input: Loaded<L>) => unknown] ? L
+  : [Loaded<L>] extends [FirstInput<E>] ? L
   : [FirstInput<E>] extends [{ readonly input: infer I }]
     ? [I] extends [Input<L>]
       ? [L] extends [(input: I) => Promise<Result<FirstInput<E>, LoadError<L>>>]
@@ -53,10 +54,13 @@ type OperationNames<T> = OperationName<keyof T>;
 // A proof-producing check may additionally retain its declared facts, but only
 // when the actual function guarantees the entire intersection. A monomorphic
 // broad return must never invent a narrower success value.
+type InputPairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] };
+type PairRuleOutput<R extends (...args: never[]) => unknown, I> = R extends (input: I) => Result<InputPairCandidate<Value<ReturnType<R>>, I>, Failure<ReturnType<R>>> ? InputPairCandidate<Value<ReturnType<R>>, I> : Value<ReturnType<R>>;
+type InputPairOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }] ? PairRuleOutput<RuleOf<F>, I> : Out<F>;
 type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
   : [I] extends [Out<F>]
     ? [RuleOf<F>] extends [Rule<I, I, ErrorOf<F>>] ? I : Out<F>
-    : [RuleOf<F>] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : Out<F>;
+    : [RuleOf<F>] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : InputPairOutput<F, I>;
 // Tail recursion carries the concrete context across generic identity checks.
 // Unknown-length arrays retain the original mapped fallback.
 type Outputs<C, P extends readonly Stage[], A extends readonly unknown[] = readonly []> = number extends P['length']
@@ -68,7 +72,7 @@ type Tail<P extends readonly Stage[]> = P extends readonly [Stage, ...infer T ex
 // Keep the actual function contract even in the error branch. The marker is
 // diagnostic-only: adding a property cannot make an incompatible rule valid.
 type DiagnosticRule<F extends Stage, I, O, Operation extends string, Index extends PropertyKey> =
-  ([RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>] ? unknown : {
+  ([RuleOf<F>] extends [(input: I) => Result<O, ErrorOf<F>>] ? unknown : {
     readonly [K in `Koyuki: ${Operation}[${Extract<Index, string | number>}] ${[RuleOf<F>] extends [Rule<I, Out<F>, ErrorOf<F>>] ? 'output must match save' : 'input must accept prior output'}`]: never
   }) & (F extends Fn ? Rule<I, O, ErrorOf<F>> : F extends Step<never, unknown, unknown> ? Step<I, O, ErrorOf<F>> : Workflow<I, O, ErrorOf<F>> & { readonly run: Rule<I, O, ErrorOf<F>> });
 type Connect<C, P extends readonly Stage[], O, Operation extends string> = {

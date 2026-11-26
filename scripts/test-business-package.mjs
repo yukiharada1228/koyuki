@@ -209,6 +209,7 @@ try {
   writeFileSync(join(consumer, 'workflow-generic-first.test.ts'), readFileSync(join(root, 'src/workflow-generic-first.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'step-generic-first.test.ts'), readFileSync(join(root, 'src/step-generic-first.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-generic-check.test.ts'), readFileSync(join(root, 'src/business-generic-check.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-input-pair.test.ts'), readFileSync(join(root, 'src/business-input-pair.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-generic-load.test.ts'), readFileSync(join(root, 'src/business-generic-load.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-inline-step.test.ts'), readFileSync(join(root, 'src/transition-inline-step.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
