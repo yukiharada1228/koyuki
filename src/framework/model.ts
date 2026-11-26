@@ -5,6 +5,17 @@ import type { Result } from './result.js';
 import { Workflow, evaluateRule, type Rule } from './workflow.js';
 import { defineCommand } from './command.js';
 export interface Step<I, O, E> { readonly name: string; readonly rule: Rule<I, O, E> }
+type StepRule<F> = Extract<F, Rule<never, unknown, unknown>>;
+type StepInput<F extends object> = Parameters<StepRule<F>>[0];
+type StepSuccess<F extends object> = ReturnType<StepRule<F>> extends infer R ? R extends { ok: true; value: infer O } ? O : never : never;
+type StepError<F extends object> = ReturnType<StepRule<F>> extends infer R ? R extends { ok: false; error: infer E } ? E : never : never;
+type CheckedStepRule<F extends object> = [F] extends [Rule<StepInput<F>, StepSuccess<F>, StepError<F>>] ? unknown : never;
+// Preserve contextual inference first; infer constrained generic callables only
+// when the actual function guarantees the entire inferred input/output contract.
+export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E>;
+export function step<F extends object>(name: string, rule: F & NoInfer<CheckedStepRule<F>>): Step<StepInput<F>, StepSuccess<F>, StepError<F>>;
+// Keep reflection through Parameters/ReturnType on the original signature.
+export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E>;
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E> { return { name, rule }; }
 type AnyStep = Step<never, unknown, unknown>;
 type Output<T> = T extends Step<never, infer O, unknown> ? O : never;

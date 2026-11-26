@@ -16,22 +16,23 @@ function command(program, args, options = {}) {
 }
 function git(args) { const result = command('git', args); assert.equal(result.status, 0, result.stderr); return result.stdout.trim(); }
 const options = new Map(), args = process.argv.slice(2);
-assert(args.length % 2 === 0, 'Use --before commit [--after commit]');
+assert(args.length % 2 === 0, 'Use --before commit [--after commit] [--probe workflow|step]');
 for (let i = 0; i < args.length; i += 2) {
-  assert(['--before', '--after'].includes(args[i]) && !options.has(args[i]), 'Unknown or repeated option');
-  assert(/^(?:HEAD|[0-9a-f]{7,40})$/.test(args[i + 1]), 'Use HEAD or a hexadecimal commit ID'); options.set(args[i], args[i + 1]);
+  assert(['--before', '--after', '--probe'].includes(args[i]) && !options.has(args[i]), 'Unknown or repeated option');
+  assert(args[i] === '--probe' ? ['workflow', 'step'].includes(args[i + 1]) : /^(?:HEAD|[0-9a-f]{7,40})$/.test(args[i + 1]), 'Use a supported probe or HEAD/hexadecimal commit ID'); options.set(args[i], args[i + 1]);
 }
 assert(options.has('--before'), '--before is required');
 const before = git(['rev-parse', '--verify', `${options.get('--before')}^{commit}`]);
 const after = git(['rev-parse', '--verify', `${options.get('--after') ?? 'HEAD'}^{commit}`]);
-const collectorFiles = ['scripts/investigate-workflow-first.mjs', 'scripts/fixtures/workflow-generic-first.ts'];
+const probeKind = options.get('--probe') ?? 'workflow';
+const collectorFiles = ['scripts/investigate-workflow-first.mjs', `scripts/fixtures/${probeKind}-generic-first.ts`];
 assert.equal(git(['status', '--porcelain', '--untracked-files=all', '--', ...collectorFiles]), '', 'Commit collector and fixture before measuring');
 const collectorCommit = git(['rev-parse', 'HEAD']);
 const probe = await readFile(join(root, collectorFiles[1]), 'utf8');
 const compiler = resolve(root, 'node_modules/.bin/tsc');
 const version = command(compiler, ['--version']); assert.equal(version.status, 0);
 const installedLock = hash(await readFile(join(root, 'package-lock.json')));
-const temporary = await mkdtemp(join(tmpdir(), 'koyuki-workflow-first-'));
+const temporary = await mkdtemp(join(tmpdir(), `koyuki-${probeKind}-first-`));
 const reports = [];
 function diagnostics(output) {
   return output.split('\n').filter(line => /error TS\d+:/.test(line)).map(line => {
@@ -57,19 +58,20 @@ try {
       return { accepted: result.status === 0, diagnostics: found };
     };
     const baseline = compile(); assert(baseline.accepted, `Existing contracts fail for ${label}: ${JSON.stringify(baseline.diagnostics)}`);
-    const file = 'src/workflow-first-investigation.ts';
+    const file = `src/${probeKind}-first-investigation.ts`;
     assert.equal(git(['ls-tree', '--name-only', commit, '--', file]), '', 'Probe would overwrite a committed source');
     await writeFile(join(workspace, file), probe);
     const result = compile(), existing = result.diagnostics.filter(item => item.file !== file);
     assert.equal(existing.length, 0, JSON.stringify(existing));
     assert(!result.diagnostics.some(item => ['TS2305', 'TS2307', 'TS7006'].includes(item.code)), 'Missing exports/imports or implicit any are not evidence for this probe');
     reports.push({ label, sourceGitCommit: commit, sourceArchiveSha256: hash(archive.stdout), lockSha256: lockHash,
-      workflowSourceSha256: hash(await readFile(join(workspace, 'src/framework/workflow.ts'))), baselineAccepted: true,
+      workflowSourceSha256: hash(await readFile(join(workspace, 'src/framework/workflow.ts'))),
+      ...(probeKind === 'step' ? { modelSourceSha256: hash(await readFile(join(workspace, 'src/framework/model.ts'))) } : {}), baselineAccepted: true,
       probeAccepted: result.accepted, existingContractDiagnostics: existing.length, diagnostics: result.diagnostics });
   }
   assert.equal(git(['status', '--porcelain', '--untracked-files=all', '--', ...collectorFiles]), '');
   assert.equal(git(['rev-parse', 'HEAD']), collectorCommit, 'Collector source changed while running');
-  console.log(JSON.stringify({ schema: 'koyuki.workflow-first-inference.v1', collectedAt: new Date().toISOString(), collectorGitCommit: collectorCommit,
+  console.log(JSON.stringify({ schema: `koyuki.${probeKind}-first-inference.v1`, collectedAt: new Date().toISOString(), collectorGitCommit: collectorCommit,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))), probeSha256: hash(probe), compiler: version.stdout.trim(),
     scope: 'Committed source archives and current identical locked dependencies. Static type checks only; not runtime behavior, audio review or independent user DX.', reports }, null, 2));
 } finally { await rm(temporary, { recursive: true, force: true }); }
