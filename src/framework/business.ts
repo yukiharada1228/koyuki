@@ -5,7 +5,7 @@ import { captureLoad, type ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
 import { workflow, Workflow, observeEvaluation, type Evaluation, type WorkflowCapture, type Rule, type StageObserver, type StageReceiver } from './workflow.js';
 import type { Result } from './result.js';
-import type { Step } from './model.js';
+import type { Step, UniversalRuleOutput } from './model.js';
 import type { GroupExecution } from './use-case-group.js';
 import type { Receipt, Execution } from './replay.js';
 import { createObservation, observeEffect, type ObservationReport } from './observation.js';
@@ -41,9 +41,16 @@ type FirstInput<E extends Entry> = RuleOf<Stages<E>[0]> extends (input: infer I)
 // Capture declared input and result before conditional matching refines the
 // callable. A broad overload must not erase a narrower operation/metadata input.
 type DeclaredInput<R> = [R] extends [(input: infer I) => unknown] ? I : never;
+// Capture the declared input before a variance comparison can refine the rule.
+// A bivariant method accepting a narrower context must not erase request fields.
+type AcceptsEveryInput<R, P = DeclaredInput<R>> = [R] extends [Rule<unknown, unknown, unknown>]
+  ? [unknown] extends [P] ? true : false : false;
 type AcceptsLoaded<R extends (...args: never[]) => unknown, I, P = DeclaredInput<R>, O = ReturnType<R>> = [I] extends [P]
   ? R extends (input: I) => infer A ? [A] extends [O] ? true : false : false : false;
-type SpecializedLoader<L extends Load, E extends Entry> = AcceptsLoaded<RuleOf<Stages<E>[0]>, Loaded<L>> extends true ? L
+// A rule accepting every input needs no loader specialization. Decide this
+// before a still-generic loaded type can defer the same keep-loader result.
+type SpecializedLoader<L extends Load, E extends Entry> = AcceptsEveryInput<RuleOf<Stages<E>[0]>> extends true ? L
+  : AcceptsLoaded<RuleOf<Stages<E>[0]>, Loaded<L>> extends true ? L
   : [Loaded<L>] extends [FirstInput<E>] ? L
   : [FirstInput<E>] extends [{ readonly input: infer I }]
     ? [I] extends [Input<L>]
@@ -79,10 +86,13 @@ type PairValueRuleOutput<R extends Fn, I, O = Value<ReturnType<R>>, E = Failure<
     : R extends (input: I) => Result<ShapeCandidate<V, O>, E> ? ShapeCandidate<V, O> : O
   : O;
 type InputPairOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }] ? PairRuleOutput<RuleOf<F>, I> : PairValueRuleOutput<RuleOf<F>, I>;
-type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
+type ContextStageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
   : [I] extends [Out<F>]
     ? [RuleOf<F>] extends [Rule<I, I, ErrorOf<F>>] ? I : InputPairOutput<F, I>
     : [RuleOf<F>] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : InputPairOutput<F, I>;
+type StageOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }]
+  ? UniversalRuleOutput<RuleOf<F>, I, Out<F>, ErrorOf<F>, ContextStageOutput<F, I>>
+  : ContextStageOutput<F, I>;
 // Tail recursion carries the concrete context across generic identity checks.
 // Unknown-length arrays retain the original mapped fallback.
 type Outputs<C, P extends readonly Stage[], A extends readonly unknown[] = readonly []> = number extends P['length']

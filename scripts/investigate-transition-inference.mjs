@@ -66,6 +66,15 @@ probes['generic-wrap-scoped-caller'] = probes['generic-identity-scoped-caller']
   .replace("step('identity', withInput(identity))", "step('wrap', withInput(wrap))")
   .replace('after: pair.value }', 'after: pair.value.item }');
 if (!probes['generic-wrap-scoped-caller'].includes('withInput(wrap)') || !probes['generic-wrap-scoped-caller'].includes('after: pair.value.item')) throw Error('Generic wrapper probe changed');
+probes['generic-deep-wrap-scoped-caller'] = probes['generic-wrap-scoped-caller']
+  .replace("Result<{ item: I }, 'Declined'> => ok({ item: input });", "Result<{ item: { value: I } }, 'Declined'> => ok({ item: { value: input } });")
+  .replace('after: pair.value.item }', 'after: pair.value.item.value }');
+if (!probes['generic-deep-wrap-scoped-caller'].includes('item: { value: I }') || !probes['generic-deep-wrap-scoped-caller'].includes('after: pair.value.item.value')) throw Error('Deep generic wrapper probe changed');
+probes['generic-record-scoped-caller'] = probes['generic-identity-scoped-caller']
+  .replace("const identity = <I>(input: I): Result<I, 'Declined'> => ok(input);", "const wrap = <I>(input: I): Result<{ before: I; after: I }, 'Declined'> => ok({ before: input, after: input });")
+  .replace("step('identity', withInput(identity))", "step('wrap', wrap)")
+  .replace('evolve: pair => ok({ before: pair.input, after: pair.value })', 'evolve: value => ok(value)');
+if (!probes['generic-record-scoped-caller'].includes("step('wrap', wrap)") || !probes['generic-record-scoped-caller'].includes('evolve: value => ok(value)')) throw Error('Generic record probe changed');
 probes['business-input-pair-explicit'] = probes['business-input-pair'].split('// Direct generic withInput calls')[0];
 probes['business-input-pair-inline'] = probes['business-input-pair-explicit']
   .replace('[explicitQuote, finish]', '[withInput((value: Context) => quote(value)), finish]');

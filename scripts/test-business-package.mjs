@@ -212,6 +212,7 @@ try {
   writeFileSync(join(consumer, 'business-input-pair.test.ts'), readFileSync(join(root, 'src/business-input-pair.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-generic-load.test.ts'), readFileSync(join(root, 'src/business-generic-load.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-inline-step.test.ts'), readFileSync(join(root, 'src/transition-inline-step.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'transition-value-fields.test.ts'), readFileSync(join(root, 'src/transition-value-fields.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];

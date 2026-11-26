@@ -3,7 +3,7 @@
 [遷移全体の入力保持](transition-pair-context.md)では、名前付きのgeneric要件を具体的な前段へ適用できるようにした。
 元の名前付きidentityと未注釈evolveの例も受理する。以下の過去の不受理の記録は、各commit時点の結果として読む。
 未確定のTを使う別のgeneric呼び出し元のidentity・入力保持も後続で対応した。
-名前なしinlineと共有generic関数の入れ子の出力には、引き続き制限が残る。
+共有generic関数のvalueフィールドの対応も保持するようにした。名前なしinlineと、さらに深い入れ子の出力には制限が残る。
 
 ## 既存のstepで書ける範囲と残る制限
 
