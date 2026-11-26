@@ -74,7 +74,7 @@ check:lecture-auditとcheck:lecture-decksは、原文の同一性・割り当て
 | 顧客の作成・更新の競合を扱う | [SQLite host](customer-import-sqlite.md)、別OS writerの待ち合わせ検査 | 高並列の負荷・耐久試験、実製品の名寄せ仕様は未検証 |
 | 再送と過去の成功の再取得を扱う | receipt境界、要求一致、[要求snapshotの検査](replay-request-snapshot.md)、保存との原子性、投影を巻き戻さない検査 | 外部副作用のexactly-onceや自動再試行は保証しない |
 | 明示した条件で限定的に再試行する | [retryEffect](retry.md)で失敗ごとの安全条件・試行上限・待機・中断を指定。SQLiteの応答・照会喪失でも更新1回を検査 | 未適用・冪等性はhostの契約。実行中のIOを強制停止しない。各試行のspan・永続scheduler・receipt保持運用は未提供 |
-| 人の確認を挟むイベントを接続する | [登録・メール・確認](registration-events.md)、永続outbox・lease・別OSプロセス | fake配送先での検証。scheduler・dead letter等はhostの方針が必要 |
+| 人の確認を挟むイベントを接続する | [登録・メール・確認](registration-events.md)、永続outbox・別OSプロセス・[配送中のlease更新](registration-lease-maintenance.md) | fake配送先での検証。scheduler・dead letter等はhostの方針が必要 |
 | 途中の値を再実行なしで観測する | [選択値のcapture](workflow-observation.md)、businessのload/Rule/save/receiptと[ProcessのI/O・through](process-observation.md)の観測。[購買25操作](procurement-observation-comparison.md)はメモリ・SQLiteで選択値と射影失敗時の保存結果を3方式比較 | [詳細形式のloader](detailed-load.md)は内部traceを接続する。通常のResult関数は内部traceを公開しない。全値の自動永続監査・保持期間・機密項目の選択は未提供 |
 | 処理の宣言構成を実行せず確認する | [JSON/Mermaid構成図](flow-structure.md)、タグ・送料・明示branchの非実行検査 | 関数内部はopaque。状態遷移図・完全な制御フロー・node/span対応は未提供 |
 | Applicationから業務段階を同じ実行として観察する | [実行IDと詳細traceの接続](application-execution.md)、失敗・再送・分岐・並行sessionの検査。[Program単体](program-execution.md)も待機・更新・副作用・完了を観察できる | 対応するcoreは処理中の段階時間・親子spanも通知。opaque関数内部・分散相関・永続履歴は未提供 |

@@ -9,6 +9,18 @@
     "durationSeconds": 4890
   },
   "review": {
+    "leaseMaintenanceFollowUp": {
+      "implementationBaseCommit": "d65366896514ac7ff7c55285a707be9338748be3",
+      "sections": ["iz-31"],
+      "scope": "Implementation-only follow-up: host-side fenced renewal before, during and after delivery. Ten new actual-SQLite tests cover independent connections, expired/stale owners, storage faults, abort notification and overlapping send completion/renewal rejection; all nineteen registration tests also pass against the packed package. No real mail provider, resident scheduler or production operation is verified. No new source, audio or frame review; partial status remains.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "evidence": [
+        "docs/registration-lease-maintenance.md",
+        "src/registration/lease-delivery.ts",
+        "src/registration-lease.test.ts"
+      ]
+    },
     "basis": "Saved Japanese automatic captions, manually reread in full",
     "audioDirectlyReviewed": false,
     "allFramesReviewed": false,
@@ -965,16 +977,19 @@
       "endSeconds": 3988,
       "topic": "登録・メール・人の確認の連携",
       "status": "partial",
-      "assessment": "講演では未経験の提案。登録とoutboxの原子保存・配送lease・確認の別操作を実装し別プロセスで検証。",
+      "assessment": "講演では未経験の提案。登録とoutboxの原子保存・配送lease・確認の別操作を実装し別プロセスで検証。ホスト側の配送中のlease更新と所有権喪失時の停止も実SQLiteの二接続で検査した。",
       "evidence": [
         "docs/registration-events.md",
         "src/registration/delivery.ts",
+        "docs/registration-lease-maintenance.md",
+        "src/registration/lease-delivery.ts",
+        "src/registration-lease.test.ts",
         "docs/lecture-local-asr-iz-followup.md",
         "docs/lecture-local-asr-iz-followup.json",
         "docs/lecture-partial-reconciliation.md"
       ],
       "remaining": [
-        "実メールprovider統合や常駐scheduler・heartbeat・dead letterはホスト側で未検証。at-least-once配送はexactly-onceを保証しない。"
+        "実メールprovider統合、常駐scheduler、backoff・最大試行数・dead letter、運用環境でのlease維持は未検証。at-least-once配送はexactly-onceを保証しない。"
       ]
     },
     {
