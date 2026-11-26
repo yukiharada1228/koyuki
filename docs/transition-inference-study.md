@@ -157,8 +157,9 @@ const declared = defineTransition({
 
 [scripts/fixtures/transition-inference-limit.ts](../scripts/fixtures/transition-inference-limit.ts)は
 実際の開発版tarballを別ディレクトリへインストールし、Node型なしで型検査する。
-既知の不正推論を拒否し、名前付き要件を使う宣言について入力型・成功型・失敗型の一致を検査する。
-TS更新等により制限が解消すれば、不要になったts-expect-errorが失敗し、再評価を促す。
+後続では、[compiler境界の調査](inline-inference-compiler-boundary.md)を踏まえて専用の観測へ分離した。
+入力型・成功型・失敗型の厳密一致を含めて通る場合も許容し、正しい構文の不受理を必須にしない。
+既知の診断パターンだけをcompiler-limitとして記録し、別の型エラーや精度の喪失は拒否する。
 
 [src/transition-inference.test.ts](../src/transition-inference.test.ts)では、
 複数の名前付きgeneric要件を依存順に接続し、元の入力・中間成功値・両要件の失敗型を保持できることも検査する。

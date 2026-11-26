@@ -1,5 +1,7 @@
 # 全84話題の判定と現行実装への経路を点検する
 
+[inline要件のcompiler境界](inline-inference-compiler-boundary.md)では、TS6の一時コピーで呼出し保留の分岐を切り分けた。製品のinline制限は未解消のまま、配布検査は正しい構文の不受理を必須にせず、厳密な型を保った改善も許容する。通常buildにcompiler改変は使わない。
+
 [動的に選ぶ要件関数](with-input-alternatives.md)も、dispatch関数を挟まずwithInputへ渡せるようにした。全候補が受け取れる入力を要求し、成功値・エラーの和と既存generic関数の型保持を検査する。名前なしinline・遷移中の深いgeneric変換・独立利用者の評価・原音確認は残る。
 
 実装基準ef1bb4d2f73819741872399ddf62004100b9419fの後続点検では、保存境界、購買の次状態型、

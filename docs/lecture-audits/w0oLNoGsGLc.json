@@ -9,6 +9,25 @@
     "durationSeconds": 2513
   },
   "review": {
+    "inlineCompilerBoundaryFollowUp": {
+      "implementationBaseCommit": "3dfc04218da8c64a19f95b5a3ac6b1b1f8402594",
+      "sections": [
+        "w0o-19"
+      ],
+      "scope": "Counterfactual TypeScript 6.0.3 experiment in a temporary compiler copy: disabling one SkipGenericFunctions call-resolution branch accepts both the exact Koyuki inline probe and the independent minimal reproduction, with existing src type checks still passing. This is not a supported compiler, framework implementation fix, TypeScript7 internals review or general soundness/performance proof. The packed-package gate no longer requires valid inline syntax to fail via ts-expect-error: it accepts exact typed success or records only the known blocked-call pattern. Real compiler controls accept a typed direct lambda and reject unrelated named-example errors, a wrong accepted-result type and erased any success values. No compiler modifications in normal builds, CI or published code. Product inline/deep inference limits and all9 partial topics remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/inline-inference-compiler-boundary.md",
+        "docs/inline-inference-compiler-control.json",
+        "scripts/investigate-generic-call-skip.mjs",
+        "scripts/inline-inference-observation.mjs",
+        "scripts/fixtures/transition-inference-limit.ts",
+        "scripts/fixtures/transition-inference-minimal.ts",
+        "scripts/check-runtime-package.mjs"
+      ]
+    },
     "selectedRequirementFollowUp": {
       "implementationBaseCommit": "e963347d69e75ec05627577b1cd187b96278ab37",
       "sections": [
@@ -794,7 +813,7 @@
       "endSeconds": 2118,
       "topic": "コンパイラとツールチェーン",
       "status": "supported",
-      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの12宣言・25操作ID・52ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。",
+      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの12宣言・25操作ID・52ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。",
       "evidence": [
         "src/transition-inference.test.ts",
         "scripts/check-runtime-package.mjs",
@@ -806,7 +825,13 @@
         "docs/selected-requirement-context7.json",
         "src/framework/model.ts",
         "src/with-input-alternatives.test.ts",
-        "scripts/test-business-package.mjs"
+        "scripts/test-business-package.mjs",
+        "docs/inline-inference-compiler-boundary.md",
+        "docs/inline-inference-compiler-control.json",
+        "scripts/investigate-generic-call-skip.mjs",
+        "scripts/inline-inference-observation.mjs",
+        "scripts/fixtures/transition-inference-limit.ts",
+        "scripts/fixtures/transition-inference-minimal.ts"
       ],
       "remaining": []
     },

@@ -1,0 +1,93 @@
+{
+  "schema": "koyuki.generic-call-skip-control.v1",
+  "collectedAt": "2026-11-26T19:41:36.692Z",
+  "sourceGitCommit": "3dfc04218da8c64a19f95b5a3ac6b1b1f8402594",
+  "sourceDirty": false,
+  "scope": "One counterfactual branch in an isolated copy of the TypeScript 6.0.3 compiler. Not a supported compiler, framework fix, general soundness proof, source/audio review or independent-user trial. Installed compilers, Koyuki sources, dependencies and runtime are unchanged.",
+  "collectorSha256": "c2a29653abe8a3b8c839e8523960b9f8ba56411db9ae6df8e931df7fffaf6d21",
+  "modelSha256": "8d85ae7e25430e70ce401add1305b5612c88b08b9d396065ac773a9f93a59fd8",
+  "fixtureSha256": "a909e62629bcab873f7a3999b34f8ee5560488b99e9f5b1c2616a40fd5081c4c",
+  "minimalSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+  "modifiedBranch": "if (checkMode & 8 /* SkipGenericFunctions */ && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {",
+  "replacement": "if (false && checkMode & 8 /* SkipGenericFunctions */ && !node.typeArguments && callSignatures.some(isGenericFunctionReturningFunction)) {",
+  "records": [
+    {
+      "name": "official-typescript-6.0.3",
+      "modifiedCompiler": false,
+      "compilerPackageVersion": "6.0.3",
+      "compilerImplementationSha256": "1c59e77a54b186ec43fa7f3e0d3c4bb15ca5eb5ba43e96b1d3a267139eddd3e3",
+      "existingContractsPass": true,
+      "existingDiagnostics": [],
+      "inline": {
+        "status": "compiler-limit",
+        "diagnostics": [
+          {
+            "line": 6,
+            "column": 13,
+            "code": 2322
+          },
+          {
+            "line": 7,
+            "column": 27,
+            "code": 2339
+          },
+          {
+            "line": 7,
+            "column": 40,
+            "code": 2551
+          },
+          {
+            "line": 11,
+            "column": 7,
+            "code": 2322
+          }
+        ]
+      },
+      "inlineDiagnostics": [
+        "src/transition-inference-limit.ts(6,13): error TS2322: Type '(input: number) => Result<Readonly<{ input: number; value: number; }>, \"Declined\">' is not assignable to type 'never'.",
+        "src/transition-inference-limit.ts(7,27): error TS2339: Property 'input' does not exist on type 'number'.",
+        "src/transition-inference-limit.ts(7,40): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+        "src/transition-inference-limit.ts(11,7): error TS2322: Type 'true' is not assignable to type 'false'."
+      ],
+      "minimalAccepted": false,
+      "minimalDiagnostics": [
+        "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+        "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+        "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+        "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+      ],
+      "wrongResultControl": {
+        "compilerRejected": true,
+        "observerRejected": false,
+        "diagnostics": [
+          "src/transition-inference-limit.ts(6,13): error TS2322: Type '(input: number) => Result<Readonly<{ input: number; value: number; }>, \"Declined\">' is not assignable to type 'never'.",
+          "src/transition-inference-limit.ts(7,27): error TS2339: Property 'input' does not exist on type 'number'.",
+          "src/transition-inference-limit.ts(7,40): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "src/transition-inference-limit.ts(11,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      }
+    },
+    {
+      "name": "counterfactual-skip-disabled",
+      "modifiedCompiler": true,
+      "compilerPackageVersion": "6.0.3",
+      "compilerImplementationSha256": "492c9af4c52129b27d19ecd1fea12e780052adbb99205ab24e13717332dbbe94",
+      "existingContractsPass": true,
+      "existingDiagnostics": [],
+      "inline": {
+        "status": "supported",
+        "diagnostics": []
+      },
+      "inlineDiagnostics": [],
+      "minimalAccepted": true,
+      "minimalDiagnostics": [],
+      "wrongResultControl": {
+        "compilerRejected": true,
+        "observerRejected": true,
+        "diagnostics": [
+          "src/transition-inference-limit.ts(11,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      }
+    }
+  ]
+}

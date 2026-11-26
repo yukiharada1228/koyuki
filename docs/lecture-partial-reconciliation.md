@@ -1,5 +1,7 @@
 # 部分充足9話題を、残る作業の種類ごとに再点検する
 
+[inline要件のcompiler境界](inline-inference-compiler-boundary.md)では、TS6の一時コピーで呼出し保留の分岐を切り分けた。製品のinline制限は未解消のまま、配布検査は正しい構文の不受理を必須にせず、厳密な型を保った改善も許容する。通常buildにcompiler改変は使わない。
+
 [動的に選ぶ要件関数](with-input-alternatives.md)も、dispatch関数を挟まずwithInputへ渡せるようにした。全候補が受け取れる入力を要求し、成功値・エラーの和と既存generic関数の型保持を検査する。名前なしinline・遷移中の深いgeneric変換・独立利用者の評価・原音確認は残る。
 
 [財務のエラー型](procurement-finance-errors.md)を、ドメイン・通常・詳細・再送まで保持する。6つの互換関数の結果も推論し、保存エラーの追加情報と広い履歴の成功型を維持する。独立利用者の評価や講演全体の未確認範囲は残る。
