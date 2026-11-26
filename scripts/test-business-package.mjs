@@ -241,6 +241,19 @@ try {
     } finally { writeFileSync(financeDomain, preciseFinance); }
   }
   console.log('Verified order variants, precise next states and placed-state proof, including both negative controls.');
+  let widenedReceiptCount = 0;
+  const preciseReceipts = readFileSync(financeDomain, 'utf8');
+  const widenedReceipts = preciseReceipts.replace(/Result<Change<Extract<Receipt, \{ readonly state: '[a-z]+' \}>>, RuleError>/g,
+    () => { widenedReceiptCount++; return 'Result<Change<Receipt>, RuleError>'; });
+  if (widenedReceiptCount !== 4) throw Error(`Unexpected receipt producer count: ${widenedReceiptCount}`);
+  try {
+    writeFileSync(financeDomain, widenedReceipts);
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    const contracts = output.split('\n').filter(line => line.includes('procurement-receipt-pipeline.test.ts') && line.includes('TS2344'));
+    if (rejected.error || !rejected.status || contracts.length < 4) throw Error(`Broad receipt types did not fail the exact-state contracts:\n${output}`);
+  } finally { writeFileSync(financeDomain, preciseReceipts); }
+  console.log('Verified receipt states reach stock plans and public operations, and reject widened producer types.');
   // Reintroduce the adapters' old silent clone behavior in this disposable copy.
   const storageGuard = join(consumer, 'procurement/storage-values.ts');
   const guardedStorage = readFileSync(storageGuard, 'utf8');

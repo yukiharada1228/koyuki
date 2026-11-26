@@ -386,21 +386,21 @@ export function checkReceipt<T extends Loaded<VersionInput, Receipt> & ReceiptFa
   if (current.state !== 'accepted' || order.state !== 'placed' || invoices.some(invoice => invoice.state === 'approved')) return failure('WrongState');
   return ok(value as CheckedReceipt<T>);
 }
-function receiptChange(result: Receipt, current: Receipt, facts: ReceiptFacts): Change<Receipt> {
+function receiptChange<T extends Receipt>(result: T, current: Receipt, facts: ReceiptFacts): Change<T> {
   const reset: Invoice[] = facts.invoices.filter(invoice => invoice.state === 'matched').map(invoice => ({ kind: 'invoice', state: 'registered',
     id: invoice.id, groupId: invoice.groupId, orderId: invoice.orderId, amountCents: invoice.amountCents, version: invoice.version + 1 }));
   return plan(result, [check(current), check(facts.order), ...facts.invoices.map(check)],
     [{ ...facts.order, version: facts.order.version + 1 }, result, ...reset]);
 }
-export function returnReceipt(value: Loaded<ReasonInput, Receipt> & ReceiptFacts): Result<Change<Receipt>, RuleError> {
+export function returnReceipt(value: Loaded<ReasonInput, Receipt> & ReceiptFacts): Result<Change<Extract<Receipt, { readonly state: 'returned' }>>, RuleError> {
   const checked = checkReceipt(value); if (!checked.ok) return checked;
   return returnCheckedReceipt(checked.value);
 }
-export function returnCheckedReceipt(value: CheckedReceipt<Loaded<ReasonInput, Receipt> & ReceiptFacts>): Result<Change<Receipt>, RuleError> {
+export function returnCheckedReceipt(value: CheckedReceipt<Loaded<ReasonInput, Receipt> & ReceiptFacts>): Result<Change<Extract<Receipt, { readonly state: 'returned' }>>, RuleError> {
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
   return ok(receiptChange({ ...value.current, state: 'returned', returnedBy: value.actor.id, reason: value.input.reason.trim(), version: value.current.version + 1 }, value.current, value));
 }
-export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFacts): Result<Change<Receipt>, RuleError> {
+export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFacts): Result<Change<Extract<Receipt, { readonly state: 'accepted' }>>, RuleError> {
   const checked = checkReceipt(value); if (!checked.ok) return checked;
   return correctCheckedReceipt(checked.value);
 }
@@ -410,11 +410,11 @@ export function receiptCorrectionInput(value: CheckedReceipt<Loaded<CorrectInput
 }
 // Matching context and validated receipt are connected by the declaration. The
 // private producer proof is required by the projection's input contract.
-export function finishReceiptCorrection(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>, received: ReceivedChange): Change<Receipt> {
+export function finishReceiptCorrection(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>, received: ReceivedChange): Change<Extract<Receipt, { readonly state: 'accepted' }>> {
   const result: Receipt = { ...received.result, version: value.current.version + 1 };
   return receiptChange(result, value.current, value);
 }
-export function correctCheckedReceipt(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>): Result<Change<Receipt>, RuleError> {
+export function correctCheckedReceipt(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>): Result<Change<Extract<Receipt, { readonly state: 'accepted' }>>, RuleError> {
   const parsed = receiveOrder(receiptCorrectionInput(value));
   if (!parsed.ok) return parsed;
   return ok(finishReceiptCorrection(value, parsed.value));

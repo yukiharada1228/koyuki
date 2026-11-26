@@ -74,7 +74,7 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       const saved = await repository.commit(changed.value, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
-  function receiptAction<I, C, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, decide: (value: C) => Result<Change<Receipt>, RuleError>, include: (pair: ReceiptDecision<C>) => Result<Change<T>, RuleError>) {
+  function receiptAction<I, C, T extends Receipt, LE>(load: (input: I) => Promise<Result<C, LE>>, decide: (value: C) => Result<Change<T>, RuleError>, include: (pair: ReceiptDecision<C, T>) => Result<Change<T>, RuleError>) {
     return async (input: I) => {
       const receiveLoad = capture?.('load', input);
       const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
@@ -88,7 +88,7 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       const saved = await repository.commit(changed.value, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
-  function checkedReceiptAction<I, C, V, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, RuleError>, decide: (value: V) => Result<Change<Receipt>, RuleError>, include: (pair: ReceiptDecision<V>) => Result<Change<T>, RuleError>) {
+  function checkedReceiptAction<I, C, V, T extends Receipt, LE>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, RuleError>, decide: (value: V) => Result<Change<T>, RuleError>, include: (pair: ReceiptDecision<V, T>) => Result<Change<T>, RuleError>) {
     return async (input: I) => {
       const receiveLoad = capture?.('load', input);
       const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;

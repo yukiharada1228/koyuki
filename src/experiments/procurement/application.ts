@@ -1,7 +1,7 @@
-import { receiveDecision, returnDecision, correctDecision } from './receipt-pipeline.js';
+import { receiveStockDecision, returnStockDecision, correctStockDecision } from './receipt-pipeline.js';
 import { requestCreationDecision, requestEditDecision } from './request-pipeline.js';
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
-import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
+import { checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, ok, type Result } from '../../framework/index.js';
 import { checkReceipt, checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
@@ -39,9 +39,9 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
     } });
   const receipts = business({ name: 'procurement.receipt.v1', load: context.receive,
     save: <T extends Receipt>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
-      receive: [receiveDecision, includeReceivedStock],
-      return: { load: context.receipt<ReasonInput>, run: [checkReceipt, returnDecision, includeChangedStock] },
-      correct: { load: context.receipt<CorrectInput>, run: [checkReceipt, correctDecision, includeChangedStock] },
+      receive: [receiveStockDecision],
+      return: { load: context.receipt<ReasonInput>, run: [checkReceipt, returnStockDecision] },
+      correct: { load: context.receipt<CorrectInput>, run: [checkReceipt, correctStockDecision] },
     } });
   const invoices = business({ name: 'procurement.invoice.v1', load: context.register,
     save: <T extends Invoice>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {

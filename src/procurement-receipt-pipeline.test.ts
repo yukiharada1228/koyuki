@@ -4,7 +4,8 @@ import { business, err, ok } from './framework/index.js';
 import { checkReceipt, returnReceipt, correctReceipt, returnCheckedReceipt, correctCheckedReceipt, receiveOrder, receiptCorrectionInput, finishReceiptCorrection, createRequest, type ReceivedChange, type Actor, type Order, type Receipt, type Stock, type Invoice, type Change } from './experiments/procurement/domain.js';
 import { receiveDecision, returnDecision, correctDecision } from './experiments/procurement/receipt-pipeline.js';
 import { includeReceivedStock, includeChangedStock, receiveIntoStock, returnFromStock, correctInStock, type ReceiveStockContext, type ReceiptStockContext } from './experiments/procurement/inventory.js';
-import { procurement } from './experiments/procurement/application.js';
+import { procurement, procurementChanges } from './experiments/procurement/application.js';
+import { procurementReplay } from './experiments/procurement/replay.js';
 import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 const buyer: Actor = { id: 'buyer', role: 'buyer', groupId: 'g1', active: true };
@@ -163,3 +164,35 @@ function typeContracts() {
   } });
 }
 void typeContracts;
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Assert<T extends true> = T;
+type Value<R> = R extends { ok: true; value: infer T } ? T : never;
+type AcceptedReceipt = Extract<Receipt, { state: 'accepted' }>;
+type ReturnedReceipt = Extract<Receipt, { state: 'returned' }>;
+type ProducerContracts = [
+  Assert<Equal<Value<ReturnType<typeof returnReceipt>>, Change<ReturnedReceipt>>>,
+  Assert<Equal<Value<ReturnType<typeof returnCheckedReceipt>>, Change<ReturnedReceipt>>>,
+  Assert<Equal<Value<ReturnType<typeof correctReceipt>>, Change<AcceptedReceipt>>>,
+  Assert<Equal<Value<ReturnType<typeof correctCheckedReceipt>>, Change<AcceptedReceipt>>>,
+  Assert<Equal<ReturnType<typeof finishReceiptCorrection>, Change<AcceptedReceipt>>>,
+  Assert<Equal<Value<ReturnType<typeof receiveIntoStock>>, Change<AcceptedReceipt>>>,
+  Assert<Equal<Value<ReturnType<typeof returnFromStock>>, Change<ReturnedReceipt>>>,
+  Assert<Equal<Value<ReturnType<typeof correctInStock>>, Change<AcceptedReceipt>>>,
+];
+function nextStateContracts(repository: SqliteProcurement) {
+  const commands = procurement(repository, warehouse, policy);
+  type Success<F extends (...args: never[]) => unknown> = Value<Awaited<ReturnType<F>>>;
+  type Accepted = Extract<Receipt, { state: 'accepted' }>;
+  type Returned = Extract<Receipt, { state: 'returned' }>;
+  type Contracts = [
+    Assert<Equal<Success<typeof commands.receipts.receive>, Accepted>>,
+    Assert<Equal<Success<typeof commands.receipts.return>, Returned>>,
+    Assert<Equal<Success<typeof commands.receipts.correct>, Accepted>>,
+  ];
+  const detailed = procurementChanges(repository, warehouse, policy);
+  type Detail = Assert<Equal<Success<typeof detailed.receipts.return>['result'], Returned>>;
+  const replay = procurementReplay(repository, warehouse, policy);
+  type History = Success<typeof replay.receipts.return.run> extends { value: { result: infer T } } ? T : never;
+  type Historical = Assert<Equal<History, Receipt>>;
+}

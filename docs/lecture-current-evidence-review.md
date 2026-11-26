@@ -1,5 +1,8 @@
 # 全84話題の判定と現行実装への経路を点検する
 
+[Receiptの次状態型](procurement-receipt-state-types.md)も、在庫計画と通常公開操作まで保持した。
+既存Workflowで追加のcallback注釈を避ける限定例であり、一般の推論制限と判定数は維持する。
+
 [購買6モデルの状態型の再点検](procurement-state-contract-review.md)で、注文の直和と
 検証成功後・次状態の型を揃えた。Receipt側に残る型の拡大も区別して記録する。
 
