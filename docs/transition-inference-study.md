@@ -2,7 +2,8 @@
 
 [遷移全体の入力保持](transition-pair-context.md)では、名前付きのgeneric要件を具体的な前段へ適用できるようにした。
 元の名前付きidentityと未注釈evolveの例も受理する。以下の過去の不受理の記録は、各commit時点の結果として読む。
-名前なしinlineと未確定のTを使う別のgeneric呼び出し元は、引き続き未解消である。
+未確定のTを使う別のgeneric呼び出し元のidentity・入力保持も後続で対応した。
+名前なしinlineと共有generic関数の入れ子の出力には、引き続き制限が残る。
 
 ## 既存のstepで書ける範囲と残る制限
 
@@ -20,8 +21,8 @@ const flow = transition(defineTransition({
 
 入力number、結果Result<number, 'Declined'>の厳密一致、実行結果、要件失敗時にevolveを
 実行しないこと、不整合な入力型の拒否を[回帰検査](../src/transition-inline-step.test.ts)で確認した。
-独立したgenericな呼び出し元の例も追加フィールドを保持するが、その例ではvalidateの戻り値を
-Result<T, never>と明示する必要がある。すべての型注釈を省略できるという保証ではない。
+独立したgenericな呼び出し元の先行検証では、validateの戻り値をResult<T, never>と明示していた。
+後続のidentity・入力保持の検査では戻り型も推論する。すべての型注釈を省略できるという保証ではない。
 
 [呼び出し方の比較](transition-inference-call-sites.json)は、f8d4b19のクリーンなソースと
 TypeScript 7.0.2による結果である。先に変数へ束縛する従来の回避と、オブジェクト内で

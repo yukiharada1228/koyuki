@@ -3,6 +3,8 @@
 defineTransitionで名前付きのgenericな要件を並べたとき、前段の具体的な文脈をevolveへ渡せるようにした。
 evolveの引数へ同じ文脈型を指定し直したり、要件を具体型のcallbackで包み直したりする必要がない。
 新しい公開APIや実行処理は追加していない。
+呼び出し元の入力型Tも未確定な場合は、入力保持をすべての型について保証する関数の契約を先に確認する。
+これにより、別のgenericな呼び出し元からもidentityや入力を保持する値生成を接続できる。
 
 ```ts
 import { defineTransition, transition, step, withInput, ok, err, type Result } from 'koyuki';
@@ -30,6 +32,17 @@ const double = transition(defineTransition({
 }));
 const doubled = double.run(3);
 if (!doubled.ok || doubled.value !== 6) throw Error('Unexpected identity composition');
+
+function forward<T>(input: T) {
+  return transition(defineTransition({
+    validate: (value: T) => ok(value),
+    require: [step('identity', withInput(identity))],
+    evolve: pair => ok({ before: pair.input, after: pair.value }),
+  })).run(input);
+}
+const input = { correlationId: 'original' }, forwarded = forward(input);
+if (!forwarded.ok || forwarded.value.before !== input || forwarded.value.after !== input)
+  throw Error('Generic caller lost its input');
 ```
 
 quoteはcurrencyを知らない通常のgeneric関数であり、withInputは元のContextと計算したnumberを返す。
@@ -38,6 +51,11 @@ quoteはcurrencyを知らない通常のgeneric関数であり、withInputは元
 本文のコードを実tarballで型検査・実行し、Node型を読み込まない構成でも検査する。
 
 ## 補正の条件
+
+最初に、要件関数が「どんなTでもinput:Tを返す」、または「input:Tとvalue:Tを返す」という契約を持つか調べる。
+その契約があれば、未確定のTを持つ呼び出し元でも入力の対応を維持できる。
+ここでも、補正した型が元の出力の部分型であることを確認し、既存の検証済み情報を消さない。
+単にunknownを受け取れる通常の関数を、そのようなgeneric関数として扱うわけではない。
 
 すでにinputの型が前段の入力を保証している組は、出力型をそのまま使う。
 これにより、独立したgenericな呼び出し元でTを使う既存の厳密な対応を維持する。
@@ -61,7 +79,7 @@ inputだけを保持する場合と、identityのようにvalueも同じ型を�
 広い通常関数・保証のない関数Union・異なる入力・unknownのvalueの補完は拒否する。
 既存のscoped generic関数の厳密型、step単独のTからitem:Tへの対応も変更しない。
 
-全体1,150件、TypeScript 6.0.3/7.0.2の実tarball consumer各806件で確認した。
+初回のeba9335では全体1,150件、TypeScript 6.0.3/7.0.2の実tarball consumer各806件で確認した。
 15個の不正宣言と、finance/order/receipt/storageの既存対照検査も維持する。
 実行時のJavaScriptモジュールは28のままで、外部実行依存やNode型の要求は追加していない。
 
@@ -71,11 +89,18 @@ eba9335のクリーンなソースで、元の名前付きidentity probeを再�
 不受理から受理へ変わった。既存契約の追加診断は0。
 minimal欄は変更していない名前なしの最小fixtureであり、名前付きの修正済み宣言ではない。
 
+後続の修正で、未確定のTを使う別のgeneric呼び出し元でのidentityの厳密一致も対応した。
+入力だけを保持し、独立したnumberを計算するgeneric関数も接続する。
+新しい例ではvalidateの戻り型も推論し、Result<T, never>の重複注釈を必要としない。
+追加の3ケースは、inline/先行束縛、privateなclass、元の参照、失敗時の後続停止を検査する。
+unknownの値や広い通常関数、保証のない関数UnionからTを補完する宣言は拒否する。
+この追加後は全体1,153件、TypeScript 6.0.3/7.0.2の実tarball consumer各809件で検査する。
+
 一般の多相変換を適用できるという保証ではない。
-名前なしのwithInput直接呼出しと、未確定のTを使う別のgeneric呼び出し元でのidentityの厳密一致は未解消である。
-後者の再現はcollectorの`--probe generic-identity-scoped-caller`で検査できる。
-以前から通っているscoped generic callbackの例まで不受理になったという意味ではない。
-[6.0.3](transition-pair-limits6.json)・[7.0.2](transition-pair-limits7.json)で両残件を同じソースから再現し、既存契約の追加診断が0であることも記録した。
+名前なしのwithInput直接呼出しと、共有generic関数によるTからitem:Tへの入れ子の対応は別の制限として残る。
+後者はcollectorの`--probe generic-wrap-scoped-caller`で再現できる。
+step単独のgenericな呼出しと、具体的なcallbackでTからitem:Tを作る既存の例は引き続き厳密一致を検査する。
+[6.0.3](transition-pair-limits6.json)・[7.0.2](transition-pair-limits7.json)にあるidentityの不受理はeba9335時点の履歴であり、現在の制限とは区別する。
 
 collectorの過去の宣言変更候補は、元のcommitで再現する。新しい宣言形状へ部分的に適用しないよう拒否する。
 現在の宣言は`--only current`で検査する。

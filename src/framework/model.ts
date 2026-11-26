@@ -134,12 +134,21 @@ type InputPairOutput<F, I, O, E> = [StageCall<F>] extends [(input: I) => Result<
 // Keep already-concrete pairs exactly as declared, including a scoped generic
 // caller's T. Only specialize a wider pair if its actual producer promises the
 // candidate for this input, and the candidate retains all declared output facts.
-type PairOutput<F, I, O = StageOutput<F>, E = StageFailure<F>> = [O] extends [{ readonly input: I; readonly value: unknown }] ? O
+type ContextPairOutput<F, I, O, E> = [O] extends [{ readonly input: I; readonly value: unknown }] ? O
   : [O] extends [{ readonly input: unknown; readonly value: unknown }]
     ? [StageCall<F>] extends [(input: I) => Result<PairShape<O, I, true>, E>]
       ? [PairShape<O, I, true>] extends [O] ? PairShape<O, I, true> : InputPairOutput<F, I, O, E>
       : InputPairOutput<F, I, O, E>
     : O;
+// Prove an unconstrained producer's promise for every T before comparing its
+// broad output with a caller's still-generic I. That comparison may be deferred.
+// The subtype guards retain output facts; ordinary/bounded producers continue
+// through the concrete-context checks above.
+type PairOutput<F, I, O = StageOutput<F>, E = StageFailure<F>> = [StageCall<F>] extends [<T>(input: T) => Result<PairShape<O, T, true>, E>]
+  ? [PairShape<O, I, true>] extends [O] ? PairShape<O, I, true> : ContextPairOutput<F, I, O, E>
+  : [StageCall<F>] extends [<T>(input: T) => Result<PairShape<O, T, false>, E>]
+    ? [PairShape<O, I, false>] extends [O] ? PairShape<O, I, false> : ContextPairOutput<F, I, O, E>
+    : ContextPairOutput<F, I, O, E>;
 type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<PairOutput<H, I>, R> : I;
 type ConnectedStages<I, T extends readonly AnyStage[]> = T extends readonly [infer H extends AnyStage, ...infer R extends readonly AnyStage[]]
   ? readonly [Stage<I, PairOutput<H, I>, StageFailure<H>>, ...ConnectedStages<PairOutput<H, I>, R>]

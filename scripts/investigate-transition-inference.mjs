@@ -61,6 +61,11 @@ const exact: Equal<typeof result, Result<{ before: typeof input; after: typeof i
 void exact;
 `,
 };
+probes['generic-wrap-scoped-caller'] = probes['generic-identity-scoped-caller']
+  .replace("const identity = <I>(input: I): Result<I, 'Declined'> => ok(input);", "const wrap = <I>(input: I): Result<{ item: I }, 'Declined'> => ok({ item: input });")
+  .replace("step('identity', withInput(identity))", "step('wrap', withInput(wrap))")
+  .replace('after: pair.value }', 'after: pair.value.item }');
+if (!probes['generic-wrap-scoped-caller'].includes('withInput(wrap)') || !probes['generic-wrap-scoped-caller'].includes('after: pair.value.item')) throw Error('Generic wrapper probe changed');
 probes['business-input-pair-explicit'] = probes['business-input-pair'].split('// Direct generic withInput calls')[0];
 probes['business-input-pair-inline'] = probes['business-input-pair-explicit']
   .replace('[explicitQuote, finish]', '[withInput((value: Context) => quote(value)), finish]');

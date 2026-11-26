@@ -168,3 +168,68 @@ function unsafeSpecialization() {
   });
 }
 void unsafeSpecialization;
+
+for (const variant of ['inline', 'bound'] as const) test(`a separately generic caller retains both sides of an identity pair: ${variant}`, () => {
+  const calls: string[] = [];
+  function identity<T>(value: T): Result<T, 'Declined'> {
+    calls.push('identity'); return value === 'reject' ? err('Declined') : ok(value);
+  }
+  const named = step('identity', withInput(identity));
+  function forward<T>(input: T) {
+    const flow = transition(defineTransition({
+      validate: (value: T) => { calls.push('validate'); return ok(value); },
+      require: [variant === 'inline' ? step('identity', withInput(identity)) : named],
+      evolve: pair => {
+        type ExactPair = Assert<Equal<typeof pair, Readonly<{ input: T; value: T }>>>;
+        assert(Object.isFrozen(pair)); calls.push('evolve'); return ok({ before: pair.input, after: pair.value });
+      },
+    }));
+    return flow.run(input);
+  }
+  const input = { id: 'one', currency: 'JPY' as const }, result = forward(input);
+  type Exact = Assert<Equal<typeof result, Result<{ before: typeof input; after: typeof input }, 'Declined'>>>;
+  assert(result.ok); assert.strictEqual(result.value.before, input); assert.strictEqual(result.value.after, input);
+  assert.deepEqual(calls.splice(0), ['validate', 'identity', 'evolve']);
+  class Context { #token = 'trusted'; token() { return this.#token; } }
+  const opaque = new Context(), preserved = forward(opaque);
+  type Opaque = Assert<Equal<typeof preserved, Result<{ before: Context; after: Context }, 'Declined'>>>;
+  assert(preserved.ok); assert.strictEqual(preserved.value.after, opaque); assert.equal(preserved.value.before.token(), 'trusted');
+  calls.splice(0); assert.deepEqual(forward('reject'), err('Declined'));
+  assert.deepEqual(calls, ['validate', 'identity']);
+});
+
+test('a separately generic caller retains input without assuming its computed value is an identity', () => {
+  function score<T>(value: T): Result<number, 'Declined'> { return value === null ? err('Declined') : ok(7); }
+  function forward<T>(input: T) {
+    return transition(defineTransition({ validate: (value: T) => ok(value),
+      require: [step('score', withInput(score))], evolve: pair => {
+        type Pair = Assert<Equal<typeof pair, Readonly<{ input: T; value: number }>>>;
+        return ok({ original: pair.input, score: pair.value });
+      },
+    })).run(input);
+  }
+  const input = { correlationId: 'original' }, result = forward(input);
+  type Exact = Assert<Equal<typeof result, Result<{ original: typeof input; score: number }, 'Declined'>>>;
+  assert(result.ok); assert.strictEqual(result.value.original, input); assert.equal(result.value.score, 7);
+  assert.deepEqual(forward(null), err('Declined'));
+});
+
+function unsafeUniversalSpecialization<T>(input: T) {
+  const broad = (_value: unknown): Result<Readonly<{ input: unknown; value: unknown }>, never> => ok({ input: null, value: null });
+  const finish = (pair: Readonly<{ input: T; value: T }>) => ok(pair);
+  // @ts-expect-error accepting any input does not promise to return either member with that input's type
+  defineTransition({ validate: (value: T): Result<T, never> => ok(value), require: [step('broad', broad)], evolve: finish });
+  const unknownValue = <V>(value: V): Result<Readonly<{ input: V; value: unknown }>, never> => ok({ input: value, value: null });
+  defineTransition({ validate: (value: T): Result<T, never> => ok(value), require: [step('unknown', unknownValue)], evolve: pair => {
+    const before: T = pair.input;
+    type StillUnknown = Assert<Equal<typeof pair.value, unknown>>;
+    // @ts-expect-error a universal input promise does not correlate an unknown value with T
+    const after: T = pair.value;
+    return ok({ before, after });
+  } });
+  const alternative = Math.random() ? withInput(<V>(value: V) => ok(value)) : broad;
+  // @ts-expect-error every producer in the union must promise the correspondence required by finish
+  defineTransition({ validate: (value: T): Result<T, never> => ok(value), require: [step('alternative', alternative)], evolve: finish });
+  void input;
+}
+void unsafeUniversalSpecialization;
