@@ -528,6 +528,26 @@
         "src/transition-inline-step.test.ts",
         "src/framework/model.ts"
       ]
+    },
+    "valueFieldContextFollowUp": {
+      "implementationBaseCommit": "9830feb23ba3e891e5a0bdd6b6638ac8b749e15d",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Implementation-only follow-up. For input/value pairs, infer value field correspondence from per-field universal producer promises, intersecting declared field facts. Require both a declared-output subtype and a combined universal producer promise before publishing the candidate. Preserve all union variants, fixed fields, optional/readonly members, index signatures, private symbols and opaque class identity. Share the internal type-only inference with business so ordinary stages connect directly without a composition Workflow. Keep legacy non-pair inference and declared input capture before unknown-input loader comparisons, including narrower method request fields. Seventeen additional runtime/static installed-consumer cases cover these contracts and failure stopping. The original shared generic item:T probe is accepted on TypeScript 6.0.3/7.0.2 with the same hash as its earlier refusal. Deeper nested values, non-pair generic record intermediates and unnamed inline calls remain compiler limits. No runtime body, public entry-point API, runtime dependency, new source/audio/frame review or independent-user evidence is added. Partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/transition-pair-context.md",
+        "docs/value-field-context6.json",
+        "docs/value-field-context7.json",
+        "docs/value-field-limits6.json",
+        "docs/value-field-limits7.json",
+        "src/transition-value-fields.test.ts",
+        "src/framework/model.ts",
+        "src/framework/business.ts"
+      ]
     }
   },
   "sections": [

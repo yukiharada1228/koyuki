@@ -1,0 +1,34 @@
+{
+  "collectedAt": "2026-11-26T17:26:36.431Z",
+  "sourceGitCommit": "9830feb23ba3e891e5a0bdd6b6638ac8b749e15d",
+  "sourceDirty": false,
+  "collectorSha256": "13592129718bb1dcfd0a7fdae6dc6065d0b2ba717a2f790a2d32d28c6f655750",
+  "probeSha256": "753e2a38bb7258ef40879cba252c69e8724d82296cbcb0019355d8936691cb4c",
+  "probeVariant": "generic-wrap-scoped-caller",
+  "compiler": "Version 7.0.2",
+  "modelSourceSha256": "d628a6b6238121ca426310dd03e36364caefc986bbd573f211e2a0cd4919c7c4",
+  "existingContractsPass": true,
+  "minimal": {
+    "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+    "baselineAccepted": true,
+    "accepted": false,
+    "diagnostics": [
+      "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+      "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+      "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+      "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+    ]
+  },
+  "results": [
+    {
+      "name": "current",
+      "accepted": true,
+      "inlineProbeAccepted": true,
+      "probeAccepted": true,
+      "probeDiagnosticSites": [],
+      "probeDiagnosticCodes": [],
+      "existingContractDiagnostics": 0,
+      "existingDiagnosticSites": []
+    }
+  ]
+}
