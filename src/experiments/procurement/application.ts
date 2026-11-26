@@ -1,8 +1,9 @@
 import { receiveDecision, returnDecision, correctDecision } from './receipt-pipeline.js';
+import { requestCreationDecision } from './request-pipeline.js';
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
 import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, ok, type Result } from '../../framework/index.js';
-import { checkReceipt, checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, createRequest, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice,
+import { checkReceipt, checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
@@ -20,7 +21,7 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   };
   const requests = business({ name: 'procurement.request.v1', load: context.create,
     save: <T extends Request>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
-      create: [createRequest],
+      create: [requestCreationDecision],
       edit: { load: context.request<EditInput>, run: [checkBuyerRequest, editCheckedRequest] },
       withdraw: { load: context.request<VersionInput>, run: [checkBuyerRequest, withdrawCheckedRequest] },
       reject: { load: context.request<ReasonInput>, run: [checkApproverRequest, rejectCheckedRequest] },

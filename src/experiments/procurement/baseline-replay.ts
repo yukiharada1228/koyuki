@@ -1,3 +1,4 @@
+import { baselineStepName } from './trace-contract.js';
 import type { Result, Execution, Receipt, ReplayReport, ReplayTrace, Trace, ReplayInputError } from '../../framework/index.js';
 import { plainProcurement, plainWithCommit } from './plain.js';
 import { helperWithCommit } from './helper.js';
@@ -54,7 +55,7 @@ export function baselineReplay(mode: 'plain' | 'helper', repository: ReplayRepos
           },
         };
         const declared = factory(bound, actor, policy, detailed ? event => stages.push({
-          step: event.stage === 'load' ? `${operation}:load` : event.stage === 'rule' ? 'run:1' : event.stage === 'rule:2' ? 'run:2' : operation, status: event.status,
+          step: baselineStepName(operation, event.stage), status: event.status,
         }) : undefined);
         const command = (declared[group] as unknown as Record<string, (input: unknown) => Promise<Result<Entity, Failure>>>)[name]!;
         const result = await command(call.input);

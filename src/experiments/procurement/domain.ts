@@ -54,7 +54,9 @@ export const check = (entity: Entity): Check => ({ kind: entity.kind, id: entity
 const absent = (kind: Entity['kind'], groupId: string, id: string): Check => ({ kind, groupId, id, version: null });
 const plan = <T extends Entity>(result: T, checks: readonly Check[], writes: readonly Entity[] = [result]): Change<T> => ({ result, writes, checks });
 const failure = (kind: RuleError['kind']): Result<never, RuleError> => err({ kind });
-function lines(value: unknown): Result<readonly Line[], RuleError> {
+declare const parsedRequestLinesProof: unique symbol;
+export type ParsedRequestLines = readonly Line[] & Readonly<{ [parsedRequestLinesProof]: true }>;
+export function parseRequestLines(value: unknown): Result<ParsedRequestLines, RuleError> {
   if (!Array.isArray(value) || !value.length || value.length > 1000) return failure('InvalidInput');
   const seen = new Set<string>(), parsed: Line[] = [];
   let total = 0;
@@ -66,16 +68,28 @@ function lines(value: unknown): Result<readonly Line[], RuleError> {
     if (!Number.isSafeInteger(total)) return failure('InvalidInput');
     seen.add(row.sku); parsed.push(Object.freeze({ sku: row.sku, quantity: row.quantity, unitCents: row.unitCents }) as Line);
   }
-  return ok(Object.freeze(parsed));
+  return ok(Object.freeze(parsed) as ParsedRequestLines);
 }
-export function createRequest(value: Readonly<{ input: CreateInput; actor: Actor }>): Result<Change<Draft>, RuleError> {
+const lines = parseRequestLines;
+type RequestCreation = Readonly<{ input: CreateInput; actor: Actor }>;
+declare const requestCreationProof: unique symbol;
+export type CheckedRequestCreation = RequestCreation & Readonly<{ [requestCreationProof]: true }>;
+export function checkRequestCreation(value: RequestCreation): Result<CheckedRequestCreation, RuleError> {
   const { input, actor } = value;
   if (!allowed(actor, 'buyer', actor.groupId)) return failure('Denied');
   if (!id(input.id)) return failure('InvalidInput');
-  const parsed = lines(input.lines); if (!parsed.ok) return parsed;
+  return ok(value as CheckedRequestCreation);
+}
+export function requestCreationPlan(value: CheckedRequestCreation, parsed: ParsedRequestLines): Change<Draft> {
+  const { input, actor } = value;
   const result: Draft = stamp('request-draft', { kind: 'request', state: 'draft', id: input.id, groupId: actor.groupId, ownerId: actor.id, version: 1,
-    lines: parsed.value, totalCents: parsed.value.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) });
-  return ok(plan(result, [absent('request', actor.groupId, input.id)]));
+    lines: parsed, totalCents: parsed.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) });
+  return plan(result, [absent('request', actor.groupId, input.id)]);
+}
+export function createRequest(value: RequestCreation): Result<Change<Draft>, RuleError> {
+  const checked = checkRequestCreation(value); if (!checked.ok) return checked;
+  const parsed = lines(value.input.lines); if (!parsed.ok) return parsed;
+  return ok(requestCreationPlan(checked.value, parsed.value));
 }
 export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<Submitted | FirstReview>, RuleError> {
   const checked = checkBuyerRequest(value); if (!checked.ok) return checked;

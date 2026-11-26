@@ -26,7 +26,7 @@ async function selected(build: Builder) {
   const report = await build(repository).requests.create.runDetailed(input, { input: () => selected, result: result => result.ok });
   selected.label = 'changed-after-report';
   assert(report.result.ok); assert.equal(repository.commits, 1);
-  assert.equal(report.observations.length, 3); assert.deepEqual(report.observationErrors, []);
+  assert.equal(report.observations.length, 5); assert.deepEqual(report.observationErrors, []);
   assert(report.observations.every(entry => entry.input.label === 'selected-before-clone'));
   assert(!JSON.stringify(report).includes('private-input-123'));
   assert(Object.isFrozen(report.observations)); assert(Object.isFrozen(report.observations[0]));
@@ -38,12 +38,12 @@ async function captureFailures(build: Builder) {
   const inputFailure = await commands.requests.create.runDetailed(input, {
     input: () => { throw new Error('private-capture-error'); }, result: () => { resultCalls++; return true; },
   });
-  assert(inputFailure.result.ok); assert.equal(resultCalls, 0); assert.equal(inputFailure.observations.length, 0); assert.equal(inputFailure.observationErrors.length, 3);
+  assert(inputFailure.result.ok); assert.equal(resultCalls, 0); assert.equal(inputFailure.observations.length, 0); assert.equal(inputFailure.observationErrors.length, 5);
   assert(!JSON.stringify(inputFailure.observationErrors).includes('private-capture-error'));
   const resultFailure = await commands.requests.create.runDetailed({ ...input, id: 'second' }, {
     input: () => null, result: (_result, step) => step === 'procurement.request.v1.create' ? () => 'not-cloneable' : true,
   });
-  assert(resultFailure.result.ok); assert.equal(resultFailure.observations.length, 2);
+  assert(resultFailure.result.ok); assert.equal(resultFailure.observations.length, 4);
   assert.deepEqual(resultFailure.observationErrors, [{ step: 'procurement.request.v1.create', phase: 'result', kind: 'CaptureFailed' }]);
   assert.equal(repository.commits, 2); assert.equal(repository.list('request', actor).length, 2);
   return { inputFailure, resultFailure };
@@ -52,7 +52,7 @@ async function failedRule(build: Builder) {
   const repository = new MemoryProcurement();
   const report = await build(repository).requests.create.runDetailed({ id: 'bad', lines: [] }, { input: () => 'selected', result: result => result.ok ? 'ok' : 'failed' });
   assert.deepEqual(report.result, { ok: false, error: { kind: 'InvalidInput' } });
-  assert.equal(report.observations.length, 2); assert.equal(repository.commits, 0);
+  assert.equal(report.observations.length, 3); assert.equal(repository.commits, 0);
   assert.equal(report.observations.at(-1)?.result, 'failed'); return report;
 }
 async function concurrent(build: Builder) {

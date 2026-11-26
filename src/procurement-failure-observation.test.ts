@@ -91,7 +91,7 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
                 result: result => { resultSelections++; if (mode === 'result-failure') throw Error('private-selection-error'); return result.ok; },
               });
             } finally { rejectCommit = false; rejectRead = undefined; }
-            const steps = loadFailure ? [`${id}:load`] : failure === 'invalid' ? [`${id}:load`, 'run:1'] : [`${id}:load`, ...ruleSteps(operation), id];
+            const steps = loadFailure ? [`${id}:load`] : failure === 'invalid' ? [`${id}:load`, ...(operation === 'requests.create' ? ['authorize-creation', 'parse-lines'] : ['run:1'])] : [`${id}:load`, ...ruleSteps(operation), id];
             assert.deepEqual(report.result, err({ kind: failure === 'invalid' ? 'InvalidInput' : 'Conflict' }), operation);
             assert.deepEqual(report.trace, steps.map((step, index) => ({ step, status: index === steps.length - 1 ? 'error' : 'ok' })), operation);
             if (failure !== 'save-conflict') assert.equal(report.plan, null);
@@ -158,7 +158,7 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
       assert.equal(positions.length, 32);
       assert.deepEqual([...new Set(selected.map(row => `${row.operation}#${row.readAt}`))].sort(), positions);
     }
-    assert.equal(inputSelections, 266); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 266);
+    assert.equal(inputSelections, 272); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 272);
     return { outcome, reports, reads, commits };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }
 }

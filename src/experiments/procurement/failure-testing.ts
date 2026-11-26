@@ -5,7 +5,7 @@ export const operations = [
   'invoices.register', 'invoices.match', 'invoices.approve', 'invoices.void', 'payments.record', 'payments.cancel',
   'inventory.reserve', 'inventory.release', 'inventory.move', 'inventory.adjust',
 ].sort();
-export const split = new Set(['inventory.reserve', 'inventory.release', 'inventory.move', 'inventory.adjust', 'requests.submit', 'requests.approve', 'orders.place', 'requests.edit', 'requests.withdraw', 'requests.reject', 'requests.return', 'requests.reassign',
+export const split = new Set(['requests.create', 'inventory.reserve', 'inventory.release', 'inventory.move', 'inventory.adjust', 'requests.submit', 'requests.approve', 'orders.place', 'requests.edit', 'requests.withdraw', 'requests.reject', 'requests.return', 'requests.reassign',
   'orders.amend', 'orders.cancel', 'orders.complete', 'invoices.approve', 'invoices.void', 'receipts.receive', 'receipts.return', 'receipts.correct']);
 // Independent expected topology of these host loaders, counting read (not related).
 export const readCounts: Record<string, number> = Object.fromEntries(operations.map(name => [name, 1]));
@@ -17,9 +17,11 @@ export const relatedCounts: Record<string, number> = Object.fromEntries(operatio
 for (const name of ['orders.place', 'receipts.receive', 'invoices.register', 'invoices.match', 'payments.record']) relatedCounts[name] = 1;
 for (const name of ['orders.amend', 'orders.cancel', 'orders.complete', 'receipts.return', 'receipts.correct']) relatedCounts[name] = 2;
 
-export const threeStage = new Set(['receipts.return']);
+export const threeStage = new Set(['requests.create', 'receipts.return']);
 
 // Fixed trace names, not reflected from the runtime declaration under test.
-export const ruleSteps = (operation: string): string[] => operation === 'receipts.correct'
+export const ruleSteps = (operation: string): string[] => operation === 'requests.create'
+  ? ['authorize-creation', 'parse-lines', 'create-request-plan']
+  : operation === 'receipts.correct'
   ? ['run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3']
   : threeStage.has(operation) ? ['run:1', 'run:2', 'run:3'] : split.has(operation) ? ['run:1', 'run:2'] : ['run:1'];

@@ -1,3 +1,4 @@
+import { baselineStepName } from './trace-contract.js';
 import type { ActionReport, Result, Trace, WorkflowCapture, ObservationReport } from '../../framework/index.js';
 import type { StudyCommands } from './comparison-contract.js';
 import type { StageSink, StageCapture } from './trace-contract.js';
@@ -29,7 +30,7 @@ export function baselineDetail<const F extends Factory>(factory: F, repository: 
         let plan: unknown = null;
         const observations: { step: string; input: unknown; result: unknown }[] = [];
         const observationErrors: { step: string; phase: 'input' | 'result'; kind: 'CaptureFailed' }[] = [];
-        const stepName = (stage: Parameters<StageCapture>[0]) => stage === 'load' ? `${operation}:load` : stage === 'rule' ? 'run:1' : stage === 'rule:2' ? group === 'receipts' && name === 'correct' ? 'revalidate-correction' : 'run:2' : stage === 'rule:3' ? group === 'receipts' && name === 'correct' ? 'correct-receipt-plan' : 'run:3' : stage === 'rule:4' ? 'run:3' : operation;
+        const stepName = (stage: Parameters<StageCapture>[0]) => baselineStepName(operation, stage);
         const record: StageCapture | undefined = capture ? (stage, value) => {
           const step = stepName(stage); let selected: unknown;
           try { selected = structuredClone(capture.input(value, step)); }
