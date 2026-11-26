@@ -1,5 +1,7 @@
 # 部分充足9話題を、残る作業の種類ごとに再点検する
 
+[普通のgeneric recordの接続](ordinary-generic-records.md)で、input/valueのラッパーなしでも共有関数のフィールド対応を保持するようにした。深い入れ子・名前なしinline・原資料確認・独立利用者評価は残る。
+
 [遷移全体の入力保持](transition-pair-context.md)で、名前付きのgeneric要件から未注釈evolveへ具体的な文脈を渡せるようにした。
 元のidentityと未確定のTを使う別のgeneric呼び出し元にも対応した。名前なしinline・一般の多相変換・独立利用者の評価は残る。
 共有generic関数のvalueフィールド・tuple・直和も型の対応を保持する。さらに深い共有generic関数の変換は別の残件とする。

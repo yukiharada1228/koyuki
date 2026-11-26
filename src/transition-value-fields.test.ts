@@ -256,3 +256,87 @@ function rejectedRefinements<T>(input: T) {
   void input;
 }
 void rejectedRefinements;
+
+// Ordinary records must retain generic correlation without a withInput wrapper.
+for (const named of [false, true]) test(`ordinary generic records retain caller input without a pair wrapper: ${named}`, async () => {
+  type RecordOf<T> = Readonly<{ before: T; after: T; maybe?: T; count: number; kind: 'record' }>;
+  const wrap = <T>(input: T): Result<RecordOf<T>, 'Refused'> => input === null ? err('Refused') : ok({ before: input, after: input, maybe: input, count: 2, kind: 'record' });
+  const stage = named ? step('record', wrap) : wrap;
+  function forward<T>(input: T) {
+    return transition(defineTransition({ validate: (value: T) => ok(value), require: [stage], evolve: value => {
+      type Exact = Assert<Equal<typeof value, RecordOf<T>>>;
+      return ok(value);
+    } })).run(input);
+  }
+  let saves = 0;
+  function application<T>(initial: T) {
+    const finish = (value: RecordOf<T>) => ok(value);
+    return business({ name: 'ordinary-record', load: async (_id: string) => ok(initial),
+      save: async (value: RecordOf<T>): Promise<Result<RecordOf<T>, 'Conflict'>> => { saves++; return ok(value); },
+      operations: { create: [stage, finish] },
+    });
+  }
+  class Input { #token = 'trusted'; token() { return this.#token; } }
+  const input = new Input(), result = forward(input); assert(result.ok);
+  type Exact = Assert<Equal<typeof result.value, RecordOf<Input>>>;
+  assert.strictEqual(result.value.before, input); assert.equal(result.value.after.token(), 'trusted');
+  const app = application(input), saved = await app.create('id'); assert(saved.ok);
+  type API = Assert<Equal<Awaited<ReturnType<typeof app.create>>, Result<RecordOf<Input>, 'Refused' | 'Conflict'>>>;
+  assert.strictEqual(saved.value.after, input); assert.equal(saves, 1);
+  assert.deepEqual(forward(null), err('Refused'));
+  assert.deepEqual(await application(null).create('id'), err('Refused')); assert.equal(saves, 1);
+});
+
+test('ordinary record inference retains unrelated unknowns, union alternatives and private classes', () => {
+  const wrap = <T>(input: T): Result<{ payload: T; unrelated: unknown }, never> => ok({ payload: input, unrelated: null });
+  function forward<T>(input: T) {
+    return transition(defineTransition({ validate: (value: T) => ok(value), require: [wrap], evolve: value => {
+      type Exact = Assert<Equal<typeof value, { payload: T; unrelated: unknown }>>;
+      return ok(value);
+    } })).run(input);
+  }
+  assert.deepEqual(forward(3), ok({ payload: 3, unrelated: null }));
+  class Box<T> { #proof = true; constructor(readonly payload: T) {} proof() { return this.#proof; } }
+  const boxed = <T>(input: T) => ok(new Box(input));
+  const flow = transition(defineTransition({ validate: (value: number) => ok(value), require: [boxed], evolve: value => {
+    type Private = Assert<Equal<typeof value, Box<unknown>>>;
+    return ok(value);
+  } }));
+  const result = flow.run(4); assert(result.ok); assert(result.value instanceof Box); assert(result.value.proof());
+  const union = <T>(input: T): Result<{ kind: 'left'; payload: T } | { kind: 'right'; count: number }, never> => ok({ kind: 'left', payload: input });
+  const choice = transition(defineTransition({ validate: (value: number) => ok(value), require: [union], evolve: value => {
+    if (value.kind === 'left') { type Payload = Assert<Equal<typeof value.payload, number>>; }
+    else { type Count = Assert<Equal<typeof value.count, number>>; }
+    return ok(value);
+  } }));
+  assert.deepEqual(choice.run(5), ok({ kind: 'left', payload: 5 }));
+});
+
+function rejectedOrdinaryRefinements() {
+  const broad = (_input: unknown): Result<{ payload: unknown }, never> => ok({ payload: null });
+  defineTransition({ validate: (value: number) => ok(value),
+    // @ts-expect-error A broad monomorphic producer cannot invent a number payload.
+    require: [broad, (value: { payload: number }) => ok(value)], evolve: value => ok(value),
+  });
+}
+void rejectedOrdinaryRefinements;
+
+function ordinaryOverlapping<T>(input: T): Result<{ a: T } | { b: unknown }, never>;
+function ordinaryOverlapping<T>(input: T): Result<{ a: unknown } | { b: T }, never>;
+function ordinaryOverlapping(input: unknown): Result<{ a: unknown } | { b: unknown }, never>;
+function ordinaryOverlapping(_input: unknown): Result<{ a: unknown } | { b: unknown }, never> { return ok({ a: null, b: null }); }
+
+test('ordinary records require a joint producer promise and retain private proofs', () => {
+  const flow = transition(defineTransition({ validate: (value: number) => ok(value), require: [ordinaryOverlapping], evolve: value => {
+    type Exact = Assert<Equal<typeof value, { a: unknown } | { b: unknown }>>;
+    return ok(value);
+  } }));
+  assert.deepEqual(flow.run(3), ok({ a: null, b: null }));
+  const proof: unique symbol = Symbol('proof');
+  const trusted = <T>(payload: T): Result<{ payload: T; readonly [proof]: true }, never> => ok({ payload, [proof]: true });
+  const secured = transition(defineTransition({ validate: (value: number) => ok(value), require: [trusted], evolve: value => {
+    type Exact = Assert<Equal<typeof value, { payload: number; readonly [proof]: true }>>;
+    return ok(value);
+  } }));
+  const result = secured.run(4); assert(result.ok); assert.equal(result.value[proof], true); assert.equal(result.value.payload, 4);
+});

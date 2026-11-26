@@ -1,5 +1,7 @@
 # 3講演に対する現在の判定
 
+[普通のgeneric recordの接続](ordinary-generic-records.md)で、input/valueのラッパーなしでも共有関数のフィールド対応を保持するようにした。深い入れ子・名前なしinline・原資料確認・独立利用者評価は残る。
+
 **部分充足。業務の状態・検証・遷移を宣言し、接続と実行を委譲する核は実装・検証している。**
 
 後続の[関数列の入力保持](business-input-retention.md)では、先に束縛したgenericなwithInputを追加のContext callback注釈なしで接続できるようにした。

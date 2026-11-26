@@ -1,5 +1,7 @@
 # inlineのgeneric要件と遷移callbackの推論
 
+[普通のgeneric recordの接続](ordinary-generic-records.md)で、input/valueのラッパーなしでも共有関数のフィールド対応を保持するようにした。深い入れ子・名前なしinline・原資料確認・独立利用者評価は残る。
+
 [遷移全体の入力保持](transition-pair-context.md)では、名前付きのgeneric要件を具体的な前段へ適用できるようにした。
 元の名前付きidentityと未注釈evolveの例も受理する。以下の過去の不受理の記録は、各commit時点の結果として読む。
 未確定のTを使う別のgeneric呼び出し元のidentity・入力保持も後続で対応した。

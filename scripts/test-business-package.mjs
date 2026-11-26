@@ -221,6 +221,9 @@ try {
   const transitionPairGuide = readFileSync(join(root, 'docs/transition-pair-context.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
   if (!transitionPairGuide) throw Error('Transition pair guide requires a complete TS block');
   writeFileSync(join(consumer, 'transition-pair-guide.ts'), transitionPairGuide);
+  const ordinaryRecordGuide = readFileSync(join(root, 'docs/ordinary-generic-records.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
+  if (!ordinaryRecordGuide) throw Error('Ordinary record guide requires a complete TS block');
+  writeFileSync(join(consumer, 'ordinary-record-guide.ts'), ordinaryRecordGuide);
   console.log(run('npm', ['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], consumer));
   if (run('npm', ['exec', '--', 'tsc', '--version'], consumer).trim() !== `Version ${tools.typescript}`) throw Error('Consumer compiler differs from requested version');
   console.log(`Verifying packed declarations with TypeScript ${tools.typescript}; package was built with the repository compiler.`);
@@ -299,10 +302,11 @@ try {
   console.log(run('npm', ['exec', '--', 'tsx', 'business-quickstart.ts'], consumer));
   run('npm', ['exec', '--', 'tsx', 'business-retention-guide.ts'], consumer);
   run('npm', ['exec', '--', 'tsx', 'transition-pair-guide.ts'], consumer);
+  run('npm', ['exec', '--', 'tsx', 'ordinary-record-guide.ts'], consumer);
   writeFileSync(join(consumer, 'tsconfig.no-node.json'), JSON.stringify({ compilerOptions: {
     target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true,
     noEmit: true, types: [], lib: ['ES2022', 'DOM'],
-  }, files: ['business-types.ts', 'business-quickstart.ts', 'business-retention-guide.ts', 'transition-pair-guide.ts'] }));
+  }, files: ['business-types.ts', 'business-quickstart.ts', 'business-retention-guide.ts', 'transition-pair-guide.ts', 'ordinary-record-guide.ts'] }));
   console.log(run('npm', ['exec', '--', 'tsc', '-p', 'tsconfig.no-node.json'], consumer));
 
   copyFileSync(join(root, 'scripts/fixtures/leave-business-diagnostics.ts'), join(consumer, 'business-diagnostics.ts'));

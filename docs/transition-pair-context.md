@@ -148,8 +148,8 @@ privateなclass型とpair側の判別子の相関も維持する。businessの�
 一般の多相変換を適用できるという保証ではない。
 名前なしのwithInput直接呼出しと、item.value:Tのようにさらに深い共有generic関数の対応には制限が残る。
 後者はcollectorの`--probe generic-deep-wrap-scoped-caller`で再現できる。
-この補正はinput/valueの組を対象とする。組を介さない共有generic関数のrecord出力も、`--probe generic-record-scoped-caller`の別の残件として再現する。
-[現在の6.0.3](value-field-limits6.json)・[7.0.2](value-field-limits7.json)で、これら3種類の残件を同じソースから再現し、既存契約の追加診断は0であることを確認した。
+この時点の補正はinput/valueの組が対象だった。後続の[普通のgeneric recordの接続](ordinary-generic-records.md)では、組を介さない共有generic関数のrecord出力にも対応した。`--probe generic-record-scoped-caller`は同じ再現例で追跡する。
+[9830feb時点の6.0.3](value-field-limits6.json)・[7.0.2](value-field-limits7.json)では、当時の3種類の残件を同じソースから再現し、既存契約の追加診断は0であることを確認した。
 step単独のgenericな呼出しと、具体的なcallbackでTからitem:Tを作る既存の例は引き続き厳密一致を検査する。
 [6.0.3](transition-pair-limits6.json)・[7.0.2](transition-pair-limits7.json)にあるidentityの不受理はeba9335時点の履歴であり、現在の制限とは区別する。
 [81d68a7の6.0.3](universal-pair-limits6.json)・[7.0.2](universal-pair-limits7.json)のitem:Tの不受理も、その時点の履歴として保持する。

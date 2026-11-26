@@ -167,7 +167,24 @@ export type UniversalRuleOutput<R, I, O, E, Fallback> = [R] extends [<T>(input: 
   : [R] extends [<T>(input: T) => Result<PairShape<O, T, false>, E>]
     ? [PairShape<O, I, false>] extends [O] ? UniversalValuePair<R, I, O, E> : Fallback
     : Fallback;
-type PairOutput<F, I, O = StageOutput<F>, E = StageFailure<F>> = UniversalRuleOutput<StageCall<F>, I, O, E, ContextPairOutput<F, I, O, E>>;
+// Determine correlation independently of the caller's still-generic input.
+// Distribute keys across variants, but test each key against the entire union.
+type CorrelatedKeys<R, O, E, Whole = O> = O extends unknown
+  ? { [K in keyof O]-?: [R] extends [<T>(input: T) => Result<ValueField<Whole, K, T>, E>] ? K : never }[keyof O] : never;
+type UniversalRecordFields<R, O, I, E, Keys = CorrelatedKeys<R, O, E>> = {
+  [K in keyof O]: K extends Keys ? I & O[K] : O[K]
+};
+/** Internal ordinary-record inference; not exported by the package entry point. */
+export type UniversalRecordOutput<R, I, O, E, Fallback> = [O] extends [object]
+  ? [UniversalRecordFields<R, O, I, E>] extends [O]
+    ? [R] extends [<T>(input: T) => Result<UniversalRecordFields<R, O, T, E>, E>]
+      ? [R] extends [(input: I) => Result<UniversalRecordFields<R, O, I, E>, E>]
+        ? UniversalRecordFields<R, O, I, E> : Fallback
+      : Fallback
+    : Fallback : Fallback;
+type PairOutput<F, I, O = StageOutput<F>, E = StageFailure<F>> = [O] extends [{ readonly input: unknown; readonly value: unknown }]
+  ? UniversalRuleOutput<StageCall<F>, I, O, E, ContextPairOutput<F, I, O, E>>
+  : UniversalRecordOutput<StageCall<F>, I, O, E, ContextPairOutput<F, I, O, E>>;
 type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<PairOutput<H, I>, R> : I;
 type ConnectedStages<I, T extends readonly AnyStage[]> = T extends readonly [infer H extends AnyStage, ...infer R extends readonly AnyStage[]]
   ? readonly [Stage<I, PairOutput<H, I>, StageFailure<H>>, ...ConnectedStages<PairOutput<H, I>, R>]

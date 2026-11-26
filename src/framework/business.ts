@@ -5,7 +5,7 @@ import { captureLoad, type ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
 import { workflow, Workflow, observeEvaluation, type Evaluation, type WorkflowCapture, type Rule, type StageObserver, type StageReceiver } from './workflow.js';
 import type { Result } from './result.js';
-import type { Step, UniversalRuleOutput } from './model.js';
+import type { Step, UniversalRuleOutput, UniversalRecordOutput } from './model.js';
 import type { GroupExecution } from './use-case-group.js';
 import type { Receipt, Execution } from './replay.js';
 import { createObservation, observeEffect, type ObservationReport } from './observation.js';
@@ -92,7 +92,7 @@ type ContextStageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
     : [RuleOf<F>] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : InputPairOutput<F, I>;
 type StageOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }]
   ? UniversalRuleOutput<RuleOf<F>, I, Out<F>, ErrorOf<F>, ContextStageOutput<F, I>>
-  : ContextStageOutput<F, I>;
+  : UniversalRecordOutput<RuleOf<F>, I, Out<F>, ErrorOf<F>, ContextStageOutput<F, I>>;
 // Tail recursion carries the concrete context across generic identity checks.
 // Unknown-length arrays retain the original mapped fallback.
 type Outputs<C, P extends readonly Stage[], A extends readonly unknown[] = readonly []> = number extends P['length']
