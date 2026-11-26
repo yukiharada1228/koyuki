@@ -1,0 +1,107 @@
+{
+  "schema": "koyuki.universal-pair-limits.v1",
+  "scope": "Current-source compiler probes only. Shared generic nested outputs and unnamed inline calls remain limits; not a runtime or independent-user evaluation.",
+  "records": [
+    {
+      "collectedAt": "2026-11-26T16:37:09.368Z",
+      "sourceGitCommit": "81d68a7ecb1fb0fe488bf9e09cfccd3d9dd73432",
+      "sourceDirty": false,
+      "collectorSha256": "e58fa14f5f74314447af5a98b3c66bd1dd87162861e32fecb5ca108b8b8e1d19",
+      "probeSha256": "753e2a38bb7258ef40879cba252c69e8724d82296cbcb0019355d8936691cb4c",
+      "probeVariant": "generic-wrap-scoped-caller",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "6454cace768416857ef08bcb47406f270150a3ccd0eb22f76471f9d3a9b7192b",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 14,
+              "column": 7,
+              "code": "TS2322"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2322"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    },
+    {
+      "collectedAt": "2026-11-26T16:37:11.886Z",
+      "sourceGitCommit": "81d68a7ecb1fb0fe488bf9e09cfccd3d9dd73432",
+      "sourceDirty": false,
+      "collectorSha256": "e58fa14f5f74314447af5a98b3c66bd1dd87162861e32fecb5ca108b8b8e1d19",
+      "probeSha256": "899696b841a89b581b7e17af4ab27bd52c000316d6c2a606f51a660c68a6ed5d",
+      "probeVariant": "inline",
+      "compiler": "Version 7.0.2",
+      "modelSourceSha256": "6454cace768416857ef08bcb47406f270150a3ccd0eb22f76471f9d3a9b7192b",
+      "existingContractsPass": true,
+      "minimal": {
+        "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",
+        "baselineAccepted": true,
+        "accepted": false,
+        "diagnostics": [
+          "minimal.ts(21,64): error TS2322: Type '(input: number) => { input: number; value: number; }' is not assignable to type 'undefined'.",
+          "minimal.ts(21,94): error TS2339: Property 'input' does not exist on type 'number'.",
+          "minimal.ts(21,104): error TS2551: Property 'value' does not exist on type 'number'. Did you mean 'valueOf'?",
+          "minimal.ts(22,7): error TS2322: Type 'true' is not assignable to type 'false'."
+        ]
+      },
+      "results": [
+        {
+          "name": "current",
+          "accepted": false,
+          "inlineProbeAccepted": false,
+          "probeAccepted": false,
+          "probeDiagnosticSites": [
+            {
+              "line": 6,
+              "column": 13,
+              "code": "TS2322"
+            },
+            {
+              "line": 7,
+              "column": 27,
+              "code": "TS2339"
+            },
+            {
+              "line": 7,
+              "column": 40,
+              "code": "TS2551"
+            },
+            {
+              "line": 11,
+              "column": 7,
+              "code": "TS2322"
+            }
+          ],
+          "probeDiagnosticCodes": [
+            "TS2322",
+            "TS2339",
+            "TS2551"
+          ],
+          "existingContractDiagnostics": 0,
+          "existingDiagnosticSites": []
+        }
+      ]
+    }
+  ]
+}

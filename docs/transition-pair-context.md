@@ -95,12 +95,15 @@ minimal欄は変更していない名前なしの最小fixtureであり、名前
 追加の3ケースは、inline/先行束縛、privateなclass、元の参照、失敗時の後続停止を検査する。
 unknownの値や広い通常関数、保証のない関数UnionからTを補完する宣言は拒否する。
 この追加後は全体1,153件、TypeScript 6.0.3/7.0.2の実tarball consumer各809件で検査する。
+[6.0.3の追加記録](universal-pair-context6.json)・[7.0.2の追加記録](universal-pair-context7.json)は81d68a7のクリーンなソースの結果である。
+eba9335の残件記録と同じprobeのhashで、別のgeneric呼び出し元のidentityが不受理から受理へ変わった。既存契約の追加診断は0。
 
 一般の多相変換を適用できるという保証ではない。
 名前なしのwithInput直接呼出しと、共有generic関数によるTからitem:Tへの入れ子の対応は別の制限として残る。
 後者はcollectorの`--probe generic-wrap-scoped-caller`で再現できる。
 step単独のgenericな呼出しと、具体的なcallbackでTからitem:Tを作る既存の例は引き続き厳密一致を検査する。
 [6.0.3](transition-pair-limits6.json)・[7.0.2](transition-pair-limits7.json)にあるidentityの不受理はeba9335時点の履歴であり、現在の制限とは区別する。
+[現在の6.0.3](universal-pair-limits6.json)・[7.0.2](universal-pair-limits7.json)では、共有generic関数の入れ子の出力と名前なしinlineを同じソースから再現した。
 
 collectorの過去の宣言変更候補は、元のcommitで再現する。新しい宣言形状へ部分的に適用しないよう拒否する。
 現在の宣言は`--only current`で検査する。

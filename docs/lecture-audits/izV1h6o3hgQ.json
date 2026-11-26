@@ -572,6 +572,25 @@
         "src/transition-inline-step.test.ts",
         "src/framework/model.ts"
       ]
+    },
+    "universalPairContextFollowUp": {
+      "implementationBaseCommit": "81d68a7ecb1fb0fe488bf9e09cfccd3d9dd73432",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up. Check a producer promise for every unconstrained input T before a still-generic caller comparison can be deferred. Both-member identity and input-only retention keep the subtype guards and existing concrete-context fallback. The original independently generic identity probe is now accepted on TypeScript 6.0.3/7.0.2 with the same probe hash as its earlier refusal. Three additional runtime/static consumer cases cover bound/inline identity, inferred validation return types, record/private class identity, distinct numeric output and failure stopping. Broad monomorphic outputs, unknown success-value correlation and unsafe dynamic alternatives cannot supply T to a consumer. Shared generic nested outputs and unnamed inline calls remain rejected with no existing contract diagnostics. No runtime body, public API, dependency, new lecture-source/audio/frame review or independent-user evidence is added; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/transition-pair-context.md",
+        "docs/universal-pair-context6.json",
+        "docs/universal-pair-context7.json",
+        "docs/universal-pair-limits6.json",
+        "docs/universal-pair-limits7.json",
+        "src/transition-inline-step.test.ts",
+        "src/framework/model.ts"
+      ]
     }
   },
   "sections": [
