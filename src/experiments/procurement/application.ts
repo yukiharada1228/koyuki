@@ -26,19 +26,19 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
       create: [step('authorize-creation', checkRequestCreation), step('parse-lines', parsedRequestInput), step('create-request-plan', creationPlan)],
       edit: { load: context.request<EditInput>, run: [checkBuyerRequest, step('require-draft', checkRequestEdit),
         step('parse-lines', parsedRequestInput), step('edit-request-plan', editPlan)] },
-      withdraw: { load: context.request<VersionInput>, run: [checkBuyerRequest, withdrawCheckedRequest] },
-      reject: { load: context.request<ReasonInput>, run: [checkApproverRequest, rejectCheckedRequest] },
-      return: { load: context.request<VersionInput>, run: [checkApproverRequest, returnCheckedRequest] },
+      withdraw: { load: context.request, run: [checkBuyerRequest, withdrawCheckedRequest] },
+      reject: { load: context.request, run: [checkApproverRequest, rejectCheckedRequest] },
+      return: { load: context.request, run: [checkApproverRequest, returnCheckedRequest] },
       reassign: { load: context.approval, run: [checkApproverRequest, reassignCheckedRequest] },
       submit: { load: context.approval, run: [checkBuyerRequest, submitCheckedRequest] },
-      approve: { load: context.request<VersionInput>, run: [checkApproverRequest, approveCheckedRequest] },
+      approve: { load: context.request, run: [checkApproverRequest, approveCheckedRequest] },
     } });
   const orders = business({ name: 'procurement.order.v1', load: context.place,
     save: <T extends Order>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       place: [checkBuyerRequest, placeCheckedOrder],
-      amend: { load: context.order<AmendInput>, run: [checkOrder, amendCheckedOrder] },
-      cancel: { load: context.order<VersionInput>, run: [checkOrder, cancelCheckedOrder] },
-      complete: { load: context.order<VersionInput>, run: [checkOrder, completeCheckedOrder] },
+      amend: { load: context.order, run: [checkOrder, amendCheckedOrder] },
+      cancel: { load: context.order, run: [checkOrder, cancelCheckedOrder] },
+      complete: { load: context.order, run: [checkOrder, completeCheckedOrder] },
     } });
   const receipts = business({ name: 'procurement.receipt.v1', load: context.receive,
     save: <T extends Receipt>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
@@ -52,19 +52,19 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   const invoices = business({ name: 'procurement.invoice.v1', load: context.register,
     save: <T extends Invoice>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       register: [checkInvoiceRegistration, registerCheckedInvoice],
-      approve: { load: context.invoice<VersionInput>, run: [checkInvoice, approveCheckedInvoice] },
-      void: { load: context.invoice<ReasonInput>, run: [checkInvoice, voidCheckedInvoice] },
+      approve: { load: context.invoice, run: [checkInvoice, approveCheckedInvoice] },
+      void: { load: context.invoice, run: [checkInvoice, voidCheckedInvoice] },
       match: { load: context.match, run: [checkInvoiceMatching, matchCheckedInvoice] },
     } });
   const payments = business({ name: 'procurement.payment.v1', load: context.record,
     save: <T extends Payment>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       record: [checkPaymentRecording, recordCheckedPayment], cancel: { load: context.payment, run: [checkPaymentCancellation, cancelCheckedPayment] },
     } });
-  const inventory = business({ name: 'procurement.inventory.v1', load: context.inventory<StockInput>,
+  const inventory = business({ name: 'procurement.inventory.v1', load: context.inventory,
     save: <T extends Stock>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
       reserve: [checkStock, reserveCheckedStock], release: [checkStock, releaseCheckedStock],
-      move: { load: context.inventory<MoveInput>, run: [checkStock, moveCheckedStock] },
-      adjust: { load: context.inventory<AdjustInput>, run: [checkStock, adjustCheckedStock] },
+      move: { load: context.inventory, run: [checkStock, moveCheckedStock] },
+      adjust: { load: context.inventory, run: [checkStock, adjustCheckedStock] },
     } });
   return { requests, orders, receipts, invoices, payments, inventory };
 }

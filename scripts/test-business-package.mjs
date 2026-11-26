@@ -222,6 +222,7 @@ try {
   writeFileSync(join(consumer, 'generic-object-correlation.test.ts'), readFileSync(join(root, 'src/generic-object-correlation.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-later-request.test.ts'), readFileSync(join(root, 'src/business-later-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-verified-request.test.ts'), readFileSync(join(root, 'src/business-verified-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-inferred-checks.test.ts'), readFileSync(join(root, 'src/business-inferred-checks.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
@@ -256,8 +257,8 @@ try {
   const loaderPromise = '[L] extends [(input: I) => Promise<Result<C, LoadError<L>>>]';
   if (checkedBusiness.split(loaderPromise).length !== 2) throw Error('Later-request loader promise changed');
   const laterLines = readFileSync(join(consumer, 'business-later-request.test.ts'), 'utf8').split('\n');
-  const refusalLine = laterLines.findIndex(line => line.includes('@ts-expect-error One loader alternative')) + 1;
-  if (!refusalLine) throw Error('Missing selected-loader refusal contract');
+  const refusalLine = laterLines.findIndex(line => line.includes('@ts-expect-error A conditional loader')) + 1;
+  if (!refusalLine) throw Error('Missing conditional-loader refusal contract');
   try {
     writeFileSync(businessDeclarations, checkedBusiness.replace(loaderPromise, 'true extends true'));
     const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
@@ -266,10 +267,10 @@ try {
       throw Error(`Removing the actual loader promise did not expose the unsafe request refinement:\n${output}`);
     }
   } finally { writeFileSync(businessDeclarations, checkedBusiness); }
-  const preservingResult = 'Result<T & O, Err>';
-  if (checkedBusiness.split(preservingResult).length !== 3) throw Error('Preserving-context signatures changed');
+  const preservingResult = /(?:Result|RuleVariants)<T & O, Err>/g;
+  if ([...checkedBusiness.matchAll(preservingResult)].length !== 2) throw Error('Preserving-context signatures changed');
   try {
-    writeFileSync(businessDeclarations, checkedBusiness.replaceAll(preservingResult, 'Result<T, Err>'));
+    writeFileSync(businessDeclarations, checkedBusiness.replace(preservingResult, match => match.replace('T & O', 'T')));
     const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
     const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
     if (rejected.error || !rejected.status || !output.split('\n').some(line => line.includes('business-verified-request.test.ts') && /TS(?:2769|2344)/.test(line))) {
@@ -286,6 +287,28 @@ try {
       throw Error(`Restricting a shared check to the loader domain did not invalidate its broader-domain contract:\n${output}`);
     }
   } finally { writeFileSync(businessDeclarations, checkedBusiness); }
+  for (const [guard, replacement, target] of [
+    ['RuleVariants<T & O, Err>', 'Result<T & O, Err>', 'business-inferred-checks.test.ts'],
+    ['PreservesRequest<A> extends true ? ', '', 'procurement/application.ts'],
+  ]) {
+    if (checkedBusiness.split(guard).length !== 2) throw Error('Inferred-rule guard changed');
+    let mutated = checkedBusiness.replace(guard, replacement);
+    if (!replacement) {
+      // Remove exactly the corresponding false branch of the extra gate.
+      const tail = ': A : A : A;';
+      if (mutated.split(tail).length !== 2) throw Error('Request-preservation gate changed');
+      mutated = mutated.replace(tail, ': A : A;');
+    }
+    try {
+      writeFileSync(businessDeclarations, mutated);
+      const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+      const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+      if (rejected.error || !rejected.status || !output.split('\n').some(line => line.includes(target) && /TS(?:2769|2344)/.test(line))) {
+        throw Error(`Removing inferred-check support or specialized-loader preservation did not fail its contract:\n${output}`);
+      }
+    } finally { writeFileSync(businessDeclarations, checkedBusiness); }
+  }
+  console.log('Verified inferred early-return checks and preservation of specialized loaders, including both negative controls.');
   console.log('Verified proof-producing checks and their declared input domains; identity-only and loader-domain reversions fail the contracts.');
   console.log('Verified later request inference and rejection of both removed inference and missing loader promise.');
   const modelDeclarations = join(consumer, 'node_modules/koyuki/dist/model.d.ts');

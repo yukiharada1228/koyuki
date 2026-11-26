@@ -916,6 +916,16 @@
           "scripts/check-exported-business.mjs",
           "scripts/fixtures/business-verified-exports.ts"
         ]
+      },
+      "inferredChecksFollowUp": {
+        "scope": "Inferred early-return Result alternatives preserve later request inference. Twelve loader type arguments were removed from the procurement application; three nested-context cases remain explicit. Product runtime is unchanged; no full-lecture, direct-audio or independent-human evaluation claim.",
+        "evidence": [
+          "docs/business-inferred-checks.md",
+          "src/business-inferred-checks.test.ts",
+          "src/business-later-request.test.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/test-business-package.mjs"
+        ]
       }
     },
     {

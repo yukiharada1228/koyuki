@@ -67,3 +67,5 @@ function createForActor<A extends Actor>(actor: A) {
 これはTypeScriptのinstantiation expressionであり、フレームワークの新しい接続APIや完成したAPIへの型アサーションではない。配布物検査では、このfactoryが生成した.d.tsだけを読み直し、操作固有の入力項目、成功値のactorの具体型、閉じたエラー型を厳密に確認する。最終APIの戻り型注釈は不要だが、この1箇所の特殊化は残る。任意の多相変換を解決したものではない。
 
 実行runtimeや公開APIの追加はない。名前なしinlineや一般の深いgeneric変換、原音等の未確認部分は別の残件であり、講演全体の完全実現を主張するものではない。
+
+[早期returnで推論された検証関数](business-inferred-checks.md)にも対応し、購買のload型引数指定を15箇所から3箇所へ減らした。入れ子の段階を持つ3箇所は維持し、実際のload保証と型の拒否条件を配布物で比較する。

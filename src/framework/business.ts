@@ -76,13 +76,20 @@ type LoaderWithLaterRequest<L extends Load,E extends Entry, I=PipelineRequest<St
 // signature comparison. This evidence is type-only and adds no runtime field.
 declare const preservedContextWitness: unique symbol;
 type ContextWitness = Readonly<{ [preservedContextWitness]: typeof preservedContextWitness }>;
+// Early returns infer a union of Results. Distribute error alternatives for the
+// reverse comparison instead of requiring callers to flatten them by annotation.
+type RuleVariants<O, E> = Result<O, never> | (E extends unknown ? Result<never, E> : never);
 type PreservedContextWitness<R, C, O, E> = [R] extends [(input: C & ContextWitness) => Result<C & ContextWitness & O, E>] ? true : false;
 type PreservesLoadedContext<L extends Load, E extends Entry, R = RuleOf<Stages<E>[0]>, C = Loaded<L>, P = DeclaredInput<R>, O = Out<Stages<E>[0]>, Err = ErrorOf<Stages<E>[0]>, Witness = PreservedContextWitness<R, P, O, Err>> =
   [C] extends [{ readonly input: unknown }] ? [R] extends [<T extends P>(input: T) => Result<T & O, Err>]
-    ? Witness extends true ? [<T extends P>(input: T) => Result<T & O, Err>] extends [R] ? true : false : false : false : false;
+    ? Witness extends true ? [<T extends P>(input: T) => RuleVariants<T & O, Err>] extends [R] ? true : false : false : false : false;
 // Gate on the raw request domain before inspecting still-generic loaded values.
 // Primitive-domain pipelines cannot benefit from an object request envelope.
-type Loader<L extends Load, E extends Entry, A extends Load=SpecializedLoader<RawLoader<L,E>,E>> = [Input<RawLoader<L,E>>] extends [object] ? PreservesLoadedContext<A,E> extends true ? LoaderWithLaterRequest<A,E> : A : A;
+// Only a loader that retains a fresh request property can be specialized again.
+// A monomorphic loader must keep its declared request, including nested pipelines.
+type PreservesRequest<L extends Load, I = Input<L> & ContextWitness> =
+  [L] extends [(input: I) => Promise<Result<LoadedRequest<Loaded<L>, I>, LoadError<L>>>] ? true : false;
+type Loader<L extends Load, E extends Entry, A extends Load=SpecializedLoader<RawLoader<L,E>,E>> = [Input<RawLoader<L,E>>] extends [object] ? PreservesRequest<A> extends true ? PreservesLoadedContext<A,E> extends true ? LoaderWithLaterRequest<A,E> : A : A : A;
 type OperationName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
 type OperationNames<T> = OperationName<keyof T>;
 // A polymorphic check may promise to return exactly its input type. Retain that

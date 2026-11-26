@@ -109,6 +109,7 @@ test('later requests also reach replay lookup and keep committed history broader
 declare const proof: unique symbol;
 declare const selected: ReturnType<typeof fixture>['load'] | ((input: Base) => Promise<Result<Context<Base>, 'LoadFailed'>>);
 declare const partial: <I extends Base>(input: I) => Promise<Result<Context<I> | { readonly input: I }, 'LoadFailed'>>;
+declare const conditional: <I extends Base>(input: I) => Promise<Result<Readonly<{ input: I; actor: I extends Submit ? number : string }>, 'LoadFailed'>>;
 declare const scoped: <I extends Base & { tenant: 'one' }>(input: I) => Promise<Result<Context<I>, 'LoadFailed'>>;
 function refusals() {
   const f = fixture();
@@ -117,6 +118,8 @@ function refusals() {
   business({ name: 'broad-rule', load: f.load, save: f.save, operations: { run: [broad, f.submit] } });
   // @ts-expect-error One loader alternative does not guarantee the specialized context.
   business({ name: 'selected', load: selected, save: f.save, operations: { run: [f.common, f.submit] } });
+  // @ts-expect-error A conditional loader changes actor for the later request subtype.
+  business({ name: 'conditional', load: conditional, save: f.save, operations: { run: [f.common, f.submit] } });
   // @ts-expect-error One successful load alternative lacks the actor required by common.
   business({ name: 'partial', load: partial, save: f.save, operations: { run: [f.common, f.submit] } });
   // @ts-expect-error Later request fields cannot erase the loader's tenant constraint.
