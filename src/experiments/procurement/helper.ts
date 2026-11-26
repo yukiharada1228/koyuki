@@ -52,7 +52,7 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       const saved = await repository.commit(change, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
-  function checkedAction<I, C, V, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, RuleError>, decide: (value: V) => Result<Change<T>, RuleError>) {
+  function checkedAction<I, C, V, T extends Entity, LE, CE extends RuleError['kind'] = never, DE extends RuleError['kind'] = never>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, Readonly<{ kind: CE }>>, decide: (value: V) => Result<Change<T>, Readonly<{ kind: DE }>>) {
     return async (input: I) => {
       const receiveLoad = capture?.('load', input);
       const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;

@@ -229,9 +229,17 @@ export function defineTransition<const A extends object, const T extends readonl
   return Object.freeze({ validate: named(validation, 'validate'), require: requirements, evolve: named(definition.evolve, 'evolve') });
 }
 
+type RequirementValue<R> = R extends { ok: true; value: infer V } ? V : never;
+type RequirementError<R> = R extends { ok: false; error: infer E } ? E : never;
+// Capture the whole result before extracting errors. Inferring E directly from
+// unrelated object error variants can select only the first variant. One public
+// signature keeps native higher-order generic propagation; the implementation
+// signature is not an additional callable overload. Three explicit type arguments
+// retain their existing meaning through R's default.
 /** Carry the original input alongside a successful requirement, without Result plumbing.
  * Only the pair is frozen. Domain values and purity remain the caller's responsibility.
  */
+export function withInput<I, O, E, R extends Result<O, E> = Result<O, E>>(rule: (input: I) => R): (input: I) => Result<Readonly<{ input: I; value: RequirementValue<R> }>, RequirementError<R>>;
 export function withInput<I, O, E>(rule: Rule<I, O, E>): (input: I) => Result<Readonly<{ input: I; value: O }>, E> {
   return input => {
     const result = rule(input);

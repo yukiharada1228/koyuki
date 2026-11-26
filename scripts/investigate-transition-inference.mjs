@@ -75,6 +75,22 @@ probes['generic-record-scoped-caller'] = probes['generic-identity-scoped-caller'
   .replace("step('identity', withInput(identity))", "step('wrap', wrap)")
   .replace('evolve: pair => ok({ before: pair.input, after: pair.value })', 'evolve: value => ok(value)');
 if (!probes['generic-record-scoped-caller'].includes("step('wrap', wrap)") || !probes['generic-record-scoped-caller'].includes('evolve: value => ok(value)')) throw Error('Generic record probe changed');
+probes['with-input-structured-errors'] = `
+import { withInput, ok, err } from './framework/index.js';
+const validate = (value: number) => value === 0 ? err({ kind: 'Zero' as const, supplied: value })
+  : value < 0 ? err({ kind: 'Negative' as const, min: 0 }) : ok(value);
+const carried = withInput(validate);
+type Failure<R> = R extends { ok: false; error: infer E } ? E : never;
+type Kind<E> = E extends { kind: infer K } ? K : never;
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const exact: Equal<Kind<Failure<ReturnType<typeof carried>>>, 'Zero' | 'Negative'> = true;
+void exact;
+`;
+probes['with-input-error-alternatives'] = probes['with-input-structured-errors']
+  .replace('const carried = withInput(validate);', "const unavailable = (_value: number) => err({ kind: 'Unavailable' as const, retryAfter: 30 });\nconst selected = Math.random() ? validate : unavailable;\nconst carried = withInput(selected);")
+  .replace("'Zero' | 'Negative'> = true", "'Zero' | 'Negative' | 'Unavailable'> = true");
+probes['with-input-error-dispatch'] = probes['with-input-error-alternatives']
+  .replace('const carried = withInput(selected);', 'const carried = withInput((value: number) => selected(value));');
 probes['business-input-pair-explicit'] = probes['business-input-pair'].split('// Direct generic withInput calls')[0];
 probes['business-input-pair-inline'] = probes['business-input-pair-explicit']
   .replace('[explicitQuote, finish]', '[withInput((value: Context) => quote(value)), finish]');

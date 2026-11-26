@@ -19,7 +19,8 @@ type Input<C> = C extends { run(input: infer I): unknown } ? I : never;
 type Output<C> = C extends { run(input: never): Promise<Result<infer O, unknown>> }
   ? O extends Committed<infer T extends Entity> ? Committed<Extract<Entity, { kind: T['kind'] }>> : O : never;
 type Tables = ReturnType<typeof procurementChanges<StorageError>>;
-type Replayed<T> = { readonly [K in keyof T]: ReturnType<typeof withReplay<ReplayCall<Input<T[K]>>, Output<T[K]>, Failure, ReplayError>> };
+type OperationFailure<C> = C extends { run(input: never): Promise<infer R> } ? R extends { ok: false; error: infer E } ? E : never : never;
+type Replayed<T> = { readonly [K in keyof T]: ReturnType<typeof withReplay<ReplayCall<Input<T[K]>>, Output<T[K]>, OperationFailure<T[K]> | ReplayError, ReplayError>> };
 type RuntimeCommand = { run(input: unknown): Promise<Result<Committed, Failure>>; runDetailed(input: unknown): Promise<ActionReport<Committed, Failure>> };
 /** Reuse all business declarations; every invocation owns its bound commit context. */
 export function procurementReplay(repository: ReplayRepository, trustedActor: Actor, configuration: Policy): { readonly [G in keyof Tables]: Replayed<Tables[G]> } {

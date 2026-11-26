@@ -10,10 +10,13 @@ import type { ProcurementRepository, StorageError } from './repository.js';
 type Failure = RuleError | StorageError | ReplayError;
 type Input<C> = C extends (input: infer I) => unknown ? I : never;
 type Value<C> = C extends (input: never) => Promise<Result<infer O, unknown>> ? O : never;
+// A stored receipt proves the entity kind, not the current transition's variant.
+type Historical<C> = Value<C> extends infer T extends Entity ? Committed<Extract<Entity, { kind: T['kind'] }>> : never;
+type OperationFailure<C> = C extends (input: never) => Promise<infer R> ? R extends { ok: false; error: infer E } ? E : never : never;
 type Tables = ReturnType<typeof plainProcurement>;
 type Replayed<T> = { readonly [G in keyof T]: { readonly [K in keyof T[G]]: {
-  readonly run: (call: ReplayCall<Input<T[G][K]>>) => Promise<Result<Execution<Committed<Value<T[G][K]> & Entity>>, Failure | ReplayInputError>>;
-  readonly runDetailed: (call: ReplayCall<Input<T[G][K]>>) => Promise<ReplayReport<Committed<Value<T[G][K]> & Entity>, Failure, ReplayError>>;
+  readonly run: (call: ReplayCall<Input<T[G][K]>>) => Promise<Result<Execution<Historical<T[G][K]>>, OperationFailure<T[G][K]> | ReplayError | ReplayInputError>>;
+  readonly runDetailed: (call: ReplayCall<Input<T[G][K]>>) => Promise<ReplayReport<Historical<T[G][K]>, OperationFailure<T[G][K]> | ReplayError, ReplayError>>;
 } } };
 const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
 const err = <E>(error: E): Result<never, E> => ({ ok: false, error });

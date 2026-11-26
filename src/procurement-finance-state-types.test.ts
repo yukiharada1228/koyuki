@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Result } from './framework/index.js';
 import { registerCheckedInvoice, matchCheckedInvoice, recordCheckedPayment, cancelCheckedPayment, registerInvoice, matchInvoice, approveInvoice, approveCheckedInvoice, voidInvoice, voidCheckedInvoice,
-  recordPayment, cancelPayment, type Invoice, type Payment, type Change, type RuleError } from './experiments/procurement/domain.js';
+  recordPayment, cancelPayment, type Invoice, type Payment, type Change } from './experiments/procurement/domain.js';
 import { procurement, procurementChanges } from './experiments/procurement/application.js';
 import { procurementReplay } from './experiments/procurement/replay.js';
 import { MemoryProcurement } from './experiments/procurement/repository.js';
@@ -24,7 +24,7 @@ type ProducerContracts = [
   Assert<Equal<ReturnType<typeof matchCheckedInvoice>, Result<Change<Matched>, never>>>,
   Assert<Equal<ReturnType<typeof recordCheckedPayment>, Result<Change<Recorded>, never>>>,
   Assert<Equal<ReturnType<typeof cancelCheckedPayment>, Result<Change<Cancelled>, never>>>,
-  Assert<Equal<ReturnType<typeof registerInvoice>, Result<Change<Registered>, RuleError>>>,
+  Assert<Equal<Produced<typeof registerInvoice>, Change<Registered>>>,
   Assert<Equal<Produced<typeof matchInvoice>, Change<Matched>>>,
   Assert<Equal<Produced<typeof approveInvoice>, Change<Approved>>>,
   Assert<Equal<Produced<typeof approveCheckedInvoice>, Change<Approved>>>,

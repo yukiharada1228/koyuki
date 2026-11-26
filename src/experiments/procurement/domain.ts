@@ -54,7 +54,8 @@ function allowed(actor: Actor, role: Actor['role'], groupId: string): boolean { 
 export const check = (entity: Entity): Check => ({ kind: entity.kind, id: entity.id, groupId: entity.groupId, version: entity.version });
 const absent = (kind: Entity['kind'], groupId: string, id: string): Check => ({ kind, groupId, id, version: null });
 const plan = <T extends Entity>(result: T, checks: readonly Check[], writes: readonly Entity[] = [result]): Change<T> => ({ result, writes, checks });
-const failure = (kind: RuleError['kind']): Result<never, RuleError> => err({ kind });
+type RuleFailure<K extends RuleError['kind']> = Readonly<{ kind: K }>;
+const failure = <K extends RuleError['kind']>(kind: K): Result<never, RuleFailure<K>> => err({ kind });
 declare const parsedRequestLinesProof: unique symbol;
 export type ParsedRequestLines = readonly Line[] & Readonly<{ [parsedRequestLinesProof]: true }>;
 export function parseRequestLines(value: unknown): Result<ParsedRequestLines, RuleError> {
@@ -171,7 +172,7 @@ export function receiveOrder<T extends Loaded<ReceiveInput, Order> & Readonly<{ 
 declare const financeTransitionProof: unique symbol;
 type InvoiceRegistration = Loaded<RegisterInput, Order> & Readonly<{ alreadyInvoiced: boolean }>;
 export type CheckedInvoiceRegistration<T extends InvoiceRegistration = InvoiceRegistration> = T & Readonly<{ current: Extract<Order, { readonly state: 'placed' }>; [financeTransitionProof]: 'register-invoice'; alreadyInvoiced: false }>;
-export function checkInvoiceRegistration<T extends InvoiceRegistration>(value: T): Result<CheckedInvoiceRegistration<T>, RuleError> {
+export function checkInvoiceRegistration<T extends InvoiceRegistration>(value: T) {
   const { input, actor, current } = value;
   if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
@@ -187,13 +188,13 @@ export function registerCheckedInvoice(value: CheckedInvoiceRegistration): Resul
   const invoice: Invoice = { kind: 'invoice', state: 'registered', id: input.invoiceId, groupId: current.groupId, orderId: current.id, version: 1, amountCents: input.amountCents };
   return ok(plan(invoice, [check(current), absent('invoice', current.groupId, invoice.id)], [{ ...current, version: current.version + 1 }, invoice]));
 }
-export function registerInvoice(value: InvoiceRegistration): Result<Change<Extract<Invoice, { readonly state: 'registered' }>>, RuleError> {
+export function registerInvoice(value: InvoiceRegistration) {
   const checked = checkInvoiceRegistration(value); if (!checked.ok) return checked;
   return registerCheckedInvoice(checked.value);
 }
 type InvoiceMatching = Loaded<VersionInput, Invoice> & Readonly<{ order: Order; receipts: readonly Receipt[] }>;
 export type CheckedInvoiceMatching<T extends InvoiceMatching = InvoiceMatching> = T & Readonly<{ current: Extract<Invoice, { readonly state: 'registered' }>; [financeTransitionProof]: 'match-invoice' }>;
-export function checkInvoiceMatching<T extends InvoiceMatching>(value: T): Result<CheckedInvoiceMatching<T>, RuleError> {
+export function checkInvoiceMatching<T extends InvoiceMatching>(value: T) {
   const { input, actor, current, order, receipts } = value;
   if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
@@ -208,7 +209,7 @@ export function matchCheckedInvoice(value: CheckedInvoiceMatching): Result<Chang
   const { current, order, receipts } = value;
   return ok(plan({ ...current, state: 'matched', receiptIds: receipts.filter(receipt => receipt.state === 'accepted').map(receipt => receipt.id), version: current.version + 1 }, [check(current), check(order)]));
 }
-export function matchInvoice(value: InvoiceMatching): Result<Change<Extract<Invoice, { readonly state: 'matched' }>>, RuleError> {
+export function matchInvoice(value: InvoiceMatching) {
   const checked = checkInvoiceMatching(value); if (!checked.ok) return checked;
   return matchCheckedInvoice(checked.value);
 }
@@ -341,7 +342,7 @@ export function completeCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Or
 
 declare const invoiceCheck: unique symbol;
 export type CheckedInvoice<T> = T & Readonly<{ [invoiceCheck]: true }>;
-export function checkInvoice<T extends Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>>(value: T): Result<CheckedInvoice<T>, RuleError> {
+export function checkInvoice<T extends Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>>(value: T) {
   const { input, actor, current, order } = value;
   if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
   if (input.id !== current.id || order.id !== current.orderId || order.groupId !== current.groupId) return failure('TargetMismatch');
@@ -349,20 +350,20 @@ export function checkInvoice<T extends Loaded<VersionInput, Invoice> & Readonly<
   if (input.expectedVersion !== current.version) return failure('Conflict');
   return ok(value as CheckedInvoice<T>);
 }
-export function approveInvoice(value: Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>): Result<Change<Extract<Invoice, { readonly state: 'approved' }>>, RuleError> {
+export function approveInvoice(value: Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>) {
   const checked = checkInvoice(value); if (!checked.ok) return checked;
   return approveCheckedInvoice(checked.value);
 }
-export function approveCheckedInvoice(value: CheckedInvoice<Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>>): Result<Change<Extract<Invoice, { readonly state: 'approved' }>>, RuleError> {
+export function approveCheckedInvoice(value: CheckedInvoice<Loaded<VersionInput, Invoice> & Readonly<{ order: Order }>>): Result<Change<Extract<Invoice, { readonly state: 'approved' }>>, RuleFailure<'WrongState'>> {
   const current = value.current;
   if (current.state !== 'matched' || value.order.state === 'cancelled') return failure('WrongState');
   return ok(plan({ ...current, state: 'approved', approvedBy: value.actor.id, version: current.version + 1 }, [check(current), check(value.order)]));
 }
-export function voidInvoice(value: Loaded<ReasonInput, Invoice> & Readonly<{ order: Order }>): Result<Change<Extract<Invoice, { readonly state: 'voided' }>>, RuleError> {
+export function voidInvoice(value: Loaded<ReasonInput, Invoice> & Readonly<{ order: Order }>) {
   const checked = checkInvoice(value); if (!checked.ok) return checked;
   return voidCheckedInvoice(checked.value);
 }
-export function voidCheckedInvoice(value: CheckedInvoice<Loaded<ReasonInput, Invoice> & Readonly<{ order: Order }>>): Result<Change<Extract<Invoice, { readonly state: 'voided' }>>, RuleError> {
+export function voidCheckedInvoice(value: CheckedInvoice<Loaded<ReasonInput, Invoice> & Readonly<{ order: Order }>>): Result<Change<Extract<Invoice, { readonly state: 'voided' }>>, RuleFailure<'WrongState' | 'InvalidInput'>> {
   const current = value.current, order = value.order;
   if ((current.state !== 'registered' && current.state !== 'matched') || order.state !== 'placed') return failure('WrongState');
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
@@ -373,7 +374,7 @@ export function voidCheckedInvoice(value: CheckedInvoice<Loaded<ReasonInput, Inv
 
 type PaymentRecording = Loaded<PaymentInput, Invoice> & Readonly<{ alreadyRecorded: boolean }>;
 export type CheckedPaymentRecording<T extends PaymentRecording = PaymentRecording> = T & Readonly<{ current: Extract<Invoice, { readonly state: 'approved' }>; [financeTransitionProof]: 'record-payment'; alreadyRecorded: false }>;
-export function checkPaymentRecording<T extends PaymentRecording>(value: T): Result<CheckedPaymentRecording<T>, RuleError> {
+export function checkPaymentRecording<T extends PaymentRecording>(value: T) {
   const { input, actor, current } = value;
   if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
   if (input.id !== current.id) return failure('TargetMismatch');
@@ -390,13 +391,13 @@ export function recordCheckedPayment(value: CheckedPaymentRecording): Result<Cha
     invoiceId: current.id, amountCents: current.amountCents, reference: input.reference, recordedBy: actor.id };
   return ok(plan(result, [check(current), absent('payment', current.groupId, result.id)]));
 }
-export function recordPayment(value: PaymentRecording): Result<Change<Extract<Payment, { readonly state: 'recorded' }>>, RuleError> {
+export function recordPayment(value: PaymentRecording) {
   const checked = checkPaymentRecording(value); if (!checked.ok) return checked;
   return recordCheckedPayment(checked.value);
 }
 type PaymentCancellation = Loaded<ReasonInput, Payment>;
 export type CheckedPaymentCancellation<T extends PaymentCancellation = PaymentCancellation> = T & Readonly<{ current: Extract<Payment, { readonly state: 'recorded' }>; [financeTransitionProof]: 'cancel-payment' }>;
-export function checkPaymentCancellation<T extends PaymentCancellation>(value: T): Result<CheckedPaymentCancellation<T>, RuleError> {
+export function checkPaymentCancellation<T extends PaymentCancellation>(value: T) {
   const { input, actor, current } = value;
   if (!allowed(actor, 'finance', current.groupId)) return failure('Denied');
   if (input.id !== current.id) return failure('TargetMismatch');
@@ -410,7 +411,7 @@ export function cancelCheckedPayment(value: CheckedPaymentCancellation): Result<
   const { input, actor, current } = value;
   return ok(plan({ ...current, state: 'cancelled', reason: input.reason.trim(), cancelledBy: actor.id, version: current.version + 1 }, [check(current)]));
 }
-export function cancelPayment(value: PaymentCancellation): Result<Change<Extract<Payment, { readonly state: 'cancelled' }>>, RuleError> {
+export function cancelPayment(value: PaymentCancellation) {
   const checked = checkPaymentCancellation(value); if (!checked.ok) return checked;
   return cancelCheckedPayment(checked.value);
 }

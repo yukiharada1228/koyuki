@@ -1,5 +1,7 @@
 # 3方式の永続再送を比較する
 
+[財務のエラー型](procurement-finance-errors.md)の後続では、操作ごとの失敗集合を再送の表でも保持する。比較用driverの履歴の成功型も、現在の遷移variantに限定せず、同じkindのモデル全体へ修正する。実行ロジックは変更しない。
+
 通常TypeScript/helper版に`baseline-replay.ts`を追加した。
 KoyukiのwithReplay・business・Workflowを実行せず、基準実装側のdriverで同じ再送契約を実装する。
 25操作を一つずつコピーせず、元のplain/helper定義へ呼出し専用の保存境界を結び付ける。
