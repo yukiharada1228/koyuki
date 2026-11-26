@@ -88,6 +88,17 @@ if (binding) {
       const prioritized = candidate.replace('type StageOutput<F extends Stage, I> =', pair + 'type FallbackStageOutput<F extends Stage, I> =')
         .replace(checked, 'F extends Fn ? ((input: I) => Result<O, ErrorOf<F>>)');
       candidates.push(['pair-before-identity-and-proof', prioritized]);
+      const connectionStart = 'type Connect<C, P extends readonly Stage[], O, Operation extends string> = {';
+      if (prioritized.split(connectionStart).length !== 2) throw Error('Re-evaluate recursive connection candidate');
+      const connection = `type Connect<C, P extends readonly Stage[], O, Operation extends string, A extends readonly unknown[] = readonly []> =
+  number extends P['length'] ? MappedConnect<C, P, O, Operation>
+  : P extends readonly [infer F extends Stage, ...infer R extends readonly Stage[]]
+    ? Connect<StageOutput<F, C>, R, O, Operation, readonly [...A,
+      DiagnosticRule<F, C, R extends readonly [] ? O : StageOutput<F, C>, Operation, \`\${A['length']}\`>]>
+    : A;
+`;
+      candidates.push(['pair-first-recursive-connection', prioritized.replace(connectionStart,
+        connection + 'type MappedConnect<C, P extends readonly Stage[], O, Operation extends string> = {')]);
     }
   }
   const head = fixture.split('// Direct generic withInput calls')[0];
