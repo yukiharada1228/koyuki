@@ -592,6 +592,26 @@
         "src/framework/model.ts"
       ]
     },
+    "ordinaryRecordContextFollowUp": {
+      "implementationBaseCommit": "785040b770a3247a603a5e981818666599441f70",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up. Ordinary generic record fields retain their input correspondence without an input/value wrapper in transitions and direct business arrays. Compute correlated keys independently of the scoped input; test against whole unions, require combined universal and concrete-input producer promises and a declared-output subtype. Preserve unrelated unknown fields, optional/readonly/fixed facts, private classes and symbol proofs. Four additional installed-consumer cases include failure stopping and overlapping-overload refusal. The original generic-record-scoped-caller probe has the same hash as its prior refusal and is accepted on TypeScript 6.0.3/7.0.2. Deep nested pair fields and unnamed inline remain refused. No runtime body, package entry-point API, dependency, new source/audio/frame review or independent trial is added. Partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/ordinary-generic-records.md",
+        "docs/ordinary-record-context6.json",
+        "docs/ordinary-record-context7.json",
+        "docs/ordinary-record-limits6.json",
+        "docs/ordinary-record-limits7.json",
+        "src/transition-value-fields.test.ts",
+        "src/framework/model.ts",
+        "src/framework/business.ts"
+      ]
+    },
     "valueFieldContextFollowUp": {
       "implementationBaseCommit": "9830feb23ba3e891e5a0bdd6b6638ac8b749e15d",
       "sections": [

@@ -46,3 +46,12 @@ privateな入力、privateな出力、Symbolの証明、判別可能な直和、
 
 任意のgeneric関数への型適用ではない。さらに深い入れ子のフィールド、名前なしinlineのwithInput、型だけで保証されない対応には制限が残る。
 独立利用者の試用・原音の未確認区間・講演全体の完全実現は別の未完了事項である。
+
+## 検証記録
+
+785040bのクリーンなソースで[TypeScript 6.0.3](ordinary-record-context6.json)・[7.0.2](ordinary-record-context7.json)を検査した。
+9830febで不受理だったgeneric-record-scoped-callerとprobeのhashが一致し、現在は受理され、既存契約の追加診断は0。
+深いpair出力・名前なしinlineは[6.0.3](ordinary-record-limits6.json)・[7.0.2](ordinary-record-limits7.json)で引き続き不受理である。
+
+全体1,174件、配布consumerは両版で各830件、宣言検査47件が成功。追加4ケースとこの文書の実コードをtarball利用側でも検査する。
+500操作と64段階の検査も成功。これらは保守者による検証であり、独立利用者の開発体験の評価ではない。
