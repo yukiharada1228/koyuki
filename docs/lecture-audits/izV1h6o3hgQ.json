@@ -592,6 +592,23 @@
         "src/framework/model.ts"
       ]
     },
+    "genericCorrelationSafetyFollowUp": {
+      "implementationBaseCommit": "b0e6b238c2c33e0f6e085f6dc385ecd4ed746f54",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "Implementation-only safety correction discovered during deep-output research. Reject a false correlation where a generic object union container is inferred as the original input intersected with that container, allowing nonexistent input properties. Add an independent concrete primitive-input witness captured before the generic conditional comparison for both input/value fields and ordinary record keys. Retain actual input intersections and declared proof facts. Four regression cases cover paired and plain transitions, business results and proof retention; installed TypeScript 6.0.3/7.0.2 consumers each run 834 cases. Removing each packed declaration guard independently reintroduces acceptance of the nonexistent property and fails its refusal contract on both compilers. Whole-output and subtype checks remain. No runtime body, public entry-point API or dependency changes. This is an extra refusal check, not a proof of TypeScript soundness. Deep generic inference candidates remain unadopted; no new source/audio/frame review or independent-user trial; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/generic-correlation-safety.md",
+        "src/generic-object-correlation.test.ts",
+        "src/framework/model.ts",
+        "scripts/test-business-package.mjs",
+        "docs/deep-output-investigation.md"
+      ]
+    },
     "deepOutputInvestigationFollowUp": {
       "implementationBaseCommit": "33e7546c08df21307df552181e48593397b247a2",
       "sections": [
