@@ -12,6 +12,8 @@ type Output = Assert<Equal<ReturnType<typeof direct.rule>, Result<number, 'Decli
 type BoundInput = Assert<Equal<Parameters<typeof bound.rule>[0], Base>>;
 type BoundOutput = Assert<Equal<ReturnType<typeof bound.rule>, Result<Readonly<{ input: Base; value: number }>, 'Declined'>>>;
 type InlineOutput = Assert<Equal<ReturnType<typeof inline.rule>, ReturnType<typeof bound.rule>>>;
+type RetainedDirect = Assert<Equal<typeof direct.rule, typeof quote>>;
+type RetainedPair = Assert<Equal<typeof bound.rule, typeof quoted>>;
 type FactoryInput = Assert<Equal<Parameters<typeof step>, [name: string, rule: Rule<unknown, unknown, unknown>]>>;
 type FactoryOutput = Assert<Equal<ReturnType<typeof step>, Step<unknown, unknown, unknown>>>;
 declare const positive: unique symbol;
@@ -24,6 +26,16 @@ test('a named generic rule uses its declared constraint without a wrapper annota
   assert.strictEqual(direct.rule, quote); assert.equal(direct.name, 'quote');
   assert.deepEqual(direct.rule({ amount: 2 }), ok(4));
   assert.deepEqual(direct.rule({ amount: 0 }), err('Declined'));
+});
+
+test('a named generic rule retains non-identity output relationships across calls', () => {
+  function wrap<T>(input: T) { return ok({ item: input }); }
+  const named = step('wrap', wrap), number = named.rule(2), text = named.rule('approved');
+  type ActualRule = Assert<Equal<typeof named.rule, typeof wrap>>;
+  type NumberResult = Assert<Equal<typeof number, Result<{ item: number }, never>>>;
+  type TextResult = Assert<Equal<typeof text, Result<{ item: string }, never>>>;
+  assert.strictEqual(named.rule, wrap);
+  assert.deepEqual(number, ok({ item: 2 })); assert.deepEqual(text, ok({ item: 'approved' }));
 });
 
 for (const [name, named] of [['bound', bound], ['inline', inline]] as const) test(`a named generic input pair retains runtime identity: ${name}`, () => {

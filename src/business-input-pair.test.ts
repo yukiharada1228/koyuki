@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { business, withInput, ok, err, type Result, type GroupExecution } from './framework/index.js';
+import { business, withInput, step, ok, err, type Result, type GroupExecution } from './framework/index.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
 type Base = Readonly<{ amount: number }>;
@@ -15,7 +15,7 @@ function quote<T extends Base>(input: T): Result<number, 'Declined'> {
 }
 const quoted = withInput(quote);
 
-for (const variant of ['inline', 'bound'] as const) test(`business retains generic input pairs without a context annotation: ${variant}`, async () => {
+for (const variant of ['inline', 'bound', 'named'] as const) test(`business retains generic input pairs without a context annotation: ${variant}`, async () => {
   let loaded: Context | undefined, saves = 0;
   const stored: string[] = [];
   const load = async (input: number): Promise<Result<Context, 'LoadFailed'>> => {
@@ -32,12 +32,14 @@ for (const variant of ['inline', 'bound'] as const) test(`business retains gener
   const config = { name: 'retained', load, save, operations: { quote: [quoted, finish] as const } };
   const app = variant === 'inline'
     ? business({ name: 'retained', load, save, operations: { quote: [quoted, finish] } })
-    : business(config);
+    : variant === 'named'
+      ? business({ name: 'retained', load, save, operations: { quote: [step('quote', quoted), finish] } })
+      : business(config);
   type Input = Assert<Equal<Parameters<typeof app.quote>[0], number>>;
   type Output = Assert<Equal<Awaited<ReturnType<typeof app.quote>>, Result<string, 'LoadFailed' | 'Declined' | 'Conflict'>>>;
   const success = await app.quote.runDetailed(2, { input: value => typeof value, result: value => value.ok });
   assert.deepEqual(success.result, ok('JPY:trusted:4'));
-  assert.deepEqual(success.trace.map(row => row.step), ['retained.quote:load', 'run:1', 'run:2', 'retained.quote']);
+  assert.deepEqual(success.trace.map(row => row.step), ['retained.quote:load', variant === 'named' ? 'quote' : 'run:1', 'run:2', 'retained.quote']);
   assert.equal(success.observations.length, 4);
   const declined = await app.quote.runDetailed(0);
   assert.deepEqual(declined.result, err('Declined')); assert.equal(declined.trace.length, 2);

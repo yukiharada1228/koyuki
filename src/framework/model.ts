@@ -10,10 +10,16 @@ type StepInput<F extends object> = Parameters<StepRule<F>>[0];
 type StepSuccess<F extends object> = ReturnType<StepRule<F>> extends infer R ? R extends { ok: true; value: infer O } ? O : never : never;
 type StepError<F extends object> = ReturnType<StepRule<F>> extends infer R ? R extends { ok: false; error: infer E } ? E : never : never;
 type CheckedStepRule<F extends object> = [F] extends [Rule<StepInput<F>, StepSuccess<F>, StepError<F>>] ? unknown : never;
+type StepUnion<F, C = F> = F extends C ? [C] extends [F] ? false : true : never;
+// Keep a concrete callable's generic relationships. Dynamic alternatives retain
+// the established aggregate Result contract rather than exposing a union of calls.
+type RetainedStep<F extends object> = true extends StepUnion<F>
+  ? Step<StepInput<F>, StepSuccess<F>, StepError<F>>
+  : { readonly name: string; readonly rule: F };
 // Preserve contextual inference first; infer constrained generic callables only
 // when the actual function guarantees the entire inferred input/output contract.
-export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E>;
-export function step<F extends object>(name: string, rule: F & NoInfer<CheckedStepRule<F>>): Step<StepInput<F>, StepSuccess<F>, StepError<F>>;
+export function step<I, O, E, F extends object>(name: string, rule: Rule<I, O, E> & F & NoInfer<CheckedStepRule<F>>): RetainedStep<F>;
+export function step<F extends object>(name: string, rule: F & NoInfer<CheckedStepRule<F>>): RetainedStep<F>;
 // Keep reflection through Parameters/ReturnType on the original signature.
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E>;
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E> { return { name, rule }; }

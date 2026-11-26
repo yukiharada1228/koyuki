@@ -1,5 +1,5 @@
 import { returnDecision, correctedQuantities, correctionPlan } from './receipt-pipeline.js';
-import { business } from '../../framework/index.js';
+import { business, step } from '../../framework/index.js';
 import { procurementProcessContext } from './context-process.js';
 import { checkReceipt, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, type Actor, type ReceiptDepletion, type Change, type Invoice, type Receipt, type VersionInput, type ReasonInput, type CorrectInput } from './domain.js';
 import { includeChangedStock } from './inventory.js';
@@ -22,9 +22,9 @@ export function procurementComposedReads<E>(repository: ProcurementRepository<E>
     operations: {
       return: [checkReceipt, returnDecision, includeChangedStock],
       correct: { load: receiptLoad<CorrectInput>(), run: [checkReceipt,
-        { name: 'revalidate-correction', rule: correctedQuantities },
-        { name: 'correct-receipt-plan', rule: correctionPlan },
-        { name: 'run:3', rule: includeChangedStock }] },
+        step('revalidate-correction', correctedQuantities),
+        step('correct-receipt-plan', correctionPlan),
+        step('run:3', includeChangedStock)] },
     } });
   return { invoices, receipts };
 }
