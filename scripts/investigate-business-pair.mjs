@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
+const args = process.argv.slice(2);
+if (args.length > 1 || args.length === 1 && args[0] !== '--binding') throw Error('Use no arguments or --binding');
+const binding = args[0] === '--binding';
 const hash = value => createHash('sha256').update(value).digest('hex');
 function git(args) {
   const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
@@ -23,7 +26,7 @@ const first = 'type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out
 const last = '? I & Out<F> : Out<F>;';
 if (original.split(first).length !== 2 || original.split(last).length !== 2) throw Error('Re-evaluate declaration patch');
 const candidates = [['current', original]];
-for (const [name, shape] of [
+for (const [name, shape] of binding ? [] : [
   ['mapped-input', "{ [K in keyof O]: K extends 'input' ? I : O[K] }"],
   ['literal-pair', 'Readonly<{ input: I; value: O extends { readonly value: infer V } ? V : never }>'],
   ['intersection-input', 'O & Readonly<{ input: I }>'],
@@ -39,6 +42,34 @@ const variants = [
   ['bound-operations', fixture.replace('const inferred = business({', 'const inferredOperations = { quote: [quoted, finish] } as const;\nconst inferred = business({')
     .replace('operations: { quote: [quoted, finish] },', 'operations: inferredOperations,')],
 ];
+if (binding) {
+  const helper = "type InputPairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] };\n"
+    + 'type PairRuleOutput<R extends (...args: never[]) => unknown, I> = R extends (input: I) => Result<InputPairCandidate<Value<ReturnType<R>>, I>, Failure<ReturnType<R>>> ? InputPairCandidate<Value<ReturnType<R>>, I> : Value<ReturnType<R>>;\n'
+    + 'type InputPairOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }] ? PairRuleOutput<RuleOf<F>, I> : Out<F>;\n';
+  const candidate = original.replace(first, helper + first).replace(last, '? I & Out<F> : InputPairOutput<F, I>;')
+    .replace('[RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>]', '[RuleOf<F>] extends [(input: I) => Result<O, ErrorOf<F>>]');
+  if (candidate === original) throw Error('Binding candidate patch did not apply');
+  candidates.push(['literal-call-contract', candidate]);
+  const head = fixture.split('// Direct generic withInput calls')[0];
+  const bound = head + `
+const config = { name: 'bound', load, save, operations: { quote: [quoted, finish] as const } };
+const inferred = business(config);
+type BoundInput = Assert<Equal<Parameters<typeof inferred.quote>[0], number>>;
+type BoundOutput = Assert<Equal<Awaited<ReturnType<typeof inferred.quote>>, Result<string, 'Declined'>>>;
+`;
+  const prelude = head.replace('type Result }', 'type Result, type Rule }') + `
+type PairValue<R> = R extends { ok: true; value: infer V } ? V : never;
+type PairFailure<R> = R extends { ok: false; error: infer E } ? E : never;
+type PairOut<F extends (...args: never[]) => unknown> = PairValue<ReturnType<F>>;
+type PairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] };
+`;
+  const literal = prelude + `
+type Refined<F extends (...args: never[]) => unknown, I> = F extends (input: I) => Result<PairCandidate<PairOut<F>, I>, PairFailure<ReturnType<F>>> ? PairCandidate<PairOut<F>, I> : PairOut<F>;
+type Exact = Assert<Equal<Refined<typeof quoted, Context>, Pair>>;
+`;
+  const aliased = literal.replace('F extends (input: I) => Result<PairCandidate<PairOut<F>, I>, PairFailure<ReturnType<F>>>', 'F extends Rule<I, PairCandidate<PairOut<F>, I>, PairFailure<ReturnType<F>>>');
+  variants.splice(0, variants.length, ['inline-operations', fixture], ['bound-config', bound], ['isolated-literal-call', literal], ['isolated-rule-alias', aliased]);
+}
 const compiler = resolve(root, 'node_modules/.bin/tsc');
 const version = spawnSync(compiler, ['--version'], { cwd: root, encoding: 'utf8' });
 if (version.status !== 0) throw Error('Compiler unavailable');
@@ -77,7 +108,7 @@ try {
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), node: process.version,
