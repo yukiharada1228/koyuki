@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes', '--with-input-literal', '--consumer-contract'].includes(args[0])) throw Error('Unknown investigation mode');
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes', '--with-input-literal', '--consumer-contract', '--inline-definition'].includes(args[0])) throw Error('Unknown investigation mode');
+const inlineDefinition = args[0] === '--inline-definition';
 const consumerContract = args[0] === '--consumer-contract';
 const inputLiteral = args[0] === '--with-input-literal';
 const contextShapes = args[0] === '--context-shapes';
@@ -34,9 +35,9 @@ const inputSignature = originalModel.match(/^export function withInput<[^\n]+\{$
 const fixture = await readFile(resolve(root, 'scripts/fixtures/business-input-pair.ts'), 'utf8');
 const first = 'type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>';
 const last = '? I & Out<F> : Out<F>;';
-if (original.split(first).length !== 2 || original.split(last).length !== 2) throw Error('Re-evaluate declaration patch');
+if (!inlineDefinition && (original.split(first).length !== 2 || original.split(last).length !== 2)) throw Error('Framework declarations changed; reproduce this historical study at its recorded sourceGitCommit');
 const candidates = [['current', original]];
-for (const [name, shape] of binding || rawDefinition ? [] : [
+for (const [name, shape] of binding || rawDefinition || inlineDefinition ? [] : [
   ['mapped-input', "{ [K in keyof O]: K extends 'input' ? I : O[K] }"],
   ['literal-pair', 'Readonly<{ input: I; value: O extends { readonly value: infer V } ? V : never }>'],
   ['intersection-input', 'O & Readonly<{ input: I }>'],
@@ -52,6 +53,21 @@ const variants = [
   ['bound-operations', fixture.replace('const inferred = business({', 'const inferredOperations = { quote: [quoted, finish] } as const;\nconst inferred = business({')
     .replace('operations: { quote: [quoted, finish] },', 'operations: inferredOperations,')],
 ];
+if (inlineDefinition) {
+  const raw = `type InlineDefinitionCheck<D> = D extends { name: string; load: infer L extends Load; save: infer S extends SaveFn; operations: infer T extends Record<string, Entry>; replay?: never }
+  ? { operation?: (name: OperationNames<T>) => string;
+      save: S extends (value: SaveInput<S>, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<unknown, unknown>> ? S : never;
+      operations: { readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], SaveInput<S>, OperationName<K>> : never } }
+  : never;
+type InlineDefinitionCommands<D extends object> = D extends { load: infer L extends Load; save: infer S extends SaveFn; operations: infer T extends Record<string, Entry> }
+  ? Commands<L, T, Value<SaveResult<S>>, Failure<SaveResult<S>>, never, D> : never;
+export function business<const D extends object>(definition: D & NoInfer<InlineDefinitionCheck<D>>): InlineDefinitionCommands<D>;
+`;
+  const marker = 'export function business<L extends Load, O, S extends Execution<unknown>';
+  if (original.split(marker).length !== 2) throw Error('Re-evaluate inline definition overload');
+  candidates.push(['uncontextual-definition', original.replace(marker, raw + marker)]);
+  for (const entry of variants) entry[1] = entry[1].replaceAll('[quoted, finish]', '[withInput(quote), finish]');
+}
 if (rawDefinition) {
   // Infer the entire declaration without contextualizing the tuple, then verify
   // its existing contracts. This is an investigation, not a public overload.
@@ -283,7 +299,7 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original
     || await readFile(resolve(root, 'src/framework/model.ts'), 'utf8') !== originalModel) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: consumerContract ? 'consumer-contract' : inputLiteral ? 'with-input-signature' : contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: inlineDefinition ? 'inline-definition' : consumerContract ? 'consumer-contract' : inputLiteral ? 'with-input-signature' : contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), compilerEntrypointSha256: hash(await readFile(compiler)), node: process.version,
