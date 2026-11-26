@@ -3,6 +3,8 @@
 [直接接続の試作](procurement-correction-decomposition.md)を、購買の実際の数量訂正へ移した。
 新しいframework APIは追加せず、既存のWorkflow・withInput・businessを使う。
 
+以下の124/266境界と射影回数はこの移行時点の記録。その後の[申請作成](procurement-request-creation.md)により、現在は128/272境界へ更新した。
+
 ```ts
 export const correctDecision = workflow('revalidate-correction',
   withInput((value: CheckedReceipt<ReceiptStockContext<CorrectInput>>) =>

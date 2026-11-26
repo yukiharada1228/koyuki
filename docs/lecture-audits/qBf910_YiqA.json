@@ -288,6 +288,23 @@
         "docs/step-generic-first.md",
         "docs/step-generic-first-inference.json"
       ]
+    },
+    "requestCreationWorkflowFollowUp": {
+      "implementationBaseCommit": "34f860ccff9bee868127f9c0c2f0fd707cb3acae",
+      "scope": "Actual request creation now declares authorization/id validation, line parsing and pure draft plan projection through existing Workflow/withInput. No additional callback annotation. Private precondition and parsed-collection proofs, independent expected plan, refusal order and non-save are checked. Compatibility Result composition and edit parsing remain. Plain/helper execute the three phases manually; baseline detail and replay share baseline-owned labels. Current 25-operation/32-call scenario has 21 multi-stage operations, 128 success boundaries and 272 representative failure boundaries; IO positions/injections remain 72/178 with input/result selections 370/192 or zero result selections. Five selected sources resolve eight declarations, 25 IDs and 50 labels. Not all inputs, internal Result connections, production DX or universal proof. Three procurement context annotations and independent trial remain. No new audio/frame review; partial statuses unchanged.",
+      "evidence": [
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/request-pipeline.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/plain.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/experiments/procurement/trace-contract.ts",
+        "src/procurement-request-creation.test.ts",
+        "src/procurement-failure-observation.test.ts",
+        "src/procurement-io-exceptions.test.ts",
+        "scripts/declarations.test.mjs",
+        "docs/procurement-request-creation.md"
+      ]
     }
   },
   "sections": [

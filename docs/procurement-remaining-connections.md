@@ -9,6 +9,10 @@
 さらに[返品・訂正の共通検証](procurement-receipt-checks.md)も分離した。続いて[数量訂正の実経路](procurement-live-correction.md)も宣言へ移した。訂正内部の手書きResult接続は互換関数に残し、実経路はWorkflowで接続する。
 元の観察を消さず、現在の残存接続・文脈注釈・hostの入力構築と区別する。
 
+後続の[申請作成](procurement-request-creation.md)も、作成前提・明細解析・計画の宣言へ移した。
+現在は21操作が複数段階で、上記commit時点の単一段階9操作という記述は履歴である。
+createRequestの手動接続は互換入口へ残し、editCheckedRequestの解析接続と3つの文脈注釈は引き続き残る。
+
 ## 操作宣言で既に委譲していること
 
 [application.ts](../src/experiments/procurement/application.ts)の6つのbusinessには25操作がある。

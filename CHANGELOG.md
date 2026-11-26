@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買の申請作成を作成前提・明細解析・計画作成のWorkflowへ分離。既存APIだけでResultの手動接続を実経路から外し、作成前提と解析済み配列のprivateな証明を要求する。旧run:1を3つの明示名へ変更。3方式の観測・再送・I/O例外、配布物consumerを更新し、成功128境界・代表失敗272境界を検査。互換関数と他の内部接続・文脈注釈は残す。
+
 - stepへconstrained generic関数とwithInputを直接渡す型推論を追加。元の文脈付き推論とParameters/ReturnTypeを維持し、宣言した制約・成功/失敗型・privateな証明を保持する。不適合候補・非同期/非Resultを拒否。実行本体は変更せず、追加Contextや元のbusiness/transition推論制限は未解消。
 
 - workflowの先頭でconstrained generic関数とwithInputを使える型推論を追加。元の文脈付き推論と型参照を維持し、宣言した入力・全成功/失敗型・privateな証明を保持する。不適合な関数候補、非同期/非Resultは拒否。実行本体は変更せず、制約にない追加文脈や元のbusiness/transition推論制限は未解消。
