@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes', '--with-input-literal', '--consumer-contract', '--inline-definition'].includes(args[0])) throw Error('Unknown investigation mode');
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes', '--with-input-literal', '--consumer-contract', '--inline-definition', '--current-contexts'].includes(args[0])) throw Error('Unknown investigation mode');
+const currentContexts = args[0] === '--current-contexts';
 const inlineDefinition = args[0] === '--inline-definition';
 const consumerContract = args[0] === '--consumer-contract';
 const inputLiteral = args[0] === '--with-input-literal';
@@ -35,9 +36,9 @@ const inputSignature = originalModel.match(/^export function withInput<[^\n]+\{$
 const fixture = await readFile(resolve(root, 'scripts/fixtures/business-input-pair.ts'), 'utf8');
 const first = 'type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>';
 const last = '? I & Out<F> : Out<F>;';
-if (!inlineDefinition && (original.split(first).length !== 2 || original.split(last).length !== 2)) throw Error('Framework declarations changed; reproduce this historical study at its recorded sourceGitCommit');
+if (!inlineDefinition && !currentContexts && (original.split(first).length !== 2 || original.split(last).length !== 2)) throw Error('Framework declarations changed; reproduce this historical study at its recorded sourceGitCommit');
 const candidates = [['current', original]];
-for (const [name, shape] of binding || rawDefinition || inlineDefinition ? [] : [
+for (const [name, shape] of binding || rawDefinition || inlineDefinition || currentContexts ? [] : [
   ['mapped-input', "{ [K in keyof O]: K extends 'input' ? I : O[K] }"],
   ['literal-pair', 'Readonly<{ input: I; value: O extends { readonly value: infer V } ? V : never }>'],
   ['intersection-input', 'O & Readonly<{ input: I }>'],
@@ -231,7 +232,7 @@ type Connect<C, P extends readonly Stage[], O, Operation extends string, A exten
   if (!source.includes(ready) || !pairSource.includes(ready)) throw Error('Re-evaluate callable loader readiness');
   candidates.push(['consumer-and-callable-loader', source.replace(ready, actual)], ['pair-and-callable-loader', pairSource.replace(ready, actual)]);
 }
-if (contextShapes) {
+if (contextShapes || currentContexts) {
   const context = /class Context \{[\s\S]*?\n\}/;
   const publicClass = `class Context {
   constructor(readonly amount: number, readonly currency: string) {}
@@ -299,7 +300,7 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original
     || await readFile(resolve(root, 'src/framework/model.ts'), 'utf8') !== originalModel) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: inlineDefinition ? 'inline-definition' : consumerContract ? 'consumer-contract' : inputLiteral ? 'with-input-signature' : contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: currentContexts ? 'current-contexts' : inlineDefinition ? 'inline-definition' : consumerContract ? 'consumer-contract' : inputLiteral ? 'with-input-signature' : contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), compilerEntrypointSha256: hash(await readFile(compiler)), node: process.version,
