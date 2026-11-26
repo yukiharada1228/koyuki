@@ -74,7 +74,12 @@ try {
       .replace('submit: { load: ports.load<SubmitInput>, run: [common, submission, submit] },', 'submit: [common, submission, submit],')
       .replace('reject: { load: ports.load<RejectInput>, run: [common, approval, rejection, reject] },', 'reject: [common, approval, rejection, reject],');
     assert.notEqual(commonLoadOnly, staged);
-    writeFileSync(application, commonLoadOnly);
+    writeFileSync(application, commonLoadOnly); npm(workspace, ['run', 'check']);
+    console.log(npm(workspace, ['test']).trim());
+    const identity = 'function common<T extends Loaded<VersionInput>>(context: T): Result<T, RuleError>';
+    assert(commonLoadOnly.includes(identity));
+    writeFileSync(application, commonLoadOnly.replace(identity,
+      'function common(context: Loaded<VersionInput>): Result<Loaded<VersionInput>, RuleError>'));
     const inferredInputFailure = npm(workspace, ['run', 'check'], true);
     assert(inferredInputFailure.includes('Koyuki: submit[1] input must accept prior output'));
     assert(inferredInputFailure.includes('Koyuki: reject[2] input must accept prior output'));
@@ -89,6 +94,6 @@ try {
     const preparedMetadata = JSON.parse(readFileSync(join(prepared, 'DEVELOPMENT.json'), 'utf8'));
     assert.equal(digest(join(prepared, 'koyuki-development.tgz')), preparedMetadata.packageSha256);
     assert(!existsSync(join(prepared, 'node_modules'))); assert(!existsSync(join(prepared, 'onboarding-solution.ts')));
-    console.log('Verified unsolved starter, single-rule and staged behavior, three rejected rule mutations, two rejected typed connections, and preparation/refusal paths from the actual packed package. This is exercise readiness, not independent-user DX evidence.');
+    console.log('Verified unsolved starter, single-rule, explicit-load staged, and shared-load staged behavior, three rejected rule mutations, two rejected typed connections, and preparation/refusal paths from the actual packed package. This is exercise readiness, not independent-user DX evidence.');
   }
 } finally { rmSync(temporary, { recursive: true, force: true }); }

@@ -853,7 +853,7 @@
       "endSeconds": 2118,
       "topic": "コンパイラとツールチェーン",
       "status": "supported",
-      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの12宣言・25操作ID・52ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作も後続で型の拡大を解消し、一般の推論制限は別の残件として維持する。 入荷・在庫を含む購買全25操作の固有のエラーkindを通常・詳細・再送で3方式比較する。検証証明・成功状態・保存adapterの失敗を保持し、全入力の網羅や業務仕様の証明とは区別する。",
+      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの6宣言・25操作ID・56ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作も後続で型の拡大を解消し、一般の推論制限は別の残件として維持する。 入荷・在庫を含む購買全25操作の固有のエラーkindを通常・詳細・再送で3方式比較する。検証証明・成功状態・保存adapterの失敗を保持し、全入力の網羅や業務仕様の証明とは区別する。",
       "evidence": [
         "src/transition-inference.test.ts",
         "scripts/check-runtime-package.mjs",
@@ -883,9 +883,23 @@
         "docs/procurement-logistics-errors.md",
         "src/procurement-logistics-errors.test.ts",
         "src/experiments/procurement/inventory.ts",
-        "src/procurement-receipt-pipeline.test.ts"
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/business-later-request.md",
+        "docs/onboarding-ai-review.md",
+        "src/business-later-request.test.ts",
+        "scripts/test-onboarding.mjs"
       ],
-      "remaining": []
+      "remaining": [],
+      "laterRequestFollowUp": {
+        "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
+        "evidence": [
+          "docs/business-later-request.md",
+          "docs/onboarding-ai-review.md",
+          "src/business-later-request.test.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/test-onboarding.mjs"
+        ]
+      }
     },
     {
       "id": "w0o-20",

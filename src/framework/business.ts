@@ -58,7 +58,26 @@ type SpecializedLoader<L extends Load, E extends Entry> = AcceptsEveryInput<Rule
         ? (input: I) => Promise<Result<FirstInput<E>, LoadError<L>>> : L
       : L
     : L;
-type Loader<L extends Load, E extends Entry> = SpecializedLoader<RawLoader<L, E>, E>;
+// A later rule can constrain the original request after shared identity checks.
+// Infer a candidate only; the loader must promise the entire narrowed context,
+// and every stage must still accept the preceding producer's actual output.
+// Keep already valid pipelines unchanged, including stages that replace input.
+type StageRequest<F extends Stage> = [DeclaredInput<RuleOf<F>>] extends [{ readonly input: infer I }] ? I : unknown;
+type PipelineRequest<P extends readonly Stage[]> = { [K in keyof P]: (input: StageRequest<P[K]>) => void }[number] extends (input: infer I) => void ? I : never;
+type LoadedRequest<C, I> = { [K in keyof C]: K extends 'input' ? I : C[K] };
+type AcceptsPipeline<C,P extends readonly Stage[]> = P extends readonly [infer F extends Stage,...infer Rest extends readonly Stage[]]
+ ? [C] extends [DeclaredInput<RuleOf<F>>] ? AcceptsPipeline<StageOutput<F,C>,Rest> : false : true;
+type LoaderWithLaterRequest<L extends Load,E extends Entry, I=PipelineRequest<Stages<E>>, C=LoadedRequest<Loaded<L>,I>> =
+ [I] extends [never] ? L : [I] extends [Input<L>] ? [Input<L>] extends [I] ? L
+ : AcceptsPipeline<Loaded<L>,Stages<E>> extends true ? L
+ : [C] extends [Loaded<L>] ? [L] extends [(input:I)=>Promise<Result<C,LoadError<L>>>]
+   ? AcceptsPipeline<C,Stages<E>> extends true ? (input:I)=>Promise<Result<C,LoadError<L>>> : L : L : L : L;
+type StartsWithIdentity<L extends Load, E extends Entry, R=RuleOf<Stages<E>[0]>, C=Loaded<L>, Err=ErrorOf<Stages<E>[0]>> =
+ [C] extends [{ readonly input: unknown }] ? [R] extends [<T extends C>(input:T)=>Result<T,Err>]
+ ? [<T extends C>(input:T)=>Result<T,Err>] extends [R] ? true : false : false : false;
+// Gate on the raw request domain before inspecting still-generic loaded values.
+// Primitive-domain pipelines cannot benefit from an object request envelope.
+type Loader<L extends Load, E extends Entry, A extends Load=SpecializedLoader<RawLoader<L,E>,E>> = [Input<RawLoader<L,E>>] extends [object] ? StartsWithIdentity<A,E> extends true ? LoaderWithLaterRequest<A,E> : A : A;
 type OperationName<K> = K extends string ? K : K extends number ? number extends K ? string : `${K}` : never;
 type OperationNames<T> = OperationName<keyof T>;
 // A polymorphic check may promise to return exactly its input type. Retain that

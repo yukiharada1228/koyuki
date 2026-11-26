@@ -219,6 +219,7 @@ try {
   writeFileSync(join(consumer, 'transition-value-fields.test.ts'), readFileSync(join(root, 'src/transition-value-fields.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'with-input-alternatives.test.ts'), readFileSync(join(root, 'src/with-input-alternatives.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'generic-object-correlation.test.ts'), readFileSync(join(root, 'src/generic-object-correlation.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-later-request.test.ts'), readFileSync(join(root, 'src/business-later-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
@@ -237,6 +238,33 @@ try {
   console.log(run('npm', ['test'], consumer));
   // Remove each packed inference safeguard independently. The regression must
   // observe acceptance of a property the actual container does not contain.
+  const businessDeclarations = join(consumer, 'node_modules/koyuki/dist/business.d.ts');
+  const checkedBusiness = readFileSync(businessDeclarations, 'utf8');
+  const loaderAlias = /^type Loader<[\s\S]*?;/gm;
+  if ([...checkedBusiness.matchAll(loaderAlias)].length !== 1) throw Error('Later-request loader declaration changed');
+  try {
+    writeFileSync(businessDeclarations, checkedBusiness.replace(loaderAlias,
+      'type Loader<L extends Load, E extends Entry> = SpecializedLoader<RawLoader<L, E>, E>;'));
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || !rejected.status || !output.split('\n').some(line => line.includes('business-later-request.test.ts') && /TS(?:2769|2344)/.test(line))) {
+      throw Error(`Removing later-request inference did not invalidate its positive contracts:\n${output}`);
+    }
+  } finally { writeFileSync(businessDeclarations, checkedBusiness); }
+  const loaderPromise = '[L] extends [(input: I) => Promise<Result<C, LoadError<L>>>]';
+  if (checkedBusiness.split(loaderPromise).length !== 2) throw Error('Later-request loader promise changed');
+  const laterLines = readFileSync(join(consumer, 'business-later-request.test.ts'), 'utf8').split('\n');
+  const refusalLine = laterLines.findIndex(line => line.includes('@ts-expect-error One loader alternative')) + 1;
+  if (!refusalLine) throw Error('Missing selected-loader refusal contract');
+  try {
+    writeFileSync(businessDeclarations, checkedBusiness.replace(loaderPromise, 'true extends true'));
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || !rejected.status || !output.includes(`business-later-request.test.ts(${refusalLine},3): error TS2578`)) {
+      throw Error(`Removing the actual loader promise did not expose the unsafe request refinement:\n${output}`);
+    }
+  } finally { writeFileSync(businessDeclarations, checkedBusiness); }
+  console.log('Verified later request inference and rejection of both removed inference and missing loader promise.');
   const modelDeclarations = join(consumer, 'node_modules/koyuki/dist/model.d.ts');
   const guardedModel = readFileSync(modelDeclarations, 'utf8');
   const correlationTests = readFileSync(join(consumer, 'generic-object-correlation.test.ts'), 'utf8').split('\n');

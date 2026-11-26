@@ -1262,13 +1262,27 @@
         "docs/procurement-logistics-errors.md",
         "src/procurement-logistics-errors.test.ts",
         "src/experiments/procurement/inventory.ts",
-        "src/procurement-receipt-pipeline.test.ts"
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/business-later-request.md",
+        "docs/onboarding-ai-review.md",
+        "src/business-later-request.test.ts",
+        "scripts/test-onboarding.mjs"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
         "名前なしの配列要素としてwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。名前付きstepのinline呼出しは対応し、先行する変数束縛も利用できる。monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。在庫文脈の重複注釈3つは直接接続で削除済みだが、通常の業務型宣言は必要。",
         "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
-      ]
+      ],
+      "laterRequestFollowUp": {
+        "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
+        "evidence": [
+          "docs/business-later-request.md",
+          "docs/onboarding-ai-review.md",
+          "src/business-later-request.test.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/test-onboarding.mjs"
+        ]
+      }
     },
     {
       "id": "iz-25",

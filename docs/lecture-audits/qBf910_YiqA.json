@@ -1118,12 +1118,26 @@
         "docs/procurement-logistics-errors.md",
         "src/procurement-logistics-errors.test.ts",
         "src/experiments/procurement/inventory.ts",
-        "src/procurement-receipt-pipeline.test.ts"
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/business-later-request.md",
+        "docs/onboarding-ai-review.md",
+        "src/business-later-request.test.ts",
+        "scripts/test-onboarding.mjs"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",
         "在庫文脈の重複注釈3つは直接接続で削除済み。通常の業務型宣言と一般の推論制限は残る。既存の型検査を、独立利用者の学習・原因理解・修正容易性の実証とは扱わない。"
-      ]
+      ],
+      "laterRequestFollowUp": {
+        "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
+        "evidence": [
+          "docs/business-later-request.md",
+          "docs/onboarding-ai-review.md",
+          "src/business-later-request.test.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/test-onboarding.mjs"
+        ]
+      }
     },
     {
       "id": "qbf-20",
