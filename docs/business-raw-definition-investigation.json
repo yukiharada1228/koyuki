@@ -1,0 +1,161 @@
+{
+  "schema": "koyuki.business-pair-specialization.v1",
+  "study": "raw-definition-inference",
+  "collectedAt": "2026-11-26T03:15:42.743Z",
+  "sourceGitCommit": "3a3e291c2259eb3f2e563107fe54d944a958731b",
+  "sourceDirty": false,
+  "collectorSha256": "3015f29b8c4c67d10c1ac01ec253e4b830a8f97e1d690b10c634d8f1b1ef50ae",
+  "compiler": "Version 7.0.2",
+  "node": "v26.12.0",
+  "lockSha256": "8efab17a72fa5d2a483dbb5cff21f1bf8e7148f5b2f3b2efebc58aa091b77f20",
+  "scope": "Static candidate investigation only. No candidate installed, no runtime or independent user evaluation, no claim that all possible improvements fail.",
+  "reports": [
+    {
+      "candidate": "current",
+      "businessSourceSha256": "96ea59f3bff8b2b65ae734d438d7b846a306c4b78d2e050916b1b011e6bb37b5",
+      "baseline": {
+        "accepted": true,
+        "diagnostics": []
+      },
+      "probes": [
+        {
+          "variant": "inline-operations",
+          "fixtureSha256": "7e732460f050f8334629705073956c387c917f2dde72cc3c47d91e83e25fe5fe",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(29,25): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type '(<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">) & ([<T extends Readonly<{ amount: number; }>>(input: T) => Result<...>] extends [...] ? unknown : { readonly [K in `Koyuki: quote[0] ${...}`]: never; }) & Rule<...>'.",
+            "      Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type '[<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">] extends [Rule<Value<LoadResult<SpecializedLoader<(input: number) => Promise<...>, readonly [...]>>>, StageOutput<...>, \"Declined\">] ? unknown : { readonly [K in `Koyuki: quote[0] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(29,33): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '(pair: Pair) => Result<string, never>' is not assignable to type '((pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>) & ([(pair: Readonly<{ input: Context; value: number; }>) => Result<...>] extends [...] ? unknown : { readonly [K in `Koyuki: quote[1] ${...}`]: never; }) & Rule<...>'.",
+            "      Type '(pair: Pair) => Result<string, never>' is not assignable to type '[(pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>] extends [Rule<StageOutput<<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, Value<...>>, string, never>] ? unknown : { readonly [K in `Koyuki: quote[1] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(31,29): error TS2344: Type 'Equal<Input<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>, number>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'.",
+            "src/business-pair-investigation.ts(32,30): error TS2344: Type 'false' does not satisfy the constraint 'true'."
+          ],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "bound-operations",
+          "fixtureSha256": "554c20cf958318c96d06217037bcadf814ad3e937d3253a76fa75e80248c1797",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(30,3): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Pair) => Result<string, never>]; }' is not assignable to type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<{ input: Context; value: number; }>) => Result<...>]; } & NoInfer<{ ...; }>'.",
+            "      Type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Pair) => Result<string, never>]; }' is not assignable to type '{ readonly quote: readonly [DiagnosticRule<...>, DiagnosticRule<...>]; }'.",
+            "        Types of property 'quote' are incompatible.",
+            "          Type 'readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<{ input: Context; value: number; }>) => Result<...>]' is not assignable to type 'readonly [DiagnosticRule<...>, DiagnosticRule<...>]'.",
+            "            Type at position 0 in source is not compatible with type at position 0 in target.",
+            "              Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type 'DiagnosticRule<<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, Value<LoadResult<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [...]>>>, StageOutput<...>, \"quote\", \"0\">'.",
+            "                Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type '[<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">] extends [Rule<Value<LoadResult<SpecializedLoader<(input: number) => Promise<...>, readonly [...]>>>, StageOutput<...>, \"Declined\">] ? unknown : { readonly [K in `Koyuki: quote[0] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(32,29): error TS2344: Type 'Equal<Input<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>, number>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'.",
+            "src/business-pair-investigation.ts(33,30): error TS2344: Type 'false' does not satisfy the constraint 'true'."
+          ],
+          "existingContractDiagnostics": 0
+        }
+      ]
+    },
+    {
+      "candidate": "raw-definition",
+      "businessSourceSha256": "7ef3a90f0f56971b9fdd85db0c9b6061b4b02c31b2644105d895e78599bf5442",
+      "baseline": {
+        "accepted": true,
+        "diagnostics": []
+      },
+      "probes": [
+        {
+          "variant": "inline-operations",
+          "fixtureSha256": "7e732460f050f8334629705073956c387c917f2dde72cc3c47d91e83e25fe5fe",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(29,25): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type '(<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">) & ([<T extends Readonly<{ amount: number; }>>(input: T) => Result<...>] extends [...] ? unknown : { readonly [K in `Koyuki: quote[0] ${...}`]: never; }) & Rule<...>'.",
+            "      Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type '[<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">] extends [Rule<Value<LoadResult<SpecializedLoader<(input: number) => Promise<...>, readonly [...]>>>, StageOutput<...>, \"Declined\">] ? unknown : { readonly [K in `Koyuki: quote[0] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(29,33): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '(pair: Pair) => Result<string, never>' is not assignable to type '((pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>) & ([(pair: Readonly<{ input: Context; value: number; }>) => Result<...>] extends [...] ? unknown : { readonly [K in `Koyuki: quote[1] ${...}`]: never; }) & Rule<...>'.",
+            "      Type '(pair: Pair) => Result<string, never>' is not assignable to type '[(pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>] extends [Rule<StageOutput<<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, Value<...>>, string, never>] ? unknown : { readonly [K in `Koyuki: quote[1] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(31,29): error TS2344: Type 'Equal<Input<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>, number>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'.",
+            "src/business-pair-investigation.ts(32,30): error TS2344: Type 'Equal<Result<...>, Result<...>>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'."
+          ],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "bound-operations",
+          "fixtureSha256": "554c20cf958318c96d06217037bcadf814ad3e937d3253a76fa75e80248c1797",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(30,3): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Pair) => Result<string, never>]; }' is not assignable to type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<{ input: Context; value: number; }>) => Result<...>]; } & NoInfer<{ ...; }>'.",
+            "      Type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Pair) => Result<string, never>]; }' is not assignable to type '{ readonly quote: readonly [DiagnosticRule<...>, DiagnosticRule<...>]; }'.",
+            "        Types of property 'quote' are incompatible.",
+            "          Type 'readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<{ input: Context; value: number; }>) => Result<...>]' is not assignable to type 'readonly [DiagnosticRule<...>, DiagnosticRule<...>]'.",
+            "            Type at position 0 in source is not compatible with type at position 0 in target.",
+            "              Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type 'DiagnosticRule<<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, Value<LoadResult<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [...]>>>, StageOutput<...>, \"quote\", \"0\">'.",
+            "                Type '<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">' is not assignable to type '[<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">] extends [Rule<Value<LoadResult<SpecializedLoader<(input: number) => Promise<...>, readonly [...]>>>, StageOutput<...>, \"Declined\">] ? unknown : { readonly [K in `Koyuki: quote[0] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(32,29): error TS2344: Type 'Equal<Input<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>, number>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'.",
+            "src/business-pair-investigation.ts(33,30): error TS2344: Type 'Equal<Result<...>, Result<...>>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'."
+          ],
+          "existingContractDiagnostics": 0
+        }
+      ]
+    },
+    {
+      "candidate": "raw-definition-and-literal-pair",
+      "businessSourceSha256": "808ef63b80719951de0f7bc75b54672d46ae843eb57d303e8535835ae8a818f6",
+      "baseline": {
+        "accepted": true,
+        "diagnostics": []
+      },
+      "probes": [
+        {
+          "variant": "inline-operations",
+          "fixtureSha256": "7e732460f050f8334629705073956c387c917f2dde72cc3c47d91e83e25fe5fe",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(29,33): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '(pair: Pair) => Result<string, never>' is not assignable to type '((pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>) & ([(pair: Readonly<{ input: Context; value: number; }>) => Result<...>] extends [...] ? unknown : { readonly [K in `Koyuki: quote[1] ${...}`]: never; }) & Rule<...>'.",
+            "      Type '(pair: Pair) => Result<string, never>' is not assignable to type '[(pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>] extends [(input: StageOutput<<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, Value<...>>) => Result<...>] ? unknown : { readonly [K in `Koyuki: quote[1] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(31,29): error TS2344: Type 'Equal<Input<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>, number>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'.",
+            "src/business-pair-investigation.ts(32,30): error TS2344: Type 'Equal<Result<...>, Result<...>>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'."
+          ],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "bound-operations",
+          "fixtureSha256": "554c20cf958318c96d06217037bcadf814ad3e937d3253a76fa75e80248c1797",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(30,3): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Pair) => Result<string, never>]; }' is not assignable to type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<{ input: Context; value: number; }>) => Result<...>]; } & NoInfer<{ ...; }>'.",
+            "      Type '{ readonly quote: readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Pair) => Result<string, never>]; }' is not assignable to type '{ readonly quote: readonly [Rule<Value<LoadResult<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>>, StageOutput<...>, \"Declined\">,...'.",
+            "        Types of property 'quote' are incompatible.",
+            "          Type 'readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<{ input: Context; value: number; }>) => Result<...>]' is not assignable to type 'readonly [Rule<Value<LoadResult<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Readonly<{ amount: number; }>>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>>, StageOutput<...>, \"Declined\">, DiagnosticRule<.....'.",
+            "            Type at position 1 in source is not compatible with type at position 1 in target.",
+            "              Type '(pair: Pair) => Result<string, never>' is not assignable to type 'DiagnosticRule<(pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>, StageOutput<<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, Value<...>>, string, \"quote\", \"1\">'.",
+            "                Type '(pair: Pair) => Result<string, never>' is not assignable to type '[(pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>] extends [(input: StageOutput<<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, Value<...>>) => Result<...>] ? unknown : { readonly [K in `Koyuki: quote[1] ${...}`]: never; }'.",
+            "src/business-pair-investigation.ts(32,29): error TS2344: Type 'Equal<Input<SpecializedLoader<(input: number) => Promise<Result<Context, never>>, readonly [<T extends Base>(input: T) => Result<Readonly<{ input: T; value: number; }>, \"Declined\">, (pair: Readonly<...>) => Result<...>]>>, number>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'.",
+            "src/business-pair-investigation.ts(33,30): error TS2344: Type 'Equal<Result<...>, Result<...>>' does not satisfy the constraint 'true'.",
+            "  Type 'boolean' is not assignable to type 'true'."
+          ],
+          "existingContractDiagnostics": 0
+        }
+      ]
+    }
+  ]
+}

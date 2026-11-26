@@ -1,5 +1,8 @@
 # 入力保持の型計算とbusiness全体の推論を分けて調べる
 
+後続の[設定全体を先に推論する候補](business-raw-definition-investigation.md)も、
+既存契約を保つ条件で正例を受理できず、不採用とした。
+
 [以前の中間型補正](business-pair-specialization-investigation.md)に続き、設定全体を先に束縛する場合と、
 元の入力を保持する型計算だけを切り出す場合を調べた。基準はbba2e06c0512caf1db4ba827e7497cb189907afe。
 core・実行API・購買モデルは変更していない。
