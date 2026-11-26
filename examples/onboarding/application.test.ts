@@ -16,7 +16,8 @@ test('submit then approve preserves fields, records actors, advances versions an
   assert.deepEqual(await owner.submit({ id: 'e1', expectedVersion: 1, approverId: 'boss' }), { ok: true, value: submitted });
   const report = await boss.approve.runDetailed(input);
   assert.deepEqual(report.result, { ok: true, value: { ...submitted, state: 'approved', version: 3, approvedBy: 'boss' } });
-  assert.deepEqual(report.trace.map(row => row.status), ['ok', 'ok', 'ok']);
+  assert(report.trace.length >= 3, 'load, at least one domain rule, and save are observed');
+  assert(report.trace.every(row => row.status === 'ok'));
   assert.deepEqual(host.counts(), { loads: 2, saves: 2, writes: 2 }); assert.equal(host.row().state, 'approved');
   assert.deepEqual(draft, { id: 'e1', version: 1, ownerId: 'owner', amountCents: 200, state: 'draft' });
 });
@@ -86,7 +87,10 @@ test('blank and oversized rejection reasons stop before save', async () => {
     const { host, api } = client(submitted);
     const report = await api.reject.runDetailed({ ...input, reason });
     assert.deepEqual(report.result, { ok: false, error: { kind: 'InvalidInput' } });
-    assert.deepEqual(report.trace.map(row => row.status), ['ok', 'error']); assert.equal(host.counts().saves, 0);
+    assert(report.trace.length >= 2, 'load and the failing domain rule are observed');
+    assert.equal(report.trace.at(-1)?.status, 'error');
+    assert(report.trace.slice(0, -1).every(row => row.status === 'ok'));
+    assert.equal(host.counts().saves, 0);
   }
 });
 test('NotFound stops before rules and save', async () => {

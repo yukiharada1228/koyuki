@@ -41,6 +41,20 @@ saveは最後の成功値を保存します。途中の失敗はそのまま返�
 `ports.load<RejectInput>`のように明示的に特殊化する書き方も使えます。
 型はcontracts.tsにあり、任意のgeneric関数の相関を自動復元するという意味ではありません。
 
+共通のgeneric検証を配列の先頭に置く場合、後段の関数から操作固有の要求型まで
+推論できるとは限りません。その場合は操作側のloadに型引数を付けます。
+検証関数を複製したり、loadを手で呼び出したりする必要はありません。
+
+```ts
+operations: {
+  submit: { load: ports.load<SubmitInput>, run: [common, submission, submit] },
+  reject: { load: ports.load<RejectInput>, run: [common, approval, rejection, reject] },
+}
+```
+
+接続の型エラーが呼出し側にも連鎖したときは、まずapplication内の
+`Koyuki: 操作名[段階] input must accept prior output`が示す位置を確認してください。
+
 型の合う関数列とsaveから、操作の入力・成功・失敗型が推論されます。
 汎用saveが実際に受け取った状態型を返す契約を持つ場合は、状態ごとの成功型も保てます。
 型アサーションを追加する前に、loadの入力と最初のRule、各Ruleの入出力、最後のRuleとsaveの型を確認してください。

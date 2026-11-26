@@ -65,6 +65,23 @@ try {
     assert(reference.includes('submit: [submit]')); writeFileSync(application, reference.replace('submit: [submit]', 'submit: [approve]'));
     const diagnostic = npm(workspace, ['run', 'check'], true);
     assert(diagnostic.includes('application.test.ts'), 'Wrong output state must fail the public type contract');
+    // The exercise permits domain rules to be split across multiple stages.
+    // Preserve the AI review implementation as a second structural case.
+    const staged = readFileSync(join(root, 'scripts/fixtures/onboarding-staged-solution.ts'), 'utf8');
+    writeFileSync(application, staged); npm(workspace, ['run', 'check']);
+    console.log(npm(workspace, ['test']).trim());
+    const commonLoadOnly = staged
+      .replace('submit: { load: ports.load<SubmitInput>, run: [common, submission, submit] },', 'submit: [common, submission, submit],')
+      .replace('reject: { load: ports.load<RejectInput>, run: [common, approval, rejection, reject] },', 'reject: [common, approval, rejection, reject],');
+    assert.notEqual(commonLoadOnly, staged);
+    writeFileSync(application, commonLoadOnly);
+    const inferredInputFailure = npm(workspace, ['run', 'check'], true);
+    assert(inferredInputFailure.includes('Koyuki: submit[1] input must accept prior output'));
+    assert(inferredInputFailure.includes('Koyuki: reject[2] input must accept prior output'));
+    assert(staged.includes('if (!context.actor.active)'));
+    writeFileSync(application, staged.replace('if (!context.actor.active)', 'if (false)'));
+    npm(workspace, ['run', 'check']); npm(workspace, ['test'], true);
+    writeFileSync(application, staged);
     const prepared = join(temporary, 'participant');
     const preparation = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--prepare', prepared], { encoding: 'utf8' });
     assert.equal(preparation.status, 0, `${preparation.stdout}${preparation.stderr}`);
@@ -72,6 +89,6 @@ try {
     const preparedMetadata = JSON.parse(readFileSync(join(prepared, 'DEVELOPMENT.json'), 'utf8'));
     assert.equal(digest(join(prepared, 'koyuki-development.tgz')), preparedMetadata.packageSha256);
     assert(!existsSync(join(prepared, 'node_modules'))); assert(!existsSync(join(prepared, 'onboarding-solution.ts')));
-    console.log('Verified unsolved starter, reference behavior, two rejected rule mutations, one rejected typed connection, and preparation/refusal paths from the actual packed package. This is exercise readiness, not independent-user DX evidence.');
+    console.log('Verified unsolved starter, single-rule and staged behavior, three rejected rule mutations, two rejected typed connections, and preparation/refusal paths from the actual packed package. This is exercise readiness, not independent-user DX evidence.');
   }
 } finally { rmSync(temporary, { recursive: true, force: true }); }
