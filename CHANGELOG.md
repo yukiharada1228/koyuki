@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 明示的なbindMutation rendererで、判断結果のその場の変更や配列属性の差し替えを保存前に拒否する。renderer前の判断記録とdescriptorによるJSON形式検査を追加し、getterや情報を失う値は実行前に拒否。rendererなしのopaqueな通常保存は維持し、7件の回帰検査を配布consumerへ追加した。
+
 - 購買checkReceiptの成功型に、検証済みの入荷accepted・関連注文placedを反映。状態を差し替えた検証文脈の再利用を型で拒否し、状態型だけを外す対照検査も配布consumerへ追加した。実行時の検証順序は維持する。
 
 - 購買の入荷・返品・訂正の次状態型を、在庫計画・互換入口・通常公開操作まで保持する。既存Workflowで接続し、追加callback注釈なしでaccepted/returnedを推論。従来の段階名と再送の広い型を維持し、診断CLIは12宣言・25操作・52ラベルを検査する。元の3つの文脈注釈と一般の推論制限は残す。

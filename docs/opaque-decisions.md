@@ -55,7 +55,9 @@ API利用者は、すべての計画にinputがあるとは仮定せずinputStat
 rendererなしでは外部の保存ノードを選択できないため、workflowの成功値を直接saveへ渡す。
 rendererを指定した既存のView経路は、登録済みの保存能力・決定値の一致を引き続き確認する。
 別のbindingのノード、偽造したノード、変更した決定値を許可する変更ではない。
-この明示的なView経路には従来のJSON照合の制限が残る。
+この明示的なView経路はplainなJSONデータへ限定する。
+[renderer前の判断記録とdescriptor検査](mutation-renderer-identity.md)で、
+その場の変更やJSON化による情報消失を見逃す不具合を修正した。任意のopaque値を扱う経路とは区別する。
 
 replayのrequest snapshotは別の[要求データの契約](replay-request-snapshot.md)を持ち、情報を失うコピーは照会前に拒否する。
 host固有のfingerprint・永続receiptの形式は変更しない。

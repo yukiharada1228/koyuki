@@ -171,13 +171,16 @@ export function bindMutation<I, O, E, S, F>(config: {
     const finishRender = observe?.live ? observe.scope?.('render-and-verify') : undefined;
     let prepared: { rendered: View; task: { execute: () => Promise<Result<unknown, unknown>> } };
     try {
+      // Capture before invoking user rendering: comparing two aliases afterwards
+      // would allow an in-place mutation to redefine the original decision.
+      const expected = canonicalIdentity(decision.value);
       const rendered = view(decision.value);
       let node = rendered;
       while (node.kind === 'mutation') node = node.child;
       if (node.kind !== 'write') throw new Error('WrongMutationBinding');
       const task = tasks.get(node);
       if (!task || task.identity !== identity) throw new Error('WrongMutationBinding');
-      if (canonicalIdentity(node.input) !== canonicalIdentity(decision.value)) throw new Error('ChangedDecision');
+      if (canonicalIdentity(node.input) !== expected || canonicalIdentity(decision.value) !== expected) throw new Error('ChangedDecision');
       prepared = { rendered, task }; finishRender?.('ok');
     } catch (cause) { finishRender?.('defect'); throw cause; }
     const { rendered, task } = prepared;
