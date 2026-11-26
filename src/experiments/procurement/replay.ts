@@ -1,17 +1,21 @@
 import { withReplay, ok, type Result, type Receipt, type Execution, type ActionReport } from '../../framework/index.js';
 import { procurementChanges, type Committed } from './application.js';
-import { prepareReplay, type ReplayRequest, type ReplayError } from './replay-identity.js';
+import { prepareReplay, requireExecutionKind, type ReplayRequest, type ReplayError } from './replay-identity.js';
 import type { Actor, Policy, Entity, Change, RuleError } from './domain.js';
 import type { ProcurementRepository, StorageError } from './repository.js';
+export type RepositoryExecution<T extends Entity> =
+  | Readonly<{ kind: 'committed'; value: Committed<T> }>
+  | Readonly<{ kind: 'replayed'; value: Committed }>;
 export interface ReplayRepository extends ProcurementRepository {
   readonly lookupExecution: (request: ReplayRequest, actor: Actor) => Result<Receipt<Committed>, ReplayError> | Promise<Result<Receipt<Committed>, ReplayError>>;
-  readonly commitExecution: <T extends Entity>(change: Change<T>, actor: Actor, request: ReplayRequest) => Promise<Result<Execution<Committed<T>>, StorageError | ReplayError>>;
+  readonly commitExecution: <T extends Entity>(change: Change<T>, actor: Actor, request: ReplayRequest) => Promise<Result<RepositoryExecution<T>, StorageError | ReplayError>>;
 }
 export type ReplayCall<I> = Readonly<{ requestId: string; input: I }>;
 type Failure = RuleError | StorageError | ReplayError;
 type Input<C> = C extends { run(input: infer I): unknown } ? I : never;
 // Historical results are not proved by the current decision's narrower success type.
-// Keep the model-wide receipt contract until lookup validates per-operation outcomes.
+// Keep the model-wide receipt contract: kind is checked, but an operation's exact
+// state outcome is not proved by the current decision or a decoded history record.
 type Output<C> = C extends { run(input: never): Promise<Result<infer O, unknown>> }
   ? O extends Committed<infer T extends Entity> ? Committed<Extract<Entity, { kind: T['kind'] }>> : O : never;
 type Tables = ReturnType<typeof procurementChanges<StorageError>>;
@@ -27,6 +31,7 @@ export function procurementReplay(repository: ReplayRepository, trustedActor: Ac
     const commands: Record<string, unknown> = {};
     for (const name of Object.keys(declared[group])) {
       const operation = `procurement.${namespaces[group]}.v1.${name}`;
+      const resultKind = group === 'inventory' ? 'stock' : namespaces[group];
       const execute = async (call: ReplayCall<unknown>, detailed: boolean): Promise<ActionReport<Execution<Committed>, Failure>> => {
         const identity = await prepareReplay(call.requestId, operation, call.input, actor);
         if (!identity.ok) return { result: identity, trace: [], plan: null };
@@ -36,8 +41,11 @@ export function procurementReplay(repository: ReplayRepository, trustedActor: Ac
           commit: async (change, identityActor) => {
             const result = await repository.commitExecution(change, identityActor, identity.value);
             if (!result.ok) return result;
+            requireExecutionKind(result.value.value, resultKind);
             saved = result.value;
-            return ok(result.value.value.result);
+            // Only acknowledge the current typed attempt here. The public result
+            // below always comes from saved, including a concurrent winner's history.
+            return ok(result.value.kind === 'committed' ? result.value.value.result : change.result);
           },
         };
         // The public mapped table preserves each key's input/output; erase only runtime dispatch.
@@ -53,7 +61,10 @@ export function procurementReplay(repository: ReplayRepository, trustedActor: Ac
         runDetailed: (call: ReplayCall<unknown>) => execute(call, true) }, {
         lookup: async (call: ReplayCall<unknown>) => {
           const identity = await prepareReplay(call.requestId, operation, call.input, actor);
-          return identity.ok ? repository.lookupExecution(identity.value, actor) : identity;
+          if (!identity.ok) return identity;
+          const receipt = await repository.lookupExecution(identity.value, actor);
+          if (receipt.ok && receipt.value.kind === 'found') requireExecutionKind(receipt.value.value, resultKind);
+          return receipt;
         }, resolveAfter: () => true,
       });
     }

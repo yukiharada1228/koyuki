@@ -1,10 +1,12 @@
 import type { EntityKey, ProjectionError } from './current-projection.js';
 import { replayAccess, type ReplayRequest, type ReplayError } from './replay-identity.js';
 import type { Committed } from './application.js';
+import type { RepositoryExecution } from './replay.js';
 // Node host adapter, outside the Web-standard dependency-free framework core.
 import { DatabaseSync } from 'node:sqlite';
-import { ok, err, type Result, type Execution, type Receipt } from '../../framework/index.js';
+import { ok, err, type Result, type Receipt } from '../../framework/index.js';
 import { restoreEntity, type Actor, type Entity, type Change } from './domain.js';
+import { assertStorageData } from './storage-values.js';
 import { MemoryProcurement, type ProcurementRepository, type RelatedKind, type StorageError } from './repository.js';
 const conflict = (cause: unknown) => cause !== null && typeof cause === 'object' && 'errcode' in cause &&
   typeof cause.errcode === 'number' && [5, 6, 1555, 2067].includes(cause.errcode);
@@ -110,16 +112,20 @@ export class SqliteProcurement implements ProcurementRepository {
   }
   async commit<T extends Entity>(change: Change<T>, actor: Actor): Promise<Result<T, StorageError>> {
     const result = this.persist(change, actor);
-    if (result.ok) return ok(result.value.value.result);
+    if (result.ok) {
+      if (result.value.kind !== 'committed') throw new Error('UnexpectedProcurementReplayWithoutRequest');
+      return ok(result.value.value.result);
+    }
     if (result.error.kind === 'Conflict' || result.error.kind === 'NotFound') return err(result.error);
     throw new Error('UnexpectedProcurementReplayError');
   }
-  async commitExecution<T extends Entity>(change: Change<T>, actor: Actor, request: ReplayRequest): Promise<Result<Execution<Committed<T>>, StorageError | ReplayError>> {
+  async commitExecution<T extends Entity>(change: Change<T>, actor: Actor, request: ReplayRequest): Promise<Result<RepositoryExecution<T>, StorageError | ReplayError>> {
     return this.persist(change, actor, request);
   }
-  private persist<T extends Entity>(change: Change<T>, actor: Actor, request?: ReplayRequest): Result<Execution<Committed<T>>, StorageError | ReplayError> {
+  private persist<T extends Entity>(change: Change<T>, actor: Actor, request?: ReplayRequest): Result<RepositoryExecution<T>, StorageError | ReplayError> {
     if (actor.groupId !== this.groupId) return err({ kind: 'Conflict' });
     if (request) { const denied = replayAccess(request, actor); if (denied) return err(denied); }
+    assertStorageData(change.result); assertStorageData(change.writes);
     // Validate serializability and domain shapes before opening the transaction.
     const writes = change.writes.map(entity => {
       const restored = restoreEntity(entity); if (!restored) throw new Error('InvalidProcurementWrite');
@@ -139,8 +145,8 @@ export class SqliteProcurement implements ProcurementRepository {
         if (!cached.ok) { this.db.exec('ROLLBACK'); transaction = false; return cached; }
         if (cached.value.kind === 'found') {
           this.db.exec('ROLLBACK'); transaction = false;
-          // Stable operation/request identity owns the historical output type.
-          return ok({ kind: 'replayed', value: cached.value.value as Committed<T> });
+          // History is decoded independently of the current decision's narrower T.
+          return ok({ kind: 'replayed', value: cached.value.value });
         }
       }
       // Restore only declared preconditions. Cross-row uniqueness is enforced by SQL indexes.

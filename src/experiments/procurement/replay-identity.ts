@@ -1,5 +1,10 @@
 import { ok, err, type Result } from '../../framework/index.js';
-import type { Actor } from './domain.js';
+import type { Actor, Entity } from './domain.js';
+import type { Committed } from './application.js';
+/** A request ID names history; the operation boundary must still validate its model. */
+export function requireExecutionKind(value: Committed, kind: Entity['kind']): void {
+  if (value.result.kind !== kind) throw new Error('UnexpectedProcurementExecutionKind');
+}
 export type ReplayRequest = Readonly<{ requestId: string; operation: string; fingerprint: string }>;
 export type ReplayError = Readonly<{ kind: 'InvalidReplayRequest' | 'ReplayMismatch' | 'Denied' | 'CommitUnknown' }>;
 const identifier = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value.length <= 200 && value === value.trim();

@@ -1,5 +1,6 @@
 import { ok, err, type Result } from '../../framework/index.js';
 import { type Actor, type Entity, type Change } from './domain.js';
+import { assertStorageData } from './storage-values.js';
 export type StorageError = Readonly<{ kind: 'NotFound' | 'Conflict' }>;
 export type RelatedKind = 'order' | 'receipt' | 'invoice' | 'payment';
 export interface ProcurementRepository<CommitError = StorageError> {
@@ -35,6 +36,7 @@ export class MemoryProcurement implements ProcurementRepository {
     for (const condition of change.checks) {
       if (condition.groupId !== actor.groupId || (this.records.get(key(condition.kind, condition.groupId, condition.id))?.version ?? null) !== condition.version) return err({ kind: 'Conflict' });
     }
+    assertStorageData(change.result); assertStorageData(change.writes);
     const written = new Set<string>();
     for (const entity of change.writes) {
       const id = key(entity.kind, entity.groupId, entity.id), before = change.checks.find(condition => key(condition.kind, condition.groupId, condition.id) === id);

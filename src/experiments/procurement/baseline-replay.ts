@@ -2,7 +2,7 @@ import { baselineStepName } from './trace-contract.js';
 import type { Result, Execution, Receipt, ReplayReport, ReplayTrace, Trace, ReplayInputError } from '../../framework/index.js';
 import { plainProcurement, plainWithCommit } from './plain.js';
 import { helperWithCommit } from './helper.js';
-import { prepareReplay, type ReplayError, type ReplayRequest } from './replay-identity.js';
+import { prepareReplay, requireExecutionKind, type ReplayError, type ReplayRequest } from './replay-identity.js';
 import type { ReplayRepository, ReplayCall } from './replay.js';
 import type { Committed } from './application.js';
 import type { Actor, Policy, Entity, RuleError } from './domain.js';
@@ -28,6 +28,7 @@ export function baselineReplay(mode: 'plain' | 'helper', repository: ReplayRepos
     const commands: Record<string, unknown> = {};
     for (const name of Object.keys(declared[group])) {
       const operation = `procurement.${namespaces[group]}.v1.${name}`;
+      const resultKind = group === 'inventory' ? 'stock' : namespaces[group];
       async function execute(original: ReplayCall<unknown>, detailed: boolean): Promise<ReplayReport<Committed, Failure, ReplayError>> {
         const trace: ReplayTrace[] = [];
         let attempt: ReplayReport<Committed, Failure, ReplayError>['attempt'] = null;
@@ -37,7 +38,12 @@ export function baselineReplay(mode: 'plain' | 'helper', repository: ReplayRepos
         catch { trace.push({ kind: 'snapshot', status: 'error' }); return report(err({ kind: 'ReplayInputNotCloneable' })); }
         trace.push({ kind: 'snapshot', status: 'ok' });
         const prepared = await prepareReplay(call.requestId, operation, call.input, actor);
-        const lookup = (): Result<Receipt<Committed>, ReplayError> | Promise<Result<Receipt<Committed>, ReplayError>> => prepared.ok ? repository.lookupExecution(prepared.value, actor) : prepared;
+        const lookup = async (): Promise<Result<Receipt<Committed>, ReplayError>> => {
+          if (!prepared.ok) return prepared;
+          const receipt = await repository.lookupExecution(prepared.value, actor);
+          if (receipt.ok && receipt.value.kind === 'found') requireExecutionKind(receipt.value.value, resultKind);
+          return receipt;
+        };
         const cached = await lookup();
         trace.push({ kind: 'lookup', phase: 'before', status: cached.ok ? cached.value.kind : 'error' });
         if (!cached.ok) return report(cached);
@@ -51,7 +57,9 @@ export function baselineReplay(mode: 'plain' | 'helper', repository: ReplayRepos
             if (detailed) plan = { kind: 'write', operation, input: structuredClone(change) };
             const result = await repository.commitExecution(change, identityActor, request);
             if (!result.ok) return result;
-            saved = result.value; return ok(result.value.value.result);
+            requireExecutionKind(result.value.value, resultKind);
+            saved = result.value;
+            return ok(result.value.kind === 'committed' ? result.value.value.result : change.result);
           },
         };
         const declared = factory(bound, actor, policy, detailed ? event => stages.push({

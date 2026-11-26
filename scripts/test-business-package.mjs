@@ -142,7 +142,7 @@ try {
   writeFileSync(join(consumer, 'order-lines.ts'), readFileSync(join(root, 'src/examples/order-lines.ts'), 'utf8').replace("'../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'customer-import-sqlite.test.ts'), readFileSync(join(root, 'src/customer-import-sqlite.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'").replaceAll("'./examples/customer-import/", "'./customer-import/"));
   mkdirSync(join(consumer, 'procurement'));
-  for (const file of ['domain.ts', 'repository.ts', 'application.ts', 'context.ts', 'context-framework.ts', 'context-process.ts', 'context-application.ts', 'comparison-scenario.ts', 'failure-testing.ts', 'comparison-contract.ts', 'plain.ts', 'helper.ts', 'trace-contract.ts', 'baseline-detail.ts', 'baseline-replay.ts', 'baseline-application.ts', 'inventory.ts', 'receipt-pipeline.ts', 'request-pipeline.ts', 'sqlite.ts', 'projection.ts', 'replay-identity.ts', 'replay.ts', 'current-projection.ts']) writeFileSync(join(consumer, 'procurement', file),
+  for (const file of ['domain.ts', 'repository.ts', 'storage-values.ts', 'application.ts', 'context.ts', 'context-framework.ts', 'context-process.ts', 'context-application.ts', 'comparison-scenario.ts', 'failure-testing.ts', 'comparison-contract.ts', 'plain.ts', 'helper.ts', 'trace-contract.ts', 'baseline-detail.ts', 'baseline-replay.ts', 'baseline-application.ts', 'inventory.ts', 'receipt-pipeline.ts', 'request-pipeline.ts', 'sqlite.ts', 'projection.ts', 'replay-identity.ts', 'replay.ts', 'current-projection.ts']) writeFileSync(join(consumer, 'procurement', file),
     readFileSync(join(root, 'src/experiments/procurement', file), 'utf8').replace("'../../framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'procurement-load-composition.test.ts'), readFileSync(join(root, 'src/procurement-load-composition.test.ts'), 'utf8')
     .replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
@@ -170,6 +170,7 @@ try {
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   writeFileSync(join(consumer, 'procurement-observation-comparison.test.ts'), readFileSync(join(root, 'src/procurement-observation-comparison.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
+  writeFileSync(join(consumer, 'procurement-storage-values.test.ts'), readFileSync(join(root, 'src/procurement-storage-values.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-application-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-application-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-failure-observation.test.ts'), readFileSync(join(root, 'src/procurement-failure-observation.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
@@ -205,6 +206,19 @@ try {
   console.log(run('npm', ['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], consumer));
   console.log(run('npm', ['run', 'check'], consumer));
   console.log(run('npm', ['test'], consumer));
+  // Reintroduce the adapters' old silent clone behavior in this disposable copy.
+  const storageGuard = join(consumer, 'procurement/storage-values.ts');
+  const guardedStorage = readFileSync(storageGuard, 'utf8');
+  try {
+    writeFileSync(storageGuard, 'export function assertStorageData(value: unknown): void { void value; }\n');
+    const rejected = spawnSync('npm', ['exec', '--', 'tsx', '--test', 'procurement-storage-values.test.ts'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || !rejected.status || !output.includes('Missing expected rejection (DataCloneError)')
+      || !output.includes('DTO save refuses lossy values before changing storage: memory')
+      || !output.includes('DTO save refuses lossy values before changing storage: sqlite')
+      || !output.includes('lossy DTO values do not create a SQLite replay receipt')) throw Error(`Silent-clone control did not fail at the storage contracts:\n${output}`);
+  } finally { writeFileSync(storageGuard, guardedStorage); }
+  console.log('Verified storage DTO preflight and rejection of the silent-clone negative control; opaque core-domain values remain supported.');
   console.log(run('npm', ['exec', '--', 'tsx', 'business-quickstart.ts'], consumer));
   writeFileSync(join(consumer, 'tsconfig.no-node.json'), JSON.stringify({ compilerOptions: {
     target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true,
