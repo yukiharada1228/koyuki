@@ -4,8 +4,8 @@
 
 後続の[関数列の入力保持](business-input-retention.md)では、先に束縛したgenericなwithInputを追加のContext callback注釈なしで接続できるようにした。
 さらに[入荷・返品・数量訂正の直接接続](procurement-direct-receipt-stages.md)で、接続のための在庫文脈の重複注釈3つを削除した。
-通常の業務関数の型宣言は必要であり、任意の多相変換、配列内の直接呼出し、独立利用者の評価は残る。
-[名前付きstep](step-generic-first.md)も元のgeneric関数型を保持し、購買の段階を追加注釈なしでstep呼出しへ揃えた。
+通常の業務関数の型宣言は必要であり、任意の多相変換、名前なしのwithInput直接呼出し、独立利用者の評価は残る。
+[名前付きstep](step-generic-first.md)も元のgeneric関数型を保持し、inlineのwithInputにも対応する。購買の段階を追加注釈なしでstep呼出しへ揃えた。
 講演全内容の完全実現、React/Elmと同等の開発体験、一般的な生産性優位はまだ確認できていない。
 この判定は、下記のコードと検査が対象とする範囲に限る。
 [購買に残る接続の棚卸し](procurement-remaining-connections.md)では、宣言した25操作の外側の実行委譲と、

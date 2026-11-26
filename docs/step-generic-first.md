@@ -13,7 +13,9 @@ const number = named.rule(2);          // Result<{ item: number }, never>
 const text = named.rule('approved');   // Result<{ item: string }, never>
 ```
 
-先に束縛したgenericなwithInputも、businessの配列へstepで包んで渡せる。
+genericなwithInputも、businessの配列へstepで包んで渡せる。
+後続の19d88e0では戻り型から関数を逆推論しないようにし、step('quote', withInput(quote))のinline指定にも対応した。
+具体的なStep型から無注釈callbackの入力型を補う既存の書き方も検査する。
 [実行できる例](business-input-retention.md)のcalculate段階と、[購買の入荷・返品・数量訂正](procurement-direct-receipt-stages.md)へ適用した。
 在庫用の文脈型を繰り返す必要はなく、段階名・状態型・失敗停止・選択観測は維持する。
 
@@ -25,11 +27,11 @@ step自体のParameters/ReturnTypeの反射は、末尾の従来署名を維持�
 
 新しいbusinessの名前付き入力保持の検査は、修正前に接続と厳密型で失敗し、修正後に成功する。
 同じ[stepの検査](../src/step-generic-first.test.ts)で、元の関数型の厳密一致と上記の非identityな出力の対応も検査する。
-全体1,139件、TypeScript 6.0.3/7.0.2の配布物各795件、既存の不正定義・対照検査で確認する。
+全体1,141件、TypeScript 6.0.3/7.0.2の配布物各797件、既存の不正定義・対照検査で確認する。
 単独のstepの正例を、任意の多相変換や独立利用者の開発体験の保証にしない。
 
-配列内でstep('quote', withInput(quote))と直接呼ぶgenericな例は、まだ不受理である。
-この場合はwithInputを先に束縛する。通常の具体的なContextを注釈したinlineの対応とは区別する。
+名前なしの配列要素として[withInput(quote), finish]と直接呼ぶgenericな例は、まだ不受理である。
+この場合は名前付きstepで包むか、withInputを先に束縛する。
 元のdefineTransitionの多相identityと未注釈evolveの例も、[6.0.3](step-generic-identity6.json)・
 [7.0.2](step-generic-identity7.json)で再確認し、不受理のままである。既存契約の追加診断は0。
 単独のnamed.ruleの呼出しにおける型の対応と、宣言全体の文脈付き推論を区別する。

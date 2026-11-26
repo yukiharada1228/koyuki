@@ -3,7 +3,7 @@
 [入荷・返品・数量訂正の直接接続](procurement-direct-receipt-stages.md)では、状態型・実行境界を保ち、在庫文脈の重複注釈3つを削除した。
 一般の推論制限、独立利用者の評価は残る。下記の3注釈の記述は各調査時点の履歴であり、9話題のpartialは維持する。
 [名前付きstepの型保持](step-generic-first.md)で、先に束縛したgeneric関数をhelper経由でも接続できるようにした。
-配列内のwithInput直接呼出しまで解消したという意味ではない。
+名前付きstepのinline呼出しにも対応したが、名前なしのwithInput直接呼出しは未解消である。
 
 [関数列の入力保持](business-input-retention.md)では、実際の関数契約で保証できるgenericなinput/valueの中間型補正を採用した。
 以前の候補不採用の記録と区別し、配列内の直接呼出し・購買3つの注釈・独立利用者の評価は残す。

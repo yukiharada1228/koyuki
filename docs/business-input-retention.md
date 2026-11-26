@@ -3,7 +3,7 @@
 後続の[入荷・返品・数量訂正の直接接続](procurement-direct-receipt-stages.md)で、計画の状態型と組の内側のinputも保持し、
 在庫文脈の重複注釈3つを削除した。以下の件数・残件はda7b550時点の記録である。
 
-開発版では、genericなwithInputを先に束縛すると、関数列の中間でも元の文脈を保持できる。
+開発版では、genericなwithInputを名前付きstepで直接指定しても、関数列の中間で元の文脈を保持できる。
 withInput用のcallbackへContextを重ねて注釈したり、接続だけのWorkflowを作ったりする必要がない例を追加した。
 
 ```ts
@@ -14,7 +14,6 @@ function calculate<T extends Pick<Context, 'amount'>>(input: T): Result<number, 
   const total = input.amount * 2;
   return Number.isSafeInteger(total) && input.amount > 0 ? ok(total) : err('Declined');
 }
-const calculated = withInput(calculate);
 const finish = (pair: Readonly<{ input: Context; value: number }>) =>
   ok<Quote>({ currency: pair.input.currency, total: pair.value });
 const saved: Quote[] = [];
@@ -22,7 +21,7 @@ const quotes = business({
   name: 'quote.v1',
   load: async (amount: number) => ok<Context>({ amount, currency: 'JPY' }),
   save: async (value: Quote) => { saved.push(value); return ok(value); },
-  operations: { create: [step('calculate', calculated), finish] },
+  operations: { create: [step('calculate', withInput(calculate)), finish] },
 });
 const accepted = await quotes.create(100);
 const rejected = await quotes.create(-1);
@@ -33,6 +32,7 @@ if (!accepted.ok || accepted.value.currency !== 'JPY' || accepted.value.total !=
 要求はnumber、成功はQuote、失敗はDeclinedと推論する。saveは説明用のメモリ配列で、DB・認証・再送は実装していない。
 このコードをpack済みconsumerでも型検査・実行し、Node型なしの検査にも含める。
 名前付きの呼出しは[元の関数型を保つstep](step-generic-first.md)を使う現在の形へ更新した。
+以下の先行束縛が必要という説明はda7b550時点の記録で、現在は上記の名前付きinlineにも対応する。
 
 ## なぜ型を保持してよいのか
 
