@@ -494,6 +494,27 @@
         "src/framework/business.ts",
         "scripts/declarations.test.mjs"
       ]
+    },
+    "namedStepRetentionFollowUp": {
+      "implementationBaseCommit": "6f908327057aaa465764a40e79e445171767fdb3",
+      "sections": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up. Named step retains a single concrete callable after checking its actual input/success/failure contract. Dynamic function unions retain the established aggregate Result contract; incompatible inputs, async/scalar returns and missing private proofs remain rejected. Pre-bound generic withInput now composes through step in business with exact private context, input/output/error, stop/save/trace/capture checks. A generic non-identity T to item:T rule retains its per-call relation and function identity. Production receipt stages use step without additional context annotations. Inline withInput invocation inside the business array remains rejected. No runtime body, new public API, source/audio/frame review or independent-user evidence; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/step-generic-first.md",
+        "docs/business-input-retention.md",
+        "docs/procurement-direct-receipt-stages.md",
+        "src/step-generic-first.test.ts",
+        "src/business-input-pair.test.ts",
+        "src/framework/model.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/context-application.ts"
+      ]
     }
   },
   "sections": [
@@ -873,7 +894,8 @@
         "src/procurement-application-io-exceptions.test.ts",
         "docs/business-input-retention.md",
         "src/business-input-pair.test.ts",
-        "docs/procurement-direct-receipt-stages.md"
+        "docs/procurement-direct-receipt-stages.md",
+        "docs/step-generic-first.md"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",

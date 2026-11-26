@@ -9,28 +9,29 @@
 
 ```ts
 receive: [
-  { name: 'run:1', rule: receiveDecision },
-  { name: 'run:2', rule: includeReceivedStock },
+  step('run:1', receiveDecision),
+  step('run:2', includeReceivedStock),
 ],
 return: {
   load: context.receipt<ReasonInput>,
   run: [checkReceipt,
-    { name: 'run:2', rule: returnDecision },
-    { name: 'run:3', rule: includeChangedStock }],
+    step('run:2', returnDecision),
+    step('run:3', includeChangedStock)],
 },
 correct: {
   load: context.receipt<CorrectInput>,
   run: [checkReceipt,
-    { name: 'revalidate-correction', rule: correctedQuantities },
-    { name: 'correct-receipt-plan', rule: correctionPlan },
-    { name: 'run:3', rule: includeChangedStock }],
+    step('revalidate-correction', correctedQuantities),
+    step('correct-receipt-plan', correctionPlan),
+    step('run:3', includeChangedStock)],
 },
 ```
 
 これは[application.ts](../src/experiments/procurement/application.ts)の抜粋で、単独実行用のコードではない。
 [別の取得方式](../src/experiments/procurement/context-application.ts)でも同じ訂正の段階を接続する。
-名前付き段階は既存のname/ruleオブジェクトを使い、元の関数型をそのまま保持する。
-step(name, rule)を通した場合にあらゆるgenericな相関を保持できるという保証ではない。
+名前付き段階は[元の関数型を保つstep](step-generic-first.md)を使う。
+最初の移行ではname/ruleオブジェクトを直接指定したが、現在は同じ関数をstep helperでも接続できる。
+任意のgenericな相関を保持できるという保証ではない。
 
 receiveDecisionとreturnDecisionはそれぞれwithInput(receiveOrder)、withInput(returnCheckedReceipt)。
 [domain.ts](../src/experiments/procurement/domain.ts)の2関数は、必要なドメインの項目を制約とするTを受け取る。
@@ -86,11 +87,11 @@ Change<accepted>へ在庫計画を加えても、成功型をChange<Receipt>へ�
 診断・未解決は0。applicationだけでは7ラベルを解決し、41箇所が未解決のままである。
 宣言数の減少は業務操作や観測の削除ではない。
 
-リポジトリ全体は1,137件、配布物のconsumerは各compilerで793件を検査する。
+リポジトリ全体は1,139件、配布物のconsumerは各compilerで795件を検査する。
 配布物の15不正宣言と、生成関数を広い型へ戻す対照検査も継続する。
 
 ## 残る課題
 
-配列内のwithInput直接呼出し、一般の多相変換、名前付きstep helperを介するgenericな相関は別の制約がある。
+配列内のwithInput直接呼出しと一般の多相変換は別の制約がある。
 業務上の前提・順序・入力構築・計画の投影は引き続き利用者が宣言する。
 独立利用者の試用と原音確認も未完了であり、保守者の検査を学習負担や生産性の優位性の実証とはしない。

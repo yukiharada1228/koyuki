@@ -7,7 +7,7 @@
 withInput用のcallbackへContextを重ねて注釈したり、接続だけのWorkflowを作ったりする必要がない例を追加した。
 
 ```ts
-import { business, withInput, ok, err, type Result } from 'koyuki';
+import { business, withInput, step, ok, err, type Result } from 'koyuki';
 type Context = Readonly<{ amount: number; currency: string }>;
 type Quote = Readonly<{ currency: string; total: number }>;
 function calculate<T extends Pick<Context, 'amount'>>(input: T): Result<number, 'Declined'> {
@@ -22,7 +22,7 @@ const quotes = business({
   name: 'quote.v1',
   load: async (amount: number) => ok<Context>({ amount, currency: 'JPY' }),
   save: async (value: Quote) => { saved.push(value); return ok(value); },
-  operations: { create: [calculated, finish] },
+  operations: { create: [step('calculate', calculated), finish] },
 });
 const accepted = await quotes.create(100);
 const rejected = await quotes.create(-1);
@@ -32,6 +32,7 @@ if (!accepted.ok || accepted.value.currency !== 'JPY' || accepted.value.total !=
 
 要求はnumber、成功はQuote、失敗はDeclinedと推論する。saveは説明用のメモリ配列で、DB・認証・再送は実装していない。
 このコードをpack済みconsumerでも型検査・実行し、Node型なしの検査にも含める。
+名前付きの呼出しは[元の関数型を保つstep](step-generic-first.md)を使う現在の形へ更新した。
 
 ## なぜ型を保持してよいのか
 

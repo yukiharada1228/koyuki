@@ -434,6 +434,26 @@
         "src/framework/business.ts",
         "scripts/declarations.test.mjs"
       ]
+    },
+    "namedStepRetentionFollowUp": {
+      "implementationBaseCommit": "6f908327057aaa465764a40e79e445171767fdb3",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Implementation-only follow-up. Named step retains a single concrete callable after checking its actual input/success/failure contract. Dynamic function unions retain the established aggregate Result contract; incompatible inputs, async/scalar returns and missing private proofs remain rejected. Pre-bound generic withInput now composes through step in business with exact private context, input/output/error, stop/save/trace/capture checks. A generic non-identity T to item:T rule retains its per-call relation and function identity. Production receipt stages use step without additional context annotations. Inline withInput invocation inside the business array remains rejected. No runtime body, new public API, source/audio/frame review or independent-user evidence; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/step-generic-first.md",
+        "docs/business-input-retention.md",
+        "docs/procurement-direct-receipt-stages.md",
+        "src/step-generic-first.test.ts",
+        "src/business-input-pair.test.ts",
+        "src/framework/model.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/context-application.ts"
+      ]
     }
   },
   "sections": [
@@ -745,7 +765,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。配列内のwithInput呼出し、名前付きstep helper等のgeneric相関、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。",
+      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。先に束縛したgeneric関数はstep helperでも元の型を保持し、購買の段階へ適用した。配列内のwithInput直接呼出し、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",

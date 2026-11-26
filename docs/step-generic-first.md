@@ -1,5 +1,43 @@
 # 制約付きgeneric関数をそのまま名前付き段階にする
 
+## 現在：元の関数の型の対応も保つ
+
+6f90832では、単一の具体的な関数をstepへ渡した場合、ruleの型をその関数のまま保持する。
+例えばTからitem:Tを作る関数は、名前を付けた後も呼出しごとの対応を保つ。
+
+```ts
+import { step, ok } from 'koyuki';
+function wrap<T>(input: T) { return ok({ item: input }); }
+const named = step('wrap', wrap);
+const number = named.rule(2);          // Result<{ item: number }, never>
+const text = named.rule('approved');   // Result<{ item: string }, never>
+```
+
+先に束縛したgenericなwithInputも、businessの配列へstepで包んで渡せる。
+[実行できる例](business-input-retention.md)のcalculate段階と、[購買の入荷・返品・数量訂正](procurement-direct-receipt-stages.md)へ適用した。
+在庫用の文脈型を繰り返す必要はなく、段階名・状態型・失敗停止・選択観測は維持する。
+
+元の関数を推論すると同時に、実際の入力・成功・失敗の契約を検査する。
+関数のUnionは従来どおり、全候補の成功/失敗を含む一つのResultの契約として公開する。
+異なる入力しか受け取れない候補、非同期関数、非Resultの戻り値、必要なprivateな証明の欠落は拒否する。
+step自体のParameters/ReturnTypeの反射は、末尾の従来署名を維持する。
+実行本体は従来どおりname/ruleを持つオブジェクトを返し、元の関数を包み直さない。
+
+新しいbusinessの名前付き入力保持の検査は、修正前に接続と厳密型で失敗し、修正後に成功する。
+同じ[stepの検査](../src/step-generic-first.test.ts)で、元の関数型の厳密一致と上記の非identityな出力の対応も検査する。
+全体1,139件、TypeScript 6.0.3/7.0.2の配布物各795件、既存の不正定義・対照検査で確認する。
+単独のstepの正例を、任意の多相変換や独立利用者の開発体験の保証にしない。
+
+配列内でstep('quote', withInput(quote))と直接呼ぶgenericな例は、まだ不受理である。
+この場合はwithInputを先に束縛する。通常の具体的なContextを注釈したinlineの対応とは区別する。
+元のdefineTransitionの多相identityと未注釈evolveの例も、[6.0.3](step-generic-identity6.json)・
+[7.0.2](step-generic-identity7.json)で再確認し、不受理のままである。既存契約の追加診断は0。
+単独のnamed.ruleの呼出しにおける型の対応と、宣言全体の文脈付き推論を区別する。
+
+## 初回の入力制約の改善
+
+以下は59fd758時点の実装・調査の記録である。当時の未解消範囲を、現在の保証範囲とは区別する。
+
 開発版のstepの型推論を拡張した。workflowでは通っていた制約付きgeneric関数の直接指定が、
 stepではunknownの入力として扱われて拒否される例を解消した。実行本体は変更していない。
 
