@@ -112,9 +112,9 @@ function contracts() {
     stage(40, 41), stage(41, 42), stage(42, 43), stage(43, 44),
     stage(44, 45), stage(45, 46), stage(46, 47), stage(47, 48),
     stage(48, 49), stage(49, 50), stage(50, 51), stage(51, 52),
-    stage(52, 53), stage(53, 54), stage(54, 55), stage(55, 56),
-    // @ts-expect-error the 57th stage cannot consume the preceding stage's output
-    stage(55, 57), stage(57, 58), stage(58, 59), stage(59, 60),
+    stage(52, 53), stage(53, 54), stage(54, 55),
+    // @ts-expect-error these adjacent stages disagree, whether diagnosed at producer or consumer
+    stage(55, 56), stage(55, 57), stage(57, 58), stage(58, 59), stage(59, 60),
     stage(60, 61), stage(61, 62), stage(62, 63), stage(63, 64),
   ],
   } });
