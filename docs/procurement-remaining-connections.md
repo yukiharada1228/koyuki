@@ -6,7 +6,7 @@
 
 以下は上記commit時点の棚卸し。その後、[在庫4操作の接続](procurement-stock-planning.md)を分離した。
 現在のbusinessではcheckStock→checked関数を宣言し、下表の在庫の内部guard接続は互換入口だけに残る。
-さらに[返品・訂正の共通検証](procurement-receipt-checks.md)も分離した。訂正内部の数量再検証は残る。
+さらに[返品・訂正の共通検証](procurement-receipt-checks.md)も分離した。続いて[数量訂正の実経路](procurement-live-correction.md)も宣言へ移した。訂正内部の手書きResult接続は互換関数に残し、実経路はWorkflowで接続する。
 元の観察を消さず、現在の残存接続・文脈注釈・hostの入力構築と区別する。
 
 ## 操作宣言で既に委譲していること

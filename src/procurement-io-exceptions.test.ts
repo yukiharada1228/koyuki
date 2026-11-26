@@ -8,7 +8,7 @@ import { baselineDetail } from './experiments/procurement/baseline-detail.js';
 import { MemoryProcurement, type ProcurementRepository } from './experiments/procurement/repository.js';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 import { story, actor, type Inspectable } from './experiments/procurement/comparison-scenario.js';
-import { operations, split, threeStage, readCounts, relatedCounts } from './experiments/procurement/failure-testing.js';
+import { operations, ruleSteps, readCounts, relatedCounts } from './experiments/procurement/failure-testing.js';
 import type { Actor, Policy } from './experiments/procurement/domain.js';
 import type { StudyCommands, StudyFactory } from './experiments/procurement/comparison-contract.js';
 type Detail<C> = C extends (input: infer I) => Promise<Result<infer O, infer E>> ? { runDetailed: {
@@ -86,7 +86,7 @@ async function run(build: Factory, backend: string, mode: Mode) {
             assert.deepEqual(calls.slice(from), timeline.slice(0, index + 1), `exception continued IO at ${operation}`);
             assert.equal(commitAttempts, attempted + (target.method === 'commit' ? 1 : 0)); assert.equal(realCommits, realBefore);
             assert.deepEqual(snapshot(), before, `exception changed persisted models at ${operation}`);
-            const steps = target.method === 'commit' ? [`${id}:load`, 'run:1', ...(split.has(operation) ? ['run:2'] : []), ...(threeStage.has(operation) ? ['run:3'] : []), id] : [`${id}:load`];
+            const steps = target.method === 'commit' ? [`${id}:load`, ...ruleSteps(operation), id] : [`${id}:load`];
             const expected: Event[] = steps.flatMap((step, at) => [
               { phase: 'input' as const, step },
               ...(at < steps.length - 1 && mode !== 'input-failure' ? [{ phase: 'result' as const, step, ok: true }] : []),
@@ -113,7 +113,7 @@ async function run(build: Factory, backend: string, mode: Mode) {
       const selected = cases.filter(item => item.delivery === delivery); assert.equal(selected.length, 89);
       assert.deepEqual([...new Set(selected.map(item => `${item.operation}#${item.at}`))].sort(), positions);
     }
-    assert.equal(inputSelections, 360); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 182);
+    assert.equal(inputSelections, 362); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 184);
     return { outcome, calls, cases, realCommits, commitAttempts };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }
 }

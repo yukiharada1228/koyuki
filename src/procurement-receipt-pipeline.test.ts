@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { business, err, ok } from './framework/index.js';
-import { checkReceipt, returnReceipt, correctReceipt, returnCheckedReceipt, correctCheckedReceipt, createRequest, type Actor, type Order, type Receipt, type Stock, type Invoice, type Change } from './experiments/procurement/domain.js';
+import { checkReceipt, returnReceipt, correctReceipt, returnCheckedReceipt, correctCheckedReceipt, receiveOrder, receiptCorrectionInput, finishReceiptCorrection, createRequest, type ReceivedChange, type Actor, type Order, type Receipt, type Stock, type Invoice, type Change } from './experiments/procurement/domain.js';
 import { receiveDecision, returnDecision, correctDecision } from './experiments/procurement/receipt-pipeline.js';
 import { includeReceivedStock, includeChangedStock, receiveIntoStock, returnFromStock, correctInStock, type ReceiveStockContext, type ReceiptStockContext } from './experiments/procurement/inventory.js';
 import { procurement } from './experiments/procurement/application.js';
@@ -34,7 +34,11 @@ test('checked receipt decisions preserve stock facts and explicit invoice-reset 
   const returned: Receipt = { ...value.current, state: 'returned', reason: 'damaged', returnedBy: warehouse.id, version: 2 };
   assert.deepEqual(returnCheckedReceipt(checked.value), ok({ result: returned, writes: [{ ...value.order, version: 3 }, returned, reset], checks }));
   const corrected: Receipt = { ...value.current, version: 2 };
-  assert.deepEqual(correctCheckedReceipt(checked.value), ok({ result: corrected, writes: [{ ...value.order, version: 3 }, corrected, reset], checks }));
+  const expectedCorrection = { result: corrected, writes: [{ ...value.order, version: 3 }, corrected, reset], checks };
+  assert.deepEqual(correctCheckedReceipt(checked.value), ok(expectedCorrection));
+  const declared = correctDecision.inspect(checked.value); assert(declared.result.ok); assert(Object.isFrozen(declared.result.value));
+  assert.strictEqual(declared.result.value.input, value); assert.deepEqual(declared.result.value.value, expectedCorrection);
+  assert.deepEqual(declared.trace.map(row => row.step), ['revalidate-correction', 'correct-receipt-plan']);
   assert.deepEqual(value, before);
 });
 
@@ -80,7 +84,7 @@ test('receipt rejection retains priority over invalid stock and stock rejection 
   assert.deepEqual(returnDecision(checked.value), err({ kind: 'InvalidInput' })); assert.deepEqual(returnFromStock(value), err({ kind: 'InvalidInput' }));
   const correction = { ...value, input: { id: 'rc', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 2 }] } };
   const checkedCorrection = checkReceipt(correction); assert(checkedCorrection.ok);
-  assert.deepEqual(correctDecision(checkedCorrection.value), err({ kind: 'QuantityExceeded' })); assert.deepEqual(correctInStock(correction), err({ kind: 'QuantityExceeded' }));
+  assert.deepEqual(correctDecision.run(checkedCorrection.value), err({ kind: 'QuantityExceeded' })); assert.deepEqual(correctInStock(correction), err({ kind: 'QuantityExceeded' }));
   const reserved = { ...value, input: { ...value.input, reason: 'damaged' }, stock: { ...stock, groupId: 'g1', positions: [{ sku: 'a', location: 'receiving', onHand: 1, reserved: 1 }] } };
   const checkedReserved = checkReceipt(reserved); assert(checkedReserved.ok);
   const before = structuredClone(reserved), returned = returnDecision(checkedReserved.value); assert(returned.ok);
@@ -105,6 +109,10 @@ for (const backend of ['memory', 'sqlite']) test(`receipt, stock and order are s
     assert((await worker.receipts.receive({ id: 'po', expectedVersion: 1, receiptId: 'rc', quantities: [{ sku: 'a', quantity: 1 }] })).ok);
     assert((await worker.inventory.reserve({ id: 'warehouse', expectedVersion: 1, sku: 'a', location: 'receiving', quantity: 1 })).ok);
     const before = await snapshot(); assert.equal(commits, 6);
+    const excess = await worker.receipts.correct.runDetailed({ id: 'rc', expectedVersion: 1, quantities: [{ sku: 'a', quantity: 2 }] });
+    assert.deepEqual(excess.result, err({ kind: 'QuantityExceeded' })); assert.equal(excess.plan, null);
+    assert.deepEqual(excess.trace.map(row => [row.step, row.status]), [['procurement.receipt.v1.correct:load', 'ok'], ['run:1', 'ok'], ['revalidate-correction', 'error']]);
+    assert.equal(commits, 6); assert.deepEqual(await snapshot(), before);
     const invalid = await worker.receipts.return.runDetailed({ id: 'rc', expectedVersion: 1, reason: '' });
     assert.deepEqual(invalid.result, err({ kind: 'InvalidInput' })); assert.deepEqual(invalid.trace.map(row => row.status), ['ok', 'ok', 'error']); assert.equal(invalid.plan, null);
     const blocked = await worker.receipts.return.runDetailed({ id: 'rc', expectedVersion: 1, reason: 'damaged' });
@@ -134,11 +142,18 @@ function typeContracts() {
   // @ts-expect-error a public marker cannot fabricate the private proof
   correctCheckedReceipt({ ...receipt, receiptCheck: true });
   const checked = checkReceipt(receipt); if (!checked.ok) return;
-  returnDecision(checked.value); correctDecision(checked.value);
+  returnDecision(checked.value); correctDecision.run(checked.value);
+  const received = receiveOrder(receiptCorrectionInput(checked.value));
+  if (received.ok) finishReceiptCorrection(checked.value, received.value);
+  const raw: Pick<ReceivedChange, 'result' | 'writes' | 'checks'> = { result: { ...receipt.current, state: 'accepted' }, writes: [], checks: [] };
+  // @ts-expect-error an accepted receipt plan does not prove its quantities were validated
+  finishReceiptCorrection(checked.value, raw);
+  // @ts-expect-error a public marker cannot fabricate the private quantity proof
+  finishReceiptCorrection(checked.value, { ...raw, receivedCheck: true });
   const withReasonOnly = checkReceipt({ ...receipt, input: { id: 'rc', expectedVersion: 1, reason: 'reason' } });
   if (withReasonOnly.ok) {
     // @ts-expect-error the generic check does not invent correction quantities
-    correctDecision(withReasonOnly.value);
+    correctDecision.run(withReasonOnly.value);
   }
   const save = async (change: Change<Receipt>) => ok(change.result), load = async (_input: number) => ok(receipt);
   business({ name: 'valid', load, save, operations: { return: [checkReceipt, returnDecision, includeChangedStock] } });

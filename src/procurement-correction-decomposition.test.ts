@@ -1,31 +1,17 @@
-// Design probe: duplicate the small correction-plan projection explicitly rather
-// than change the live domain API before comparing the composition trade-off.
+// Compare the retained compatibility composition with flat and live Workflow composition.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { business, describeFlow, err, ok, withInput, workflow, type Result } from './framework/index.js';
-import { checkReceipt, createRequest, receiveOrder, type Actor, type CheckedReceipt, type Change, type CorrectInput, type Invoice, type Order, type Receipt, type RuleError, type Stock } from './experiments/procurement/domain.js';
+import { business, describeFlow, err, ok, withInput, type Result } from './framework/index.js';
+import { checkReceipt, createRequest, receiveOrder, receiptCorrectionInput, finishReceiptCorrection, correctCheckedReceipt, type Actor, type CheckedReceipt, type Change, type CorrectInput, type ReceivedChange, type Order, type Receipt, type RuleError, type Stock } from './experiments/procurement/domain.js';
 import { correctDecision } from './experiments/procurement/receipt-pipeline.js';
-import { includeChangedStock, type ReceiptDecision, type ReceiptStockContext } from './experiments/procurement/inventory.js';
+import { includeChangedStock, type ReceiptStockContext } from './experiments/procurement/inventory.js';
 type Context = CheckedReceipt<ReceiptStockContext<CorrectInput>>;
-const quantities = withInput((context: Context) => receiveOrder({
-  input: { id: context.order.id, expectedVersion: context.order.version, receiptId: context.current.id, quantities: context.input.quantities },
-  actor: context.actor, current: context.order, receipts: context.receipts.filter(row => row.id !== context.current.id),
-}));
-// This is a candidate ordinary domain projection, not a new public framework API.
-function finish(input: Context, received: Change<Receipt>): Change<Receipt> {
-  const result: Receipt = { ...received.result, version: input.current.version + 1 };
-  const reset: Invoice[] = input.invoices.filter(row => row.state === 'matched').map(row => ({
-    kind: 'invoice', state: 'registered', id: row.id, groupId: row.groupId, orderId: row.orderId, amountCents: row.amountCents, version: row.version + 1,
-  }));
-  const check = (row: Receipt | Order | Invoice) => ({ kind: row.kind, id: row.id, groupId: row.groupId, version: row.version });
-  return { result, checks: [check(input.current), check(input.order), ...input.invoices.map(check)], writes: [{ ...input.order, version: input.order.version + 1 }, result, ...reset] };
-}
-// Flat composition needs a second contextual annotation for this callback.
-const finishFlat = ({ input, value }: ReceiptDecision<Context>) => ok({ input, value: finish(input, value) });
-// Workflow.then supplies that context without a callback annotation. Its run
-// function is deliberately an opaque function when passed into business.
-const nested = workflow('revalidate-correction', quantities)
-  .then('finish-correction', ({ input, value }) => ok({ input, value: finish(input, value) }));
+const quantities = withInput((context: Context) => receiveOrder(receiptCorrectionInput(context)));
+// Flat composition still needs a second contextual annotation for this callback.
+const finishFlat = ({ input, value }: Readonly<{ input: Context; value: ReceivedChange }>) => ok({ input, value: finishReceiptCorrection(input, value) });
+const nested = correctDecision;
+// Keep the pre-migration compatibility boundary as an explicit comparison.
+const legacyDecision = withInput((context: Context) => correctCheckedReceipt(context));
 
 function fixture(): ReceiptStockContext<CorrectInput> {
   const actor: Actor = { id: 'worker', groupId: 'g1', role: 'warehouse', active: true };
@@ -43,13 +29,13 @@ function candidates(context: ReceiptStockContext<CorrectInput>) {
   const flat = business({ name: 'probe.flat', load, save, operations: { correct: [checkReceipt, quantities, finishFlat, includeChangedStock] } });
   const composed = business({ name: 'probe.nested', load, save, operations: { correct: [checkReceipt, nested.run, includeChangedStock] } });
   const exposed = business({ name: 'probe.exposed', load, save, operations: { correct: [checkReceipt, nested, includeChangedStock] } });
-  const current = business({ name: 'probe.current', load, save, operations: { correct: [checkReceipt, correctDecision, includeChangedStock] } });
-  return { flat: flat.correct, nested: composed.correct, current: current.correct, exposed: exposed.correct, saves: () => saves };
+  const legacy = business({ name: 'probe.legacy', load, save, operations: { correct: [checkReceipt, legacyDecision, includeChangedStock] } });
+  return { flat: flat.correct, nested: composed.correct, legacy: legacy.correct, exposed: exposed.correct, saves: () => saves };
 }
 
 test('flat and nested correction probes preserve the current plan and keep original input immutable', async () => {
   const context = fixture(), before = structuredClone(context), commands = candidates(context);
-  const reports = await Promise.all([commands.current.runDetailed(context.input), commands.flat.runDetailed(context.input), commands.nested.runDetailed(context.input), commands.exposed.runDetailed(context.input)]);
+  const reports = await Promise.all([commands.legacy.runDetailed(context.input), commands.flat.runDetailed(context.input), commands.nested.runDetailed(context.input), commands.exposed.runDetailed(context.input)]);
   assert.equal(commands.saves(), 4);
   const receipt: Receipt = { ...context.current, version: 2, quantities: [{ sku: 'a', quantity: 2 }] };
   assert(context.stock);
@@ -71,7 +57,7 @@ test('a planned correction rejected by stock is never saved by either compositio
   const context = { ...base, current, receipts: [current], input: { ...base.input, quantities: [{ sku: 'a', quantity: 1 }] },
     stock: { ...base.stock, positions: [{ sku: 'a', location: 'receiving', onHand: 2, reserved: 2 }] } };
   const before = structuredClone(context);
-  for (const name of ['current', 'flat', 'nested', 'exposed'] as const) {
+  for (const name of ['legacy', 'flat', 'nested', 'exposed'] as const) {
     const commands = candidates(context), report = await commands[name].runDetailed(context.input);
     assert.deepEqual(report.result, err({ kind: 'InsufficientStock' })); assert.equal(report.plan, null); assert.equal(commands.saves(), 0);
     assert.deepEqual(report.trace.map(row => row.status), name === 'flat' || name === 'exposed' ? ['ok', 'ok', 'ok', 'ok', 'error'] : ['ok', 'ok', 'ok', 'error']);
@@ -81,7 +67,7 @@ test('a planned correction rejected by stock is never saved by either compositio
 
 test('correction probes keep check and quantity failures before finish, stock and save', async () => {
   const context = fixture();
-  for (const name of ['current', 'flat', 'nested', 'exposed'] as const) {
+  for (const name of ['legacy', 'flat', 'nested', 'exposed'] as const) {
     const commands = candidates(context), command = commands[name];
     const check = await command.runDetailed({ ...context.input, expectedVersion: -1 });
     assert.deepEqual(check.result, err({ kind: 'InvalidInput' })); assert.equal(check.trace.length, 2); assert.equal(check.plan, null);
@@ -97,13 +83,13 @@ test('flat business exposes four rules while a composed Workflow run keeps its i
   assert.deepEqual(flat.trace.map(row => row.step), ['probe.flat.correct:load', 'run:1', 'run:2', 'run:3', 'run:4', 'probe.flat.correct']);
   assert.deepEqual(composed.trace.map(row => row.step), ['probe.nested.correct:load', 'run:1', 'run:2', 'run:3', 'probe.nested.correct']);
   const exposed = await commands.exposed.runDetailed(context.input, { input: (_value, step) => step, result: result => result.ok });
-  assert.deepEqual(exposed.trace.map(row => row.step), ['probe.exposed.correct:load', 'run:1', 'revalidate-correction', 'finish-correction', 'run:3', 'probe.exposed.correct']);
+  assert.deepEqual(exposed.trace.map(row => row.step), ['probe.exposed.correct:load', 'run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3', 'probe.exposed.correct']);
   assert.deepEqual(exposed.observations.map(row => row.step), exposed.trace.map(row => row.step));
   const explicit = JSON.stringify(describeFlow(commands.exposed));
-  assert(explicit.includes('revalidate-correction') && explicit.includes('finish-correction'));
+  assert(explicit.includes('revalidate-correction') && explicit.includes('correct-receipt-plan'));
   const inner = JSON.stringify(describeFlow(nested)), outer = JSON.stringify(describeFlow(commands.nested));
-  assert(inner.includes('revalidate-correction') && inner.includes('finish-correction'));
-  assert(!outer.includes('revalidate-correction') && !outer.includes('finish-correction'));
+  assert(inner.includes('revalidate-correction') && inner.includes('correct-receipt-plan'));
+  assert(!outer.includes('revalidate-correction') && !outer.includes('correct-receipt-plan'));
 });
 
 function typeContracts() {

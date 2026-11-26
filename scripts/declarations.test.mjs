@@ -192,16 +192,16 @@ business({name:'large',operations:{first:[${Array(512).fill('rule')}],second:{lo
   assert.match(result.unresolved[0].reason, /1024 stages/);
 });
 
-test('selected procurement sources resolve all 47 rule labels and detect an injected label collision', async () => {
+test('selected procurement sources resolve all 48 rule labels and detect an injected label collision', async () => {
   const paths = ['application.ts', 'domain.ts', 'inventory.ts', 'receipt-pipeline.ts'].map(name => `src/experiments/procurement/${name}`);
   const files = await Promise.all(paths.map(async file => ({ file, source: await readFile(join(root, file), 'utf8') })));
   const result = analyzeDeclarations(files);
-  assert.equal(result.checkedDeclarations, 6); assert.equal(result.checkedOperationIds, 25); assert.equal(result.checkedBusinessRuleLabels, 47);
+  assert.equal(result.checkedDeclarations, 7); assert.equal(result.checkedOperationIds, 25); assert.equal(result.checkedBusinessRuleLabels, 48);
   assert.deepEqual(result.diagnostics, []); assert.deepEqual(result.unresolved, []);
   const mutated = files.map(file => file.file !== paths[0] ? file : { ...file, source: file.source.replace('run: [checkBuyerRequest, submitCheckedRequest]', "run: [diagnosticStep('run:2', checkBuyerRequest), submitCheckedRequest]") + "\nimport {step as diagnosticStep} from 'koyuki';" });
   assert.notEqual(mutated[0].source, files[0].source);
   const broken = analyzeDeclarations(mutated);
-  assert.equal(broken.checkedBusinessRuleLabels, 47); assert.deepEqual(broken.unresolved, []);
+  assert.equal(broken.checkedBusinessRuleLabels, 48); assert.deepEqual(broken.unresolved, []);
   assert.equal(broken.diagnostics.length, 1); assert.equal(broken.diagnostics[0].code, 'AMBIGUOUS_BUSINESS_RULE_LABEL');
   assert.equal(broken.diagnostics[0].file, paths[0]);
 });

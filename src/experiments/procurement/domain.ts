@@ -129,7 +129,9 @@ export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Reque
     requestId: current.id, ownerId: current.ownerId, supplier: input.supplier.trim(), lines: current.lines, totalCents: current.totalCents };
   return ok(plan(order, [check(current), absent('order', current.groupId, order.id)]));
 }
-export function receiveOrder(value: Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[] }>): Result<Change<Receipt>, RuleError> {
+declare const receivedCheck: unique symbol;
+export type ReceivedChange = Change<Extract<Receipt, { readonly state: 'accepted' }>> & Readonly<{ [receivedCheck]: true }>;
+export function receiveOrder(value: Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[] }>): Result<ReceivedChange, RuleError> {
   const { input, actor, current, receipts } = value;
   if (!allowed(actor, 'warehouse', current.groupId)) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
@@ -149,7 +151,7 @@ export function receiveOrder(value: Loaded<ReceiveInput, Order> & Readonly<{ rec
     seen.add(row.sku); quantities.push(Object.freeze({ sku: row.sku, quantity: row.quantity }));
   }
   const receipt: Receipt = { kind: 'receipt', state: 'accepted', id: input.receiptId, groupId: current.groupId, orderId: current.id, version: 1, quantities: Object.freeze(quantities) };
-  return ok(plan(receipt, [check(current), absent('receipt', current.groupId, receipt.id)], [{ ...current, version: current.version + 1 }, receipt]));
+  return ok(plan(receipt, [check(current), absent('receipt', current.groupId, receipt.id)], [{ ...current, version: current.version + 1 }, receipt]) as ReceivedChange);
 }
 export function registerInvoice(value: Loaded<RegisterInput, Order> & Readonly<{ alreadyInvoiced: boolean }>): Result<Change<Invoice>, RuleError> {
   const { input, actor, current } = value;
@@ -379,13 +381,20 @@ export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFac
   const checked = checkReceipt(value); if (!checked.ok) return checked;
   return correctCheckedReceipt(checked.value);
 }
+export function receiptCorrectionInput(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>): Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[] }> {
+  return { input: { id: value.order.id, expectedVersion: value.order.version, receiptId: value.current.id, quantities: value.input.quantities },
+    actor: value.actor, current: value.order, receipts: value.receipts.filter(receipt => receipt.id !== value.current.id) };
+}
+// Matching context and validated receipt are connected by the declaration. The
+// private producer proof is required by the projection's input contract.
+export function finishReceiptCorrection(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>, received: ReceivedChange): Change<Receipt> {
+  const result: Receipt = { ...received.result, version: value.current.version + 1 };
+  return receiptChange(result, value.current, value);
+}
 export function correctCheckedReceipt(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>): Result<Change<Receipt>, RuleError> {
-  // Use the same quantity rule as receiving, excluding the record being replaced.
-  const parsed = receiveOrder({ input: { id: value.order.id, expectedVersion: value.order.version, receiptId: value.current.id, quantities: value.input.quantities },
-    actor: value.actor, current: value.order, receipts: value.receipts.filter(receipt => receipt.id !== value.current.id) });
+  const parsed = receiveOrder(receiptCorrectionInput(value));
   if (!parsed.ok) return parsed;
-  const result: Receipt = { ...parsed.value.result, version: value.current.version + 1 };
-  return ok(receiptChange(result, value.current, value));
+  return ok(finishReceiptCorrection(value, parsed.value));
 }
 
 /** Decode persisted values at the domain boundary; never restore proof by casting JSON. */

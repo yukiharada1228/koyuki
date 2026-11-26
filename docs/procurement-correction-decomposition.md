@@ -3,7 +3,9 @@
 返品・訂正の共通検証を分離しても、correctCheckedReceipt内部にはreceiveOrderのResultを
 取り出す処理が残る。[試作と検査](../src/procurement-correction-decomposition.test.ts)で、
 既存APIだけでこの接続を外へ出した場合の型と実行を比較した。
-現行のdomain/application/receipt-pipelineは変更していない。
+初回の試作ではdomain/application/receipt-pipelineを変更していなかった。
+その後、[実経路への採用](procurement-live-correction.md)でdomainの投影を共有し、テスト内の重複を削除した。
+現在の比較は移行前の互換経路、平らな接続、run関数、実際のWorkflowを対象とする。
 後続の[Workflow直接接続](business-workflow-stages.md)で4つ目の候補を追加した。
 以下の最初の3方式の制限は再現例として維持し、新しい候補と区別する。
 
@@ -11,7 +13,7 @@
 
 | 方式 | 宣言 | 接続用callbackの型注釈 | businessの観測 |
 | --- | --- | --- | --- |
-| 現行 | checkReceipt → correctDecision → includeChangedStock | correctDecision内のwithInputに文脈を注釈 | 3段階。数量再検証と訂正計画の内部接続はopaque |
+| 移行前の互換経路 | checkReceipt → legacyDecision → includeChangedStock | legacyDecisionのwithInputに文脈を注釈 | 3段階。数量再検証と訂正計画の内部接続はopaque |
 | 平らな試作 | checkReceipt → quantities → finishFlat → includeChangedStock | quantitiesとfinishFlatの2か所に文脈を注釈 | 4段階。数量再検証と計画作成を別の段階として観察できる |
 | Workflowをまとめた試作 | checkReceipt → nested.run → includeChangedStock | quantitiesの1か所。thenの引数は推論できる | 外側は3段階。内部Workflowの2つの名前は出ない |
 | Workflowを直接渡す試作 | checkReceipt → nested → includeChangedStock | quantitiesの1か所。thenの引数は推論できる | 数量再検証と計画作成の名前が外側のtrace・capture・構成図へ現れる |
@@ -39,8 +41,8 @@ describeFlow(nested)では2つの名前が見えるが、describeFlow(business�
 - 未検証の文脈、前段の組の欠落、要求の数量欠落を型で拒否し、正しい接続を受理する。
 - 同じ検査を開発版tarballをインストールしたconsumerでも実行する。
 
-試作のfinishは訂正計画の小さな投影をテスト内へ明示的に再記述している。
-製品コードの共有APIに昇格したものではなく、その重複を本採用時の設計として推奨しない。
+初回のfinishは訂正計画の小さな投影をテスト内へ明示的に再記述していた。
+現在はdomainのfinishReceiptCorrectionを共有し、期待値側のwrites/checksだけを独立して残す。
 loadは固定fixture、saveは呼出し回数を数える関数であり、DB・CAS・並行実行の新しい検査ではない。
 既存のメモリ/SQLite比較の範囲が増えたとも扱わない。
 
@@ -51,8 +53,8 @@ loadは固定fixture、saveは呼出し回数を数える関数であり、DB・
 関数本体の解析や内部値の無条件収集をせず、明示された段階のtrace・capture・構成図を保つことを確認する。
 普通の関数を並べる入口と、既存の入力・失敗型・保存契約も維持する。
 
-直接接続の候補では型の文脈と内部観測を両立できた。ただし、どの試作も現行の業務経路へ置き換えていない。
-手書きResult接続が残るという判定は維持する。
+直接接続では型の文脈と内部観測を両立でき、数量訂正の実経路へ移した。
+互換関数や他のドメイン内部には手書きResult接続が残るため、全接続の除去という判定にはしない。
 これは講演が特定のWorkflow APIを要求したという意味ではなく、
 iz-22/24、qbf-19の記述負担とw0o-13の明示的な途中状態を両立するためのKoyuki側の課題である。
 独立利用者による試用は未実施で、全講演の完全実現やReact/Elm同等のDXは未確認のままとする。

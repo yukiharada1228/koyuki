@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 購買の数量訂正を実Workflowへ移し、数量再検証と計画作成をResultの手動判定なしで接続。計画投影をdomainで共有し、数量検証済み計画の型を要求する。訂正の旧run:2を2つの明示名へ変更し、成功124境界・代表失敗266境界の3方式比較、型の証明・メモリ/SQLiteの停止を検査。互換経路や他のResult接続、3つの文脈注釈は残す。
+
 - 宣言診断CLIがbusinessへ直接渡した静的Workflowの内部名と両分岐を展開し、前後の関数/Stepとのラベル衝突を検査する。既知のrun関数は従来のopaqueな段階として扱い、選択ソース間の参照・共有展開上限・コードを実行しないことを検査。動的なメタデータは未解決として残す。
 
 - businessの操作配列へ既存Workflowを直接接続できるようにした。thenのcallback推論と内部のtrace・選択capture・live span・構成図を維持し、通常関数/Stepとの混在、失敗停止、入力/保存の型契約を検査する。run関数として渡す従来のopaque境界は維持。ruleも持つWorkflowと、Workflowの実行能力をコピーした呼び出し可能関数は、生成時にAmbiguousBusinessStageで拒否する。

@@ -67,7 +67,8 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
             || group === 'requests' && ['edit', 'withdraw', 'reject', 'return', 'reassign', 'submit', 'approve'].includes(name)
             || group === 'invoices' && ['approve', 'void'].includes(name)
             || group === 'receipts' || group === 'inventory';
-          const expectedSteps = [`${operation}:load`, 'run:1', ...(splitRule ? ['run:2'] : []), ...(group === 'receipts' && ['return', 'correct'].includes(name) ? ['run:3'] : []), operation];
+          const expectedRules = group === 'receipts' && name === 'correct' ? ['run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3'] : ['run:1', ...(splitRule ? ['run:2'] : []), ...(group === 'receipts' && name === 'return' ? ['run:3'] : [])];
+          const expectedSteps = [`${operation}:load`, ...expectedRules, operation];
           assert.deepEqual(report.trace, expectedSteps.map(step => ({ step, status: 'ok' })));
           if (mode !== 'selected') {
             assert.deepEqual(report.observations, []);
@@ -94,7 +95,7 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
     assert.equal(commits, 32);
     if (build) {
       assert.equal(reports.length, 32); assert.equal(new Set(reports.map(row => row.operation)).size, 25);
-      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 123);
+      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 124);
     }
     return { outcome, reports, commits, reads };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }

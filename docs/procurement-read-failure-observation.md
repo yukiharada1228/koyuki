@@ -42,7 +42,7 @@ stockのNotFoundは空の在庫として受理する業務仕様があるため�
 
 選択観測、入力射影のthrow、結果射影のthrowという3モードを使い、業務のConflictを観測エラーへ置き換えない。
 各取得失敗の観測はloadの1境界。同期39回と非同期39回で78境界が加わり、
-不正入力・保存前Conflictの187境界と合わせ、現在の一実行は265境界となる。
+不正入力・保存前Conflictの188境界と合わせ、現在の一実行は266境界となる。
 [申請・承認・発注の分離](procurement-request-planning.md)で従来の174/252境界から7境界増え、取得失敗の78境界は変わらない。
 失敗の試行は142回（32不正入力＋32保存前Conflict＋78取得失敗）。
 commit試行は64回のままで、追加した取得失敗によるcommitはない。
@@ -69,3 +69,6 @@ Resultを得るこの検査と、元の例外でrejectしてActionReportを返�
 
 [返品・訂正の共通検証](procurement-receipt-checks.md)の分離で保存前Conflictの観測が2境界増えた。
 不正入力・read失敗・I/O回数は維持する。
+
+[数量訂正の実Workflow](procurement-live-correction.md)で保存前Conflictの観測が1境界増えた。
+試行回数、不正入力とread失敗の境界、I/O回数は変わらない。

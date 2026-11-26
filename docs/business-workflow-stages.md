@@ -52,7 +52,8 @@ Workflow自体の構文検査と実行時の構成図は別の入口であり、
 [前の比較](procurement-correction-decomposition.md)に、Workflowを直接渡す4つ目の候補を追加した。
 追加callback注釈を省くthenの推論を保ったまま、revalidate-correctionとfinish-correctionの両方が
 trace・選択capture・外側の構成図へ現れる。成功計画と失敗停止も元の期待値で確認する。
-domainの現行経路はまだ変更しておらず、テスト内の計画投影の重複を本採用したものではない。
+その後、[数量訂正の実経路](procurement-live-correction.md)にも採用した。
+計画投影をdomainで共有し、試作にあった計算の重複を削除した。互換経路やrun関数の比較は別に残す。
 
 [専用検査](../src/business-workflow-stages.test.ts)は、関数/Stepとの混在、classの文脈と入力参照、
 generic load、分岐、live span、保存停止、例外の同一性、参照の取り込み、再送、曖昧な値の拒否を対象とする。

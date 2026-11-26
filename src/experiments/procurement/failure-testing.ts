@@ -17,4 +17,9 @@ export const relatedCounts: Record<string, number> = Object.fromEntries(operatio
 for (const name of ['orders.place', 'receipts.receive', 'invoices.register', 'invoices.match', 'payments.record']) relatedCounts[name] = 1;
 for (const name of ['orders.amend', 'orders.cancel', 'orders.complete', 'receipts.return', 'receipts.correct']) relatedCounts[name] = 2;
 
-export const threeStage = new Set(['receipts.return', 'receipts.correct']);
+export const threeStage = new Set(['receipts.return']);
+
+// Fixed trace names, not reflected from the runtime declaration under test.
+export const ruleSteps = (operation: string): string[] => operation === 'receipts.correct'
+  ? ['run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3']
+  : threeStage.has(operation) ? ['run:1', 'run:2', 'run:3'] : split.has(operation) ? ['run:1', 'run:2'] : ['run:1'];

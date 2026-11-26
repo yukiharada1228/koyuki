@@ -1,4 +1,4 @@
-import { receiveOrder, checkReceipt, returnCheckedReceipt, correctCheckedReceipt } from './domain.js';
+import { receiveOrder, checkReceipt, returnCheckedReceipt, receiptCorrectionInput, finishReceiptCorrection } from './domain.js';
 import { includeReceivedStock, includeChangedStock, type ReceiptStockContext, type ReceiptDecision } from './inventory.js';
 import type { StageSink, StageCapture } from './trace-contract.js';
 import { procurementContext } from './context.js';
@@ -67,6 +67,26 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       const saved = await repository.commit(changed.value, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
+  function correctionAction() {
+    return async (input: CorrectInput) => {
+        const receiveLoad = capture?.('load', input);
+        const loaded = await context.receipt<CorrectInput>(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkReceipt(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveQuantity = capture?.('rule:2', checked.value);
+        const quantities = receiveOrder(receiptCorrectionInput(checked.value));
+        const validated = quantities.ok ? ok(Object.freeze({ input: checked.value, value: quantities.value })) : quantities;
+        receiveQuantity?.(validated); observe?.({ stage: 'rule:2', status: validated.ok ? 'ok' : 'error' }); if (!validated.ok) return validated;
+        const receivePlan = capture?.('rule:3', validated.value);
+        const prepared = Object.freeze({ input: validated.value.input, value: finishReceiptCorrection(validated.value.input, validated.value.value) });
+        receivePlan?.(ok(prepared)); observe?.({ stage: 'rule:3', status: 'ok' });
+        const receiveStock = capture?.('rule:4', prepared);
+        const changed = includeChangedStock(prepared); receiveStock?.(changed); observe?.({ stage: 'rule:4', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveSave = capture?.('save', changed.value);
+        const saved = await repository.commit(changed.value, context.actor);
+        receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
+    };
+  }
   return {
     requests: {
       create: action(context.create, createRequest),
@@ -87,7 +107,7 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
     receipts: {
       receive: receiptAction(context.receive, receiveOrder, includeReceivedStock),
       return: checkedReceiptAction(context.receipt<ReasonInput>, checkReceipt<ReceiptStockContext<ReasonInput>>, returnCheckedReceipt, includeChangedStock),
-      correct: checkedReceiptAction(context.receipt<CorrectInput>, checkReceipt<ReceiptStockContext<CorrectInput>>, correctCheckedReceipt, includeChangedStock),
+      correct: correctionAction(),
     },
     invoices: {
       register: action(context.register, registerInvoice),
