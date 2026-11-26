@@ -42,8 +42,10 @@ Workflowと混在する普通の関数の既定名run:nは配列の位置を使�
 ruleも持つWorkflowや、内部のWorkflow実行能力をコピーした呼び出し可能関数は本体が曖昧なため、
 構築時にAmbiguousBusinessStageで拒否する。
 
-ソース診断CLIのbusiness配列内のWorkflow展開は未対応で、該当段階をunresolvedに残す。
-Workflow自体の構文検査と、実行時の構成図は別の入口である。全診断が対応済みとはしない。
+[ソース診断CLI](declaration-diagnostics.md)も、business配列内の静的なWorkflowを展開する。
+前後の関数・Stepとのラベル衝突と、分岐の両経路を非実行で検査し、run関数の場合は内部を展開しない。
+動的な構成・選択外の参照・展開上限はunresolvedとして残す。
+Workflow自体の構文検査と実行時の構成図は別の入口であり、型や業務規則の完全な検査とはしない。
 
 ## 数量訂正の試作で確認した改善
 

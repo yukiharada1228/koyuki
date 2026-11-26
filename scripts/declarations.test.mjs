@@ -9,6 +9,111 @@ import { analyzeDeclarations } from './check-declarations.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const analyze = source => analyzeDeclarations([{ file: 'sample.ts', source }]);
 
+test('business expands explicit Workflow names into the same scope as ordinary functions and Steps', () => {
+  const result = analyze(`import {business,workflow,step} from 'koyuki';
+const rule=value=>value;
+const flow=workflow('run:1',rule).then('validate',rule);
+business({name:'mixed',operations:{apply:[rule,flow,step('validate',rule)],other:[flow]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 6); assert.equal(result.checkedOperationIds, 2);
+  assert.deepEqual(result.unresolved, []); assert.equal(result.diagnostics.length, 2);
+  assert(result.diagnostics.every(item => item.code === 'AMBIGUOUS_BUSINESS_RULE_LABEL'));
+  assert.match(result.diagnostics[0].message, /run:1/); assert.match(result.diagnostics[1].message, /validate/);
+});
+
+test('known Workflow run references remain ordinary opaque business stages with positional labels', () => {
+  const result = analyze(`import {business,workflow} from 'koyuki'; const rule=value=>value;
+const flow=workflow('inner',rule).then('run:1',rule);
+business({name:'opaque',operations:{apply:[flow.run,flow['run'],flow]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 4); assert.deepEqual(result.unresolved, []);
+  assert.equal(result.diagnostics.length, 1); assert.equal(result.diagnostics[0].code, 'AMBIGUOUS_BUSINESS_RULE_LABEL');
+  assert.match(result.diagnostics[0].message, /run:1/);
+});
+
+test('reused Workflow business references point to the distinct connection sites', () => {
+  const result = analyze(`import {business,workflow} from 'koyuki';
+const flow=workflow('first',rule).then('second',rule);
+business({name:'reuse',operations:{apply:[flow,flow],other:[flow]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 6); assert.deepEqual(result.unresolved, []);
+  assert.equal(result.diagnostics.length, 2);
+  for (const item of result.diagnostics) {
+    assert.equal(item.code, 'AMBIGUOUS_BUSINESS_RULE_LABEL'); assert.equal(item.line, 3); assert.equal(item.related[0].line, 3);
+    assert(item.column > item.related[0].column);
+  }
+});
+
+test('business Workflow diagnostics include both branch alternatives without asserting simultaneous execution', () => {
+  const result = analyze(`import {business,workflow,step} from 'koyuki';
+const flow=workflow('check',rule).branch('choose',()=>{throw Error('predicate')},{yes:workflow('approved',rule),no:workflow('rejected',rule)});
+business({name:'branch',operations:{apply:[step('choose:yes',rule),flow]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 6); assert.deepEqual(result.unresolved, []);
+  assert.equal(result.diagnostics.length, 1); assert.equal(result.diagnostics[0].code, 'AMBIGUOUS_BUSINESS_RULE_LABEL');
+  assert.match(result.diagnostics[0].message, /choose:yes/); assert.match(result.diagnostics[0].message, /Branch alternatives/);
+});
+
+test('partially static business Workflows retain resolved names and positioned unresolved metadata', () => {
+  const result = analyze(`import {business,workflow,step} from 'koyuki';
+const flow=workflow(compute(),rule).then('stable',rule).branch('choose',predicate,{yes:external,no:workflow('other',rule)});
+business({name:'partial',operations:{apply:[flow,step('stable',rule)]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 5);
+  const unresolved = result.unresolved.filter(item => item.reason.startsWith('apply[0]:'));
+  assert.equal(unresolved.length, 2); assert(unresolved.every(item => item.file === 'sample.ts' && item.line === 2));
+  assert(unresolved.some(item => /dynamic/.test(item.reason))); assert(unresolved.some(item => /unresolved/.test(item.reason)));
+  assert.equal(result.diagnostics.filter(item => item.code === 'AMBIGUOUS_BUSINESS_RULE_LABEL').length, 1);
+});
+
+test('selected Workflow exports expand in business in either source order without discovering files', () => {
+  const files = [
+    { file: 'selected/main.ts', source: `import {business} from 'koyuki'; import {flow as selected} from './flow.js';
+const rule=value=>value;
+business({name:'selected',operations:{apply:[rule,selected]}});` },
+    { file: 'selected/flow.ts', source: `import {workflow} from 'koyuki'; export const flow=workflow('run:1',rule).then('finish',rule);` },
+  ];
+  const alone = analyzeDeclarations([files[0]]); assert.equal(alone.unresolved.length, 1); assert.equal(alone.checkedBusinessRuleLabels, 1);
+  for (const selected of [files, [...files].reverse()]) {
+    const result = analyzeDeclarations(selected); assert.deepEqual(result.unresolved, []); assert.equal(result.checkedBusinessRuleLabels, 3);
+    assert.equal(result.diagnostics.length, 1); const item = result.diagnostics[0];
+    assert.equal(item.file, 'selected/main.ts'); assert.equal(item.related[0].file, 'selected/main.ts'); assert.equal(item.line, 3);
+    assert(item.column > item.related[0].column);
+  }
+});
+
+test('business does not infer Workflows from shadowed factories, conditional candidates or foreign run properties', () => {
+  const result = analyze(`import {business,workflow as build} from 'koyuki';
+const real=build('real',rule);
+function local(workflow){const foreign=workflow('fake',rule);business({name:'shadow',operations:{apply:[foreign]}});}
+business({name:'unknown',operations:{conditional:[flag?real:other],foreign:[other.run],known:[real.run,real]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 2); assert.equal(result.unresolved.length, 3); assert.deepEqual(result.diagnostics, []);
+});
+
+test('business shares its expansion budget between ordinary stages and Workflow construction calls', () => {
+  const chain = "workflow('w0',rule)" + Array.from({ length: 511 }, (_, i) => `.then('w${i + 1}',rule)`).join('');
+  const result = analyze(`import {business,workflow,step} from 'koyuki'; const rule=value=>value; const flow=${chain};
+business({name:'bounded',operations:{first:[${Array(512).fill('rule')}],second:[flow],last:[rule,step('same',rule),step('same',rule)]}});`);
+  assert.equal(result.checkedBusinessRuleLabels, 1024); assert.equal(result.checkedOperationIds, 3);
+  assert.equal(result.unresolved.length, 1); assert.match(result.unresolved[0].reason, /1024 stages or Workflow construction calls/);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test('CLI expands selected business Workflows without executing modules, predicates or inner rules', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'koyuki-business-flow-cli-'));
+  try {
+    const main = join(directory, 'main.ts'), flow = join(directory, 'flow.ts'), marker = join(directory, 'executed');
+    await writeFile(main, `import {business} from 'koyuki'; import {flow} from './flow.js'; const rule=value=>value;
+business({name:'cli',operations:{apply:[rule,flow]}});`);
+    await writeFile(flow, `import {writeFileSync} from 'node:fs'; import {workflow} from 'koyuki';
+writeFileSync(${JSON.stringify(marker)},'module'); throw Error('module');
+export const flow=workflow('run:1',value=>{writeFileSync(${JSON.stringify(marker)},'rule');throw Error('rule');})
+.branch('choose',()=>{writeFileSync(${JSON.stringify(marker)},'predicate');throw Error('predicate');},{yes:workflow('yes',rule),no:workflow('no',rule)});`);
+    const cli = (...args) => spawnSync(process.execPath, ['scripts/check-declarations.mjs', '--json', ...args], { cwd: root, encoding: 'utf8' });
+    const selected = cli(main, flow); assert.equal(selected.status, 0, selected.stderr);
+    const report = JSON.parse(selected.stdout); assert.equal(report.checkedBusinessRuleLabels, 6); assert.deepEqual(report.unresolved, []);
+    assert.equal(report.diagnostics.length, 1); assert.equal(report.diagnostics[0].code, 'AMBIGUOUS_BUSINESS_RULE_LABEL');
+    assert.equal(cli('--strict', main, flow).status, 1);
+    const alone = cli(main); assert.equal(alone.status, 0); assert.equal(JSON.parse(alone.stdout).unresolved.length, 1);
+    await assert.rejects(access(marker), error => error.code === 'ENOENT');
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
 test('business rule diagnostics combine default labels, named Steps and structural Step objects per operation', () => {
   const result = analyze(`import {business,step} from 'koyuki';
 const rule = value => ({ok:true,value});

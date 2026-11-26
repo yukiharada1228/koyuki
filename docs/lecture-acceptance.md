@@ -172,3 +172,7 @@ withInputの戻り値をgenericにする候補は既存契約を壊すため不�
 その後、[明示したWorkflowをbusinessへ直接接続](business-workflow-stages.md)する入口を追加した。
 数量訂正の試作で追加callback注釈なしに内部段階のtrace・capture・構成図を保持できる。
 通常関数の内部はopaqueのままで、現行の業務経路の移行、ソース診断、独立利用者の評価は別の残件とする。
+
+その後、[business内のWorkflowのソース診断](declaration-diagnostics.md)も対応した。
+静的な内部名と両分岐を前後の段階と同じ操作の範囲で検査し、動的部分は未解決に残す。
+業務経路の移行、型注釈の全廃、業務規則の正しさ、独立利用者の評価が完了したという意味ではない。

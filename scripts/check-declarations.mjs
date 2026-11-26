@@ -59,8 +59,20 @@ function declarationTools(selectedImports) {
     return result;
   }
 
-  function businessStage(candidate, fallback) {
+  function businessStage(candidate, fallback, budget) {
     const resolved = resolveValue(candidate);
+    const composition = workflowLabels(resolved, new Set(), budget);
+    if (composition) return {
+      labels: composition.labels.map(item => ({ ...item, path: unwrap(candidate)?.isIdentifier() ? candidate : item.path })),
+      unresolved: composition.unresolved,
+    };
+    if (--budget.left < 0) return { path: candidate, reason: 'Business exceeds the static expansion limit of 1024 stages or Workflow construction calls' };
+    // A known Workflow.run is an ordinary opaque function in business. Its
+    // internal names must not be expanded like an explicit Workflow object.
+    if (resolved?.isMemberExpression()) {
+      const key = resolved.node.computed ? literal(resolved.get('property')) : resolved.node.property.name;
+      if (key === 'run' && rootedComposition(resolved.get('object'))) return { label: fallback, path: candidate };
+    }
     let site, value;
     if (resolved?.isCallExpression() && api(resolved.get('callee')) === 'step') {
       site = resolved.get('arguments')[0]; value = site && resolveValue(site);
@@ -77,7 +89,7 @@ function declarationTools(selectedImports) {
     if (resolved?.isFunctionExpression() || resolved?.isArrowFunctionExpression() || resolved?.isFunctionDeclaration()
       || binding?.constant && binding.path.isFunctionDeclaration()
       || resolved?.isCallExpression() && api(resolved.get('callee')) === 'withInput') return { label: fallback, path: candidate };
-    return { path: candidate, reason: 'Business stage is not a statically identified function or Step' };
+    return { path: candidate, reason: 'Business stage is not a statically identified function, Step or Workflow' };
   }
 
   function businessPipeline(candidate) {
@@ -303,13 +315,18 @@ export function analyzeDeclarations(files) {
             if (!stages) { skip(file, entry, `Business ${JSON.stringify(key)} pipeline is not a nonempty static array without holes or spreads`); continue; }
             const labels = new Map();
             for (const [index, candidate] of stages.entries()) {
-              if (--budget.left < 0) { skip(file, candidate, 'Business exceeds the static expansion limit of 1024 stages'); break; }
-              const stage = businessStage(candidate, `run:${index + 1}`);
-              if (stage.reason) { skip(file, stage.path, `${key}[${index}]: ${stage.reason}`); continue; }
-              checkedBusinessRuleLabels++;
-              if (labels.has(stage.label)) report('AMBIGUOUS_BUSINESS_RULE_LABEL', 'warning', file, stage.path,
-                `Business ${JSON.stringify(key)} rule label ${JSON.stringify(stage.label)} repeats in this pipeline; use distinct labels if traces must identify the stage. This is not a type check or a proof of repeated execution.`, [labels.get(stage.label)]);
-              else labels.set(stage.label, position(file, stage.path));
+              const stage = businessStage(candidate, `run:${index + 1}`, budget);
+              if (stage.reason) skip(file, stage.path, `${key}[${index}]: ${stage.reason}`);
+              else {
+                for (const item of stage.unresolved ?? []) skip(file, item.path, `${key}[${index}]: ${item.reason}`);
+                for (const item of stage.labels ?? [stage]) {
+                  checkedBusinessRuleLabels++;
+                  if (labels.has(item.label)) report('AMBIGUOUS_BUSINESS_RULE_LABEL', 'warning', file, item.path,
+                    `Business ${JSON.stringify(key)} rule label ${JSON.stringify(item.label)} repeats in this pipeline; use distinct labels if traces must identify the stage. Branch alternatives are included; this is not a type check or a proof of repeated execution.`, [labels.get(item.label)]);
+                  else labels.set(item.label, position(file, item.path));
+                }
+              }
+              if (budget.left < 0) break;
             }
           }
         }

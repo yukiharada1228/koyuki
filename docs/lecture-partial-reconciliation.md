@@ -116,3 +116,7 @@ w0o-17とw0o-23の[全フレーム一覧と代表画面](lecture-frame-window-su
 [Workflowの直接接続](business-workflow-stages.md)を追加し、訂正の試作でthenの推論と内部観測を両立できた。
 従来のrun関数はopaqueのままで、明示したWorkflowだけを接続する。現行の業務経路の移行、
 ソース診断CLIでの展開、独立利用者の評価は未完了であり、9話題のpartialは維持する。
+
+後続の[ソース診断](declaration-diagnostics.md)でbusiness内の静的Workflowを展開するようにした。
+前後の通常段階・Stepとの名前の衝突、両分岐、部分的な未解決、選択ソースと共有展開予算を検査する。
+実際の業務規則や利用者の理解を検証したものではなく、業務経路の移行等の残件と9話題のpartialは維持する。

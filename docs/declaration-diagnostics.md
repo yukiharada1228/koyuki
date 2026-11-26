@@ -30,7 +30,7 @@ CLI自体はリポジトリの開発ツールであり、公開npm packageのbin
 | AMBIGUOUS_STEP_LABEL | warning | 同じdefineTransition内で同名の段階がある。traceの名前の対応が曖昧になる。業務処理の誤りという証明ではない |
 | AMBIGUOUS_WORKFLOW_LABEL | warning | 静的に接続したWorkflowの段階名が重複する。分岐の別経路も含むため、同じ実行で両方が走るという意味ではない |
 | AMBIGUOUS_PROCESS_LABEL | warning | 静的なProcess内で、effect・接続したWorkflow・bindMutationの保存操作IDのtrace名が重複する |
-| AMBIGUOUS_BUSINESS_RULE_LABEL | warning | 同じbusiness操作のrun配列内でruleラベルが重複する。別の操作同士は比較しない |
+| AMBIGUOUS_BUSINESS_RULE_LABEL | warning | 同じbusiness操作のrun配列内でラベルが重複する。直接渡したWorkflowの内部と両分岐も含み、別の操作同士は比較しない |
 | REPEATED_OPERATION_ID | warning | 選択したファイル集合の別宣言で同じ明示operation IDを使う。共有する保存境界なら意図的な場合もある |
 | RESERVED_APPLICATION_OPERATION | error | 静的に読めるApplication操作テーブルがdismissや@始まりの予約名を使う |
 | PARSE_ERROR | error | ソースを構文解析できない。TypeScriptによる型チェックの代わりではない |
@@ -44,7 +44,8 @@ businessのthen等、公開型で既に拒否されるものの重複診断を�
 通常の終了コードは、errorがあれば1、なければ0。--strictを付けるとwarningも1となる。
 引数不足・読み込み失敗は2。--jsonはkoyuki.declaration-diagnostics.v1のJSONを返す。
 診断0でも全宣言の妥当性を示すvalidフラグは返さない。
-JSONのcheckedBusinessRuleLabelsは、静的に解決したrun段階の出現数であり、業務機能数ではない。
+JSONのcheckedBusinessRuleLabelsは、静的に解決したrunのラベルの出現数であり、業務機能数ではない。
+Workflowの内部と両分岐の選択markerも含むため、一回の実行で呼ばれるRule数や操作配列の長さとは異なる。
 
 ## 認識する構文と未解決の扱い
 
@@ -70,9 +71,18 @@ businessの操作は配列、またはrun配列を持つ静的なオブジェク
 既定名と明示名の衝突も検査する。constで再利用したStepは、それぞれの接続位置を報告する。
 独自operation resolverや動的なbusiness名でIDが未解決でも、読めるrunラベルは独立に検査する。
 空配列、穴、spread、不明なfactory、動的なStep名は未解決とする。
-一つのbusiness宣言の全操作で1024段階の展開予算を共有する。
+一つのbusiness宣言の全操作で、通常の段階またはWorkflowのconstruction callを合わせて1024個の展開予算を共有する。
 対象はrunのruleラベルだけであり、load/saveやその内部traceとの衝突は検査しない。
 関数本体、関数への後続のプロパティ追加、型の接続、実行時の変更を検証する機能ではない。
+
+既知のworkflow(name, rule)からthen/branchで構成したWorkflowをbusinessへ直接渡す場合は、
+その内部名を前後の通常関数・Stepと同じ操作の範囲へ展開する。const参照や明示した選択ソースの参照も扱う。
+branchは両経路とname:yes/name:noのmarkerを含める。実際の選択、同時実行、業務規則の正誤は判定しない。
+Workflow内の動的名・解決できない分岐は位置付きの未解決として残し、静的に読める他の名前は検査する。
+同じWorkflowを再利用した場合は各接続の参照位置を報告する。
+Workflow自体の独立診断は定義箇所も検査するため、内部の重複とbusinessでの接続の警告は異なる範囲である。
+既知のWorkflow.runは内部を展開せず、通常関数として配列位置のrun:nを使う。
+未知のオブジェクトのrun、条件式で選ぶ候補、独自factory、shadowingされたworkflowは推測しない。
 
 Workflowでは、既知のimportの`workflow(name, rule)`を起点とする`then`と`branch`を読む。
 ローカルconst経由の接続と、静的なyes/noのWorkflowを展開し、同じ構成内でtrace名が
@@ -127,7 +137,7 @@ WorkflowとProcessの1024 construction callの予算はファイル間の展開�
 分岐・状態の網羅性、関数本体の純粋性や業務ルールの正しさは証明しない。
 このためIssue #6全体の完了とはしない。
 
-[38件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
+[47件の検査](../scripts/declarations.test.mjs)は、位置、正当な共有、名前のshadowing、
 未解決、実例に加え、対象ファイルへ副作用・throw・存在しないimport・getterを置いても
 それらを実行しないことを確認する。明示した参照先にも副作用・存在しないimport・getterを置き、
 参照解決で実行や自動ファイル探索が起きないことをCLIで検査する。CIのcore jobでも継続する。
@@ -137,4 +147,8 @@ WorkflowとProcessの1024 construction callの予算はファイル間の展開�
 既定名と衝突するStepを挿入した場合に警告することも確認する。この変形は業務処理として実行しない。
 これらは保守者側の検査である。独立した利用者による試用記録はまだなく、
 詰まった箇所・必要な型注釈・手書きの接続について第三者の開発体験を確認したものではない。
+Workflowを直接渡すbusinessには、前後の関数やStepとの衝突、両分岐、部分的な未解決、参照位置、
+選択ソース間の接続、通常段階との共有予算を検査する。
+別のCLI検査では、選択モジュールのトップレベル・内部Rule・predicateにファイル書込みとthrowを置いても
+一度も実行しないことを確認する。静的な警告のstrictでの終了コードも維持する。
 これは講演が指定したCLI仕様ではなく、Koyuki側の開発支援の具体化である。
