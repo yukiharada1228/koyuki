@@ -28,5 +28,25 @@ try {
   writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, types: ['node'] }, include: ['*.ts', 'registration/*.ts'] }));
   npm(['install', '--ignore-scripts', '--no-audit', '--no-fund'], dir);
   npm(['run', 'check'], dir); npm(['test'], dir);
+  // Broaden only the pure producers' annotations, leaving runtime code intact.
+  // The installed sample must detect the loss of exact transition variants.
+  const domainPath = join(dir, 'registration/domain.ts');
+  const domain = readFileSync(domainPath, 'utf8');
+  let broad = domain;
+  for (const name of ['StartChange', 'ConfirmationChange']) {
+    const narrow = `Result<${name}, never>`;
+    if (broad.split(narrow).length !== 2) throw Error(`Expected one ${name} return contract`);
+    broad = broad.replace(narrow, 'Result<Change, never>');
+  }
+  try {
+    writeFileSync(domainPath, broad);
+    const rejected = spawnSync('npm', ['exec', '--', 'tsc', '--pretty', 'false', '--noEmit'], { cwd: dir, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    const testLines = readFileSync(join(dir, 'registration.test.ts'), 'utf8').split('\n');
+    const expected = testLines.flatMap((line, index) => /^type Exact(Start|Confirm) =/.test(line) ? [index + 1] : []);
+    if (rejected.error || !rejected.status || expected.length !== 2 || expected.some(line => !output.includes(`registration.test.ts(${line},`))
+      || /TS(2305|2307|7006):/.test(output)) throw Error(`Broad transition annotations were not rejected at the exact contracts:\n${output}`);
+  } finally { writeFileSync(domainPath, domain); }
+  console.log('Verified exact start/confirmation variants; broad-return negative control rejected without changing runtime behavior.');
   console.log('Verified atomic outbox, leased delivery, acknowledgement recovery and human confirmation from the packed public API, including separate OS processes.');
 } finally { rmSync(dir, { recursive: true, force: true }); }

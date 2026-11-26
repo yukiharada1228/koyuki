@@ -81,6 +81,7 @@ try {
     writeFileSync(join(consumer, file), readFileSync(join(root, 'src', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'").replaceAll("'../framework/result.js'", "'koyuki'").replaceAll("'../framework/testing.js'", "'koyuki/testing'"));
   }
   writeFileSync(join(consumer, 'generated-tag-model.test.ts'), generateModelTest('./tags/model-testing.js'));
+  writeFileSync(join(consumer, 'tag-prepersistence.test.ts'), readFileSync(join(root, 'src/tag-prepersistence.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'generated-tag-replay-model.test.ts'), generateModelTest('./tags/replay-model-testing.js'));
   writeFileSync(join(consumer, 'tag-replay-model.test.ts'), readFileSync(join(root, 'src/tag-replay-model.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));
   writeFileSync(join(consumer, 'tag-model-sequences.test.ts'), readFileSync(join(root, 'src/tag-model-sequences.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));

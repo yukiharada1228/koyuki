@@ -14,15 +14,17 @@ export type Change = Readonly<
   { expectedVersion: 0; next: Extract<Registration, { kind: 'awaiting' }>; event: EmailRequested } |
   { expectedVersion: 1; next: Extract<Registration, { kind: 'confirmed' }>; event: null }
 > & { readonly [proof]: 'change' };
+type StartChange = Extract<Change, { readonly expectedVersion: 0 }>;
+type ConfirmationChange = Extract<Change, { readonly expectedVersion: 1 }>;
 export function validateStart(value: Loaded<StartInput>): Result<ValidStart, RuleError> {
   const { id, email, token, tokenDigest } = value.input;
   if (!id.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !token || !/^[a-f0-9]{64}$/.test(tokenDigest)) return err({ kind: 'InvalidInput' });
   return value.current ? err({ kind: 'AlreadyRegistered' }) : ok(value as ValidStart);
 }
-export function start(value: ValidStart): Result<Change, never> {
+export function start(value: ValidStart): Result<StartChange, never> {
   const { id, email, token, tokenDigest } = value.input;
   return ok({ expectedVersion: 0, next: { id, email, version: 1, kind: 'awaiting', tokenDigest },
-    event: { type: 'EmailRequested', id: `${id}:email:1`, registrationId: id, email, token } } as Change);
+    event: { type: 'EmailRequested', id: `${id}:email:1`, registrationId: id, email, token } } as StartChange);
 }
 export function validateConfirm(value: Loaded<ConfirmInput>): Result<ValidConfirm, RuleError> {
   const { current, input } = value;
@@ -30,8 +32,8 @@ export function validateConfirm(value: Loaded<ConfirmInput>): Result<ValidConfir
   return current?.kind === 'awaiting' && current.tokenDigest === input.tokenDigest
     ? ok({ current, input } as ValidConfirm) : err({ kind: 'InvalidConfirmation' });
 }
-export function confirm({ current, input }: ValidConfirm): Result<Change, never> {
-  return ok({ expectedVersion: current.version, next: { id: current.id, email: current.email, version: 2, kind: 'confirmed', confirmedAt: input.now }, event: null } as Change);
+export function confirm({ current, input }: ValidConfirm): Result<ConfirmationChange, never> {
+  return ok({ expectedVersion: current.version, next: { id: current.id, email: current.email, version: 2, kind: 'confirmed', confirmedAt: input.now }, event: null } as ConfirmationChange);
 }
 export function restore(value: unknown): Result<Registration, { kind: 'CorruptRegistration' }> {
   const fail = () => err({ kind: 'CorruptRegistration' as const });

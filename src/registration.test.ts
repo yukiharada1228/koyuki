@@ -6,10 +6,11 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { spawnSync } from 'node:child_process';
 import { registration, digest } from './registration/application.js';
-import { validateConfirm, confirm } from './registration/domain.js';
+import { validateStart, start, validateConfirm, confirm, type Change, type Registration, type RuleError } from './registration/domain.js';
 import { RegistrationRepository } from './registration/repository.js';
 import { emailWorker } from './registration/delivery.js';
-import { err } from './framework/index.js';
+import { err, type Result } from './framework/index.js';
+import type { StorageError } from './registration/repository.js';
 import type { EmailRequested } from './registration/domain.js';
 function fixture(t: TestContext) {
   const dir = mkdtempSync(join(tmpdir(), 'koyuki-registration-')), path = join(dir, 'db.sqlite');
@@ -132,6 +133,43 @@ test('separate OS processes resume persisted request, delivery and confirmation'
   const confirmed = child(`console.log(JSON.stringify(await registration(repository).confirm(${JSON.stringify({ id: person.id, token: message.token, now: 200 })})));`);
   assert.equal(confirmed.ok, true); assert.equal(confirmed.value.kind, 'confirmed');
   const stored = f.repository.read(person.id); assert(stored.ok); assert.deepEqual(stored.value, confirmed.value);
+});
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Assert<T extends true> = T;
+type ExactStart = Assert<Equal<ReturnType<typeof start>, Result<Extract<Change, { expectedVersion: 0 }>, never>>>;
+type ExactConfirm = Assert<Equal<ReturnType<typeof confirm>, Result<Extract<Change, { expectedVersion: 1 }>, never>>>;
+// The monomorphic storage adapter still promises the broader restored state.
+type StoredStart = Assert<Equal<Awaited<ReturnType<ReturnType<typeof registration>['request']>>, Result<Registration, RuleError | StorageError>>>;
+
+test('pure registration transitions retain one exact next state and event variant', () => {
+  const input = { id: 'r1', email: 'person@example.com', token: 'test-token', tokenDigest: 'a'.repeat(64) };
+  const checked = validateStart({ current: null, input }); assert(checked.ok);
+  const requested = start(checked.value); assert(requested.ok);
+  assert.deepEqual(requested.value, { expectedVersion: 0,
+    next: { id: 'r1', email: input.email, version: 1, kind: 'awaiting', tokenDigest: input.tokenDigest },
+    event: { type: 'EmailRequested', id: 'r1:email:1', registrationId: 'r1', email: input.email, token: input.token },
+  });
+  const before = structuredClone(requested.value);
+  const ready = validateConfirm({ current: requested.value.next, input: { id: 'r1', tokenDigest: input.tokenDigest, now: 123 } }); assert(ready.ok);
+  const confirmed = confirm(ready.value); assert(confirmed.ok);
+  assert.deepEqual(confirmed.value, { expectedVersion: 1,
+    next: { id: 'r1', email: input.email, version: 2, kind: 'confirmed', confirmedAt: 123 }, event: null,
+  });
+  assert.deepEqual(requested.value, before);
+  assert.deepEqual(validateStart({ current: confirmed.value.next, input }), err({ kind: 'AlreadyRegistered' }));
+  assert.deepEqual(validateConfirm({ current: confirmed.value.next, input: { id: 'r1', tokenDigest: input.tokenDigest, now: 124 } }), err({ kind: 'InvalidConfirmation' }));
+  if (false) {
+    // @ts-expect-error a start change cannot claim confirmation's prior version
+    const wrongVersion: Change = { ...requested.value, expectedVersion: 1 };
+    // @ts-expect-error a start change must carry its requested email event
+    const noEvent: typeof requested.value = { ...requested.value, event: null };
+    // @ts-expect-error a completed confirmation has no token digest
+    confirmed.value.next.tokenDigest;
+    // @ts-expect-error an awaiting registration has no confirmation timestamp
+    requested.value.next.confirmedAt;
+    void [wrongVersion, noEvent];
+  }
 });
 
 function stateTypeChecks() {
