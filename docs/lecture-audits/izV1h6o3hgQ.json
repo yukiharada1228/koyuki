@@ -9,6 +9,30 @@
     "durationSeconds": 4890
   },
   "review": {
+    "inferredErrorFollowUp": {
+      "implementationBaseCommit": "966e9b3a8cb88e5d2fef00e38a47ec783167297f",
+      "sections": [
+        "iz-24"
+      ],
+      "scope": "Implementation/type-inference follow-up. Preserve literal failure kinds in finance checks and infer six compatibility wrapper results; all six live finance operations retain closed error kinds through ordinary, detailed and replay APIs. Keep save-adapter payloads and add lookup/snapshot/replay error kinds rather than dropping them. Plain/helper retain the same kind sets. Correct baseline replay success types to entity-kind-wide history, keeping Koyuki history conservative. withInput now has one public signature capturing the full Result before extracting success/error, with the old implementation body unchanged and three explicit type arguments compatible; native unconstrained/constrained generics and private context/value identity are preserved. Ten new runtime/static cases cover these contracts, including inferred structured payloads in workflow/transition/business/withInput. Source has 1195 passing tests and TS6/7 installed consumers each 851. Reverting withInput to the prior signature, broadening the literal failure helper, or broadening either replay error map fail their respective contracts on both compilers. Six widened state producers also invalidate all twelve producer/wrapper next-state contracts. Clean-source probes accept inferred structured errors and explicit dispatch, but still refuse direct function-signature unions, unnamed inline requirements and deep nested generic values. No runtime-body, new entry-point API, dependency, new source/audio/frame review or independent-user trial; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/procurement-finance-errors.md",
+        "docs/inferred-error-context6.json",
+        "docs/inferred-error-context7.json",
+        "src/framework/model.ts",
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/experiments/procurement/replay.ts",
+        "src/experiments/procurement/baseline-replay.ts",
+        "src/procurement-finance-errors.test.ts",
+        "src/procurement-finance-state-types.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/investigate-transition-inference.mjs"
+      ]
+    },
     "financeTransitionFollowUp": {
       "implementationBaseCommit": "810b2031897eea8a03794cf56d57afd88e35bc1c",
       "sections": [

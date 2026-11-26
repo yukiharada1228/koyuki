@@ -84,3 +84,5 @@ Application全体の状態が複数の操作の失敗を表す場合、その和
 一般のgeneric推論、直接音声の未確認、独立利用者の評価は未完了のままで、講演全体は部分充足を維持する。
 
 全体1,195件、TypeScript 6.0.3/7.0.2の配布consumer各851件、宣言診断47件が成功。literal helper・2つの再送写像・旧withInputの4対照も両版で失敗することを確認する。
+
+[TypeScript 6.0.3](inferred-error-context6.json)・[7.0.2](inferred-error-context7.json)の記録は966e9b3のクリーンなソースによる。構造化エラーとdispatchは受理され、直接の関数union・元の名前なしinline・深い入れ子は不受理。既存契約の追加診断は0。
