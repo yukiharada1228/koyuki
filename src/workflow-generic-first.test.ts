@@ -16,6 +16,11 @@ type Bound = Assert<Equal<ReturnType<typeof bound.run>, Result<Readonly<{ input:
 type Inline = Assert<Equal<ReturnType<typeof inline.run>, ReturnType<typeof bound.run>>>;
 type FactoryInput = Assert<Equal<Parameters<typeof workflow>, [name: string, rule: Rule<unknown, unknown, unknown>]>>;
 type FactoryOutput = Assert<Equal<ReturnType<typeof workflow>, Workflow<unknown, unknown, unknown>>>;
+declare const positive: unique symbol;
+type Positive = Base & Readonly<{ [positive]: true }>;
+function validatePositive<T extends Base>(value: T): Result<T & Readonly<{ [positive]: true }>, 'InvalidAmount'> {
+  return value.amount > 0 ? ok(value as T & Readonly<{ [positive]: true }>) : err('InvalidAmount');
+}
 
 test('a generic first Workflow uses its declared input constraint and exact error type', () => {
   assert.deepEqual(direct.inspect({ amount: 2 }), { result: ok(4), trace: [{ step: 'direct', status: 'ok' }] });
@@ -54,6 +59,16 @@ test('compatible function candidates retain every success and error variant', ()
   }
 });
 
+test('a generic first check retains its private output proof for the next domain rule', () => {
+  const checked = workflow('positive', validatePositive);
+  type Input = Assert<Equal<Parameters<typeof checked.run>[0], Base>>;
+  type Output = Assert<Equal<ReturnType<typeof checked.run>, Result<Positive, 'InvalidAmount'>>>;
+  const input = { amount: 2, extra: 'original' }, result = checked.run(input); assert(result.ok); assert.strictEqual(result.value, input);
+  const complete = checked.then('complete', (value: Positive) => ok(value.amount * 2));
+  assert.deepEqual(complete.run(input), ok(4));
+  assert.deepEqual(complete.inspect({ amount: 0 }), { result: err('InvalidAmount'), trace: [{ step: 'positive', status: 'error' }] });
+});
+
 declare const permitted: unique symbol;
 type Permitted = Base & Readonly<{ [permitted]: true }>;
 declare const approve: <T extends Permitted>(value: T) => Result<string, 'Closed'>;
@@ -63,6 +78,8 @@ function typeContracts() {
   type Protected = Assert<Equal<Parameters<typeof protectedFlow.run>[0], Permitted>>;
   // @ts-expect-error the generic constraint still requires the private permission proof
   protectedFlow.run({ amount: 1 });
+  // @ts-expect-error a positive amount proof cannot provide a permission proof
+  workflow('positive', validatePositive).then('approve', approve);
   business({ name: 'missing-proof', load: async (value: Base) => ok(value), save: async (value: string) => ok(value), operations: {
     // @ts-expect-error a raw load cannot connect to a permission-requiring Workflow
     approve: [protectedFlow],
