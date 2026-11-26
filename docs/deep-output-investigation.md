@@ -64,3 +64,5 @@ collectorは変更前の既存ソースを先に検査し、gitの基準、ソ�
 | 7.0.2 | unknown-leaf-paths-universal-pair | 受理 | 311 |
 
 全記録の基準は33e7546のクリーンなソース。現在の型契約は両版で追加診断0だが、深い出力の再現例は不受理のままである。
+
+[genericなフィールド対応の安全性](generic-correlation-safety.md)では、入れ子の直和containerを元の入力型と誤認する不具合を修正した。深い推論候補の採用や全体の完全実現とは区別する。

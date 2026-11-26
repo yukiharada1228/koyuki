@@ -144,8 +144,17 @@ type PairWithValue<O, I, V> = { [K in keyof O]: K extends 'input' ? I : K extend
 type ValueField<V, K, T> = { [P in keyof V]: P extends K ? T & V[P] : V[P] };
 // Check each field against the whole declared value, including every union
 // variant. Intersect with its declared facts, rather than replacing those facts.
+// Generic signature comparison can accept an object union as T & that union.
+// Reject that false correlation with an independent concrete primitive input.
+// Capture the witness result before the generic conditional narrows the rule.
+// This is an extra refusal check, not a proof of TypeScript soundness.
+declare const correlationWitness: unique symbol;
+type ValueFieldWitness<F, O, V, K, E> = [StageCall<F>] extends [(input: typeof correlationWitness) => Result<PairWithValue<O, typeof correlationWitness, ValueField<V, K, typeof correlationWitness>>, E>] ? true : false;
+type CorrelatedValueField<F, O, V, K extends keyof V, I, E, Whole, Witness = ValueFieldWitness<F, O, Whole, K, E>> =
+  [StageCall<F>] extends [<T>(input: T) => Result<PairWithValue<O, T, ValueField<Whole, K, T>>, E>]
+    ? Witness extends true ? I & V[K] : V[K] : V[K];
 type UniversalValueFields<F, O, V, I, E, Whole = V> = {
-  [K in keyof V]: [StageCall<F>] extends [<T>(input: T) => Result<PairWithValue<O, T, ValueField<Whole, K, T>>, E>] ? I & V[K] : V[K]
+  [K in keyof V]: CorrelatedValueField<F, O, V, K, I, E, Whole>
 };
 type UniversalValuePair<F, I, O, E> = [O] extends [{ readonly input: unknown; readonly value: infer V }]
   ? [V] extends [object]
@@ -169,8 +178,11 @@ export type UniversalRuleOutput<R, I, O, E, Fallback> = [R] extends [<T>(input: 
     : Fallback;
 // Determine correlation independently of the caller's still-generic input.
 // Distribute keys across variants, but test each key against the entire union.
+type RecordFieldWitness<R, Whole, K, E> = [R] extends [(input: typeof correlationWitness) => Result<ValueField<Whole, K, typeof correlationWitness>, E>] ? true : false;
+type CorrelatedRecordKey<R, Whole, K, E, Witness = RecordFieldWitness<R, Whole, K, E>> =
+  [R] extends [<T>(input: T) => Result<ValueField<Whole, K, T>, E>] ? Witness extends true ? K : never : never;
 type CorrelatedKeys<R, O, E, Whole = O> = O extends unknown
-  ? { [K in keyof O]-?: [R] extends [<T>(input: T) => Result<ValueField<Whole, K, T>, E>] ? K : never }[keyof O] : never;
+  ? { [K in keyof O]-?: CorrelatedRecordKey<R, Whole, K, E> }[keyof O] : never;
 type UniversalRecordFields<R, O, I, E, Keys = CorrelatedKeys<R, O, E>> = {
   [K in keyof O]: K extends Keys ? I & O[K] : O[K]
 };

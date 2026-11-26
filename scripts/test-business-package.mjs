@@ -213,6 +213,7 @@ try {
   writeFileSync(join(consumer, 'business-generic-load.test.ts'), readFileSync(join(root, 'src/business-generic-load.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-inline-step.test.ts'), readFileSync(join(root, 'src/transition-inline-step.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-value-fields.test.ts'), readFileSync(join(root, 'src/transition-value-fields.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'generic-object-correlation.test.ts'), readFileSync(join(root, 'src/generic-object-correlation.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
@@ -229,6 +230,29 @@ try {
   console.log(`Verifying packed declarations with TypeScript ${tools.typescript}; package was built with the repository compiler.`);
   console.log(run('npm', ['run', 'check'], consumer));
   console.log(run('npm', ['test'], consumer));
+  // Remove each packed inference safeguard independently. The regression must
+  // observe acceptance of a property the actual container does not contain.
+  const modelDeclarations = join(consumer, 'node_modules/koyuki/dist/model.d.ts');
+  const guardedModel = readFileSync(modelDeclarations, 'utf8');
+  const correlationTests = readFileSync(join(consumer, 'generic-object-correlation.test.ts'), 'utf8').split('\n');
+  for (const [guard, replacement, refusal] of [
+    ['Witness extends true ? I & V[K] : V[K]', 'I & V[K]', 'The producer returns a container'],
+    ['Witness extends true ? K : never', 'K', 'An ordinary record container'],
+  ]) {
+    if (guardedModel.split(guard).length !== 2) throw Error('Packed correlation guard changed; re-evaluate negative control');
+    const line = correlationTests.findIndex(row => row.includes(refusal)) + 1;
+    if (line < 1) throw Error('Correlation refusal contract changed');
+    try {
+      writeFileSync(modelDeclarations, guardedModel.replace(guard, replacement));
+      const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+      const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+      if (rejected.error || rejected.signal || rejected.status === 0 ||
+          !output.includes(`generic-object-correlation.test.ts(${line},5): error TS2578`)) {
+        throw Error('Removing the packed correlation guard did not expose the unsafe property acceptance: ' + output);
+      }
+    } finally { writeFileSync(modelDeclarations, guardedModel); }
+  }
+  console.log('Verified generic record and input/value containers reject invented input properties; removing each packed witness guard fails its refusal contract.');
   // Only widen the finance producers, leaving their runtime bodies unchanged.
   const financeDomain = join(consumer, 'procurement/domain.ts');
   const preciseFinance = readFileSync(financeDomain, 'utf8');

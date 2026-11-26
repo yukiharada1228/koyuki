@@ -195,3 +195,5 @@ iz-24/qbf-19の[入力保持の追加調査](business-pair-binding-investigation
 [開発版の最初のアプリケーション](development-start.md)を、公開済みalpha.5の導入手順と区別した。
 通常関数・businessからApplication/viewまでの本文を、実tarballと開発ツールだけの別プロジェクトで検査する。
 省略した検証の接続拒否も確認したが、保守者による導入例の成立であり、独立利用者の試用や9話題のpartialは未完了のままである。
+
+[genericなフィールド対応の安全性](generic-correlation-safety.md)では、入れ子の直和containerを元の入力型と誤認する不具合を修正した。深い推論候補の採用や全体の完全実現とは区別する。

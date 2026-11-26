@@ -157,3 +157,5 @@ step単独のgenericな呼出しと、具体的なcallbackでTからitem:Tを作
 collectorの過去の宣言変更候補は、元のcommitで再現する。新しい宣言形状へ部分的に適用しないよう拒否する。
 現在の宣言は`--only current`で検査する。
 独立利用者の開発体験や直接音声の確認は未完了で、[講演全体の判定](lecture-acceptance.md)は部分充足を維持する。
+
+[genericなフィールド対応の安全性](generic-correlation-safety.md)では、入れ子の直和containerを元の入力型と誤認する不具合を修正した。深い推論候補の採用や全体の完全実現とは区別する。
