@@ -938,6 +938,17 @@
           "scripts/check-request-prefix-scale.mjs",
           "scripts/test-business-package.mjs"
         ]
+      },
+      "scopedRequestFollowUp": {
+        "scope": "Seed request prefixes with the actual loader input. Loader-only conditions and later business fields are both required in ordinary/detailed/replay calls. The former scoped declaration refusal is now a valid composition; missing/wrong scope is refused at the call site. Scoped generic factories emit declarations without a final API annotation. Runtime, public API names, lecture source coverage and partial statuses are unchanged.",
+        "evidence": [
+          "docs/business-scoped-request.md",
+          "src/business-scoped-request.test.ts",
+          "src/framework/business.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/fixtures/business-verified-exports.ts",
+          "scripts/check-exported-business.mjs"
+        ]
       }
     },
     {

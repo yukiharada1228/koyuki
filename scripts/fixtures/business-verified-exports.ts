@@ -54,3 +54,11 @@ export function createForActor<A extends Actor>(actor: A) {
   return business({ name: 'exported-actor', load, save,
     operations: { approve: [validate<Loaded<Submit>>, approve] } });
 }
+
+export type ScopedSubmit = Submit & Readonly<{tenant:'one'}>;
+export function createScoped<E>(unavailable:E) {
+  const load=async<I extends Base & Readonly<{tenant:'one'}>>(input:I):Promise<Result<Context<I>,E>>=>
+    input.id==='missing'?err(unavailable):ok({input,actor});
+  return business({name:'exported-scoped',load,save,operations:{approve:[validate,approve]}});
+}
+export const scoped=createScoped(failure);

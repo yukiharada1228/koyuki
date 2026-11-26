@@ -110,7 +110,6 @@ declare const proof: unique symbol;
 declare const selected: ReturnType<typeof fixture>['load'] | ((input: Base) => Promise<Result<Context<Base>, 'LoadFailed'>>);
 declare const partial: <I extends Base>(input: I) => Promise<Result<Context<I> | { readonly input: I }, 'LoadFailed'>>;
 declare const conditional: <I extends Base>(input: I) => Promise<Result<Readonly<{ input: I; actor: I extends Submit ? number : string }>, 'LoadFailed'>>;
-declare const scoped: <I extends Base & { tenant: 'one' }>(input: I) => Promise<Result<Context<I>, 'LoadFailed'>>;
 function refusals() {
   const f = fixture();
   const broad = (value: Context<Base>): Result<Context<Base>, never> => ok({ input: { id: value.input.id }, actor: value.actor });
@@ -122,8 +121,6 @@ function refusals() {
   business({ name: 'conditional', load: conditional, save: f.save, operations: { run: [f.common, f.submit] } });
   // @ts-expect-error One successful load alternative lacks the actor required by common.
   business({ name: 'partial', load: partial, save: f.save, operations: { run: [f.common, f.submit] } });
-  // @ts-expect-error Later request fields cannot erase the loader's tenant constraint.
-  business({ name: 'scoped', load: scoped, save: f.save, operations: { run: [f.common, f.submit] } });
   const authorized = (value: Context<Submit> & { readonly [proof]: true }) => f.submit(value);
   // @ts-expect-error No producer supplies the required authorization proof.
   business({ name: 'proof', load: f.load, save: f.save, operations: { run: [f.common, authorized] } });

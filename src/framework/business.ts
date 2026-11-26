@@ -73,9 +73,10 @@ type NarrowRequest<L extends Load,E extends Entry,I,C=LoadedRequest<Loaded<L>,I>
  [I] extends [never] ? never : [I] extends [Input<L>] ? [C] extends [Loaded<L>]
  ? [L] extends [(input:I)=>Promise<Result<C,LoadError<L>>>]
  ? AcceptsPipeline<C,Stages<E>> extends true ? (input:I)=>Promise<Result<C,LoadError<L>>> : never : never : never : never;
+// Keep the loader input conditions while accumulating stage requirements.
 // Stop at the first request prefix accepted by the entire pipeline. A later
 // input/value pair may carry the whole context in input, not the raw request.
-type PrefixRequest<L extends Load,E extends Entry,P extends readonly Stage[]=Stages<E>, I=unknown> =
+type PrefixRequest<L extends Load,E extends Entry,P extends readonly Stage[]=Stages<E>, I=Input<L>> =
  P extends readonly [infer F extends Stage,...infer Rest extends readonly Stage[]]
  ? I & StageRequest<F> extends infer N ? NarrowRequest<L,E,N> extends infer A
  ? [A] extends [never] ? PrefixRequest<L,E,Rest,N> : Extract<A,Load> : never : never : L;

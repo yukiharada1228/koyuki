@@ -225,6 +225,7 @@ try {
   writeFileSync(join(consumer, 'business-verified-request.test.ts'), readFileSync(join(root, 'src/business-verified-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-inferred-checks.test.ts'), readFileSync(join(root, 'src/business-inferred-checks.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'business-request-prefix.test.ts'), readFileSync(join(root, 'src/business-request-prefix.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'business-scoped-request.test.ts'), readFileSync(join(root, 'src/business-scoped-request.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
@@ -323,6 +324,18 @@ try {
     } finally {writeFileSync(businessDeclarations,checkedBusiness);}
   }
   console.log('Verified request prefixes and indexed request fields, including three positive-contract reversions.');
+  const seed='I = Input<L>>';
+  if(checkedBusiness.split(seed).length!==2)throw Error('Scoped request seed changed');
+  try {
+    writeFileSync(businessDeclarations,checkedBusiness.replace(seed,'I = unknown>'));
+    const rejected=spawnSync('npm',['run','check'],{cwd:consumer,encoding:'utf8'});
+    const output=`${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if(rejected.error||!rejected.status||!output.split('\n').some(line=>line.includes('business-scoped-request.test.ts')&&/TS(?:2769|2344)/.test(line))) {
+      throw Error(`Removing the loader-input seed did not fail scoped request composition:\n${output}`);
+    }
+  } finally {writeFileSync(businessDeclarations,checkedBusiness);}
+  console.log('Verified loader input conditions compose with later request fields; the former scope declaration refusal is now a typed positive with missing/wrong-scope call refusals.');
+
 
   const modelDeclarations = join(consumer, 'node_modules/koyuki/dist/model.d.ts');
   const guardedModel = readFileSync(modelDeclarations, 'utf8');

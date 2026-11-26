@@ -25,7 +25,7 @@ export function verifyExportedBusiness(consumer, root, run) {
     check(sourceConfig); check(emitConfig);
     const generated = readFileSync(join(emitted, 'verified-exports.d.ts'), 'utf8');
     assert(!generated.includes('preservedContextWitness') && !generated.includes('node_modules'), 'A private SDK reference leaked into emitted declarations');
-    writeFileSync(client, `import { plain, replayed, optional, createPlain, createForActor, type Submit, type LoadFailure } from './verified-declarations/verified-exports.js';
+    writeFileSync(client, `import { plain, replayed, optional, createPlain, createForActor, scoped, createScoped, type ScopedSubmit, type Submit, type LoadFailure } from './verified-declarations/verified-exports.js';
 import type { Result, Execution, ReplayInputError } from 'koyuki';
 type Equal<A,B>=(<T>()=>T extends A?1:2) extends (<T>()=>T extends B?1:2)?true:false;
 type Assert<T extends true>=T;
@@ -41,6 +41,10 @@ type Error<R>=R extends {ok:false;error:infer E}?E:never;
 type OptionalErrors=Assert<Equal<Error<Awaited<ReturnType<typeof optional.approve>>>,Failure|'LookupFailed'|ReplayInputError>>;
 const another=createPlain({kind:'OtherLoadFailure'} as const);
 type Generic=Assert<Equal<Awaited<ReturnType<typeof another.approve>>,Result<string,Readonly<{kind:'OtherLoadFailure'}>|'Denied'|'Refused'|'SaveFailed'>>>;
+type ScopedInput=Assert<Equal<Parameters<typeof scoped.approve>[0],ScopedSubmit>>;
+const scopedOther=createScoped({kind:'OtherLoadFailure'} as const);
+type ScopedGeneric=Assert<Equal<Awaited<ReturnType<typeof scopedOther.approve>>,Result<string,Readonly<{kind:'OtherLoadFailure'}>|'Denied'|'Refused'|'SaveFailed'>>>;
+
 const actor={id:'boss',active:true,department:'finance'} as const;
 const forActor=createForActor(actor);
 type ActorInput=Assert<Equal<Parameters<typeof forActor.approve>[0],Submit>>;
@@ -53,6 +57,12 @@ if(false){
  void optional.approve({id:'one'});
  // @ts-expect-error Actor-generic factories must still require the request-specific field.
  void forActor.approve({id:'one'});
+ // @ts-expect-error Emitted declarations retain the loader's required scope.
+ void scoped.approve({id:'one',approver:'boss'});
+ // @ts-expect-error The emitted loader scope is still literal, not any string.
+ void scoped.approve({id:'one',approver:'boss',tenant:'two'});
+ void scoped.approve({id:'one',approver:'boss',tenant:'one'});
+
 }
 `);
     writeFileSync(clientConfig, JSON.stringify({ compilerOptions: { ...options, noEmit: true }, files: ['verified-exports-consumer.ts'] }));
