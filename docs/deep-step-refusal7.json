@@ -1,0 +1,25 @@
+{
+  "sourceGitCommit": "a394e61b57498b5bff0b0a9880f602783c6ca509",
+  "sourceDirty": false,
+  "compiler": "Version 7.0.2",
+  "collectorSha256": "d4bdc368bc9288ac6db3eec7e8de785528c83668af6edc13f6e01ce476465e11",
+  "patchSha256": "674835c804339dfb1d2a461c4ff560ecce2e1886c0b33897082f697ebcdfe97b",
+  "contractsSha256": "676013f7db5334d174a1105ad021beed3359716b558c1b3444045eb6d5e6d040",
+  "counterexampleSha256": "a154e5c502aea43aa6411daf73fa6d55e283c6ae9b2db29902104603885bb3b0",
+  "decision": "rejected",
+  "baselineDiagnostics": 0,
+  "initialContractDiagnostics": 0,
+  "counterexample": {
+    "additionalDuplicateGenericSignature": true,
+    "unsafeRefinementDetected": true,
+    "diagnostics": [
+      "src/transition-deep-values.test.ts(141,23): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+      "src/transition-deep-values.test.ts(144,5): error TS2578: Unused '@ts-expect-error' directive."
+    ]
+  },
+  "limitations": [
+    "A reflected two-signature comparison is not an exhaustive overload check.",
+    "The specialized overload and generic signature disagree; this is not a proof of general TypeScript soundness or impossibility.",
+    "No runtime source, compiler installation, or package was modified."
+  ]
+}

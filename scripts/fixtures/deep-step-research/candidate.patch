@@ -1,0 +1,105 @@
+diff --git a/src/framework/business.ts b/src/framework/business.ts
+index cfeec58..73a53a4 100644
+--- a/src/framework/business.ts
++++ b/src/framework/business.ts
+@@ -5,7 +5,7 @@ import { captureLoad, type ActionLoad } from './action.js';
+ // Declare business operations over the shared command and replay runtime.
+ import { workflow, Workflow, observeEvaluation, type Evaluation, type WorkflowCapture, type Rule, type StageObserver, type StageReceiver } from './workflow.js';
+ import type { Result } from './result.js';
+-import type { Step, UniversalRuleOutput, UniversalRecordOutput } from './model.js';
++import type { Step, NestedKnownOutput, UniversalRuleOutput, UniversalRecordOutput } from './model.js';
+ import type { GroupExecution } from './use-case-group.js';
+ import type { Receipt, Execution } from './replay.js';
+ import { createObservation, observeEffect, type ObservationReport } from './observation.js';
+@@ -90,9 +90,10 @@ type ContextStageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>
+   : [I] extends [Out<F>]
+     ? [RuleOf<F>] extends [Rule<I, I, ErrorOf<F>>] ? I : InputPairOutput<F, I>
+     : [RuleOf<F>] extends [Rule<I, I & Out<F>, ErrorOf<F>>] ? I & Out<F> : InputPairOutput<F, I>;
+-type StageOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }]
++type UnmarkedStageOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }]
+   ? UniversalRuleOutput<RuleOf<F>, I, Out<F>, ErrorOf<F>, ContextStageOutput<F, I>>
+   : UniversalRecordOutput<RuleOf<F>, I, Out<F>, ErrorOf<F>, ContextStageOutput<F, I>>;
++type StageOutput<F extends Stage, I> = NestedKnownOutput<F, I, UnmarkedStageOutput<F, I>>;
+ // Tail recursion carries the concrete context across generic identity checks.
+ // Unknown-length arrays retain the original mapped fallback.
+ type Outputs<C, P extends readonly Stage[], A extends readonly unknown[] = readonly []> = number extends P['length']
+diff --git a/src/framework/index.ts b/src/framework/index.ts
+index 31a7345..693a17d 100644
+--- a/src/framework/index.ts
++++ b/src/framework/index.ts
+@@ -15,7 +15,7 @@ export { defineApplication, operation, operations } from './application.js';
+ export type { ApplicationState, ApplicationEvent, UnexpectedException } from './application.js';
+ export { withReplay, replayOperation, replayOperations } from './replay.js';
+ export type { Execution, Receipt, ReplayBoundary, ReplayInputError, ReplayTrace, ReplayReport } from './replay.js';
+-export type { RequestExecution, Step } from './model.js';
++export type { RequestExecution, Step, InferredStep } from './model.js';
+ export { defineUseCase } from './use-case.js';
+ export { defineUseCaseGroup } from './use-case-group.js';
+ export type { GroupExecution } from './use-case-group.js';
+diff --git a/src/framework/model.ts b/src/framework/model.ts
+index d315149..277830f 100644
+--- a/src/framework/model.ts
++++ b/src/framework/model.ts
+@@ -20,6 +20,37 @@ type RetainedStep<F extends object> = true extends StepUnion<F>
+ // parameters as unknown. Later signatures retain contextual callback inference.
+ // Infer the callable from the argument, not from an enclosing stage table's
+ // broad expected return. That context must not instantiate nested withInput as never.
++type NestedValues<V> = V[keyof V];
++type NestedPaths<V, Seen = never> = 0 extends (1 & V) ? never : unknown extends V ? readonly []
++  : V extends object ? V extends (...args: never[]) => unknown ? never : [V] extends [Seen] ? never
++    : NestedValues<{ [K in keyof V as K]-?: NestedPaths<V[K], Seen | V> extends infer P extends readonly PropertyKey[] ? readonly [K, ...P] : never }> : never;
++type NestedUnder<P, K> = P extends readonly [K, ...infer T extends readonly PropertyKey[]] ? T : never;
++type NestedFill<V, P, T> = [P] extends [never] ? V : [Extract<P, readonly []>] extends [never]
++  ? { [K in keyof V]: NestedFill<V[K], NestedUnder<P, K>, T> } : T & V;
++type NestedPairShape<F, O, V, P, T, E> = PairWithValue<O, T, NestedFill<V, P, T>>;
++type NestedPath<F, O, V, E, P = NestedPaths<V>> = P extends readonly PropertyKey[]
++  ? [F] extends [(input: typeof correlationWitness) => Result<PairWithValue<O, typeof correlationWitness, NestedFill<V, P, typeof correlationWitness>>, E>]
++    ? [F] extends [<T>(input: T) => Result<PairWithValue<O, T, NestedFill<V, P, T>>, E>] ? P : never : never : never;
++type NestedSame<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
++// Compare the reflected signatures as an additional refusal check. This is
++// not an exhaustive overload counter or a proof of TypeScript soundness.
++type NestedUniformSignature<F> = F extends { (...args: infer A): infer O; (...args: infer B): infer P }
++  ? NestedSame<A, B> extends true ? NestedSame<O, P> extends true ? unknown : never : never : never;
++type NestedPairWitness<F, O, V, P, E> = [F] extends [(input: typeof correlationWitness) => Result<NestedPairShape<F, O, V, P, typeof correlationWitness, E>, E>] ? true : false;
++// Resolve deep producer correlation at step construction, before a scoped
++// caller makes conditional inference ambiguous. The private proof is type-only;
++// step still creates the same { name, rule } object with no extra runtime key.
++declare const nestedStepProof: unique symbol;
++type NestedStepGuard<F, R = Extract<F, (input: never) => unknown>, O = RequirementValue<ReturnType<Extract<R, (input: never) => unknown>>>, E = RequirementError<ReturnType<Extract<R, (input: never) => unknown>>>, V = O extends { readonly value: infer Value } ? Value : never, P = NestedPath<R, O, V, E>, Witness = NestedPairWitness<R, O, V, P, E>, Subtype = NestedPairShape<R, O, V, P, typeof correlationWitness, E> extends O ? true : false, Reverse = [<T>(input: T) => Result<NestedPairShape<R, O, V, P, T, E>, E>] extends [R] ? true : false> =
++  [R] extends [<T>(input: T) => Result<Readonly<{ input: T; value: unknown }>, E>]
++    ? [Extract<P, readonly [PropertyKey, PropertyKey, ...PropertyKey[]]>] extends [never] ? never : Reverse extends true ? Subtype extends true ? Witness extends true ? [R] extends [<T>(input: T) => Result<NestedPairShape<R, O, V, P, T, E>, E>] ? unknown : never : never : never : never : never;
++/** Inferred named producer; exported so consumers can emit declarations. */
++export type InferredStep<F extends object> = RetainedStep<F> & { readonly [nestedStepProof]: F };
++/** Internal checked-step inference; absent from the package entry point. */
++export type NestedKnownOutput<F, I, Fallback, R = F extends { readonly [nestedStepProof]: infer Fn } ? Fn : never, O = RequirementValue<ReturnType<Extract<R, (input: never) => unknown>>>, E = RequirementError<ReturnType<Extract<R, (input: never) => unknown>>>, V = O extends { readonly value: infer Value } ? Value : never, P = NestedPath<R, O, V, E>, Same = NestedSame<StageCall<F>, R>> =
++  F extends { readonly [nestedStepProof]: unknown } ? Same extends true ? NestedPairShape<R, O, V, P, I, E> : Fallback : Fallback;
++
++export function step<F extends object>(name: string, rule: F & NoInfer<CheckedStepRule<F>> & NoInfer<NestedUniformSignature<F>> & NoInfer<NestedStepGuard<F>>): NoInfer<InferredStep<F>>;
+ export function step<F extends object>(name: string, rule: F & NoInfer<CheckedStepRule<F>>): NoInfer<RetainedStep<F>>;
+ export function step<I, O, E, F extends object>(name: string, rule: Rule<I, O, E> & F & NoInfer<CheckedStepRule<F>>): NoInfer<RetainedStep<F>>;
+ // Keep reflection through Parameters/ReturnType on the original signature.
+@@ -194,9 +225,9 @@ export type UniversalRecordOutput<R, I, O, E, Fallback> = [O] extends [object]
+         ? UniversalRecordFields<R, O, I, E> : Fallback
+       : Fallback
+     : Fallback : Fallback;
+-type PairOutput<F, I, O = StageOutput<F>, E = StageFailure<F>> = [O] extends [{ readonly input: unknown; readonly value: unknown }]
++type PairOutput<F, I, O = StageOutput<F>, E = StageFailure<F>> = NestedKnownOutput<F, I, [O] extends [{ readonly input: unknown; readonly value: unknown }]
+   ? UniversalRuleOutput<StageCall<F>, I, O, E, ContextPairOutput<F, I, O, E>>
+-  : UniversalRecordOutput<StageCall<F>, I, O, E, ContextPairOutput<F, I, O, E>>;
++  : UniversalRecordOutput<StageCall<F>, I, O, E, ContextPairOutput<F, I, O, E>>>;
+ type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<PairOutput<H, I>, R> : I;
+ type ConnectedStages<I, T extends readonly AnyStage[]> = T extends readonly [infer H extends AnyStage, ...infer R extends readonly AnyStage[]]
+   ? readonly [Stage<I, PairOutput<H, I>, StageFailure<H>>, ...ConnectedStages<PairOutput<H, I>, R>]
+diff --git a/src/generic-object-correlation.test.ts b/src/generic-object-correlation.test.ts
+index 8832e5c..8f94244 100644
+--- a/src/generic-object-correlation.test.ts
++++ b/src/generic-object-correlation.test.ts
+@@ -11,7 +11,7 @@ test('a nested union container cannot be treated as the original generic input',
+     return transition(defineTransition({ validate: (value: T) => ok(value), require: [step('wrap', withInput(wrap))], evolve: pair => ok(pair.value) })).run(input);
+   }
+   const input = { id: 'input-only', amount: 3 }, result = forward(input); assert(result.ok);
+-  type Shape = Assert<Equal<typeof result.value, Readonly<{ choice: Choice<unknown> }>>>;
++  type Shape = Assert<Equal<typeof result.value, Readonly<{ choice: Choice<typeof input> }>>>;
+   const value = result.value;
+   if (false) {
+     // @ts-expect-error The producer returns a container, not an input carrying id.

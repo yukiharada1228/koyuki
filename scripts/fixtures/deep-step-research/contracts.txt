@@ -1,0 +1,147 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { business, defineTransition, transition, step, withInput, ok, err, type Result, type Rule, type Step, type InferredStep } from './framework/index.js';
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Assert<T extends true> = T;
+const refused = err('Refused' as const);
+const wrap = <T>(input: T): Result<Readonly<{ item: Readonly<{ payload: T }> }>, 'Refused'> => ok({ item: { payload: input } });
+
+function forward<T>(input: T) {
+  return transition(defineTransition({ validate: (value: T) => ok(value), require: [step('wrap', withInput(wrap))],
+    evolve: pair => ok(pair.value.item.payload) })).run(input);
+}
+test('a named deep requirement carries the caller type and private values without a connection annotation', () => {
+  class Input { readonly id = 'input'; #proof = 3; read() { return this.#proof; } }
+  const input = new Input(), result = forward(input);
+  type Exact = Assert<Equal<typeof result, Result<Input, 'Refused'>>>;
+  assert(result.ok);
+  assert.strictEqual(result.value, input); assert.equal(result.value.read(), 3);
+  const named = step('wrap', withInput(wrap)), direct = named.rule(input); assert(direct.ok);
+  type Direct = Assert<Equal<typeof direct.value.value.item.payload, Input>>;
+  assert.strictEqual(direct.value.value.item.payload, input); assert.deepEqual(Reflect.ownKeys(named), ['name', 'rule']);
+  const legacy: <I, O, E>(name: string, rule: Rule<I, O, E>) => Step<I, O, E> = step;
+  assert.equal(legacy('old', (value: number) => ok(value)).name, 'old');
+});
+
+test('deep requirements keep refusal identity, stop the update and perform no work at construction', () => {
+  let calls = 0, evolved = 0;
+  const check = <T>(input: T): Result<Readonly<{ item: Readonly<{ payload: T }> }>, 'Refused'> => { calls++; return input === null ? refused : wrap(input); };
+  const flow = transition(defineTransition({ validate: (value: number | null) => ok(value), require: [step('check', withInput(check))],
+    evolve: pair => { evolved++; return ok(pair.value.item.payload); } }));
+  type Exact = Assert<Equal<ReturnType<typeof flow.run>, Result<number | null, 'Refused'>>>;
+  assert.equal(calls, 0); assert.strictEqual(flow.run(null), refused); assert.equal(calls, 1); assert.equal(evolved, 0);
+  assert.deepEqual(flow.run(3), ok(3)); assert.equal(calls, 2); assert.equal(evolved, 1);
+});
+
+type Envelope<T> = Readonly<{ actual: Readonly<{ item: T }>; fixed: Readonly<{ value: unknown }>; kind: 'wrapped'; maybe?: Readonly<{ deep: T }>; items: readonly Readonly<{ payload: T }>[] }>;
+const envelope = <T>(input: T): Result<Envelope<T>, 'Refused'> => ok({ actual: { item: input }, fixed: { value: 7 }, kind: 'wrapped', maybe: { deep: input }, items: [{ payload: input }] });
+function forwardEnvelope<T>(input: T) {
+  return transition(defineTransition({ validate: (value: T) => ok(value), require: [step('envelope', withInput(envelope))], evolve: pair => ok(pair.value) })).run(input);
+}
+test('deep records preserve optionality, readonly arrays, fixed metadata and unrelated unknown fields', () => {
+  const input = { id: 'input' }, result = forwardEnvelope(input); assert(result.ok);
+  type Exact = Assert<Equal<typeof result.value, Envelope<typeof input>>>;
+  assert.strictEqual(result.value.actual.item, input); assert.strictEqual(result.value.items[0]?.payload, input); assert.equal(result.value.fixed.value, 7);
+  const fixed = result.value.fixed.value;
+  if (false) {
+    // @ts-expect-error The producer's unrelated unknown field is not the input.
+    fixed.id;
+  }
+});
+
+type Split<T> = Readonly<{ left: Readonly<{ payload: T }>; right: Readonly<{ payload: unknown }> }>
+  | Readonly<{ left: Readonly<{ payload: unknown }>; right: Readonly<{ payload: T }> }>;
+const split = <T>(input: T): Result<Readonly<{ split: Split<T> }>, never> => ok({ split: { left: { payload: input }, right: { payload: 7 } } });
+function forwardSplit<T>(input: T) {
+  return transition(defineTransition({ validate: (value: T) => ok(value), require: [step('split', withInput(split))], evolve: pair => ok(pair.value.split) })).run(input);
+}
+test('overlapping alternatives cannot be combined into a promise that both nested fields carry the input', () => {
+  const input = { id: 'input' }, result = forwardSplit(input); assert(result.ok);
+  const left = result.value.left.payload, right = result.value.right.payload;
+  type Left = Assert<Equal<typeof left, unknown>>;
+  type Right = Assert<Equal<typeof right, unknown>>;
+  if (false) {
+    // @ts-expect-error One possible branch has no input promise for the left field.
+    left.id;
+    // @ts-expect-error The other possible branch has no input promise for the right field.
+    right.id;
+  }
+  assert.strictEqual(left, input); assert.equal(right, 7);
+});
+
+class Hidden<T> { #proof = true; constructor(readonly payload: T) {} read() { return this.#proof; } }
+const hidden = <T>(input: T): Result<Readonly<{ box: Hidden<T> }>, never> => ok({ box: new Hidden(input) });
+function forwardHidden<T>(input: T) {
+  return transition(defineTransition({ validate: (value: T) => ok(value), require: [step('hidden', withInput(hidden))], evolve: pair => ok(pair.value.box) })).run(input);
+}
+test('a nested nominal class retains its declared type instead of losing private facts to a structural mapping', () => {
+  const input = { id: 'input' }, result = forwardHidden(input); assert(result.ok);
+  type Exact = Assert<Equal<typeof result.value, Hidden<unknown>>>;
+  assert(result.value instanceof Hidden); assert.equal(result.value.read(), true); assert.strictEqual(result.value.payload, input);
+});
+
+function application<T>(initial: T) {
+  const finish = (pair: Readonly<{ input: T; value: Readonly<{ item: Readonly<{ payload: T }> }> }>) => ok(pair.value.item.payload);
+  return business({ name: 'deep', load: async (_id: string) => ok(initial), save: async (value: T) => ok(value), operations: { unwrap: [step('wrap', withInput(wrap)), finish] } });
+}
+test('business uses the same checked deep-step relation and preserves a domain-defined consumer contract', async () => {
+  const input = { id: 'input', currency: 'JPY' as const }, app = application(input), result = await app.unwrap('id');
+  type Exact = Assert<Equal<typeof result, Result<typeof input, 'Refused'>>>;
+  assert(result.ok); assert.strictEqual(result.value, input);
+});
+
+function refusedConnections() {
+  const flow = transition(defineTransition({ validate: (value: number) => ok(value), require: [step('wrap', withInput(wrap))], evolve: pair => {
+    // @ts-expect-error A deep number value does not become a string.
+    pair.value.item.payload.toUpperCase();
+    return ok(pair.value.item.payload);
+  } }));
+  // @ts-expect-error Deep refinement does not change the operation's input.
+  flow.run('wrong');
+  const raw = { name: 'raw', rule: withInput(wrap) };
+  // @ts-expect-error The inferred producer evidence is created by the checked constructor, not a raw record.
+  const forged: InferredStep<typeof raw.rule> = raw;
+  void forged;
+  declareProof();
+}
+function declareProof() {
+  type Authorized = Readonly<{ id: string; authorized: true }>;
+  const finish = (pair: Readonly<{ input: Authorized; value: Readonly<{ item: Readonly<{ payload: Authorized }> }> }>) => ok(pair.value.item.payload);
+  const load = async (_id: string) => ok({ id: 'input' }), save = async (value: Authorized) => ok(value);
+  // @ts-expect-error Wrapping an input does not validate or authorize it.
+  business({ name: 'missing-proof', load, save, operations: { run: [step('wrap', withInput(wrap)), finish] } });
+}
+void refusedConnections;
+
+const unknownWrap = <T>(input: T): Result<Readonly<{ item: Readonly<{ payload: unknown }> }>, 'Refused'> => ok({ item: { payload: 7 } });
+function replaced<T>(input: T) {
+  const named = step('wrap', withInput(wrap)), changed = { ...named, rule: withInput(unknownWrap) };
+  return transition(defineTransition({ validate: (value: T) => ok(value), require: [changed], evolve: pair => ok(pair.value.item.payload) })).run(input);
+}
+test('a copied descriptor cannot reuse evidence for a different producer', () => {
+  const result = replaced({ id: 'input' }); assert(result.ok);
+  type Exact = Assert<Equal<typeof result.value, unknown>>;
+  const value = result.value;
+  if (false) {
+    // @ts-expect-error The replacement producer promises only unknown.
+    value.id;
+  }
+  assert.equal(value, 7);
+});
+
+function overloaded(input: number): Result<Readonly<{ input: number; value: Readonly<{ layer: Readonly<{ payload: string }> }> }>, never>;
+function overloaded<T>(input: T): Result<Readonly<{ input: T; value: Readonly<{ layer: Readonly<{ payload: T }> }> }>, never>;
+function overloaded(input: unknown): Result<Readonly<{ input: unknown; value: Readonly<{ layer: Readonly<{ payload: unknown }> }> }>, never> {
+  return ok({ input, value: { layer: { payload: typeof input === 'number' ? 'number-specific' : input } } });
+}
+test('an earlier specialized overload cannot be erased by the final generic signature', () => {
+  const flow = transition(defineTransition({ validate: (value: number) => ok(value), require: [step('overloaded', overloaded)], evolve: pair => ok(pair.value.layer.payload) }));
+  const result = flow.run(3); assert(result.ok);
+  type Exact = Assert<Equal<typeof result.value, unknown>>;
+  const value = result.value;
+  if (false) {
+    // @ts-expect-error The specialized signature does not promise a number payload.
+    value.toFixed();
+  }
+  assert.equal(value, 'number-specific');
+});
