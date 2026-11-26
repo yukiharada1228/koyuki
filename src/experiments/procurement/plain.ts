@@ -1,3 +1,4 @@
+import { checkInvoiceRegistration, registerCheckedInvoice, checkInvoiceMatching, matchCheckedInvoice, checkPaymentRecording, recordCheckedPayment, checkPaymentCancellation, cancelCheckedPayment } from './domain.js';
 import { receiveOrder, checkReceipt, returnCheckedReceipt, receiptCorrectionInput, finishReceiptCorrection } from './domain.js';
 import { checkRequestCreation, parseRequestLines, requestCreationPlan } from './domain.js';
 import { checkRequestEdit, requestEditPlan } from './domain.js';
@@ -9,7 +10,7 @@ import type { ProcurementRepository, StorageError } from './repository.js';
 import { ok, type Result } from '../../framework/index.js';
 import type { Actor, Policy, Entity, Change, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
-import { checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
+import { checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder } from './domain.js';
 import { checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock } from './inventory.js';
 
 /** plain TypeScript orchestration baseline: no business/Workflow execution. */
@@ -217,8 +218,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       register: async (input: RegisterInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.register(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = registerInvoice(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkInvoiceRegistration(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = registerCheckedInvoice(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
@@ -226,8 +229,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       match: async (input: VersionInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.match(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = matchInvoice(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkInvoiceMatching(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = matchCheckedInvoice(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
@@ -259,8 +264,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       record: async (input: PaymentInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.record(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = recordPayment(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkPaymentRecording(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = recordCheckedPayment(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
@@ -268,8 +275,10 @@ export function plainWithCommit<E>(repository: ProcurementRepository<E>, identit
       cancel: async (input: ReasonInput) => {
         const receiveLoad = capture?.('load', input);
         const loaded = await context.payment(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-        const receiveRule = capture?.('rule', loaded.value);
-        const changed = cancelPayment(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
+        const receiveCheck = capture?.('rule', loaded.value);
+        const checked = checkPaymentCancellation(loaded.value); receiveCheck?.(checked); observe?.({ stage: 'rule', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+        const receiveRule = capture?.('rule:2', checked.value);
+        const changed = cancelCheckedPayment(checked.value); receiveRule?.(changed); observe?.({ stage: 'rule:2', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
         const receiveSave = capture?.('save', changed.value);
         const saved = await repository.commit(changed.value, context.actor);
         receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;

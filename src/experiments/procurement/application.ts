@@ -1,10 +1,11 @@
+import { checkInvoiceRegistration, registerCheckedInvoice, checkInvoiceMatching, matchCheckedInvoice, checkPaymentRecording, recordCheckedPayment, checkPaymentCancellation, cancelCheckedPayment } from './domain.js';
 import { receiveDecision, returnDecision, correctedQuantities, correctionPlan } from './receipt-pipeline.js';
 import { parsedRequestInput, creationPlan, editPlan } from './request-pipeline.js';
 import { checkRequestCreation, checkRequestEdit } from './domain.js';
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
 import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, step, ok, type Result } from '../../framework/index.js';
-import { checkReceipt, checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, recordPayment, cancelPayment, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice,
+import { checkReceipt, checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder,
   type Entity, type Stock, type CorrectInput, type Payment, type PaymentInput, type Actor, type Policy, type Request, type Order, type Invoice, type Receipt, type Change, type AmendInput, type EditInput, type ReasonInput, type CreateInput, type VersionInput, type SubmitInput, type PlaceInput, type ReceiveInput, type RegisterInput } from './domain.js';
 import type { ProcurementRepository } from './repository.js';
 export type Committed<T extends Entity = Entity> = Readonly<{ result: T; writes: readonly Entity[] }>;
@@ -50,14 +51,14 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
     } });
   const invoices = business({ name: 'procurement.invoice.v1', load: context.register,
     save: <T extends Invoice>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
-      register: [registerInvoice],
+      register: [checkInvoiceRegistration, registerCheckedInvoice],
       approve: { load: context.invoice<VersionInput>, run: [checkInvoice, approveCheckedInvoice] },
       void: { load: context.invoice<ReasonInput>, run: [checkInvoice, voidCheckedInvoice] },
-      match: { load: context.match, run: [matchInvoice] },
+      match: { load: context.match, run: [checkInvoiceMatching, matchCheckedInvoice] },
     } });
   const payments = business({ name: 'procurement.payment.v1', load: context.record,
     save: <T extends Payment>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
-      record: [recordPayment], cancel: { load: context.payment, run: [cancelPayment] },
+      record: [checkPaymentRecording, recordCheckedPayment], cancel: { load: context.payment, run: [checkPaymentCancellation, cancelCheckedPayment] },
     } });
   const inventory = business({ name: 'procurement.inventory.v1', load: context.inventory<StockInput>,
     save: <T extends Stock>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {

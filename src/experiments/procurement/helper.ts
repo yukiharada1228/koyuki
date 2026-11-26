@@ -1,3 +1,4 @@
+import { checkInvoiceRegistration, registerCheckedInvoice, checkInvoiceMatching, matchCheckedInvoice, checkPaymentRecording, recordCheckedPayment, checkPaymentCancellation, cancelCheckedPayment } from './domain.js';
 import { receiveOrder, checkReceipt, returnCheckedReceipt, receiptCorrectionInput, finishReceiptCorrection } from './domain.js';
 import { checkRequestCreation, parseRequestLines, requestCreationPlan } from './domain.js';
 import { checkRequestEdit, requestEditPlan } from './domain.js';
@@ -9,7 +10,7 @@ import type { ProcurementRepository, StorageError } from './repository.js';
 import { ok, type Result } from '../../framework/index.js';
 import type { Actor, Policy, Entity, Change, Receipt, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
-import { checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
+import { checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder } from './domain.js';
 import { checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
@@ -49,17 +50,6 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       const change = finish(prepared.value.input, prepared.value.value), changed = ok(change); receivePlan?.(changed); observe?.({ stage: 'rule:3', status: 'ok' });
       const receiveSave = capture?.('save', change);
       const saved = await repository.commit(change, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
-    };
-  }
-  function action<I, C, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, decide: (context: C) => Result<Change<T>, RuleError>) {
-    return async (input: I) => {
-      const receiveLoad = capture?.('load', input);
-        const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
-      const receiveRule = capture?.('rule', loaded.value);
-        const changed = decide(loaded.value); receiveRule?.(changed); observe?.({ stage: 'rule', status: changed.ok ? 'ok' : 'error' }); if (!changed.ok) return changed;
-      const receiveSave = capture?.('save', changed.value);
-        const saved = await repository.commit(changed.value, context.actor);
-      receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
   function checkedAction<I, C, V, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, RuleError>, decide: (value: V) => Result<Change<T>, RuleError>) {
@@ -147,14 +137,14 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       correct: correctionAction(),
     },
     invoices: {
-      register: action(context.register, registerInvoice),
-      match: action(context.match, matchInvoice),
+      register: checkedAction(context.register, checkInvoiceRegistration, registerCheckedInvoice),
+      match: checkedAction(context.match, checkInvoiceMatching, matchCheckedInvoice),
       approve: checkedAction(context.invoice<VersionInput>, checkInvoice, approveCheckedInvoice),
       void: checkedAction(context.invoice<ReasonInput>, checkInvoice, voidCheckedInvoice),
     },
     payments: {
-      record: action(context.record, recordPayment),
-      cancel: action(context.payment, cancelPayment),
+      record: checkedAction(context.record, checkPaymentRecording, recordCheckedPayment),
+      cancel: checkedAction(context.payment, checkPaymentCancellation, cancelCheckedPayment),
     },
     inventory: {
       reserve: checkedAction(context.inventory<StockInput>, checkStock, reserveCheckedStock),

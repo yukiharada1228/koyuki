@@ -1,5 +1,7 @@
 # 部分充足9話題を、残る作業の種類ごとに再点検する
 
+[財務4操作の宣言](procurement-finance-transitions.md)では、請求書登録・照合・支払記録・取消を検証と状態生成へ分けた。全25操作が複数段階になり、成功135境界・代表失敗279境界で比較する。業務判断・host統合・推論・利用者評価の残件は維持する。
+
 [普通のgeneric recordの接続](ordinary-generic-records.md)で、input/valueのラッパーなしでも共有関数のフィールド対応を保持するようにした。深い入れ子・名前なしinline・原資料確認・独立利用者評価は残る。
 
 [遷移全体の入力保持](transition-pair-context.md)で、名前付きのgeneric要件から未注釈evolveへ具体的な文脈を渡せるようにした。

@@ -65,7 +65,7 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
           const operation = `procurement.${namespaces[group]}.v1.${name}`;
           const splitRule = group === 'orders' && ['place', 'amend', 'cancel', 'complete'].includes(name)
             || group === 'requests' && ['edit', 'withdraw', 'reject', 'return', 'reassign', 'submit', 'approve'].includes(name)
-            || group === 'invoices' && ['approve', 'void'].includes(name)
+            || (group === 'invoices' || group === 'payments')
             || group === 'receipts' || group === 'inventory';
           const expectedRules = group === 'requests' && name === 'create' ? ['authorize-creation', 'parse-lines', 'create-request-plan'] : group === 'requests' && name === 'edit' ? ['run:1', 'require-draft', 'parse-lines', 'edit-request-plan'] : group === 'receipts' && name === 'correct' ? ['run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3'] : ['run:1', ...(splitRule ? ['run:2'] : []), ...(group === 'receipts' && name === 'return' ? ['run:3'] : [])];
           const expectedSteps = [`${operation}:load`, ...expectedRules, operation];
@@ -95,7 +95,7 @@ async function run(build: Factory | undefined, backend: string, mode: Mode = 'se
     assert.equal(commits, 32);
     if (build) {
       assert.equal(reports.length, 32); assert.equal(new Set(reports.map(row => row.operation)).size, 25);
-      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 130);
+      assert.equal(resultProjections, mode === 'input-failure' ? 0 : 135);
     }
     return { outcome, reports, commits, reads };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }

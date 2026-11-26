@@ -181,6 +181,7 @@ try {
   writeFileSync(join(consumer, 'mutation-renderer-identity.test.ts'), readFileSync(join(root, 'src/mutation-renderer-identity.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki'));
   writeFileSync(join(consumer, 'mutation-view-preparation.test.ts'), readFileSync(join(root, 'src/mutation-view-preparation.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki'));
   writeFileSync(join(consumer, 'procurement-finance-state-types.test.ts'), readFileSync(join(root, 'src/procurement-finance-state-types.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
+  writeFileSync(join(consumer, 'procurement-finance-transitions.test.ts'), readFileSync(join(root, 'src/procurement-finance-transitions.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/", "'./"));
   writeFileSync(join(consumer, 'procurement-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-application-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-application-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-failure-observation.test.ts'), readFileSync(join(root, 'src/procurement-failure-observation.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
@@ -257,17 +258,30 @@ try {
   const financeDomain = join(consumer, 'procurement/domain.ts');
   const preciseFinance = readFileSync(financeDomain, 'utf8');
   let widenedFinanceCount = 0;
-  const widenedFinance = preciseFinance.replace(/Result<Change<Extract<(Invoice|Payment), \{ readonly state: '[a-z]+' \}>>, RuleError>/g,
-    (_, model) => { widenedFinanceCount++; return `Result<Change<${model}>, RuleError>`; });
-  if (widenedFinanceCount !== 8) throw Error(`Unexpected finance producer count: ${widenedFinanceCount}`);
+  const widenedFinance = preciseFinance.replace(/Result<Change<Extract<(Invoice|Payment), \{ readonly state: '[a-z]+' \}>>, (RuleError|never)>/g,
+    (_, model, error) => { widenedFinanceCount++; return `Result<Change<${model}>, ${error}>`; });
+  if (widenedFinanceCount !== 12) throw Error(`Unexpected finance producer count: ${widenedFinanceCount}`);
   try {
     writeFileSync(financeDomain, widenedFinance);
     const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
     const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
     const contracts = output.split('\n').filter(line => line.includes('procurement-finance-state-types.test.ts') && line.includes('TS2344'));
-    if (rejected.error || !rejected.status || contracts.length < 8) throw Error(`Broad finance types did not fail the exact-state contracts:\n${output}`);
+    if (rejected.error || !rejected.status || contracts.length < 12) throw Error(`Broad finance types did not fail the exact-state contracts:\n${output}`);
   } finally { writeFileSync(financeDomain, preciseFinance); }
   console.log('Verified exact finance next-state contracts reject widened producer return types; historical replay remains model-wide.');
+  let removedFinanceProofs = 0;
+  const unprovedFinance = preciseFinance.replace(/; \[financeTransitionProof\]: '(?:register-invoice|match-invoice|record-payment|cancel-payment)'/g,
+    () => { removedFinanceProofs++; return ''; });
+  if (removedFinanceProofs !== 4) throw Error('Finance proof declarations changed; re-evaluate negative control');
+  try {
+    writeFileSync(financeDomain, unprovedFinance);
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    const refusals = output.split('\n').filter(line => line.includes('procurement-finance-transitions.test.ts') && line.includes('TS2578'));
+    if (rejected.error || rejected.signal || !rejected.status || refusals.length < 4) throw Error('Removing finance proofs did not expose omitted-validation acceptance: ' + output);
+  } finally { writeFileSync(financeDomain, preciseFinance); }
+  console.log('Verified finance validation cannot be omitted or replaced by a general invoice check; removing its four private proof tags fails refusal contracts.');
+
   let widenedOrderCount = 0;
   const widenedOrders = preciseFinance.replace(/Result<Change<Extract<Order, \{ readonly state: '[a-z]+' \}>>, RuleError>/g,
     () => { widenedOrderCount++; return 'Result<Change<Order>, RuleError>'; });
