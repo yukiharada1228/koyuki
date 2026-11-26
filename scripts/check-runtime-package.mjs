@@ -1,3 +1,4 @@
+import { classifyInlineInference } from './inline-inference-observation.mjs';
 import { build } from 'esbuild';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, realpathSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
@@ -73,7 +74,35 @@ if (result.ok) { const n: number = result.value; console.log(n); }
   if (!registry) writeFileSync(join(temp, 'initial-state-shrinking-guide.ts'), readFileSync(join(root, 'docs/initial-state-shrinking.md'), 'utf8').split('```ts\n')[1].split('```')[0]);
   if (!registry) writeFileSync(join(temp, 'business-local-load-guide.ts'), readFileSync(join(root, 'docs/business-local-load.md'), 'utf8').split('```ts\n')[1].split('```')[0]);
   if (!registry) writeFileSync(join(temp, 'transition-inference-limit.ts'), readFileSync(join(root, 'scripts/fixtures/transition-inference-limit.ts'), 'utf8'));
-  writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] }, include: ['consumer.ts', ...(!registry ? ['with-input-alternatives-guide.ts', 'connection-types.ts', 'branch-narrowing-types.ts', 'typed-branch-guide.ts', 'combine-types.ts', 'combine-guide.ts', 'transition-inference-limit.ts', 'finite-model-guide.ts', 'model-sequences-guide.ts', 'async-model-sequences-guide.ts', 'event-payload-shrinking-guide.ts', 'initial-state-shrinking-guide.ts', 'business-local-load-guide.ts', 'retry-guide.ts', 'effect-projection-guide.ts', 'business-diagnostics-guide.ts', 'business-operation-table-guide.ts'] : []), 'node_modules/koyuki/dist/**/*.d.ts'] }));
+  writeFileSync(join(temp, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'] }, include: ['consumer.ts', ...(!registry ? ['with-input-alternatives-guide.ts', 'connection-types.ts', 'branch-narrowing-types.ts', 'typed-branch-guide.ts', 'combine-types.ts', 'combine-guide.ts', 'finite-model-guide.ts', 'model-sequences-guide.ts', 'async-model-sequences-guide.ts', 'event-payload-shrinking-guide.ts', 'initial-state-shrinking-guide.ts', 'business-local-load-guide.ts', 'retry-guide.ts', 'effect-projection-guide.ts', 'business-diagnostics-guide.ts', 'business-operation-table-guide.ts'] : []), 'node_modules/koyuki/dist/**/*.d.ts'] }));
   run(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--project', join(temp, 'tsconfig.json')], temp);
+  if (!registry) {
+    const probePath = join(temp, 'transition-inference-limit.ts');
+    const probe = readFileSync(probePath, 'utf8');
+    const options = JSON.parse(readFileSync(join(temp, 'tsconfig.json'), 'utf8')).compilerOptions;
+    const config = join(temp, 'inline-inference-config.json');
+    writeFileSync(config, JSON.stringify({ compilerOptions: options, files: ['transition-inference-limit.ts'] }));
+    const compileProbe = source => {
+      writeFileSync(probePath, source);
+      return classifyInlineInference(source, spawnSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--project', config, '--pretty', 'false'], { cwd: temp, encoding: 'utf8' }));
+    };
+    const observation = compileProbe(probe);
+    // A fully typed ordinary lambda supplies a real accepted control today.
+    // It is not evidence that the original higher-order inline call is fixed.
+    const direct = probe.replace('withInput(quote)', "((amount: number): Result<Readonly<{ input: number; value: number }>, 'Declined'> => ok({ input: amount, value: amount * 2 }))");
+    if (direct === probe || compileProbe(direct).status !== 'supported') throw Error('Inline inference accepted control failed');
+    for (const broken of [
+      probe.replace('const exact: Equal<ReturnType<typeof valid.run>, Result<number,', 'const exact: Equal<ReturnType<typeof valid.run>, Result<string,'),
+      direct.replace('const exactInlineResult: Equal<ReturnType<typeof inline.run>, Result<number,', 'const exactInlineResult: Equal<ReturnType<typeof inline.run>, Result<string,'),
+      direct.replace('value: number }>', 'value: any }>'),
+    ]) {
+      if (broken === probe || broken === direct) throw Error('Inline inference precision control did not apply');
+      let rejected = false;
+      try { compileProbe(broken); } catch { rejected = true; }
+      if (!rejected) throw Error('Inline inference observer accepted an unrelated or erased-type failure');
+    }
+    writeFileSync(probePath, probe);
+    console.log(`Inline requirement inference: ${observation.status}; accepted improvement control and three precision/refusal controls verified. No compiler patch used.`);
+  }
   console.log(`Verified ${manifest.name}@${manifest.version}: no runtime dependencies, ${files.length} local-only JS modules and all public declarations, consumer types without @types/node.`);
 } finally { rmSync(temp, { recursive: true, force: true }); }
