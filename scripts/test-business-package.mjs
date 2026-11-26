@@ -171,6 +171,7 @@ try {
   writeFileSync(join(consumer, 'procurement-observation-comparison.test.ts'), readFileSync(join(root, 'src/procurement-observation-comparison.test.ts'), 'utf8')
     .replace("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/procurement/", "'./procurement/"));
   writeFileSync(join(consumer, 'procurement-storage-values.test.ts'), readFileSync(join(root, 'src/procurement-storage-values.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
+  writeFileSync(join(consumer, 'procurement-finance-state-types.test.ts'), readFileSync(join(root, 'src/procurement-finance-state-types.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-application-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-application-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-failure-observation.test.ts'), readFileSync(join(root, 'src/procurement-failure-observation.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
@@ -206,6 +207,21 @@ try {
   console.log(run('npm', ['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], consumer));
   console.log(run('npm', ['run', 'check'], consumer));
   console.log(run('npm', ['test'], consumer));
+  // Only widen the finance producers, leaving their runtime bodies unchanged.
+  const financeDomain = join(consumer, 'procurement/domain.ts');
+  const preciseFinance = readFileSync(financeDomain, 'utf8');
+  let widenedFinanceCount = 0;
+  const widenedFinance = preciseFinance.replace(/Result<Change<Extract<(Invoice|Payment), \{ readonly state: '[a-z]+' \}>>, RuleError>/g,
+    (_, model) => { widenedFinanceCount++; return `Result<Change<${model}>, RuleError>`; });
+  if (widenedFinanceCount !== 8) throw Error(`Unexpected finance producer count: ${widenedFinanceCount}`);
+  try {
+    writeFileSync(financeDomain, widenedFinance);
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    const contracts = output.split('\n').filter(line => line.includes('procurement-finance-state-types.test.ts') && line.includes('TS2344'));
+    if (rejected.error || !rejected.status || contracts.length < 8) throw Error(`Broad finance types did not fail the exact-state contracts:\n${output}`);
+  } finally { writeFileSync(financeDomain, preciseFinance); }
+  console.log('Verified exact finance next-state contracts reject widened producer return types; historical replay remains model-wide.');
   // Reintroduce the adapters' old silent clone behavior in this disposable copy.
   const storageGuard = join(consumer, 'procurement/storage-values.ts');
   const guardedStorage = readFileSync(storageGuard, 'utf8');
