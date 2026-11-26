@@ -69,3 +69,7 @@ SQLiteは:memory:を使い、この7検査をrootと開発版tarballのconsumer�
 
 [数量訂正の実経路](procurement-live-correction.md)でも再検証と計画作成を分けたため射影回数を更新した。
 I/O位置72種類と例外注入178回は維持する。
+
+後続の[Application経由の検査](procurement-application-io-exceptions.md)では、同じI/O位置に対して
+crashedへの遷移、保持データ、再実行の抑止、dismiss後の明示的な回復、実行メタデータを追加確認した。
+この直接commandの三方式比較と、後続のApplicationによる四条件の検査は別の範囲である。

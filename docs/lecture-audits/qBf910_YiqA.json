@@ -266,6 +266,16 @@
         "docs/business-pair-specialization-investigation.md",
         "docs/business-pair-specialization-investigation.json"
       ]
+    },
+    "applicationIOCrashFollowUp": {
+      "implementationBaseCommit": "47e6bea7be55654c5dbe85309d0ede319e693630",
+      "scope": "Actual procurement commands from all 25 operation kinds in the existing 32-call scenario are wrapped in per-call Application sessions. Four memory/SQLite and observed/unobserved conditions each inject 178 pre-adapter IO exceptions over 72 unique positions. Checks crashed state, preserved prior data, no success projection/automatic retry, dismiss and explicit recovery, and closed metadata spans with defect status. Not an integrated production UI, three-way Application comparison, DB-internal commit-failure proof, or all exception-path coverage. No new audio/frame review or independent user trial; partial statuses unchanged.",
+      "evidence": [
+        "src/procurement-application-io-exceptions.test.ts",
+        "src/experiments/procurement/failure-testing.ts",
+        "scripts/test-business-package.mjs",
+        "docs/procurement-application-io-exceptions.md"
+      ]
     }
   },
   "sections": [

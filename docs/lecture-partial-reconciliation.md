@@ -132,3 +132,7 @@ iz-24/qbf-19の[型推論の追加照合](workflow-context-inference.md)で、�
 その後、[genericな先頭の型推論](workflow-generic-first.md)を拡張し、制約の項目だけを使う正例を受理するようにした。
 以前の先頭の例はBaseにないContext属性を要求するため、そのまま不受理である。
 不適合候補・証明の混同の拒否と元の推論例を再検査し、任意の多相変換の解消とはせず、9話題のpartialを維持する。
+
+[ApplicationのI/O例外](procurement-application-io-exceptions.md)を、購買25操作の既存シナリオで追加確認した。
+直接commandの例外伝播と、Applicationのcrashed・投影抑止・再実行抑止・回復・実行メタデータを区別する。
+全Application経路・本番UI・永続履歴の運用まで検証したとはせず、9話題のpartialは維持する。
