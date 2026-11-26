@@ -1,5 +1,25 @@
 # 入力保持の型計算とbusiness全体の推論を分けて調べる
 
+## 後続：判定と要求する関数型を同時に変える
+
+```sh
+node scripts/investigate-business-pair.mjs --literal-connection
+```
+
+元の候補は判定部分を直接の関数型に変えても、DiagnosticRuleが最終的に要求する
+通常関数の署名にはRule aliasを使っていた。両方を直接記述する追加候補も比較した。
+既存の2候補を対照に保ち、3候補すべてで既存ソースの型検査が成功、追加診断0だった。
+しかし、どの候補でもbusinessのinline設定と設定全体の先行束縛は不受理のままで、
+単独の直接記述だけが受理される区別も変わらなかった。
+結果は[生の記録](business-pair-binding-investigation.json)のliteralConnectionFollowUpに保存した。
+
+正例の受理を改善していないため、この候補もcoreへは採用しない。
+診断を減らすために接続検査を外したり、Contextのprivate fieldを除いたりはしていない。
+これは実行エンジンの修正・独立利用者の評価・全ての改善の不可能性の証明ではない。
+入荷の3つの文脈注釈、原音・独立利用者の未確認事項も維持する。
+
+## 当初の束縛・型計算の比較
+
 後続の[設定全体を先に推論する候補](business-raw-definition-investigation.md)も、
 既存契約を保つ条件で正例を受理できず、不採用とした。
 
