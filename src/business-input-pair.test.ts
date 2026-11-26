@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { business, withInput, ok, err, type Result } from './framework/index.js';
+import { business, withInput, ok, err, type Result, type GroupExecution } from './framework/index.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
 type Base = Readonly<{ amount: number }>;
@@ -106,6 +106,16 @@ test('loader compatibility preserves a narrower overloaded operation contract', 
     // @ts-expect-error the broad callable must not erase the operation's required reason
     app.decide({ id: 'one' });
   }
+  function always(value: Loaded<Request>): Result<true, never>;
+  function always(value: Loaded<Specific>): Result<true, never>;
+  function always(_value: Loaded<Request>): Result<true, never> { return ok(true); }
+  const metadata = business({ name: 'overloaded-metadata', load,
+    save: async (value: true, execution: GroupExecution<'go', Specific>) => {
+      assert.equal(execution.request.reason, 'required'); return ok(value);
+    }, operations: { go: [always] },
+  });
+  type MetadataInput = Assert<Equal<Parameters<typeof metadata.go>[0], Specific>>;
+  assert.deepEqual(await metadata.go({ id: 'one', reason: 'required' }), ok(true));
 });
 
 test('pair refinement preserves validation facts added by a normal domain function', async () => {

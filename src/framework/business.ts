@@ -38,10 +38,11 @@ type FirstInput<E extends Entry> = RuleOf<Stages<E>[0]> extends (input: infer I)
 // envelope, consider the first rule's input field only as a request candidate.
 // The actual loader must guarantee the entire required context for that request;
 // an incompatible broad return or a missing proof remains rejected.
-// Capture the declared result before conditional matching refines the callable.
-// Checking only parameter compatibility can discard a narrower overload.
-type AcceptsLoaded<R extends (...args: never[]) => unknown, I, O = ReturnType<R>> = R extends (input: I) => infer A
-  ? [A] extends [O] ? true : false : false;
+// Capture declared input and result before conditional matching refines the
+// callable. A broad overload must not erase a narrower operation/metadata input.
+type DeclaredInput<R> = [R] extends [(input: infer I) => unknown] ? I : never;
+type AcceptsLoaded<R extends (...args: never[]) => unknown, I, P = DeclaredInput<R>, O = ReturnType<R>> = [I] extends [P]
+  ? R extends (input: I) => infer A ? [A] extends [O] ? true : false : false : false;
 type SpecializedLoader<L extends Load, E extends Entry> = AcceptsLoaded<RuleOf<Stages<E>[0]>, Loaded<L>> extends true ? L
   : [Loaded<L>] extends [FirstInput<E>] ? L
   : [FirstInput<E>] extends [{ readonly input: infer I }]
