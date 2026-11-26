@@ -16,12 +16,12 @@ type StepUnion<F, C = F> = F extends C ? [C] extends [F] ? false : true : never;
 type RetainedStep<F extends object> = true extends StepUnion<F>
   ? Step<StepInput<F>, StepSuccess<F>, StepError<F>>
   : { readonly name: string; readonly rule: F };
-// Preserve contextual inference first; infer constrained generic callables only
-// when the actual function guarantees the entire inferred input/output contract.
+// Capture a callable before a contextual signature can instantiate its generic
+// parameters as unknown. Later signatures retain contextual callback inference.
 // Infer the callable from the argument, not from an enclosing stage table's
 // broad expected return. That context must not instantiate nested withInput as never.
-export function step<I, O, E, F extends object>(name: string, rule: Rule<I, O, E> & F & NoInfer<CheckedStepRule<F>>): NoInfer<RetainedStep<F>>;
 export function step<F extends object>(name: string, rule: F & NoInfer<CheckedStepRule<F>>): NoInfer<RetainedStep<F>>;
+export function step<I, O, E, F extends object>(name: string, rule: Rule<I, O, E> & F & NoInfer<CheckedStepRule<F>>): NoInfer<RetainedStep<F>>;
 // Keep reflection through Parameters/ReturnType on the original signature.
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E>;
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E> { return { name, rule }; }

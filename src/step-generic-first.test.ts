@@ -45,6 +45,36 @@ test('a contextual Step annotation still supplies an unannotated callback input'
   assert.equal(named.name, 'contextual');
 });
 
+test('an inline unconstrained generic requirement retains each call input and result type', () => {
+  function identity<T>(input: T): Result<T, 'Declined'> { return ok(input); }
+  const paired = withInput(identity), named = step('identity', withInput(identity));
+  type ActualRule = Assert<Equal<typeof named.rule, typeof paired>>;
+  const number = named.rule(2), text = named.rule('approved');
+  type NumberResult = Assert<Equal<typeof number, Result<Readonly<{ input: number; value: number }>, 'Declined'>>>;
+  type TextResult = Assert<Equal<typeof text, Result<Readonly<{ input: string; value: string }>, 'Declined'>>>;
+  class Context { #value = 'trusted'; host() { return this.#value; } }
+  const input = new Context(), result = named.rule(input); assert(result.ok);
+  type ContextResult = Assert<Equal<typeof result, { ok: true; value: Readonly<{ input: Context; value: Context }> }>>;
+  assert.strictEqual(result.value.input, input); assert.strictEqual(result.value.value, input);
+  assert.equal(result.value.value.host(), 'trusted'); assert(Object.isFrozen(result.value));
+  assert.deepEqual(number, ok({ input: 2, value: 2 })); assert.deepEqual(text, ok({ input: 'approved', value: 'approved' }));
+});
+
+test('an inline generic wrapping requirement keeps nested result relationships in a generic caller', () => {
+  const named = step('wrap-input', withInput(<T>(input: T) => ok({ item: input })));
+  function forward<T>(input: T) {
+    const result = named.rule(input);
+    if (result.ok) {
+      const before: T = result.value.input, after: T = result.value.value.item;
+      void before; void after;
+    }
+    return result;
+  }
+  const input = { amount: 3, currency: 'JPY' as const }, result = forward(input);
+  type Exact = Assert<Equal<typeof result, Result<Readonly<{ input: typeof input; value: { item: typeof input } }>, never>>>;
+  assert(result.ok); assert.strictEqual(result.value.input, input); assert.strictEqual(result.value.value.item, input);
+});
+
 for (const [name, named] of [['bound', bound], ['inline', inline]] as const) test(`a named generic input pair retains runtime identity: ${name}`, () => {
   const input = { amount: 2, extra: 'original' }, result = named.rule(input); assert(result.ok);
   assert.strictEqual(result.value.input, input); assert.equal(result.value.value, 4); assert(Object.isFrozen(result.value));
@@ -101,6 +131,8 @@ type Permitted = Base & Readonly<{ [permitted]: true }>;
 declare const approve: <T extends Permitted>(value: T) => Result<string, 'Closed'>;
 declare const incompatible: ((value: { a: string }) => Result<number, 'A'>) | ((value: { b: number }) => Result<string, 'B'>);
 function typeContracts() {
+  // @ts-expect-error without an input contract, a callback cannot infer domain fields from its body
+  step('untyped', value => ok(value.amount));
   const protectedStep = step('approve', approve);
   type Protected = Assert<Equal<Parameters<typeof protectedStep.rule>[0], Permitted>>;
   // @ts-expect-error raw input does not have the private permission proof
