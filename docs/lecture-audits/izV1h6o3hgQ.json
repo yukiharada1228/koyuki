@@ -472,6 +472,28 @@
         "src/framework/business.ts",
         "scripts/declarations.test.mjs"
       ]
+    },
+    "directCorrectionStagesFollowUp": {
+      "implementationBaseCommit": "d3e276f2a979272769f1804f2eb74060b0d431a1",
+      "sections": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up. Guarded inner-input projection and fallthrough after a failed identity check retain the original context when an intermediate proof is dropped. Direct correction uses check, quantity revalidation, plan projection and stock projection in both production Application declarations. The remaining stock context annotation and two connection-only Workflows were removed; all three stock-specific callback annotations are now absent from the production receipt pipeline. Ordinary domain signatures remain. Three new runtime/static tests cover inner context, validation facts, broad/union/incomplete producers, exact errors, stop/save/trace/capture. Five correction compositions are compared against independent expected plans. Selected source diagnostics: 8 declarations, 25 IDs, 52 labels, zero unresolved; application-only retains 41 unresolved. No new source/audio/frame review or independent-user evidence; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/procurement-direct-receipt-stages.md",
+        "src/business-input-pair.test.ts",
+        "src/procurement-receipt-pipeline.test.ts",
+        "src/procurement-correction-decomposition.test.ts",
+        "src/experiments/procurement/receipt-pipeline.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/context-application.ts",
+        "src/framework/business.ts",
+        "scripts/declarations.test.mjs"
+      ]
     }
   },
   "sections": [
@@ -879,7 +901,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列・Workflow/withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。先に束縛したgenericなwithInputは、実際のloader/関数契約を検査してbusiness配列でも元の文脈を保持できるようになり、6.0.3/7.0.2で型と実行を検査した。数量訂正のWorkflowと次状態型は維持する。配列内でwithInputを直接呼ぶ例、任意の多相変換、数量訂正に残る1つの文脈注釈、互換入口等の接続、独立利用者の評価は残る。後続の直接接続で入荷・返品の2注釈と接続用Workflowを削除し、accepted/returnedの型・実行名・失敗停止を保持した。",
+      "assessment": "通常関数列・withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。genericなwithInputの元の文脈と、組から組への投影の内側のinputを実関数の保証で保持する。入荷・返品・数量訂正は名前付き関数列へ直接接続し、在庫文脈の重複注釈3つと4つの接続用Workflowを削除した。状態型・検証証明・段階名・失敗停止は維持する。配列内のwithInput直接呼出し、任意の多相変換、互換入口等の接続、独立利用者の評価は残る。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -920,7 +942,7 @@
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
-        "配列内でwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。先行する変数束縛は現在の対応条件で、monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。数量訂正の1つの文脈注釈は維持する。",
+        "配列内でwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。先行する変数束縛は現在の対応条件で、monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。在庫文脈の重複注釈3つは直接接続で削除済みだが、通常の業務型宣言は必要。",
         "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
       ]
     },

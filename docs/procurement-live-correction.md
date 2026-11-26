@@ -1,5 +1,8 @@
 # 数量訂正の実経路へWorkflowを採用する
 
+後続の[直接接続](procurement-direct-receipt-stages.md)で、内側の段階名を保ったままWorkflowと在庫文脈の重複注釈を削除した。
+以下はWorkflowへの移行時点の記録であり、現在の実経路は名前付きの普通の関数を直接接続する。
+
 [直接接続の試作](procurement-correction-decomposition.md)を、購買の実際の数量訂正へ移した。
 新しいframework APIは追加せず、既存のWorkflow・withInput・businessを使う。
 

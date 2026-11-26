@@ -413,6 +413,27 @@
         "src/framework/business.ts",
         "scripts/declarations.test.mjs"
       ]
+    },
+    "directCorrectionStagesFollowUp": {
+      "implementationBaseCommit": "d3e276f2a979272769f1804f2eb74060b0d431a1",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Implementation-only follow-up. Guarded inner-input projection and fallthrough after a failed identity check retain the original context when an intermediate proof is dropped. Direct correction uses check, quantity revalidation, plan projection and stock projection in both production Application declarations. The remaining stock context annotation and two connection-only Workflows were removed; all three stock-specific callback annotations are now absent from the production receipt pipeline. Ordinary domain signatures remain. Three new runtime/static tests cover inner context, validation facts, broad/union/incomplete producers, exact errors, stop/save/trace/capture. Five correction compositions are compared against independent expected plans. Selected source diagnostics: 8 declarations, 25 IDs, 52 labels, zero unresolved; application-only retains 41 unresolved. No new source/audio/frame review or independent-user evidence; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/procurement-direct-receipt-stages.md",
+        "src/business-input-pair.test.ts",
+        "src/procurement-receipt-pipeline.test.ts",
+        "src/procurement-correction-decomposition.test.ts",
+        "src/experiments/procurement/receipt-pipeline.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/context-application.ts",
+        "src/framework/business.ts",
+        "scripts/declarations.test.mjs"
+      ]
     }
   },
   "sections": [
@@ -724,7 +745,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。先に束縛したgenericなwithInputはbusiness配列で元の文脈を保持でき、record・公開class・privateなclassを6.0.3/7.0.2で検査した。数量訂正のWorkflowと各操作の次状態型を維持する。配列内のwithInput呼出しや任意の多相変換、数量訂正に残る1つの文脈注釈、任意の診断品質、独立利用者のDXは未解消・未検証。後続の直接接続で入荷・返品の2注釈と接続用Workflowを削除し、accepted/returnedの型・実行名・失敗停止を保持した。",
+      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。配列内のwithInput呼出し、名前付きstep helper等のgeneric相関、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -784,7 +805,7 @@
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",
-        "数量訂正の1つの文脈注釈は維持する。既存の型検査を、独立利用者の学習・原因理解・修正容易性の実証とは扱わない。"
+        "在庫文脈の重複注釈3つは直接接続で削除済み。通常の業務型宣言と一般の推論制限は残る。既存の型検査を、独立利用者の学習・原因理解・修正容易性の実証とは扱わない。"
       ]
     },
     {
