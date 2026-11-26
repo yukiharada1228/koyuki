@@ -9,6 +9,27 @@
     "durationSeconds": 2019
   },
   "review": {
+    "commercialErrorFollowUp": {
+      "implementationBaseCommit": "dd7e265b4eeb599e3090abb7b7f2d7d2120893e6",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Infer failures in request8/order4 operations from literal domain returns instead of broad RuleError annotations. Keep precise successful state contracts through explicit ok type arguments and preserve private validation evidence. Normal, detailed and replay kinds are checked against independent sets in Koyuki, plain and helper implementations. Helper parsing orchestration retains the same kind sets instead of broadening them; runtime bodies remain independent. Two new runtime cases cover parser/creation failures and custom commit payload/non-saving in all3 ordinary styles. Existing 8 order state contracts now separate success from errors; widening4 actual state producers fails all8 producer/wrapper contracts. Restoring broad role-check or line-parser error annotations fails new installed contracts. Root1202 tests; TS6.0.3/7.0.2 installed consumers858 each, all controls pass. Type-erased domain/helper JavaScript matches prior e21ae43. Finance6 + commercial12 =18 operations covered; receipt3/inventory4 still retain broad errors. No core runtime/API/dependency/cast changes, source/audio/frame review or independent-user trial; all9 partial topics remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/procurement-commercial-errors.md",
+        "src/procurement-commercial-errors.test.ts",
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/procurement-order-guard.test.ts",
+        "src/procurement-request-creation.test.ts",
+        "src/procurement-request-edit.test.ts",
+        "src/procurement.test.ts",
+        "scripts/test-business-package.mjs"
+      ]
+    },
     "inlineCompilerBoundaryFollowUp": {
       "implementationBaseCommit": "3dfc04218da8c64a19f95b5a3ac6b1b1f8402594",
       "sections": [
@@ -998,7 +1019,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。先に束縛したgeneric関数はstep helperでも元の型を保持し、購買の段階へ適用した。名前なしのwithInput直接呼出し、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。",
+      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。先に束縛したgeneric関数はstep helperでも元の型を保持し、購買の段階へ適用した。名前なしのwithInput直接呼出し、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作の広いエラー型と一般の推論制限は別の残件である。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -1067,7 +1088,14 @@
         "scripts/investigate-generic-call-skip.mjs",
         "scripts/inline-inference-observation.mjs",
         "scripts/fixtures/transition-inference-limit.ts",
-        "scripts/fixtures/transition-inference-minimal.ts"
+        "scripts/fixtures/transition-inference-minimal.ts",
+        "docs/procurement-commercial-errors.md",
+        "src/procurement-commercial-errors.test.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/procurement-order-guard.test.ts",
+        "src/procurement-request-creation.test.ts",
+        "src/procurement-request-edit.test.ts",
+        "src/procurement.test.ts"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",

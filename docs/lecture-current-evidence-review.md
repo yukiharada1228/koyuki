@@ -1,5 +1,7 @@
 # 全84話題の判定と現行実装への経路を点検する
 
+[申請・発注12操作のエラー型](procurement-commercial-errors.md)を、関数本体から推論して通常・詳細・再送まで保持した。成功状態・検証証明・失敗の優先順位を維持し、比較用の通常TypeScriptも同じ集合を保つ。財務6操作と合わせ18操作が対象で、入荷3・在庫4操作は別の残件である。
+
 [inline要件のcompiler境界](inline-inference-compiler-boundary.md)では、TS6の一時コピーで呼出し保留の分岐を切り分けた。製品のinline制限は未解消のまま、配布検査は正しい構文の不受理を必須にせず、厳密な型を保った改善も許容する。通常buildにcompiler改変は使わない。
 
 [動的に選ぶ要件関数](with-input-alternatives.md)も、dispatch関数を挟まずwithInputへ渡せるようにした。全候補が受け取れる入力を要求し、成功値・エラーの和と既存generic関数の型保持を検査する。名前なしinline・遷移中の深いgeneric変換・独立利用者の評価・原音確認は残る。
