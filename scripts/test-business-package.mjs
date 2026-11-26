@@ -182,6 +182,7 @@ try {
   writeFileSync(join(consumer, 'mutation-view-preparation.test.ts'), readFileSync(join(root, 'src/mutation-view-preparation.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki'));
   writeFileSync(join(consumer, 'procurement-finance-state-types.test.ts'), readFileSync(join(root, 'src/procurement-finance-state-types.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-finance-transitions.test.ts'), readFileSync(join(root, 'src/procurement-finance-transitions.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/", "'./"));
+  writeFileSync(join(consumer, 'procurement-logistics-errors.test.ts'), readFileSync(join(root, 'src/procurement-logistics-errors.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-commercial-errors.test.ts'), readFileSync(join(root, 'src/procurement-commercial-errors.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-finance-errors.test.ts'), readFileSync(join(root, 'src/procurement-finance-errors.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
@@ -394,9 +395,11 @@ try {
   console.log('Verified order variants, precise next states and placed-state proof, including both negative controls.');
   let widenedReceiptCount = 0;
   const preciseReceipts = readFileSync(financeDomain, 'utf8');
-  const widenedReceipts = preciseReceipts.replace(/Result<Change<Extract<Receipt, \{ readonly state: '[a-z]+' \}>>, RuleError>/g,
-    () => { widenedReceiptCount++; return 'Result<Change<Receipt>, RuleError>'; });
-  if (widenedReceiptCount !== 4) throw Error(`Unexpected receipt producer count: ${widenedReceiptCount}`);
+  const widenedReceipts = preciseReceipts.replace(/ok<Change<Extract<Receipt, \{ readonly state: 'returned' \}>>>/g,
+    () => { widenedReceiptCount++; return 'ok<Change<Receipt>>'; })
+    .replace(/\): Change<Extract<Receipt, \{ readonly state: 'accepted' \}>> \{/g,
+      () => { widenedReceiptCount++; return '): Change<Receipt> {'; });
+  if (widenedReceiptCount !== 2) throw Error(`Unexpected receipt producer count: ${widenedReceiptCount}`);
   try {
     writeFileSync(financeDomain, widenedReceipts);
     const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
@@ -415,6 +418,31 @@ try {
     if (rejected.error || !rejected.status || contracts.length !== 2) throw Error(`Missing receipt state facts did not fail both refusal contracts:\n${output}`);
   } finally { writeFileSync(financeDomain, preciseReceipts); }
   console.log('Verified checked receipts retain accepted/placed facts and reject state replacement; removing the facts fails both refusal contracts.');
+  const inventoryPath = join(consumer, 'procurement/inventory.ts');
+  const preciseInventory = readFileSync(inventoryPath, 'utf8');
+  for (const [path, original, before, after] of [
+    [financeDomain, preciseReceipts,
+      "export function checkReceipt<T extends Loaded<VersionInput, Receipt> & ReceiptFacts>(value: T) {",
+      "export function checkReceipt<T extends Loaded<VersionInput, Receipt> & ReceiptFacts>(value: T): Result<CheckedReceipt<T>, RuleError> {"],
+    [inventoryPath, preciseInventory,
+      "const fail = <K extends RuleError['kind']>(kind: K): Result<never, Readonly<{ kind: K }>> => err({ kind });",
+      "const fail = (kind: RuleError['kind']): Result<never, RuleError> => err({ kind });"],
+    [inventoryPath, preciseInventory,
+      "): Result<Change<T>, Readonly<{ kind: E }> | StockFailure> {",
+      "): Result<Change<T>, RuleError> {"],
+  ]) {
+    if (original.split(before).length !== 2) throw Error('Logistics error control changed; re-evaluate it');
+    try {
+      writeFileSync(path, original.replace(before, after));
+      const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+      const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+      if (rejected.error || rejected.signal || !rejected.status ||
+          !output.split('\n').some(line => line.includes('procurement-logistics-errors.test.ts') && line.includes('TS2344'))) {
+        throw Error('Broadening logistics errors did not fail their operation contracts: ' + output);
+      }
+    } finally { writeFileSync(path, original); }
+  }
+  console.log('Verified all seven logistics operation kinds in ordinary, detailed and replay APIs; broad receipt validation, inventory failures and compatibility-wrapper errors fail their respective contracts.');
   // Reintroduce the adapters' old silent clone behavior in this disposable copy.
   const storageGuard = join(consumer, 'procurement/storage-values.ts');
   const guardedStorage = readFileSync(storageGuard, 'utf8');

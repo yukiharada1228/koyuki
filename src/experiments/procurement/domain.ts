@@ -147,7 +147,7 @@ export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Reque
 }
 declare const receivedCheck: unique symbol;
 export type ReceivedChange = Change<Extract<Receipt, { readonly state: 'accepted' }>> & Readonly<{ [receivedCheck]: true }>;
-export function receiveOrder<T extends Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[] }>>(value: T): Result<ReceivedChange, RuleError> {
+export function receiveOrder<T extends Loaded<ReceiveInput, Order> & Readonly<{ receipts: readonly Receipt[] }>>(value: T) {
   const { input, actor, current, receipts } = value;
   if (!allowed(actor, 'warehouse', current.groupId)) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
@@ -423,7 +423,7 @@ export type CheckedReceipt<T> = T & Readonly<{
   order: Extract<Order, { state: 'placed' }>;
   [receiptCheck]: true;
 }>;
-export function checkReceipt<T extends Loaded<VersionInput, Receipt> & ReceiptFacts>(value: T): Result<CheckedReceipt<T>, RuleError> {
+export function checkReceipt<T extends Loaded<VersionInput, Receipt> & ReceiptFacts>(value: T) {
   const { input, actor, current, order, receipts, invoices } = value;
   if (!allowed(actor, 'warehouse', current.groupId)) return failure('Denied');
   if (input.id !== current.id || order.id !== current.orderId || order.groupId !== current.groupId || [...receipts, ...invoices].some(row => row.groupId !== current.groupId || row.orderId !== order.id)) return failure('TargetMismatch');
@@ -438,15 +438,15 @@ function receiptChange<T extends Receipt>(result: T, current: Receipt, facts: Re
   return plan(result, [check(current), check(facts.order), ...facts.invoices.map(check)],
     [{ ...facts.order, version: facts.order.version + 1 }, result, ...reset]);
 }
-export function returnReceipt(value: Loaded<ReasonInput, Receipt> & ReceiptFacts): Result<Change<Extract<Receipt, { readonly state: 'returned' }>>, RuleError> {
+export function returnReceipt(value: Loaded<ReasonInput, Receipt> & ReceiptFacts) {
   const checked = checkReceipt(value); if (!checked.ok) return checked;
   return returnCheckedReceipt(checked.value);
 }
-export function returnCheckedReceipt<T extends CheckedReceipt<Loaded<ReasonInput, Receipt> & ReceiptFacts>>(value: T): Result<Change<Extract<Receipt, { readonly state: 'returned' }>>, RuleError> {
+export function returnCheckedReceipt<T extends CheckedReceipt<Loaded<ReasonInput, Receipt> & ReceiptFacts>>(value: T) {
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
-  return ok(receiptChange({ ...value.current, state: 'returned', returnedBy: value.actor.id, reason: value.input.reason.trim(), version: value.current.version + 1 }, value.current, value));
+  return ok<Change<Extract<Receipt, { readonly state: 'returned' }>>>(receiptChange({ ...value.current, state: 'returned', returnedBy: value.actor.id, reason: value.input.reason.trim(), version: value.current.version + 1 }, value.current, value));
 }
-export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFacts): Result<Change<Extract<Receipt, { readonly state: 'accepted' }>>, RuleError> {
+export function correctReceipt(value: Loaded<CorrectInput, Receipt> & ReceiptFacts) {
   const checked = checkReceipt(value); if (!checked.ok) return checked;
   return correctCheckedReceipt(checked.value);
 }
@@ -460,7 +460,7 @@ export function finishReceiptCorrection(value: CheckedReceipt<Loaded<CorrectInpu
   const result: Receipt = { ...received.result, version: value.current.version + 1 };
   return receiptChange(result, value.current, value);
 }
-export function correctCheckedReceipt(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>): Result<Change<Extract<Receipt, { readonly state: 'accepted' }>>, RuleError> {
+export function correctCheckedReceipt(value: CheckedReceipt<Loaded<CorrectInput, Receipt> & ReceiptFacts>) {
   const parsed = receiveOrder(receiptCorrectionInput(value));
   if (!parsed.ok) return parsed;
   return ok(finishReceiptCorrection(value, parsed.value));

@@ -7,14 +7,14 @@ export type MoveInput = StockInput & Readonly<{ destination: string }>;
 export type AdjustInput = StockInput & Readonly<{ reason: string }>;
 type Context<I> = Readonly<{ input: I; actor: Actor; stock: Stock | null }>;
 const validId = (value: unknown): value is string => typeof value === 'string' && value.length > 0 && value === value.trim();
-const fail = (kind: RuleError['kind']): Result<never, RuleError> => err({ kind });
+const fail = <K extends RuleError['kind']>(kind: K): Result<never, Readonly<{ kind: K }>> => err({ kind });
 function stockPlan(stock: Stock | null, actor: Actor, positions: readonly Position[], lastAdjustment = stock?.lastAdjustment ?? null): Change<Stock> {
   const result: Stock = { kind: 'stock', id: stockId, groupId: actor.groupId, version: (stock?.version ?? 0) + 1, positions, lastAdjustment };
   return { result, writes: [result], checks: [{ kind: 'stock', id: stockId, groupId: actor.groupId, version: stock?.version ?? null }] };
 }
 declare const checkedStock: unique symbol;
 type CheckedStock<T> = T & Readonly<{ [checkedStock]: true }>;
-export function checkStock<T extends Context<StockInput>>(value: T): Result<CheckedStock<T>, RuleError> {
+export function checkStock<T extends Context<StockInput>>(value: T) {
   const { input, actor, stock } = value;
   if (actor.role !== 'warehouse' || actor.active !== true || !validId(actor.id) || !validId(actor.groupId)) return fail('Denied');
   if (input.id !== stockId || (stock && (stock.id !== stockId || stock.groupId !== actor.groupId))) return fail('TargetMismatch');
@@ -22,7 +22,7 @@ export function checkStock<T extends Context<StockInput>>(value: T): Result<Chec
   if (input.expectedVersion !== (stock?.version ?? 0)) return fail('Conflict');
   return ok(value as CheckedStock<T>);
 }
-function operateChecked(value: CheckedStock<Context<StockInput>> & (Readonly<{ mode: 'reserve' }> | Readonly<{ mode: 'release' }> | Readonly<{ mode: 'move'; destination: string }> | Readonly<{ mode: 'adjust'; reason: string }>)): Result<Change<Stock>, RuleError> {
+function operateChecked(value: CheckedStock<Context<StockInput>> & (Readonly<{ mode: 'reserve' }> | Readonly<{ mode: 'release' }> | Readonly<{ mode: 'move'; destination: string }> | Readonly<{ mode: 'adjust'; reason: string }>)) {
   const { input, mode } = value;
   if (mode !== 'adjust' && input.quantity === 0) return fail('InvalidInput');
   if (mode === 'adjust' && (typeof value.reason !== 'string' || !value.reason.trim() || value.reason.trim().length > 1000)) return fail('InvalidInput');
@@ -57,7 +57,7 @@ export function reserveStock(value: Context<StockInput>) { const checked = check
 export function releaseStock(value: Context<StockInput>) { const checked = checkStock(value); return checked.ok ? releaseCheckedStock(checked.value) : checked; }
 export function moveStock(value: Context<MoveInput>) { const checked = checkStock(value); return checked.ok ? moveCheckedStock(checked.value) : checked; }
 export function adjustStock(value: Context<AdjustInput>) { const checked = checkStock(value); return checked.ok ? adjustCheckedStock(checked.value) : checked; }
-function stockChange<T extends Receipt>(change: Change<T>, stock: Stock | null, actor: Actor, before: readonly { sku: string; quantity: number }[], depletion: ReceiptDepletion = 'receiving-only'): Result<Change<T>, RuleError> {
+function stockChange<T extends Receipt>(change: Change<T>, stock: Stock | null, actor: Actor, before: readonly { sku: string; quantity: number }[], depletion: ReceiptDepletion = 'receiving-only') {
   if (depletion !== 'receiving-only' && depletion !== 'available-locations') return fail('InvalidInput');
   if (stock && (stock.id !== stockId || stock.groupId !== actor.groupId)) return fail('TargetMismatch');
   const positions = (stock?.positions ?? []).map(row => ({ ...row }));
@@ -89,9 +89,10 @@ function stockChange<T extends Receipt>(change: Change<T>, stock: Stock | null, 
     row.onHand = next;
   }
   const inventory = stockPlan(stock, actor, positions);
-  return ok({ result: change.result, checks: [...change.checks, ...inventory.checks], writes: [...change.writes, ...inventory.writes] });
+  return ok<Change<T>>({ result: change.result, checks: [...change.checks, ...inventory.checks], writes: [...change.writes, ...inventory.writes] });
 }
-function withStock<T extends Receipt>(result: Result<Change<T>, RuleError>, stock: Stock | null, actor: Actor, before: readonly { sku: string; quantity: number }[], depletion: ReceiptDepletion = 'receiving-only'): Result<Change<T>, RuleError> {
+type StockFailure = Extract<ReturnType<typeof stockChange>, { ok: false }>['error'];
+function withStock<T extends Receipt, E extends RuleError['kind']>(result: Result<Change<T>, Readonly<{ kind: E }>>, stock: Stock | null, actor: Actor, before: readonly { sku: string; quantity: number }[], depletion: ReceiptDepletion = 'receiving-only'): Result<Change<T>, Readonly<{ kind: E }> | StockFailure> {
   if (!result.ok) return result;
   return stockChange(result.value, stock, actor, before, depletion);
 }
