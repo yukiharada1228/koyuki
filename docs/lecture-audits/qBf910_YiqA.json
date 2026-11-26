@@ -321,6 +321,16 @@
         "scripts/declarations.test.mjs",
         "docs/procurement-request-edit.md"
       ]
+    },
+    "businessPairBindingInvestigation": {
+      "implementationBaseCommit": "bba2e06c0512caf1db4ba827e7497cb189907afe",
+      "scope": "Static clean-source study separates full-config pre-binding and isolated literal/Rule-alias conditional type contracts. The isolated literal contract passes, but current and candidate business constructors reject both inline and bound config positive probes. Existing source baselines pass and added source diagnostics are zero. Candidate not adopted. Default specialization study rechecked as control. No compiler-internal cause or general impossibility claim. Three procurement context annotations, independent trial and partial statuses remain. No runtime, audio or frame review added.",
+      "evidence": [
+        "scripts/investigate-business-pair.mjs",
+        "scripts/fixtures/business-input-pair.ts",
+        "docs/business-pair-binding-investigation.md",
+        "docs/business-pair-binding-investigation.json"
+      ]
     }
   },
   "sections": [

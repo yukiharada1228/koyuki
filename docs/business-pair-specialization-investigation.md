@@ -37,3 +37,6 @@ node scripts/investigate-business-pair.mjs
 この調査は保守者による静的検査であり、runtimeや独立利用者の開発体験の試験ではない。
 [具体的な前段があるWorkflow](workflow-context-inference.md)や、[制約内でのgenericな先頭Workflow](workflow-generic-first.md)の正例は引き続き使える。
 購買の3つの文脈注釈、名前なしinlineの別例、独立利用者の試用、講演の全内容の完全実現は未完了のまま残す。
+
+[後続の設定束縛と関数型判定](business-pair-binding-investigation.md)では、設定全体を束縛した場合と
+単独の型計算を区別した。型計算が成立してもbusiness全体の宣言は通らず、候補をcoreへ採用していない。
