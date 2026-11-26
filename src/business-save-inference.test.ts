@@ -167,10 +167,8 @@ test('replay keeps historical output alternatives beyond the current decision', 
 
 function invalidDefinitions() {
   const save = async <T extends State>(plan: Plan<T>): Promise<Result<T, 'Conflict'>> => ok(plan.result);
-  business({ name: 'bad', load, save, operations: {
-    // @ts-expect-error a generic save still requires the complete write-plan input
-    create: [create],
-  } });
+  // @ts-expect-error a generic save still requires the complete write-plan input
+  business({ name: 'bad', load, save, operations: { create: [create] } });
   const narrowContext = async <T extends State>(plan: Plan<T>, _context: GroupExecution<'other', number>): Promise<Result<T, never>> => ok(plan.result);
   // @ts-expect-error generic saving cannot require metadata from an unrelated operation
   business({ name: 'bad-context', load, save: narrowContext, operations: { create: [(n: number) => ok<Plan<Draft>>({ result: draft(n), writes: [] })] } });

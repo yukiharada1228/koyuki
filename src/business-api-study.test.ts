@@ -122,10 +122,8 @@ function invalidDefinitions() {
     // @ts-expect-error custom loader's output must match its first rule
     wrongCustom: { load: async (id: string) => ok(id), run: [(n: number) => ok(String(n))] },
   } });
-  business({ name: 'bad', load, save, operations: { stringify: [(n: number) => ok(String(n))] },
-    // @ts-expect-error replay needs save's atomic Execution envelope
-    replay: { lookup: () => ok({ kind: 'missing' as const }), resolveAfter: [] },
-  });
+  // @ts-expect-error replay needs save's atomic Execution envelope
+  business({ name: 'bad', load, save, operations: { stringify: [(n: number) => ok(String(n))] }, replay: { lookup: () => ok({ kind: 'missing' as const }), resolveAfter: [] } });
 }
 void invalidDefinitions;
 

@@ -148,7 +148,7 @@ type ExactStageOutput = Assert<Equal<PairStudyStage<typeof quoted, Context>, Pai
   }
 }
 if (unconstrained) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'unconstrained-definition'].includes(name)));
-const compiler = resolve(root, 'node_modules/.bin/tsc');
+const compiler = resolve(root, process.env.KOYUKI_STUDY_TSC ?? 'node_modules/.bin/tsc');
 const version = spawnSync(compiler, ['--version'], { cwd: root, encoding: 'utf8' });
 if (version.status !== 0) throw Error('Compiler unavailable');
 const directory = await mkdtemp(join(tmpdir(), 'koyuki-business-pair-'));
@@ -196,7 +196,7 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
     schema: 'koyuki.business-pair-specialization.v1', study: unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
-    compiler: version.stdout.trim(), node: process.version,
+    compiler: version.stdout.trim(), compilerEntrypointSha256: hash(await readFile(compiler)), node: process.version,
     lockSha256: hash(await readFile(resolve(root, 'package-lock.json'))),
     scope: 'Static candidate investigation only. No candidate installed, no runtime or independent user evaluation, no claim that all possible improvements fail.',
     reports,

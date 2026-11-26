@@ -34,10 +34,8 @@ function contracts() {
     // @ts-expect-error validation alone does not provide authorization proof
     approve: [validate, approve],
   } });
-  business({ name: 'bad', load, save, operations: {
-    // @ts-expect-error permission needs validated input before it can produce authorization
-    approve: [permit, validate, approve],
-  } });
+  // @ts-expect-error permission needs validated input before it can produce authorization
+  business({ name: 'bad', load, save, operations: { approve: [permit, validate, approve] } });
   const decoratedWrong = Object.assign(approve, { 'Koyuki: approve[1] input must accept prior output': undefined });
   business({ name: 'bad', load, save, operations: {
     // @ts-expect-error a diagnostic-looking property cannot replace the missing authorization proof

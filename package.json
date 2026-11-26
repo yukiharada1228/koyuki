@@ -58,6 +58,7 @@
     "test:prisma:package": "node scripts/test-prisma-package.mjs",
     "test:prisma:registry": "node scripts/test-prisma-package.mjs --registry",
     "test:business:package": "node scripts/test-business-package.mjs",
+    "test:business:typescript6": "node scripts/test-business-package.mjs --typescript=6.0.3",
     "test:business:change": "node scripts/test-business-package.mjs --change",
     "test:lecture-records": "node --test scripts/lecture-records.test.mjs",
     "check:lecture-audit": "node scripts/check-lecture-audit.mjs",

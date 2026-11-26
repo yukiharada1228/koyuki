@@ -8,6 +8,9 @@ import { studyApprovalChange } from './studies/leave-approval-change.mjs';
 import { studyAuthorizationChange } from './studies/leave-authorization-change.mjs';
 import { generateModelTest } from './generate-model-test.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const compilerOption = process.argv.slice(2).find(arg => arg.startsWith('--typescript='));
+const requestedCompiler = compilerOption?.slice('--typescript='.length);
+if (requestedCompiler !== undefined && !/^\d+\.\d+\.\d+$/.test(requestedCompiler)) throw Error('Use --typescript=x.y.z with an exact stable version');
 function run(command, args, cwd) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8' });
   if (result.error || result.status !== 0) throw new Error(result.stdout + result.stderr || String(result.error));
@@ -31,12 +34,14 @@ try {
   if (!firstAppSource || !firstAppConfig) throw Error('First-app guide requires complete TS and JSON blocks');
   const tools = Object.fromEntries(['typescript', 'tsx'].map(name => [name, JSON.parse(readFileSync(join(root, 'node_modules', name, 'package.json'), 'utf8')).version]));
   if (!guide.includes(`typescript@${tools.typescript} tsx@${tools.tsx}`)) throw Error('Guide dev-tool pins differ from verified versions');
+  if (requestedCompiler) tools.typescript = requestedCompiler;
   writeFileSync(join(firstApp, 'package.json'), JSON.stringify({ private: true, type: 'module',
     dependencies: { koyuki: `file:${join(dir, packed)}` }, devDependencies: { typescript: tools.typescript, tsx: tools.tsx },
   }));
   writeFileSync(join(firstApp, 'app.ts'), firstAppSource);
   writeFileSync(join(firstApp, 'tsconfig.json'), JSON.stringify(JSON.parse(firstAppConfig)));
   run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], firstApp);
+  if (run('npm', ['exec', '--', 'tsc', '--version'], firstApp).trim() !== `Version ${tools.typescript}`) throw Error('First-app compiler differs from requested version');
   if (existsSync(join(firstApp, 'node_modules/@types/node'))) throw Error('First-app validation must not rely on installed Node types');
   run('npm', ['exec', '--', 'tsc', '--pretty', 'false'], firstApp);
   console.log(run('npm', ['exec', '--', 'tsx', 'app.ts'], firstApp));
@@ -61,6 +66,7 @@ try {
   ]) copyFileSync(join(root, 'scripts/fixtures', from), join(consumer, to));
   const pkg = JSON.parse(readFileSync(join(consumer, 'package.json'), 'utf8'));
   pkg.dependencies.koyuki = `file:${join(dir, packed)}`;
+  pkg.devDependencies.typescript = tools.typescript;
   pkg.scripts.test = 'tsx --test *.test.ts';
   writeFileSync(join(consumer, 'package.json'), JSON.stringify(pkg));
   // The HTTP contract is unchanged; only the two explicit domain trace labels differ.
@@ -208,6 +214,8 @@ try {
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
   console.log(run('npm', ['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], consumer));
+  if (run('npm', ['exec', '--', 'tsc', '--version'], consumer).trim() !== `Version ${tools.typescript}`) throw Error('Consumer compiler differs from requested version');
+  console.log(`Verifying packed declarations with TypeScript ${tools.typescript}; package was built with the repository compiler.`);
   console.log(run('npm', ['run', 'check'], consumer));
   console.log(run('npm', ['test'], consumer));
   // Only widen the finance producers, leaving their runtime bodies unchanged.
