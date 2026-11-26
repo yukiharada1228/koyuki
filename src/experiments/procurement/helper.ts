@@ -17,7 +17,7 @@ import { checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock,
 export const helperProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) => helperWithCommit(repository, identity, policy, observe, capture);
 export function helperWithCommit<E>(repository: ProcurementRepository<E>, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) {
   const context = procurementContext(repository, identity, policy);
-  function checkedParsedAction<I, C, V, W, P, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, authorize: (value: C) => Result<V, RuleError>, check: (value: V) => Result<W, RuleError>, parse: (value: W) => Result<P, RuleError>, finish: (value: W, parsed: P) => Change<T>) {
+  function checkedParsedAction<I, C, V, W, P, T extends Entity, LE, AE extends RuleError['kind'] = never, CE extends RuleError['kind'] = never, PE extends RuleError['kind'] = never>(load: (input: I) => Promise<Result<C, LE>>, authorize: (value: C) => Result<V, Readonly<{ kind: AE }>>, check: (value: V) => Result<W, Readonly<{ kind: CE }>>, parse: (value: W) => Result<P, Readonly<{ kind: PE }>>, finish: (value: W, parsed: P) => Change<T>) {
     return async (input: I) => {
       const receiveLoad = capture?.('load', input);
       const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
@@ -36,7 +36,7 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
       const saved = await repository.commit(change, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
     };
   }
-  function parsedAction<I, C, V, P, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, RuleError>, parse: (value: V) => Result<P, RuleError>, finish: (value: V, parsed: P) => Change<T>) {
+  function parsedAction<I, C, V, P, T extends Entity, LE, CE extends RuleError['kind'] = never, PE extends RuleError['kind'] = never>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, Readonly<{ kind: CE }>>, parse: (value: V) => Result<P, Readonly<{ kind: PE }>>, finish: (value: V, parsed: P) => Change<T>) {
     return async (input: I) => {
       const receiveLoad = capture?.('load', input);
       const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;

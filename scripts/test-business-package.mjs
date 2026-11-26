@@ -182,6 +182,7 @@ try {
   writeFileSync(join(consumer, 'mutation-view-preparation.test.ts'), readFileSync(join(root, 'src/mutation-view-preparation.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki'));
   writeFileSync(join(consumer, 'procurement-finance-state-types.test.ts'), readFileSync(join(root, 'src/procurement-finance-state-types.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-finance-transitions.test.ts'), readFileSync(join(root, 'src/procurement-finance-transitions.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'").replaceAll("'./experiments/", "'./"));
+  writeFileSync(join(consumer, 'procurement-commercial-errors.test.ts'), readFileSync(join(root, 'src/procurement-commercial-errors.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-finance-errors.test.ts'), readFileSync(join(root, 'src/procurement-finance-errors.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
   writeFileSync(join(consumer, 'procurement-application-io-exceptions.test.ts'), readFileSync(join(root, 'src/procurement-application-io-exceptions.test.ts'), 'utf8').replaceAll('./framework/index.js', 'koyuki').replaceAll('./experiments/procurement/', './procurement/'));
@@ -356,10 +357,26 @@ try {
   console.log('Verified closed finance error kinds, adapter payloads and both replay mappings; broadening the failure helper or either replay mapping fails the error contracts.');
 
 
+  for (const [before, after] of [
+    ["export function parseRequestLines(value: unknown) {", "export function parseRequestLines(value: unknown): Result<ParsedRequestLines, RuleError> {"],
+    ["function checkRequest<T extends Loaded<VersionInput, Request>, R extends 'buyer' | 'approver'>(value: T, role: R) {", "function checkRequest<T extends Loaded<VersionInput, Request>, R extends 'buyer' | 'approver'>(value: T, role: R): Result<CheckedRequest<T, R>, RuleError> {"],
+  ]) {
+    if (preciseFinance.split(before).length !== 2) throw Error('Commercial guard control changed; re-evaluate it');
+    try {
+      writeFileSync(financeDomain, preciseFinance.replace(before, after));
+      const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+      const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+      if (rejected.error || rejected.signal || !rejected.status ||
+          !output.split('\n').some(line => line.includes('procurement-commercial-errors.test.ts') && line.includes('TS2344'))) {
+        throw Error('Broadening the commercial guard did not fail its inferred error contracts: ' + output);
+      }
+    } finally { writeFileSync(financeDomain, preciseFinance); }
+  }
+  console.log('Verified twelve request/order error kinds through ordinary, detailed and replay APIs in all three styles; restoring broad line-parser or role-check errors fails their contracts.');
   let widenedOrderCount = 0;
-  const widenedOrders = preciseFinance.replace(/Result<Change<Extract<Order, \{ readonly state: '[a-z]+' \}>>, RuleError>/g,
-    () => { widenedOrderCount++; return 'Result<Change<Order>, RuleError>'; });
-  if (widenedOrderCount !== 8) throw Error(`Unexpected order producer count: ${widenedOrderCount}`);
+  const widenedOrders = preciseFinance.replace(/ok<Change<Extract<Order, \{ readonly state: '[a-z]+' \}>>>/g,
+    () => { widenedOrderCount++; return 'ok<Change<Order>>'; });
+  if (widenedOrderCount !== 4) throw Error(`Unexpected order producer count: ${widenedOrderCount}`);
   const checkedOrder = "Readonly<{ current: Extract<Order, { state: 'placed' }>; [orderCheck]: true }>";
   if (preciseFinance.split(checkedOrder).length !== 2) throw Error('Re-evaluate checked-order contract control');
   for (const [name, source, diagnostic, minimum] of [

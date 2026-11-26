@@ -58,7 +58,7 @@ type RuleFailure<K extends RuleError['kind']> = Readonly<{ kind: K }>;
 const failure = <K extends RuleError['kind']>(kind: K): Result<never, RuleFailure<K>> => err({ kind });
 declare const parsedRequestLinesProof: unique symbol;
 export type ParsedRequestLines = readonly Line[] & Readonly<{ [parsedRequestLinesProof]: true }>;
-export function parseRequestLines(value: unknown): Result<ParsedRequestLines, RuleError> {
+export function parseRequestLines(value: unknown) {
   if (!Array.isArray(value) || !value.length || value.length > 1000) return failure('InvalidInput');
   const seen = new Set<string>(), parsed: Line[] = [];
   let total = 0;
@@ -76,7 +76,7 @@ const lines = parseRequestLines;
 type RequestCreation = Readonly<{ input: CreateInput; actor: Actor }>;
 declare const requestCreationProof: unique symbol;
 export type CheckedRequestCreation = RequestCreation & Readonly<{ [requestCreationProof]: true }>;
-export function checkRequestCreation(value: RequestCreation): Result<CheckedRequestCreation, RuleError> {
+export function checkRequestCreation(value: RequestCreation) {
   const { input, actor } = value;
   if (!allowed(actor, 'buyer', actor.groupId)) return failure('Denied');
   if (!id(input.id)) return failure('InvalidInput');
@@ -88,16 +88,16 @@ export function requestCreationPlan(value: CheckedRequestCreation, parsed: Parse
     lines: parsed, totalCents: parsed.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) });
   return plan(result, [absent('request', actor.groupId, input.id)]);
 }
-export function createRequest(value: RequestCreation): Result<Change<Draft>, RuleError> {
+export function createRequest(value: RequestCreation) {
   const checked = checkRequestCreation(value); if (!checked.ok) return checked;
   const parsed = lines(value.input.lines); if (!parsed.ok) return parsed;
   return ok(requestCreationPlan(checked.value, parsed.value));
 }
-export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<Submitted | FirstReview>, RuleError> {
+export function submitRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>) {
   const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
   return submitCheckedRequest(checked.value);
 }
-export function submitCheckedRequest(value: CheckedRequest<Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>, 'buyer'>): Result<Change<Submitted | FirstReview>, RuleError> {
+export function submitCheckedRequest(value: CheckedRequest<Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>, 'buyer'>) {
   const { input, current, policy } = value;
   if (current.state !== 'draft') return failure('WrongState');
   if (!id(input.approverId) || !policy.approverIds.includes(input.approverId) || input.approverId === current.ownerId) return failure('InvalidInput');
@@ -107,43 +107,43 @@ export function submitCheckedRequest(value: CheckedRequest<Loaded<SubmitInput, R
     if (!Number.isSafeInteger(second.aboveCents) || second.aboveCents < 0 || !id(second.approverId) || !policy.approverIds.includes(second.approverId)) return failure('InvalidInput');
     if (current.totalCents > second.aboveCents) {
       if (second.approverId === current.ownerId || second.approverId === input.approverId) return failure('InvalidInput');
-      return ok(plan(stamp('request-first-review', { ...current, state: 'first-review', approverId: input.approverId,
+      return ok<Change<Submitted | FirstReview>>(plan(stamp('request-first-review', { ...current, state: 'first-review', approverId: input.approverId,
         finalApproverId: second.approverId, version: current.version + 1 }), [check(current)]));
     }
   }
-  return ok(plan(stamp('request-submitted', { ...current, state: 'submitted', approverId: input.approverId, version: current.version + 1 }), [check(current)]));
+  return ok<Change<Submitted | FirstReview>>(plan(stamp('request-submitted', { ...current, state: 'submitted', approverId: input.approverId, version: current.version + 1 }), [check(current)]));
 }
-export function approveRequest(value: Loaded<VersionInput, Request>): Result<Change<Approved | FinalReview>, RuleError> {
+export function approveRequest(value: Loaded<VersionInput, Request>) {
   const checked = checkApproverRequest(value); if (!checked.ok) return checked;
   return approveCheckedRequest(checked.value);
 }
-export function approveCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'approver'>): Result<Change<Approved | FinalReview>, RuleError> {
+export function approveCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'approver'>) {
   const { actor, current } = value;
   if (!pendingApproval(current)) return failure('WrongState');
   if (current.state === 'first-review') {
     const { finalApproverId, ...base } = current;
-    return ok(plan(stamp('request-final-review', { ...base, state: 'final-review', approverId: finalApproverId,
+    return ok<Change<Approved | FinalReview>>(plan(stamp('request-final-review', { ...base, state: 'final-review', approverId: finalApproverId,
       firstApprovedBy: actor.id, version: current.version + 1 }), [check(current)]));
   }
   if (current.state === 'final-review') {
     if (actor.id === current.firstApprovedBy) return failure('Denied');
-    return ok(plan(stamp('request-dual-approved', { ...current, state: 'approved', approval: 'dual', approvedBy: actor.id,
+    return ok<Change<Approved | FinalReview>>(plan(stamp('request-dual-approved', { ...current, state: 'approved', approval: 'dual', approvedBy: actor.id,
       version: current.version + 1 }), [check(current)]));
   }
-  return ok(plan(stamp('request-approved', { ...current, state: 'approved', approvedBy: actor.id, version: current.version + 1 }), [check(current)]));
+  return ok<Change<Approved | FinalReview>>(plan(stamp('request-approved', { ...current, state: 'approved', approvedBy: actor.id, version: current.version + 1 }), [check(current)]));
 }
-export function placeOrder(value: Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
+export function placeOrder(value: Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>) {
   const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
   return placeCheckedOrder(checked.value);
 }
-export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>, 'buyer'>): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
+export function placeCheckedOrder(value: CheckedRequest<Loaded<PlaceInput, Request> & Readonly<{ alreadyOrdered: boolean }>, 'buyer'>) {
   const { input, current } = value;
   if (current.state !== 'approved') return failure('WrongState');
   if (!id(input.orderId) || typeof input.supplier !== 'string' || !input.supplier.trim()) return failure('InvalidInput');
   if (value.alreadyOrdered) return failure('AlreadyExists');
   const order: Order = { kind: 'order', state: 'placed', id: input.orderId, groupId: current.groupId, version: 1,
     requestId: current.id, ownerId: current.ownerId, supplier: input.supplier.trim(), lines: current.lines, totalCents: current.totalCents };
-  return ok(plan(order, [check(current), absent('order', current.groupId, order.id)]));
+  return ok<Change<Extract<Order, { readonly state: 'placed' }>>>(plan(order, [check(current), absent('order', current.groupId, order.id)]));
 }
 declare const receivedCheck: unique symbol;
 export type ReceivedChange = Change<Extract<Receipt, { readonly state: 'accepted' }>> & Readonly<{ [receivedCheck]: true }>;
@@ -217,7 +217,7 @@ export function matchInvoice(value: InvoiceMatching) {
 // Shared checks describe this domain's ownership and version rules, not runtime orchestration.
 declare const requestCheck: unique symbol;
 export type CheckedRequest<T, R extends 'buyer' | 'approver'> = T & Readonly<{ [requestCheck]: R }>;
-function checkRequest<T extends Loaded<VersionInput, Request>, R extends 'buyer' | 'approver'>(value: T, role: R): Result<CheckedRequest<T, R>, RuleError> {
+function checkRequest<T extends Loaded<VersionInput, Request>, R extends 'buyer' | 'approver'>(value: T, role: R) {
   const { input, actor, current } = value;
   if (!allowed(actor, role, current.groupId) || (role === 'buyer' ? actor.id !== current.ownerId : actor.id === current.ownerId)) return failure('Denied');
   if (current.id !== input.id) return failure('TargetMismatch');
@@ -233,17 +233,17 @@ function draftFrom(current: Request): Draft {
   return stamp('request-draft', { kind: 'request', state: 'draft', id: current.id, groupId: current.groupId,
     ownerId: current.ownerId, lines: current.lines, totalCents: current.totalCents, version: current.version + 1 });
 }
-export function editRequest(value: Loaded<EditInput, Request>): Result<Change<Draft>, RuleError> {
+export function editRequest(value: Loaded<EditInput, Request>) {
   const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
   return editCheckedRequest(checked.value);
 }
-export function editCheckedRequest(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>): Result<Change<Draft>, RuleError> {
+export function editCheckedRequest(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>) {
   const checked = checkRequestEdit(value); if (!checked.ok) return checked;
   const parsed = lines(value.input.lines); if (!parsed.ok) return parsed;
   return ok(requestEditPlan(checked.value, parsed.value));
 }
 export type EditableRequest = CheckedRequest<Loaded<EditInput, Draft>, 'buyer'>;
-export function checkRequestEdit(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>): Result<EditableRequest, RuleError> {
+export function checkRequestEdit(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>) {
   if (value.current.state !== 'draft') return failure('WrongState');
   return ok(value as EditableRequest);
 }
@@ -251,58 +251,58 @@ export function requestEditPlan(value: EditableRequest, parsed: ParsedRequestLin
   const result: Draft = { ...draftFrom(value.current), lines: parsed, totalCents: parsed.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) };
   return plan(result, [check(value.current)]);
 }
-export function withdrawRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
+export function withdrawRequest(value: Loaded<VersionInput, Request>) {
   const checked = checkBuyerRequest(value); if (!checked.ok) return checked;
   return withdrawCheckedRequest(checked.value);
 }
-export function withdrawCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'buyer'>): Result<Change<Draft>, RuleError> {
+export function withdrawCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'buyer'>) {
   if (!pendingApproval(value.current)) return failure('WrongState');
-  return ok(plan(draftFrom(value.current), [check(value.current)]));
+  return ok<Change<Draft>>(plan(draftFrom(value.current), [check(value.current)]));
 }
-export function rejectRequest(value: Loaded<ReasonInput, Request>): Result<Change<Rejected>, RuleError> {
+export function rejectRequest(value: Loaded<ReasonInput, Request>) {
   const checked = checkApproverRequest(value); if (!checked.ok) return checked;
   return rejectCheckedRequest(checked.value);
 }
-export function rejectCheckedRequest(value: CheckedRequest<Loaded<ReasonInput, Request>, 'approver'>): Result<Change<Rejected>, RuleError> {
+export function rejectCheckedRequest(value: CheckedRequest<Loaded<ReasonInput, Request>, 'approver'>) {
   const current = value.current;
   if (!pendingApproval(current)) return failure('WrongState');
   if (typeof value.input.reason !== 'string' || !value.input.reason.trim() || value.input.reason.trim().length > 1000) return failure('InvalidInput');
   const result: Rejected = stamp('request-rejected', { kind: 'request', state: 'rejected', id: current.id, groupId: current.groupId,
     ownerId: current.ownerId, lines: current.lines, totalCents: current.totalCents, version: current.version + 1,
     rejectedBy: value.actor.id, reason: value.input.reason.trim() });
-  return ok(plan(result, [check(current)]));
+  return ok<Change<Rejected>>(plan(result, [check(current)]));
 }
-export function returnRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
+export function returnRequest(value: Loaded<VersionInput, Request>) {
   const checked = checkApproverRequest(value); if (!checked.ok) return checked;
   return returnCheckedRequest(checked.value);
 }
-export function returnCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'approver'>): Result<Change<Draft>, RuleError> {
+export function returnCheckedRequest(value: CheckedRequest<Loaded<VersionInput, Request>, 'approver'>) {
   if (!pendingApproval(value.current)) return failure('WrongState');
-  return ok(plan(draftFrom(value.current), [check(value.current)]));
+  return ok<Change<Draft>>(plan(draftFrom(value.current), [check(value.current)]));
 }
-export function reassignRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>): Result<Change<PendingApproval>, RuleError> {
+export function reassignRequest(value: Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>) {
   const checked = checkApproverRequest(value); if (!checked.ok) return checked;
   return reassignCheckedRequest(checked.value);
 }
-export function reassignCheckedRequest(value: CheckedRequest<Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>, 'approver'>): Result<Change<PendingApproval>, RuleError> {
+export function reassignCheckedRequest(value: CheckedRequest<Loaded<SubmitInput, Request> & Readonly<{ policy: Policy }>, 'approver'>) {
   const current = value.current, next = value.input.approverId;
   if (!pendingApproval(current)) return failure('WrongState');
   if (!id(next) || next === current.ownerId || next === current.approverId || !value.policy.approverIds.includes(next)) return failure('InvalidInput');
   if (current.state === 'first-review') {
     if (next === current.finalApproverId) return failure('InvalidInput');
-    return ok(plan(stamp('request-first-review', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
+    return ok<Change<PendingApproval>>(plan(stamp('request-first-review', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
   }
   if (current.state === 'final-review') {
     if (next === current.firstApprovedBy) return failure('InvalidInput');
-    return ok(plan(stamp('request-final-review', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
+    return ok<Change<PendingApproval>>(plan(stamp('request-final-review', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
   }
-  return ok(plan(stamp('request-submitted', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
+  return ok<Change<PendingApproval>>(plan(stamp('request-submitted', { ...current, approverId: next, version: current.version + 1 }), [check(current)]));
 }
 
 export type OrderFacts = Readonly<{ receipts: readonly Receipt[]; invoices: readonly Invoice[] }>;
 declare const orderCheck: unique symbol;
 export type CheckedOrder<T> = T & Readonly<{ current: Extract<Order, { state: 'placed' }>; [orderCheck]: true }>;
-export function checkOrder<T extends Loaded<VersionInput, Order> & OrderFacts>(value: T): Result<CheckedOrder<T>, RuleError> {
+export function checkOrder<T extends Loaded<VersionInput, Order> & OrderFacts>(value: T) {
   const { input, actor, current, receipts, invoices } = value;
   if (!allowed(actor, 'buyer', current.groupId) || actor.id !== current.ownerId) return failure('Denied');
   if (current.id !== input.id || [...receipts, ...invoices].some(row => row.groupId !== current.groupId || row.orderId !== current.id)) return failure('TargetMismatch');
@@ -313,31 +313,31 @@ export function checkOrder<T extends Loaded<VersionInput, Order> & OrderFacts>(v
   return ok(value as CheckedOrder<T>);
 }
 // Commercial amounts remain those authorized in the approved request; only supplier can be amended.
-export function amendOrder(value: Loaded<AmendInput, Order> & OrderFacts): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
+export function amendOrder(value: Loaded<AmendInput, Order> & OrderFacts) {
   const checked = checkOrder(value); if (!checked.ok) return checked;
   return amendCheckedOrder(checked.value);
 }
-export function amendCheckedOrder(value: CheckedOrder<Loaded<AmendInput, Order> & OrderFacts>): Result<Change<Extract<Order, { readonly state: 'placed' }>>, RuleError> {
+export function amendCheckedOrder(value: CheckedOrder<Loaded<AmendInput, Order> & OrderFacts>) {
   if (value.receipts.length || value.invoices.length) return failure('WrongState');
   if (typeof value.input.supplier !== 'string' || !value.input.supplier.trim()) return failure('InvalidInput');
-  return ok(plan({ ...value.current, supplier: value.input.supplier.trim(), version: value.current.version + 1 }, [check(value.current)]));
+  return ok<Change<Extract<Order, { readonly state: 'placed' }>>>(plan({ ...value.current, supplier: value.input.supplier.trim(), version: value.current.version + 1 }, [check(value.current)]));
 }
-export function cancelOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Extract<Order, { readonly state: 'cancelled' }>>, RuleError> {
+export function cancelOrder(value: Loaded<VersionInput, Order> & OrderFacts) {
   const checked = checkOrder(value); if (!checked.ok) return checked;
   return cancelCheckedOrder(checked.value);
 }
-export function cancelCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Extract<Order, { readonly state: 'cancelled' }>>, RuleError> {
+export function cancelCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>) {
   if (value.receipts.length || value.invoices.length) return failure('WrongState');
-  return ok(plan({ ...value.current, state: 'cancelled', version: value.current.version + 1 }, [check(value.current)]));
+  return ok<Change<Extract<Order, { readonly state: 'cancelled' }>>>(plan({ ...value.current, state: 'cancelled', version: value.current.version + 1 }, [check(value.current)]));
 }
-export function completeOrder(value: Loaded<VersionInput, Order> & OrderFacts): Result<Change<Extract<Order, { readonly state: 'completed' }>>, RuleError> {
+export function completeOrder(value: Loaded<VersionInput, Order> & OrderFacts) {
   const checked = checkOrder(value); if (!checked.ok) return checked;
   return completeCheckedOrder(checked.value);
 }
-export function completeCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>): Result<Change<Extract<Order, { readonly state: 'completed' }>>, RuleError> {
+export function completeCheckedOrder(value: CheckedOrder<Loaded<VersionInput, Order> & OrderFacts>) {
   const current = value.current;
   if (value.invoices.length !== 1 || (value.invoices[0]?.state !== 'matched' && value.invoices[0]?.state !== 'approved') || value.invoices[0].amountCents !== current.totalCents || current.lines.some(line => value.receipts.filter(receipt => receipt.state === 'accepted').flatMap(receipt => receipt.quantities).filter(item => item.sku === line.sku).reduce((sum, item) => sum + item.quantity, 0) !== line.quantity)) return failure('InvoiceMismatch');
-  return ok(plan({ ...current, state: 'completed', version: current.version + 1 }, [check(current), ...value.invoices.map(check)]));
+  return ok<Change<Extract<Order, { readonly state: 'completed' }>>>(plan({ ...current, state: 'completed', version: current.version + 1 }, [check(current), ...value.invoices.map(check)]));
 }
 
 declare const invoiceCheck: unique symbol;

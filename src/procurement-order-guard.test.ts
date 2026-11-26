@@ -106,14 +106,14 @@ type Placed = Extract<Order, { state: 'placed' }>;
 type Cancelled = Extract<Order, { state: 'cancelled' }>;
 type Completed = Extract<Order, { state: 'completed' }>;
 type ProducerContracts = [
-  Assert<Equal<ReturnType<typeof placeOrder>, Result<Change<Placed>, RuleError>>>,
-  Assert<Equal<ReturnType<typeof placeCheckedOrder>, Result<Change<Placed>, RuleError>>>,
-  Assert<Equal<ReturnType<typeof amendOrder>, Result<Change<Placed>, RuleError>>>,
-  Assert<Equal<ReturnType<typeof amendCheckedOrder>, Result<Change<Placed>, RuleError>>>,
-  Assert<Equal<ReturnType<typeof cancelOrder>, Result<Change<Cancelled>, RuleError>>>,
-  Assert<Equal<ReturnType<typeof cancelCheckedOrder>, Result<Change<Cancelled>, RuleError>>>,
-  Assert<Equal<ReturnType<typeof completeOrder>, Result<Change<Completed>, RuleError>>>,
-  Assert<Equal<ReturnType<typeof completeCheckedOrder>, Result<Change<Completed>, RuleError>>>,
+  Assert<Equal<Value<ReturnType<typeof placeOrder>>, Change<Placed>>>,
+  Assert<Equal<Value<ReturnType<typeof placeCheckedOrder>>, Change<Placed>>>,
+  Assert<Equal<Value<ReturnType<typeof amendOrder>>, Change<Placed>>>,
+  Assert<Equal<Value<ReturnType<typeof amendCheckedOrder>>, Change<Placed>>>,
+  Assert<Equal<Value<ReturnType<typeof cancelOrder>>, Change<Cancelled>>>,
+  Assert<Equal<Value<ReturnType<typeof cancelCheckedOrder>>, Change<Cancelled>>>,
+  Assert<Equal<Value<ReturnType<typeof completeOrder>>, Change<Completed>>>,
+  Assert<Equal<Value<ReturnType<typeof completeCheckedOrder>>, Change<Completed>>>,
 ];
 function stateContracts(repository: SqliteProcurement, context: Context) {
   const checked = checkOrder(context);

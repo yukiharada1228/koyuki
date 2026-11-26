@@ -57,7 +57,7 @@ for (const backend of ['memory', 'sqlite']) test(`creation parsing failure never
     commit: (change, identity) => { saves++; return repository.commit(change, identity); },
   }, actor('buyer'), policy);
   type Input = Assert<Equal<Parameters<typeof commands.requests.create>[0], CreateInput>>;
-  type Output = Assert<Equal<Awaited<ReturnType<typeof commands.requests.create>>, Result<Draft, RuleError | { readonly kind: 'Conflict' | 'NotFound' }>>>;
+  type Output = Assert<Equal<Extract<Awaited<ReturnType<typeof commands.requests.create>>, { ok: true }>['value'], Draft>>;
   try {
     const failed = await commands.requests.create.runDetailed({ id: 'rq', lines: [] });
     assert.deepEqual(failed.result, err({ kind: 'InvalidInput' })); assert.equal(failed.plan, null);
@@ -86,7 +86,7 @@ test('shared line parsing retains the authorized creation context and opaque ext
   class Token { #secret = 1; read() { return this.#secret; } }
   const token = new Token(), checked = checkRequestCreation(raw); assert(checked.ok);
   const context = { ...checked.value, token }, parsed = parsedRequestInput(context);
-  type Exact = Assert<Equal<typeof parsed, Result<Readonly<{ input: typeof context; value: import('./experiments/procurement/domain.js').ParsedRequestLines }>, RuleError>>>;
+  type Exact = Assert<Equal<typeof parsed, Result<Readonly<{ input: typeof context; value: import('./experiments/procurement/domain.js').ParsedRequestLines }>, Readonly<{ kind: 'InvalidInput' }>>>>;
   assert(parsed.ok); assert(Object.isFrozen(parsed.value));
   assert.strictEqual(parsed.value.input, context); assert.strictEqual(parsed.value.input.token, token);
   assert.deepEqual(creationPlan(parsed.value), ok(expected)); assert.equal(token.read(), 1);

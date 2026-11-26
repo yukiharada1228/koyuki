@@ -121,9 +121,9 @@ test('the host can supply asynchronous repository reads without changing domain 
 // The generic shared save preserves this operation's actual decision result.
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 const api = setup().boss;
-const exact: Equal<Awaited<ReturnType<typeof api.requests.approve>>, Result<Approved | FinalReview, RuleError | { readonly kind: 'NotFound' | 'Conflict' }>> = true;
+const exact: Equal<Extract<Awaited<ReturnType<typeof api.requests.approve>>, { ok: true }>['value'], Approved | FinalReview> = true;
 const detailedApi = procurementChanges(new MemoryProcurement(), actor('approver'), policy);
-const detailedExact: Equal<Awaited<ReturnType<typeof detailedApi.requests.approve>>, Result<Committed<Approved | FinalReview>, RuleError | { readonly kind: 'NotFound' | 'Conflict' }>> = true;
+const detailedExact: Equal<Extract<Awaited<ReturnType<typeof detailedApi.requests.approve>>, { ok: true }>['value'], Committed<Approved | FinalReview>> = true;
 void detailedExact;
 void exact;
 if (false) {

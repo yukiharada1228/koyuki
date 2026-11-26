@@ -53,7 +53,7 @@ for (const backend of ['memory', 'sqlite']) test(`edit rejects wrong state/lines
     commit: (change, identity) => { saves++; return repository.commit(change, identity); },
   }, actor('buyer'), policy);
   type Input = Assert<Equal<Parameters<typeof commands.requests.edit>[0], EditInput>>;
-  type Output = Assert<Equal<Awaited<ReturnType<typeof commands.requests.edit>>, Result<Draft, RuleError | StorageError>>>;
+  type Output = Assert<Equal<Extract<Awaited<ReturnType<typeof commands.requests.edit>>, { ok: true }>['value'], Draft>>;
   try {
     assert((await commands.requests.create(originalInput)).ok); assert.equal(saves, 1);
     const before = repository.list('request', actor('buyer'));
@@ -94,7 +94,7 @@ test('shared line parsing retains the editable state proof and extra context', (
   const checked = checkBuyerRequest({ input, current: created.value.result, actor: actor('buyer') }); assert(checked.ok);
   const editable = checkRequestEdit(checked.value); assert(editable.ok);
   const context = { ...editable.value, correlationId: 'edit' as const }, parsed = parsedRequestInput(context);
-  type Exact = Assert<Equal<typeof parsed, Result<Readonly<{ input: typeof context; value: ParsedRequestLines }>, RuleError>>>;
+  type Exact = Assert<Equal<typeof parsed, Result<Readonly<{ input: typeof context; value: ParsedRequestLines }>, Readonly<{ kind: 'InvalidInput' }>>>>;
   assert(parsed.ok); assert(Object.isFrozen(parsed.value)); assert.strictEqual(parsed.value.input, context);
   assert.equal(parsed.value.input.correlationId, 'edit'); assert.deepEqual(editPlan(parsed.value), ok(expected));
 });
