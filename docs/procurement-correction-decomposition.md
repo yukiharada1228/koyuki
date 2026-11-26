@@ -4,6 +4,8 @@
 取り出す処理が残る。[試作と検査](../src/procurement-correction-decomposition.test.ts)で、
 既存APIだけでこの接続を外へ出した場合の型と実行を比較した。
 現行のdomain/application/receipt-pipelineは変更していない。
+後続の[Workflow直接接続](business-workflow-stages.md)で4つ目の候補を追加した。
+以下の最初の3方式の制限は再現例として維持し、新しい候補と区別する。
 
 ## 比較した3方式
 
@@ -12,6 +14,7 @@
 | 現行 | checkReceipt → correctDecision → includeChangedStock | correctDecision内のwithInputに文脈を注釈 | 3段階。数量再検証と訂正計画の内部接続はopaque |
 | 平らな試作 | checkReceipt → quantities → finishFlat → includeChangedStock | quantitiesとfinishFlatの2か所に文脈を注釈 | 4段階。数量再検証と計画作成を別の段階として観察できる |
 | Workflowをまとめた試作 | checkReceipt → nested.run → includeChangedStock | quantitiesの1か所。thenの引数は推論できる | 外側は3段階。内部Workflowの2つの名前は出ない |
+| Workflowを直接渡す試作 | checkReceipt → nested → includeChangedStock | quantitiesの1か所。thenの引数は推論できる | 数量再検証と計画作成の名前が外側のtrace・capture・構成図へ現れる |
 
 注釈の数は接続用callbackに限る。共通の計画投影finishの引数型、モデルの型、
 load/saveやfixtureの型まで不要になったという意味ではない。
@@ -29,7 +32,7 @@ describeFlow(nested)では2つの名前が見えるが、describeFlow(business�
 
 ## 検査した範囲
 
-- 現行と2試作が、独立に書いた成功結果・注文/入荷/在庫のwrites/checksに一致する。
+- 現行と3試作が、独立に書いた成功結果・注文/入荷/在庫のwrites/checksに一致する。
 - 不正な版と数量超過では後続・保存に進まず、planはnullとなる。
 - 計画作成後の在庫不足でも保存せず、元の入力・関連状態を変更しない。
 - 4段階/3段階のtraceと、内側/外側の構成図の違いを直接検査する。
@@ -48,7 +51,8 @@ loadは固定fixture、saveは呼出し回数を数える関数であり、DB・
 関数本体の解析や内部値の無条件収集をせず、明示された段階のtrace・capture・構成図を保つことを確認する。
 普通の関数を並べる入口と、既存の入力・失敗型・保存契約も維持する。
 
-現時点ではどちらの試作も現行へ置き換えていない。手書きResult接続が残るという判定は維持する。
+直接接続の候補では型の文脈と内部観測を両立できた。ただし、どの試作も現行の業務経路へ置き換えていない。
+手書きResult接続が残るという判定は維持する。
 これは講演が特定のWorkflow APIを要求したという意味ではなく、
 iz-22/24、qbf-19の記述負担とw0o-13の明示的な途中状態を両立するためのKoyuki側の課題である。
 独立利用者による試用は未実施で、全講演の完全実現やReact/Elm同等のDXは未確認のままとする。

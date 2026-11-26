@@ -2,6 +2,7 @@
 
 開発版の推奨入口。公開済みnpm `0.1.0-alpha.5`にはまだ含まれない。
 ソースからビルドした配布物では`import { business } from 'koyuki'`で利用できる。
+既存の[Workflowを操作配列へ直接接続](business-workflow-stages.md)し、型の文脈と内部のtrace・選択観測・構成図を保つこともできる。
 
 ```ts
 import { business, ok, err, type Result } from 'koyuki';

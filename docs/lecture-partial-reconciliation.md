@@ -112,3 +112,7 @@ w0o-17とw0o-23の[全フレーム一覧と代表画面](lecture-frame-window-su
 [数量再検証の分離試作](procurement-correction-decomposition.md)では、平らな4段階とWorkflow内の2段階を比較した。
 前者は接続用callbackの注釈が増え、後者を通常のrun関数としてbusinessへ渡すと内部のtrace/構成図はopaqueとなる。
 両方を同時に解消したとはせず、実装上の次の不足として記録する。現行の業務経路と9話題のpartialは維持する。
+
+[Workflowの直接接続](business-workflow-stages.md)を追加し、訂正の試作でthenの推論と内部観測を両立できた。
+従来のrun関数はopaqueのままで、明示したWorkflowだけを接続する。現行の業務経路の移行、
+ソース診断CLIでの展開、独立利用者の評価は未完了であり、9話題のpartialは維持する。

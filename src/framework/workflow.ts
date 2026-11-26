@@ -28,7 +28,7 @@ export function evaluateRule<I, O, E>(step: string, rule: Rule<I, O, E>, input: 
 export const observeEvaluation: unique symbol = Symbol('Workflow.observeEvaluation');
 export class Workflow<I, O, E> {
   constructor(readonly name: string, readonly steps: readonly string[], private readonly evaluate: (input: I, observe?: StageObserver) => Evaluation<O, E>) {}
-  readonly [observeEvaluation] = (input: I, observe: StageObserver): Evaluation<O, E> => this.evaluate(input, observe);
+  readonly [observeEvaluation] = (input: I, observe?: StageObserver): Evaluation<O, E> => this.evaluate(input, observe);
   readonly run = (input: I): Result<O, E> => this.evaluate(input).result;
   inspect(input: I): Evaluation<O, E>;
   inspect<A, B>(input: I, capture: WorkflowCapture<A, B>): Evaluation<O, E> & { readonly observations: readonly StepObservation<A, B>[] };

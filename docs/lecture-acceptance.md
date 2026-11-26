@@ -168,3 +168,7 @@ withInputの戻り値をgenericにする候補は既存契約を壊すため不�
 
 [内部接続を分離する試作](procurement-correction-decomposition.md)では、追加の型注釈と内部観測の隠蔽という
 異なる制限を再現した。Resultの手動判定を省略できても、現行の開発体験と観測を同時に改善したとは扱わない。
+
+その後、[明示したWorkflowをbusinessへ直接接続](business-workflow-stages.md)する入口を追加した。
+数量訂正の試作で追加callback注釈なしに内部段階のtrace・capture・構成図を保持できる。
+通常関数の内部はopaqueのままで、現行の業務経路の移行、ソース診断、独立利用者の評価は別の残件とする。

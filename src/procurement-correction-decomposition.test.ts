@@ -42,14 +42,15 @@ function candidates(context: ReceiptStockContext<CorrectInput>) {
   const save = async (change: Change<Receipt>): Promise<Result<Receipt, 'SaveUnavailable'>> => { saves++; return ok(change.result); };
   const flat = business({ name: 'probe.flat', load, save, operations: { correct: [checkReceipt, quantities, finishFlat, includeChangedStock] } });
   const composed = business({ name: 'probe.nested', load, save, operations: { correct: [checkReceipt, nested.run, includeChangedStock] } });
+  const exposed = business({ name: 'probe.exposed', load, save, operations: { correct: [checkReceipt, nested, includeChangedStock] } });
   const current = business({ name: 'probe.current', load, save, operations: { correct: [checkReceipt, correctDecision, includeChangedStock] } });
-  return { flat: flat.correct, nested: composed.correct, current: current.correct, saves: () => saves };
+  return { flat: flat.correct, nested: composed.correct, current: current.correct, exposed: exposed.correct, saves: () => saves };
 }
 
 test('flat and nested correction probes preserve the current plan and keep original input immutable', async () => {
   const context = fixture(), before = structuredClone(context), commands = candidates(context);
-  const reports = await Promise.all([commands.current.runDetailed(context.input), commands.flat.runDetailed(context.input), commands.nested.runDetailed(context.input)]);
-  assert.equal(commands.saves(), 3);
+  const reports = await Promise.all([commands.current.runDetailed(context.input), commands.flat.runDetailed(context.input), commands.nested.runDetailed(context.input), commands.exposed.runDetailed(context.input)]);
+  assert.equal(commands.saves(), 4);
   const receipt: Receipt = { ...context.current, version: 2, quantities: [{ sku: 'a', quantity: 2 }] };
   assert(context.stock);
   const stock: Stock = { ...context.stock, version: 2, positions: [{ sku: 'a', location: 'receiving', onHand: 2, reserved: 0 }] };
@@ -70,17 +71,17 @@ test('a planned correction rejected by stock is never saved by either compositio
   const context = { ...base, current, receipts: [current], input: { ...base.input, quantities: [{ sku: 'a', quantity: 1 }] },
     stock: { ...base.stock, positions: [{ sku: 'a', location: 'receiving', onHand: 2, reserved: 2 }] } };
   const before = structuredClone(context);
-  for (const name of ['current', 'flat', 'nested'] as const) {
+  for (const name of ['current', 'flat', 'nested', 'exposed'] as const) {
     const commands = candidates(context), report = await commands[name].runDetailed(context.input);
     assert.deepEqual(report.result, err({ kind: 'InsufficientStock' })); assert.equal(report.plan, null); assert.equal(commands.saves(), 0);
-    assert.deepEqual(report.trace.map(row => row.status), name === 'flat' ? ['ok', 'ok', 'ok', 'ok', 'error'] : ['ok', 'ok', 'ok', 'error']);
+    assert.deepEqual(report.trace.map(row => row.status), name === 'flat' || name === 'exposed' ? ['ok', 'ok', 'ok', 'ok', 'error'] : ['ok', 'ok', 'ok', 'error']);
   }
   assert.deepEqual(context, before);
 });
 
 test('correction probes keep check and quantity failures before finish, stock and save', async () => {
   const context = fixture();
-  for (const name of ['current', 'flat', 'nested'] as const) {
+  for (const name of ['current', 'flat', 'nested', 'exposed'] as const) {
     const commands = candidates(context), command = commands[name];
     const check = await command.runDetailed({ ...context.input, expectedVersion: -1 });
     assert.deepEqual(check.result, err({ kind: 'InvalidInput' })); assert.equal(check.trace.length, 2); assert.equal(check.plan, null);
@@ -95,6 +96,11 @@ test('flat business exposes four rules while a composed Workflow run keeps its i
   const flat = await commands.flat.runDetailed(context.input), composed = await commands.nested.runDetailed(context.input);
   assert.deepEqual(flat.trace.map(row => row.step), ['probe.flat.correct:load', 'run:1', 'run:2', 'run:3', 'run:4', 'probe.flat.correct']);
   assert.deepEqual(composed.trace.map(row => row.step), ['probe.nested.correct:load', 'run:1', 'run:2', 'run:3', 'probe.nested.correct']);
+  const exposed = await commands.exposed.runDetailed(context.input, { input: (_value, step) => step, result: result => result.ok });
+  assert.deepEqual(exposed.trace.map(row => row.step), ['probe.exposed.correct:load', 'run:1', 'revalidate-correction', 'finish-correction', 'run:3', 'probe.exposed.correct']);
+  assert.deepEqual(exposed.observations.map(row => row.step), exposed.trace.map(row => row.step));
+  const explicit = JSON.stringify(describeFlow(commands.exposed));
+  assert(explicit.includes('revalidate-correction') && explicit.includes('finish-correction'));
   const inner = JSON.stringify(describeFlow(nested)), outer = JSON.stringify(describeFlow(commands.nested));
   assert(inner.includes('revalidate-correction') && inner.includes('finish-correction'));
   assert(!outer.includes('revalidate-correction') && !outer.includes('finish-correction'));

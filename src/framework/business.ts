@@ -1,9 +1,9 @@
 import { inheritDetailed } from './instrumentation.js';
 import { isPlainRecord } from './snapshot.js';
-import { registerStructure, structureOf } from './structure.js';
+import { registerStructure, structureOf, structureSequence } from './structure.js';
 import { captureLoad, type ActionLoad } from './action.js';
 // Declare business operations over the shared command and replay runtime.
-import { workflow, evaluateRule, type WorkflowCapture, type Rule, type StageObserver } from './workflow.js';
+import { workflow, Workflow, observeEvaluation, type Evaluation, type WorkflowCapture, type Rule, type StageObserver, type StageReceiver } from './workflow.js';
 import type { Result } from './result.js';
 import type { Step } from './model.js';
 import type { GroupExecution } from './use-case-group.js';
@@ -13,8 +13,8 @@ import { createGroupRuntime } from './group-runtime.js';
 import type { PlainCommand, ReplayCommand, ReplaySaveCheck, SelectCommand } from './use-case.js';
 type Fn = Rule<never, unknown, unknown>;
 type Load = ActionLoad<never, unknown, unknown>;
-type Stage = Fn | Step<never, unknown, unknown>;
-type RuleOf<F extends Stage> = F extends Fn ? F : F extends Step<never, unknown, unknown> ? F['rule'] : never;
+type Stage = Fn | Step<never, unknown, unknown> | Workflow<never, unknown, unknown>;
+type RuleOf<F extends Stage> = F extends Fn ? F : F extends Step<never, unknown, unknown> ? F['rule'] : F extends Workflow<never, unknown, unknown> ? F['run'] : never;
 type Pipeline = readonly [Stage, ...Stage[]];
 type Entry = Pipeline | { readonly load: Load; readonly run: Pipeline };
 // A shared loader is unnecessary only when every declared operation owns one.
@@ -70,7 +70,7 @@ type Tail<P extends readonly Stage[]> = P extends readonly [Stage, ...infer T ex
 type DiagnosticRule<F extends Stage, I, O, Operation extends string, Index extends PropertyKey> =
   ([RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>] ? unknown : {
     readonly [K in `Koyuki: ${Operation}[${Extract<Index, string | number>}] ${[RuleOf<F>] extends [Rule<I, Out<F>, ErrorOf<F>>] ? 'output must match save' : 'input must accept prior output'}`]: never
-  }) & (F extends Fn ? Rule<I, O, ErrorOf<F>> : Step<I, O, ErrorOf<F>>);
+  }) & (F extends Fn ? Rule<I, O, ErrorOf<F>> : F extends Step<never, unknown, unknown> ? Step<I, O, ErrorOf<F>> : Workflow<I, O, ErrorOf<F>> & { readonly run: Rule<I, O, ErrorOf<F>> });
 type Connect<C, P extends readonly Stage[], O, Operation extends string> = {
   readonly [K in keyof P]: DiagnosticRule<P[K], Inputs<C, P>[K & keyof Inputs<C, P>], K extends keyof Tail<P> ? Outputs<C, P>[K & keyof Outputs<C, P>] : O, Operation, K>
 };
@@ -106,7 +106,7 @@ interface RuntimeDefinition {
   operation?: (name: string) => string;
   load?: ActionLoad<unknown, unknown, unknown>;
   save: (value: unknown, context: GroupExecution<string, unknown>) => Promise<Result<unknown, unknown>>;
-  operations: Record<string, readonly (Rule<unknown, unknown, unknown> | Step<unknown, unknown, unknown>)[] | { load: ActionLoad<unknown, unknown, unknown>; run: readonly (Rule<unknown, unknown, unknown> | Step<unknown, unknown, unknown>)[] }>;
+  operations: Record<string, readonly (Rule<unknown, unknown, unknown> | Step<unknown, unknown, unknown> | Workflow<unknown, unknown, unknown>)[] | { load: ActionLoad<unknown, unknown, unknown>; run: readonly (Rule<unknown, unknown, unknown> | Step<unknown, unknown, unknown> | Workflow<unknown, unknown, unknown>)[] }>;
   replay?: { lookup: (context: GroupExecution<string, unknown>) => Result<Receipt<unknown>, unknown> | Promise<Result<Receipt<unknown>, unknown>>; resolveAfter: readonly string[] | ((error: unknown) => boolean) };
 }
 type SaveFn = (...args: never[]) => Promise<Result<unknown, unknown>>;
@@ -114,7 +114,7 @@ type SaveInput<A> = Parameters<Extract<A, SaveFn>>[0];
 type SaveResult<A> = Awaited<ReturnType<Extract<A, SaveFn>>>;
 /** Operations are own data entries of a plain record. Numeric names use JavaScript
  * string keys; Symbols, accessors and custom-prototype operation tables are rejected.
- * Stages may be plain rules or named Step objects; names and rule references are
+ * Stages may be plain rules, named Step objects or explicit Workflows; names and rule references are
  * captured at construction. Callable objects with a rule property are ambiguous.
  */
 export function business<L extends Load, O, S extends Execution<unknown>, SE, RE, const T extends Record<string, Entry>, const D extends object>(definition: D & {
@@ -198,25 +198,45 @@ export function business(definition: object) {
       if (typeof stage === 'function') {
         // A callable structural Step can hide a different outer function when
         // assigned to Step alone. Never silently choose one of two rule bodies.
-        if ('rule' in stage) throw new TypeError('AmbiguousBusinessStage');
-        return { name: `run:${index + 1}`, rule: stage };
+        if ('rule' in stage || observeEvaluation in stage) throw new TypeError('AmbiguousBusinessStage');
+        return workflow(`run:${index + 1}`, stage);
       }
       if (stage === null || typeof stage !== 'object') throw new TypeError('BusinessRequiresRule');
+      if (stage instanceof Workflow) {
+        if ('rule' in stage) throw new TypeError('AmbiguousBusinessStage');
+        const observed = stage[observeEvaluation];
+        return registerStructure(new Workflow(stage.name, [...stage.steps], (input: unknown, observe) =>
+          observed(input, observe)), structureOf(stage));
+      }
       const { name, rule } = stage;
       if (typeof name !== 'string' || typeof rule !== 'function') throw new TypeError('BusinessRequiresRule');
-      return { name, rule };
+      return workflow(name, rule);
     });
     if (!rules.length) throw new Error('BusinessRequiresRule');
     const selectedLoad = custom ? entry.load : sharedLoad;
     if (selectedLoad === undefined) throw new TypeError('BusinessRequiresLoad');
     const load = captureLoad(selectedLoad);
-    const decide = (observe?: StageObserver) => {
-      const rule = (index: number): Rule<unknown, unknown, unknown> => observe
-        ? input => evaluateRule(rules[index]!.name, rules[index]!.rule, input, observe) : rules[index]!.rule;
-      let flow = workflow(rules[0]!.name, rule(0));
-      for (let index = 1; index < rules.length; index++) flow = flow.then(rules[index]!.name, rule(index));
-      return flow;
-    };
+    const decide = (capture?: StageObserver) => registerStructure(new Workflow<unknown, unknown, unknown>(name, rules.flatMap(flow => flow.steps), (input, live) => {
+      // Selected capture and live instrumentation observe the same explicit inner
+      // stages. Keep the existing outer-before-inner input / reverse-result order.
+      let observe = capture ?? live;
+      if (capture && live) {
+        observe = Object.assign((step: string, value: unknown): StageReceiver => {
+          const outer = live(step, value), inner = capture(step, value);
+          return Object.assign((result: Result<unknown, unknown>) => { inner(result); outer(result); },
+            { defect: () => { inner.defect?.(); outer.defect?.(); } });
+        }, { live: live.live, scope: live.scope });
+      }
+      let value = input;
+      const trace: Evaluation<unknown, unknown>['trace'][number][] = [];
+      for (const flow of rules) {
+        const next = flow[observeEvaluation](value, observe);
+        trace.push(...next.trace);
+        if (!next.result.ok) return { result: next.result, trace };
+        value = next.result.value;
+      }
+      return { result: { ok: true, value }, trace };
+    }), structureSequence(...rules.map(flow => structureOf(flow))));
     const command = group.on(name, { load, decide: decide() });
     const runDetailed = async <A, B>(input: unknown, capture?: WorkflowCapture<A, B>) => {
       if (!capture) return command.runDetailed(input);
