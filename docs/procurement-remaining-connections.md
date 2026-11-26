@@ -26,7 +26,17 @@
 createRequestの手動接続は互換入口へ残す。さらに[申請編集](procurement-request-edit.md)も状態検証・明細解析・計画の宣言へ移した。
 editCheckedRequestの手動接続は互換入口に残り、他の内部接続と3つの文脈注釈も引き続き残る。
 
-## 操作宣言で既に委譲していること
+## 現在の残存接続
+
+現行のApplicationでは25操作すべてが複数段階で、申請作成・編集にも接続用Workflowは残っていない。
+receipt-pipelineの在庫文脈の重複注釈3つも削除済みである。
+以下の初回棚卸しにある「次に分離する候補」「9個の単一段階」「3注釈」は当時の観察であり、現在の未着手項目ではない。
+
+現在も利用者が記述するのは、業務上の判断・関数の順序、必要な事実の取得・回復方針、保存adapterの契約である。
+互換関数内の手動Result接続と、比較用plain/helperの接続は残るが、Applicationの宣言経路とは区別する。
+一般の型推論制限と独立利用者の評価は、[現在の残件](lecture-partial-reconciliation.md#現在の優先順位)へ集約する。
+
+## 初回棚卸し：操作宣言で既に委譲していること
 
 [application.ts](../src/experiments/procurement/application.ts)の6つのbusinessには25操作がある。
 13操作は共通検証と遷移、入荷・返品・訂正の3操作は入荷判断と在庫計画を配列で接続する。

@@ -17,9 +17,11 @@ npm run test:declarations
 
 タグと経費の11宣言を、診断・未解決項目とも0で検査する実例を含む。
 購買アプリの6つのbusiness宣言では、25操作の既定IDを検査する。
-applicationだけではimportされた44段階は未解決として残す。上記の5ファイルを明示すると、
-52個のラベルも解決し、診断・未解決とも0になる。数量訂正は1個のWorkflow参照を2つ、申請作成と編集はそれぞれ1個の参照を3つの内部名へ展開する。
-選択ファイルでは6 businessと6つのWorkflowを合わせ12宣言となる。入荷・返品・訂正の在庫投影もWorkflowへ接続し、従来の段階名を維持する。業務関数の実行は行わない。
+applicationだけでは13段階名を解決し、import先の43箇所は未解決として残す。
+上記の5ファイルを明示すると6宣言・25操作ID・56段階名を解決し、診断・未解決とも0になる。
+申請作成・編集、入荷・返品・訂正は普通の関数や名前付きStepを直接並べる。
+現在の選択ソースに独立したWorkflow宣言はなく、6宣言はすべてbusinessである。
+これは宣言のメタデータの検査であり、業務関数の実行や内部の全接続の検証は行わない。
 CLI自体はリポジトリの開発ツールであり、公開npm packageのbinや実行時依存には追加しない。
 [Babel parser](https://babeljs.io/docs/babel-parser)と[traverse](https://babeljs.io/docs/babel-traverse)は固定版の開発依存。
 型チェックに使うTypeScript 7や、Web標準のみ・実行時依存ゼロのcoreは維持する。
