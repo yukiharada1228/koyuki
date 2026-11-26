@@ -1,5 +1,8 @@
 # 購買の実装に残る接続と、業務判断の境界
 
+後続の[入荷・返品の直接接続](procurement-direct-receipt-stages.md)で、3つの文脈注釈のうち2つを削減した。
+現在は数量訂正の1つが残る。以下の棚卸しは、その後続変更前の記録として読む。
+
 後続の[名前付きI/O接続](process-fields.md)では、context-framework/context-processの
 単純なフィールド追加callbackを16個削減した。取得先・順序・フィールド名はhostが引き続き宣言し、
 関連データの結合と回復方針、入荷の3つの文脈注釈は残る。

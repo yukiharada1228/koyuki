@@ -1,5 +1,8 @@
 # businessの関数列で元の文脈を保持する
 
+後続の[入荷・返品の直接接続](procurement-direct-receipt-stages.md)で、valueにある計画の状態型も保持し、
+購買の文脈注釈を3つから1つへ削減した。以下の件数・残件はda7b550時点の記録である。
+
 開発版では、genericなwithInputを先に束縛すると、関数列の中間でも元の文脈を保持できる。
 withInput用のcallbackへContextを重ねて注釈したり、接続だけのWorkflowを作ったりする必要がない例を追加した。
 

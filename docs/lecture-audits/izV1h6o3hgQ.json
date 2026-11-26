@@ -452,6 +452,26 @@
         "docs/business-input-retention6.json",
         "docs/business-input-retention7.json"
       ]
+    },
+    "directReceiptStagesFollowUp": {
+      "implementationBaseCommit": "bf276c644f4027e2df2d54225e5980c4610281d1",
+      "sections": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up. Two generic domain rules connect directly through named name/rule stages. Guarded projection refinement preserves receipt next-state types and added validation facts; monomorphic broad and union producers remain rejected. Two stock context callback annotations and two connection-only Workflows removed. Correction retains one context annotation and its visible inner stages. Selected source diagnostics: 10 declarations, 25 IDs, 52 labels, zero unresolved; application-only retains 42 unresolved. No new source/audio/frame review or independent-user evidence; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/procurement-direct-receipt-stages.md",
+        "src/business-input-pair.test.ts",
+        "src/procurement-receipt-pipeline.test.ts",
+        "src/experiments/procurement/receipt-pipeline.ts",
+        "src/experiments/procurement/application.ts",
+        "src/framework/business.ts",
+        "scripts/declarations.test.mjs"
+      ]
     }
   },
   "sections": [
@@ -830,7 +850,8 @@
         "docs/procurement-request-edit.md",
         "src/procurement-application-io-exceptions.test.ts",
         "docs/business-input-retention.md",
-        "src/business-input-pair.test.ts"
+        "src/business-input-pair.test.ts",
+        "docs/procurement-direct-receipt-stages.md"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
@@ -858,7 +879,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列・Workflow/withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。先に束縛したgenericなwithInputは、実際のloader/関数契約を検査してbusiness配列でも元の文脈を保持できるようになり、6.0.3/7.0.2で型と実行を検査した。入荷・返品・訂正の既存Workflowと次状態型は維持する。配列内でwithInputを直接呼ぶ例、任意の多相変換、購買3つの文脈注釈、互換入口等の接続、独立利用者の評価は残る。",
+      "assessment": "通常関数列・Workflow/withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。先に束縛したgenericなwithInputは、実際のloader/関数契約を検査してbusiness配列でも元の文脈を保持できるようになり、6.0.3/7.0.2で型と実行を検査した。数量訂正のWorkflowと次状態型は維持する。配列内でwithInputを直接呼ぶ例、任意の多相変換、数量訂正に残る1つの文脈注釈、互換入口等の接続、独立利用者の評価は残る。後続の直接接続で入荷・返品の2注釈と接続用Workflowを削除し、accepted/returnedの型・実行名・失敗停止を保持した。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -894,11 +915,12 @@
         "docs/step-generic-first.md",
         "docs/business-pair-binding-investigation.md",
         "docs/business-input-retention.md",
-        "src/business-input-pair.test.ts"
+        "src/business-input-pair.test.ts",
+        "docs/procurement-direct-receipt-stages.md"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
-        "配列内でwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。先行する変数束縛は現在の対応条件で、monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。購買3操作の文脈注釈は維持する。",
+        "配列内でwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。先行する変数束縛は現在の対応条件で、monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。数量訂正の1つの文脈注釈は維持する。",
         "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
       ]
     },
