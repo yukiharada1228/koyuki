@@ -9,6 +9,30 @@
     "durationSeconds": 2019
   },
   "review": {
+    "financeTransitionFollowUp": {
+      "implementationBaseCommit": "810b2031897eea8a03794cf56d57afd88e35bc1c",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Implementation-only follow-up. Split invoice registration/matching and payment recording/cancellation into ordinary validation and next-state rules, directly composed by business. All 25 procurement operations now have multiple domain stages. Validation retains context identity and narrows current variants with operation-specific private proofs; four new state producers have never errors. Preserve original refusal priority and business output/save plans. Compatibility wrappers remain separate from live operations. Plain/helper own their orchestration and expose the additional boundary independently. Success observations are now 135 boundaries and representative-failure selections 279; IO positions/injections stay 72/178 with input/result selections 384/206. Selected-source diagnostics resolve 6 declarations, 25 operation IDs and 56 rule labels with no unresolved items; application-only retains 43 unresolved imports and 13 resolved labels. Seven new tests cover expected plans, refusal priority, proof requirements, identity and failure stopping; TS6/7 installed consumers each pass 841 cases. Widening 12 finance producer outputs and independently removing the four private proof tags both fail their contracts. Successful run:1 capture is now validated context, with plan output at run:2. No new framework API, runtime engine or dependency. No new source/audio/frame review or independent-user trial; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/procurement-finance-transitions.md",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/plain.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/procurement-finance-transitions.test.ts",
+        "src/procurement-finance-state-types.test.ts",
+        "src/procurement-observation-scenario.test.ts",
+        "src/procurement-failure-observation.test.ts",
+        "src/procurement-io-exceptions.test.ts",
+        "scripts/declarations.test.mjs",
+        "scripts/test-business-package.mjs"
+      ]
+    },
     "basis": "Saved Japanese automatic captions, manually reread in full",
     "audioDirectlyReviewed": false,
     "allFramesReviewed": false,
