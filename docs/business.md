@@ -1,5 +1,8 @@
 # 通常の関数で業務操作を宣言する
 
+genericなwithInputで元の文脈を後続にも渡す場合は、[入力保持の関数列](business-input-retention.md)を参照する。
+追加のContext callback注釈なしで通る条件と、配列内の直接呼出しの制限を区別している。
+
 開発版の推奨入口。公開済みnpm `0.1.0-alpha.5`にはまだ含まれない。
 ソースからビルドした配布物では`import { business } from 'koyuki'`で利用できる。
 [別プロジェクトへの導入からApplicationまで](development-start.md)を一続きで試せる。

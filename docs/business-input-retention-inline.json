@@ -1,0 +1,99 @@
+{
+  "schema": "koyuki.business-pair-specialization.v1",
+  "study": "inline-definition",
+  "collectedAt": "2026-11-26T13:46:55.970Z",
+  "sourceGitCommit": "da7b55006a944db445b2aa47c88a22b92fb12733",
+  "sourceDirty": false,
+  "collectorSha256": "3af5ccaef4f3c2d018951002e4018f84ce526829686f4791927df429cc5409f0",
+  "compiler": "Version 7.0.2",
+  "compilerEntrypointSha256": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
+  "node": "v26.12.0",
+  "lockSha256": "8efab17a72fa5d2a483dbb5cff21f1bf8e7148f5b2f3b2efebc58aa091b77f20",
+  "scope": "Static candidate investigation only. No candidate installed, no runtime or independent user evaluation, no claim that all possible improvements fail.",
+  "reports": [
+    {
+      "candidate": "current",
+      "businessSourceSha256": "e49407161ee9d60188a6804c202115a4025a516a08cc82c701363c9811aec6e4",
+      "modelSourceSha256": "ee65c8991643acb17bbca9505bce7a048d2d53505259d531d39a5a6a928f7ad9",
+      "baseline": {
+        "accepted": true,
+        "diagnostics": []
+      },
+      "probes": [
+        {
+          "variant": "inline-operations",
+          "fixtureSha256": "3224ac5e80b62f91741faf4f815d5b48c847181510dd7436868887cb89309fb1",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(29,25): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">' is not assignable to type 'DiagnosticRule<Stage, Context, string, string, \"0\">'.",
+            "      Type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">' is not assignable to type '{ readonly [x: `Koyuki: ${string}[0] input must accept prior output`]: never; } & Rule<Context, string, unknown>'.",
+            "        Type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">' is not assignable to type '{ readonly [x: `Koyuki: ${string}[0] input must accept prior output`]: never; }'.",
+            "          Index signature for type '`Koyuki: ${string}[0] input must accept prior output`' is missing in type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">'.",
+            "src/business-pair-investigation.ts(29,43): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '(pair: Pair) => Result<string, never>' is not assignable to type 'DiagnosticRule<Stage, unknown, unknown, string, number> | DiagnosticRule<...>'.",
+            "      Type '(pair: Pair) => Result<string, never>' is not assignable to type '{ readonly [x: `Koyuki: ${string}[${number}] input must accept prior output`]: never; } & Rule<unknown, unknown, unknown>'.",
+            "        Type '(pair: Pair) => Result<string, never>' is not assignable to type '{ readonly [x: `Koyuki: ${string}[${number}] input must accept prior output`]: never; }'.",
+            "          Index signature for type '`Koyuki: ${string}[${number}] input must accept prior output`' is missing in type '(pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>'.",
+            "src/business-pair-investigation.ts(31,29): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+            "src/business-pair-investigation.ts(31,46): error TS2344: Type '(((input: never) => Promise<Result<Execution<unknown>, unknown>>) & Omit<ReplayCommand<never, Execution<unknown>, unknown, unknown>, \"runDetailed\"> & { ...; }) | undefined' does not satisfy the constraint '(...args: any) => any'.",
+            "  Type 'undefined' is not assignable to type '(...args: any) => any'.",
+            "src/business-pair-investigation.ts(32,30): error TS2344: Type 'false' does not satisfy the constraint 'true'.",
+            "src/business-pair-investigation.ts(32,55): error TS2344: Type '(((input: never) => Promise<Result<Execution<unknown>, unknown>>) & Omit<ReplayCommand<never, Execution<unknown>, unknown, unknown>, \"runDetailed\"> & { ...; }) | undefined' does not satisfy the constraint '(...args: any) => any'.",
+            "  Type 'undefined' is not assignable to type '(...args: any) => any'."
+          ],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "bound-operations",
+          "fixtureSha256": "4a5cb42c22086a639a8a8b663235ff228edeb51d338929a2aab51e7b3f2062f2",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        }
+      ]
+    },
+    {
+      "candidate": "uncontextual-definition",
+      "businessSourceSha256": "1cd7da7bc37b37d54cf62a66f4a6e7d1c8c167440f20cfd97d4ac349a34a582c",
+      "modelSourceSha256": "ee65c8991643acb17bbca9505bce7a048d2d53505259d531d39a5a6a928f7ad9",
+      "baseline": {
+        "accepted": true,
+        "diagnostics": []
+      },
+      "probes": [
+        {
+          "variant": "inline-operations",
+          "fixtureSha256": "3224ac5e80b62f91741faf4f815d5b48c847181510dd7436868887cb89309fb1",
+          "accepted": false,
+          "diagnostics": [
+            "src/business-pair-investigation.ts(29,25): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">' is not assignable to type 'DiagnosticRule<Stage, Context, string, string, \"0\">'.",
+            "      Type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">' is not assignable to type '{ readonly [x: `Koyuki: ${string}[0] input must accept prior output`]: never; } & Rule<Context, string, unknown>'.",
+            "        Type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">' is not assignable to type '{ readonly [x: `Koyuki: ${string}[0] input must accept prior output`]: never; }'.",
+            "          Index signature for type '`Koyuki: ${string}[0] input must accept prior output`' is missing in type '(input: never) => Result<Readonly<{ input: never; value: number; }>, \"Declined\">'.",
+            "src/business-pair-investigation.ts(29,43): error TS2769: No overload matches this call.",
+            "  The last overload gave the following error.",
+            "    Type '(pair: Pair) => Result<string, never>' is not assignable to type 'DiagnosticRule<Stage, unknown, unknown, string, number> | DiagnosticRule<...>'.",
+            "      Type '(pair: Pair) => Result<string, never>' is not assignable to type '{ readonly [x: `Koyuki: ${string}[${number}] input must accept prior output`]: never; } & Rule<unknown, unknown, unknown>'.",
+            "        Type '(pair: Pair) => Result<string, never>' is not assignable to type '{ readonly [x: `Koyuki: ${string}[${number}] input must accept prior output`]: never; }'.",
+            "          Index signature for type '`Koyuki: ${string}[${number}] input must accept prior output`' is missing in type '(pair: Readonly<{ input: Context; value: number; }>) => Result<string, never>'.",
+            "src/business-pair-investigation.ts(31,62): error TS2339: Property 'quote' does not exist on type 'never'.",
+            "src/business-pair-investigation.ts(32,71): error TS2339: Property 'quote' does not exist on type 'never'."
+          ],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "bound-operations",
+          "fixtureSha256": "4a5cb42c22086a639a8a8b663235ff228edeb51d338929a2aab51e7b3f2062f2",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        }
+      ]
+    }
+  ]
+}

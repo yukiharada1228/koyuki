@@ -435,6 +435,23 @@
       "independentUserTrialCompleted": false,
       "directAudioReviewedInThisFollowUp": false,
       "allFramesReviewedInThisFollowUp": false
+    },
+    "inputPairCompositionFollowUp": {
+      "implementationBaseCommit": "da7b55006a944db445b2aa47c88a22b92fb12733",
+      "sections": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up. Guarded pair specialization and loader compatibility capture declared input/output types before matching. Pre-bound generic withInput stages are accepted on TS 6.0.3 and 7.0.2. Five runtime/static consumer cases cover exact types, stop/save/trace/capture, opaque context, generic and broad saves, overloaded required inputs and save metadata, added validation facts, and refusal of broad/incomplete/union producers. Current-context records cover six forms per compiler. No new source/audio/frame review or independent-user evidence; three procurement context annotations and partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "evidence": [
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts",
+        "docs/business-input-retention-adoption.json",
+        "docs/business-input-retention6.json",
+        "docs/business-input-retention7.json"
+      ]
     }
   },
   "sections": [
@@ -811,7 +828,9 @@
         "src/experiments/procurement/domain.ts",
         "docs/development-start.md",
         "docs/procurement-request-edit.md",
-        "src/procurement-application-io-exceptions.test.ts"
+        "src/procurement-application-io-exceptions.test.ts",
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
@@ -839,7 +858,7 @@
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
       "status": "partial",
-      "assessment": "通常関数列・Workflow/withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。入荷・返品・訂正では、具体的な前段を持つWorkflowからgenericな在庫投影を呼び、追加callback注釈なしで次状態型を公開操作まで保持した。一方、普通のbusiness配列のgeneric入力保持、名前なしinline、多相identityの別例は未解消。設定全体を先に推論する候補も不採用で、購買3つの文脈注釈、互換入口等の接続、独立利用者の評価は残る。",
+      "assessment": "通常関数列・Workflow/withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。先に束縛したgenericなwithInputは、実際のloader/関数契約を検査してbusiness配列でも元の文脈を保持できるようになり、6.0.3/7.0.2で型と実行を検査した。入荷・返品・訂正の既存Workflowと次状態型は維持する。配列内でwithInputを直接呼ぶ例、任意の多相変換、購買3つの文脈注釈、互換入口等の接続、独立利用者の評価は残る。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -873,11 +892,13 @@
         "docs/procurement-request-creation.md",
         "docs/procurement-request-edit.md",
         "docs/step-generic-first.md",
-        "docs/business-pair-binding-investigation.md"
+        "docs/business-pair-binding-investigation.md",
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
-        "genericなwithInputとbusiness配列の中間型の対応、および同じ注釈付き呼出しをinlineに置く例の推論制限が残る。購買3操作の文脈注釈と先行する変数束縛は維持する。",
+        "配列内でwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。先行する変数束縛は現在の対応条件で、monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。購買3操作の文脈注釈は維持する。",
         "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
       ]
     },

@@ -378,6 +378,22 @@
       "independentUserTrialCompleted": false,
       "directAudioReviewedInThisFollowUp": false,
       "allFramesReviewedInThisFollowUp": false
+    },
+    "inputPairCompositionFollowUp": {
+      "implementationBaseCommit": "da7b55006a944db445b2aa47c88a22b92fb12733",
+      "sections": [
+        "qbf-19"
+      ],
+      "scope": "Implementation-only follow-up. Guarded pair specialization and loader compatibility capture declared input/output types before matching. Pre-bound generic withInput stages are accepted on TS 6.0.3 and 7.0.2. Five runtime/static consumer cases cover exact types, stop/save/trace/capture, opaque context, generic and broad saves, overloaded required inputs and save metadata, added validation facts, and refusal of broad/incomplete/union producers. Current-context records cover six forms per compiler. No new source/audio/frame review or independent-user evidence; three procurement context annotations and partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "evidence": [
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts",
+        "docs/business-input-retention-adoption.json",
+        "docs/business-input-retention6.json",
+        "docs/business-input-retention7.json"
+      ]
     }
   },
   "sections": [
@@ -689,7 +705,7 @@
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
       "status": "partial",
-      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。入荷の在庫投影は具体的な前段を持つWorkflowで追加callback注釈なしに次状態型を保持する。一方、普通のbusiness配列のgeneric入力保持や名前なしinline、多相identityは未解消で、設定全体の推論を分離する候補でも正例は不受理。購買3つの文脈注釈、任意の診断品質、独立利用者のDXは未検証。",
+      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。先に束縛したgenericなwithInputはbusiness配列で元の文脈を保持でき、record・公開class・privateなclassを6.0.3/7.0.2で検査した。具体的な前段を持つ入荷のWorkflowと次状態型も維持する。配列内のwithInput呼出しや任意の多相変換、購買3つの文脈注釈、任意の診断品質、独立利用者のDXは未解消・未検証。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -742,7 +758,9 @@
         "src/experiments/procurement/domain.ts",
         "docs/step-generic-first.md",
         "docs/business-pair-binding-investigation.md",
-        "docs/development-start.md"
+        "docs/development-start.md",
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",

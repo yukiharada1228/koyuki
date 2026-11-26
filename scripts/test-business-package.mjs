@@ -214,6 +214,9 @@ try {
   writeFileSync(join(consumer, 'transition-inline-step.test.ts'), readFileSync(join(root, 'src/transition-inline-step.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
+  const retentionGuide = readFileSync(join(root, 'docs/business-input-retention.md'), 'utf8').match(/```ts\n([\s\S]*?)```/)?.[1];
+  if (!retentionGuide) throw Error('Input-retention guide requires a complete TS block');
+  writeFileSync(join(consumer, 'business-retention-guide.ts'), retentionGuide);
   console.log(run('npm', ['install', '--prefer-online', '--ignore-scripts', '--no-audit', '--no-fund'], consumer));
   if (run('npm', ['exec', '--', 'tsc', '--version'], consumer).trim() !== `Version ${tools.typescript}`) throw Error('Consumer compiler differs from requested version');
   console.log(`Verifying packed declarations with TypeScript ${tools.typescript}; package was built with the repository compiler.`);
@@ -290,10 +293,11 @@ try {
   } finally { writeFileSync(storageGuard, guardedStorage); }
   console.log('Verified storage DTO preflight and rejection of the silent-clone negative control; opaque core-domain values remain supported.');
   console.log(run('npm', ['exec', '--', 'tsx', 'business-quickstart.ts'], consumer));
+  run('npm', ['exec', '--', 'tsx', 'business-retention-guide.ts'], consumer);
   writeFileSync(join(consumer, 'tsconfig.no-node.json'), JSON.stringify({ compilerOptions: {
     target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true,
     noEmit: true, types: [], lib: ['ES2022', 'DOM'],
-  }, files: ['business-types.ts', 'business-quickstart.ts'] }));
+  }, files: ['business-types.ts', 'business-quickstart.ts', 'business-retention-guide.ts'] }));
   console.log(run('npm', ['exec', '--', 'tsc', '-p', 'tsconfig.no-node.json'], consumer));
 
   copyFileSync(join(root, 'scripts/fixtures/leave-business-diagnostics.ts'), join(consumer, 'business-diagnostics.ts'));

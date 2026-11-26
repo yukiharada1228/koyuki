@@ -1,6 +1,9 @@
 # 3講演に対する現在の判定
 
 **部分充足。業務の状態・検証・遷移を宣言し、接続と実行を委譲する核は実装・検証している。**
+
+後続の[関数列の入力保持](business-input-retention.md)では、先に束縛したgenericなwithInputを追加のContext callback注釈なしで接続できるようにした。
+任意の多相変換、配列内の直接呼出し、購買3つの文脈注釈、独立利用者の評価は残る。
 講演全内容の完全実現、React/Elmと同等の開発体験、一般的な生産性優位はまだ確認できていない。
 この判定は、下記のコードと検査が対象とする範囲に限る。
 [購買に残る接続の棚卸し](procurement-remaining-connections.md)では、宣言した25操作の外側の実行委譲と、
@@ -184,7 +187,8 @@ withInputの戻り値をgenericにする候補は既存契約を壊すため不�
 
 [Workflowの具体的な前段とgeneric関数](workflow-context-inference.md)を追加確認した。
 前段が文脈を保証する場合は、変数・inline呼出し・無注釈callbackで中間のinput/value型を保持できる。
-元のinline・generic入力の組・多相identityの制限と、購買の3つの文脈注釈は残る。新しいAPIや独立利用者の評価の追加ではない。
+この時点の元のinline・generic入力の組・多相identityの制限と、購買の3つの文脈注釈は別に記録した。
+その後、条件に合うgeneric入力の組は[関数列の入力保持](business-input-retention.md)で対応した。独立利用者の評価の追加ではない。
 
 [制約付きgeneric関数をWorkflowの先頭へ置く](workflow-generic-first.md)場合の型推論も改善した。
 制約内の項目を使う正例を変更前後で比較し、全成功/失敗型とprivateな前提・出力の証明を検査する。

@@ -1,0 +1,68 @@
+{
+  "schema": "koyuki.business-pair-specialization.v1",
+  "study": "current-contexts",
+  "collectedAt": "2026-11-26T13:47:22.394Z",
+  "sourceGitCommit": "da7b55006a944db445b2aa47c88a22b92fb12733",
+  "sourceDirty": false,
+  "collectorSha256": "3af5ccaef4f3c2d018951002e4018f84ce526829686f4791927df429cc5409f0",
+  "compiler": "Version 6.0.3",
+  "compilerEntrypointSha256": "8d5fa5bd883fec0979fc2004f1fe1d99aef40570155d550eadc0b03b55513bf0",
+  "node": "v26.12.0",
+  "lockSha256": "8efab17a72fa5d2a483dbb5cff21f1bf8e7148f5b2f3b2efebc58aa091b77f20",
+  "scope": "Static candidate investigation only. No candidate installed, no runtime or independent user evaluation, no claim that all possible improvements fail.",
+  "reports": [
+    {
+      "candidate": "current",
+      "businessSourceSha256": "e49407161ee9d60188a6804c202115a4025a516a08cc82c701363c9811aec6e4",
+      "modelSourceSha256": "ee65c8991643acb17bbca9505bce7a048d2d53505259d531d39a5a6a928f7ad9",
+      "baseline": {
+        "accepted": true,
+        "diagnostics": []
+      },
+      "probes": [
+        {
+          "variant": "private-class/inline-operations",
+          "fixtureSha256": "7e732460f050f8334629705073956c387c917f2dde72cc3c47d91e83e25fe5fe",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "public-class/inline-operations",
+          "fixtureSha256": "fa23558515e846100213530dcd041f78d5da73c225384c8667b2956904bbbfd1",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "record/inline-operations",
+          "fixtureSha256": "2a54214366a8674fdbd3672c8f0feb882fb6511a5324f022086a735f7b28ee7e",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "private-class/bound-operations",
+          "fixtureSha256": "554c20cf958318c96d06217037bcadf814ad3e937d3253a76fa75e80248c1797",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "public-class/bound-operations",
+          "fixtureSha256": "4acc07e6978a483271fd53a9597bb49ec5433a8e4bb00f20133766bf6270a0da",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        },
+        {
+          "variant": "record/bound-operations",
+          "fixtureSha256": "23ac9ef3acf0184f7158bce7c87bfbf68c6de21b30ea76727d59a81b1acf5962",
+          "accepted": true,
+          "diagnostics": [],
+          "existingContractDiagnostics": 0
+        }
+      ]
+    }
+  ]
+}

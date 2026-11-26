@@ -1,5 +1,8 @@
 # TypeScript 6と7で配布物を検査する
 
+さらに[関数列の入力保持](business-input-retention.md)へ対応した。条件に合うgenericなinput/valueの組は両版で受理する。
+下記53a44b9の比較表は対応前の記録。任意の多相変換や配列内の呼出しまで解消したという意味ではない。
+
 後続の[withInputの戻り型の修正](with-input-rule-alias.md)で、単独のRule alias比較は7.0.2でも通るようにした。
 下記53a44b9の比較表は修正前の記録。business宣言全体の推論制限は修正後も残る。
 

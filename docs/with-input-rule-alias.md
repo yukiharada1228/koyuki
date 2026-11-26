@@ -1,5 +1,8 @@
 # withInputの入力保持をRule aliasでも比較できるようにする
 
+後続の[business関数列の改善](business-input-retention.md)では、条件に合うgenericなinput/valueの組を宣言全体でも保持できるようにした。
+以下はa3ad25d時点の修正と残件の記録であり、現在の宣言全体の対応範囲は後続の文書で区別する。
+
 a3ad25dでは、withInputの戻り型をRule aliasから同じ構造の関数型へ直接書き替えた。
 実行本体・関数の引数・成功値と失敗値・pairのfreezeは変更していない。
 新しいAPIやruntime依存を追加する変更ではない。

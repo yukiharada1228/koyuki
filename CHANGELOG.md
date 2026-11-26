@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- businessの関数列でgenericなinput/valueの組を保持する。最初の関数が取得値を受け取れる契約と、中間関数が具体的な入力を返せる契約を実際のcallableで検査し、不要なContext注釈や接続用Workflowを省ける例に対応。overloadの必須入力・保存時の要求情報・関数が追加した検証済み情報を維持し、privateな文脈・失敗型・generic保存・不正接続を両compilerの配布物で検査する。配列内でwithInputを直接呼ぶ制限と購買3つの注釈は残る。
+
 - withInputの戻り型を直接の関数型で宣言し、TypeScript 7.0.2でも単独のRule alias比較で入力保持を確認できるようにした。実行本体は維持し、privateな文脈の保持と広い出力を勝手に狭めない型契約を配布物でも検査する。business全体の相関推論と3つの文脈注釈は未解消。
 
 - TypeScript 6.0.3のinstalled consumer検査をCIへ追加。buildは7.0.2のまま、宣言・最初のアプリ・783件・15不正定義等を両版で検査する。3つの拒否テストの行位置を両compilerに対応させ、consumerのcompiler版も固定・確認する。入力保持の補正候補が6と7で異なる受理結果となる記録を追加したが、候補自体は未採用。
