@@ -1,5 +1,6 @@
 import { receiveDecision, returnDecision, correctedQuantities, correctionPlan } from './receipt-pipeline.js';
-import { requestCreationDecision, requestEditDecision } from './request-pipeline.js';
+import { parsedRequestInput, creationPlan, editPlan } from './request-pipeline.js';
+import { checkRequestCreation, checkRequestEdit } from './domain.js';
 import { procurementFrameworkContext as procurementContext } from './context-framework.js';
 import { includeReceivedStock, includeChangedStock, checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock, type StockInput, type MoveInput, type AdjustInput } from './inventory.js';
 import { business, step, ok, type Result } from '../../framework/index.js';
@@ -21,8 +22,9 @@ function createProcurement<const Detailed extends boolean, E>(repository: Procur
   };
   const requests = business({ name: 'procurement.request.v1', load: context.create,
     save: <T extends Request>(change: Change<T>): Promise<Result<Saved<T, Detailed>, E>> => save(change), operations: {
-      create: [requestCreationDecision],
-      edit: { load: context.request<EditInput>, run: [checkBuyerRequest, requestEditDecision] },
+      create: [step('authorize-creation', checkRequestCreation), step('parse-lines', parsedRequestInput), step('create-request-plan', creationPlan)],
+      edit: { load: context.request<EditInput>, run: [checkBuyerRequest, step('require-draft', checkRequestEdit),
+        step('parse-lines', parsedRequestInput), step('edit-request-plan', editPlan)] },
       withdraw: { load: context.request<VersionInput>, run: [checkBuyerRequest, withdrawCheckedRequest] },
       reject: { load: context.request<ReasonInput>, run: [checkApproverRequest, rejectCheckedRequest] },
       return: { load: context.request<VersionInput>, run: [checkApproverRequest, returnCheckedRequest] },

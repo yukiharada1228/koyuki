@@ -1,5 +1,8 @@
 # 申請作成の検証・明細解析・計画作成を宣言へ出す
 
+後続の[普通の関数列への移行](procurement-direct-request-stages.md)で、下記の接続用Workflowを実経路から取り除いた。
+以下は最初に内部接続を分離した時点の記録であり、現在のApplicationは各段階を直接宣言する。
+
 購買の実businessで、createRequestの内部にあったResultの取り出しを、既存のWorkflowへ移した。
 以下の128/272境界や50ラベルはこの移行時点の記録。後続の[申請編集](procurement-request-edit.md)により、現在は130/274境界、52ラベルとなる。
 [実経路](../src/experiments/procurement/request-pipeline.ts)は次の宣言となる。

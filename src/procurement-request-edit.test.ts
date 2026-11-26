@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ok, err, type Result } from './framework/index.js';
+import { business, step, workflow, withInput, ok, err, type Result } from './framework/index.js';
 import { createRequest, checkBuyerRequest, checkRequestEdit, parseRequestLines, requestEditPlan, editRequest,
   type CheckedRequest, type Loaded, type EditInput, type Request, type Draft, type RuleError, type ParsedRequestLines } from './experiments/procurement/domain.js';
-import { requestEditDecision } from './experiments/procurement/request-pipeline.js';
+import { parsedRequestInput, editPlan } from './experiments/procurement/request-pipeline.js';
 import { procurement } from './experiments/procurement/application.js';
 import { actor, policy } from './experiments/procurement/comparison-scenario.js';
 import { MemoryProcurement } from './experiments/procurement/repository.js';
@@ -11,6 +11,10 @@ import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 import type { StorageError } from './experiments/procurement/repository.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
+// Previous composition retained only as a comparison harness, outside production.
+const requestEditDecision = workflow('require-draft', checkRequestEdit)
+  .then('parse-lines', withInput(value => parseRequestLines(value.input.lines)))
+  .then('edit-request-plan', ({ input, value }) => ok(requestEditPlan(input, value)));
 const originalInput = { id: 'rq', lines: [{ sku: 'a', quantity: 1, unitCents: 500 }] };
 const input = { id: 'rq', expectedVersion: 1, lines: [{ sku: 'b', quantity: 2, unitCents: 75 }] };
 const expected = {
@@ -84,3 +88,25 @@ function typeContracts(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'
   }
 }
 void typeContracts;
+
+test('shared line parsing retains the editable state proof and extra context', () => {
+  const created = createRequest({ input: originalInput, actor: actor('buyer') }); assert(created.ok);
+  const checked = checkBuyerRequest({ input, current: created.value.result, actor: actor('buyer') }); assert(checked.ok);
+  const editable = checkRequestEdit(checked.value); assert(editable.ok);
+  const context = { ...editable.value, correlationId: 'edit' as const }, parsed = parsedRequestInput(context);
+  type Exact = Assert<Equal<typeof parsed, Result<Readonly<{ input: typeof context; value: ParsedRequestLines }>, RuleError>>>;
+  assert(parsed.ok); assert(Object.isFrozen(parsed.value)); assert.strictEqual(parsed.value.input, context);
+  assert.equal(parsed.value.input.correlationId, 'edit'); assert.deepEqual(editPlan(parsed.value), ok(expected));
+});
+
+function unguardedEdit(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>) {
+  const load = async (_id: string) => ok(value), save = async (change: ReturnType<typeof requestEditPlan>) => ok(change.result);
+  // @ts-expect-error buyer authorization cannot replace the omitted draft-state check
+  business({ name: 'unguarded-edit', load, save, operations: { edit: [step('parse-lines', parsedRequestInput), step('edit-plan', editPlan)] } });
+  const parsed = parsedRequestInput(value);
+  if (parsed.ok) {
+    // @ts-expect-error buyer authorization and parsed lines do not prove draft state
+    editPlan(parsed.value);
+  }
+}
+void unguardedEdit;

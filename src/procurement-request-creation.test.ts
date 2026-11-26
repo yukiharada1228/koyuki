@@ -1,14 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ok, err, type Result } from './framework/index.js';
+import { business, step, workflow, withInput, ok, err, type Result } from './framework/index.js';
 import { checkRequestCreation, parseRequestLines, requestCreationPlan, createRequest, type CreateInput, type Draft, type RuleError } from './experiments/procurement/domain.js';
-import { requestCreationDecision } from './experiments/procurement/request-pipeline.js';
+import { parsedRequestInput, creationPlan } from './experiments/procurement/request-pipeline.js';
 import { procurement } from './experiments/procurement/application.js';
 import { actor, policy } from './experiments/procurement/comparison-scenario.js';
 import { MemoryProcurement } from './experiments/procurement/repository.js';
 import { SqliteProcurement } from './experiments/procurement/sqlite.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
+// Previous composition retained only as a comparison harness, outside production.
+const requestCreationDecision = workflow('authorize-creation', checkRequestCreation)
+  .then('parse-lines', withInput(value => parseRequestLines(value.input.lines)))
+  .then('create-request-plan', ({ input, value }) => ok(requestCreationPlan(input, value)));
 const input = { id: 'rq', lines: [{ sku: 'a', quantity: 2, unitCents: 500 }, { sku: 'b', quantity: 1, unitCents: 75 }] };
 const raw = { input, actor: actor('buyer') };
 const expected = {
@@ -77,3 +81,25 @@ function typeContracts() {
   }
 }
 void typeContracts;
+
+test('shared line parsing retains the authorized creation context and opaque extra data', () => {
+  class Token { #secret = 1; read() { return this.#secret; } }
+  const token = new Token(), checked = checkRequestCreation(raw); assert(checked.ok);
+  const context = { ...checked.value, token }, parsed = parsedRequestInput(context);
+  type Exact = Assert<Equal<typeof parsed, Result<Readonly<{ input: typeof context; value: import('./experiments/procurement/domain.js').ParsedRequestLines }>, RuleError>>>;
+  assert(parsed.ok); assert(Object.isFrozen(parsed.value));
+  assert.strictEqual(parsed.value.input, context); assert.strictEqual(parsed.value.input.token, token);
+  assert.deepEqual(creationPlan(parsed.value), ok(expected)); assert.equal(token.read(), 1);
+});
+
+function unguardedCreation() {
+  const load = async (_id: string) => ok(raw), save = async (change: ReturnType<typeof requestCreationPlan>) => ok(change.result);
+  // @ts-expect-error the business runtime cannot connect parsing to creation without its authorization proof
+  business({ name: 'unguarded-create', load, save, operations: { create: [step('parse-lines', parsedRequestInput), step('create-plan', creationPlan)] } });
+  const parsed = parsedRequestInput(raw);
+  if (parsed.ok) {
+    // @ts-expect-error parsing lines cannot invent creation authorization
+    creationPlan(parsed.value);
+  }
+}
+void unguardedCreation;

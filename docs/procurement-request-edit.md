@@ -1,5 +1,8 @@
 # 申請編集の状態検証・明細解析・更新計画を宣言へ移す
 
+後続の[普通の関数列への移行](procurement-direct-request-stages.md)で、下記の接続用Workflowを実経路から取り除いた。
+以下は最初に内部接続を分離した時点の記録であり、現在のApplicationは各段階を直接宣言する。
+
 [実business](../src/experiments/procurement/application.ts)の編集は、checkBuyerRequestの後に
 [requestEditDecision](../src/experiments/procurement/request-pipeline.ts)を接続する。
 

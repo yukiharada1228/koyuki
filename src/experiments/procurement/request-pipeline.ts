@@ -1,13 +1,17 @@
-import { workflow, withInput, ok } from '../../framework/index.js';
-import { checkRequestCreation, parseRequestLines, requestCreationPlan } from './domain.js';
-import { checkRequestEdit, requestEditPlan } from './domain.js';
+import { withInput, ok } from '../../framework/index.js';
+import { parseRequestLines, requestCreationPlan, requestEditPlan,
+  type CheckedRequestCreation, type EditableRequest, type ParsedRequestLines } from './domain.js';
 
-// Ordinary domain functions describe prerequisites, parsing and the resulting plan.
-// The runtime supplies Result composition and preserves the checked input.
-export const requestCreationDecision = workflow('authorize-creation', checkRequestCreation)
-  .then('parse-lines', withInput(value => parseRequestLines(value.input.lines)))
-  .then('create-request-plan', ({ input, value }) => ok(requestCreationPlan(input, value)));
+// The same parser retains each operation's checked context without depending on
+// creation/edit authorization. Operations declare the required guards separately.
+function parseInputLines<T extends { readonly input: { readonly lines: unknown } }>(value: T) {
+  return parseRequestLines(value.input.lines);
+}
+export const parsedRequestInput = withInput(parseInputLines);
 
-export const requestEditDecision = workflow('require-draft', checkRequestEdit)
-  .then('parse-lines', withInput(value => parseRequestLines(value.input.lines)))
-  .then('edit-request-plan', ({ input, value }) => ok(requestEditPlan(input, value)));
+export function creationPlan<T extends CheckedRequestCreation>({ input, value }: Readonly<{ input: T; value: ParsedRequestLines }>) {
+  return ok(requestCreationPlan(input, value));
+}
+export function editPlan<T extends EditableRequest>({ input, value }: Readonly<{ input: T; value: ParsedRequestLines }>) {
+  return ok(requestEditPlan(input, value));
+}
