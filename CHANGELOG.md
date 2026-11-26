@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- stepへconstrained generic関数とwithInputを直接渡す型推論を追加。元の文脈付き推論とParameters/ReturnTypeを維持し、宣言した制約・成功/失敗型・privateな証明を保持する。不適合候補・非同期/非Resultを拒否。実行本体は変更せず、追加Contextや元のbusiness/transition推論制限は未解消。
+
 - workflowの先頭でconstrained generic関数とwithInputを使える型推論を追加。元の文脈付き推論と型参照を維持し、宣言した入力・全成功/失敗型・privateな証明を保持する。不適合な関数候補、非同期/非Resultは拒否。実行本体は変更せず、制約にない追加文脈や元のbusiness/transition推論制限は未解消。
 
 - 購買の数量訂正を実Workflowへ移し、数量再検証と計画作成をResultの手動判定なしで接続。計画投影をdomainで共有し、数量検証済み計画の型を要求する。訂正の旧run:2を2つの明示名へ変更し、成功124境界・代表失敗266境界の3方式比較、型の証明・メモリ/SQLiteの停止を検査。互換経路や他のResult接続、3つの文脈注釈は残す。

@@ -3,6 +3,9 @@
 `business`の関数列へ、従来の普通の関数に加えて、既存の`step(name, rule)`を置ける。
 名前付き段階と普通の関数を混在でき、独自のbuilderや新しい実行方法は追加しない。
 
+後続の[制約付きgeneric関数の推論](step-generic-first.md)により、宣言された制約だけを使う場合は
+stepへgeneric関数やwithInputを直接渡せる。具体的な文脈を追加で保持する別の推論制限は残る。
+
 ```ts
 const app = business({
   name: 'expense',

@@ -136,3 +136,7 @@ iz-24/qbf-19の[型推論の追加照合](workflow-context-inference.md)で、�
 [ApplicationのI/O例外](procurement-application-io-exceptions.md)を、購買25操作の既存シナリオで追加確認した。
 直接commandの例外伝播と、Applicationのcrashed・投影抑止・再実行抑止・回復・実行メタデータを区別する。
 全Application経路・本番UI・永続履歴の運用まで検証したとはせず、9話題のpartialは維持する。
+
+iz-24/qbf-19に対し、[stepのgeneric推論](step-generic-first.md)で、制約付きgeneric関数を
+名前付き段階へ直接渡す場合のラッパー注釈を不要にした。宣言された制約を超えるContextは補わない。
+以前の9推論例も再検査し、3つの購買注釈や利用者評価まで解消したとはせず、9話題のpartialは維持する。

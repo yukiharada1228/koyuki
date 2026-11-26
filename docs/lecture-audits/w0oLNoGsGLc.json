@@ -300,6 +300,18 @@
         "scripts/test-business-package.mjs",
         "docs/procurement-application-io-exceptions.md"
       ]
+    },
+    "genericNamedStepFollowUp": {
+      "implementationBaseCommit": "59fd7589b56bfb66d019f2ca5ae76b3aeecabaf4",
+      "scope": "Named step now accepts constrained generic rules and withInput without a wrapper annotation, within the declared constraint. Same positive source-archive probe rejected before and accepted after with existing baselines passing; Workflow control remains accepted. Six runtime cases and static contracts cover exact types, private proofs, failure stop and non-save, and rejection of incompatible candidates/async/non-Result. Nine earlier inference probes retain prior acceptance results. Runtime step body unchanged. Extra Context fields, three procurement annotations, independent user trial and partial statuses remain; no new audio/frame review.",
+      "evidence": [
+        "src/framework/model.ts",
+        "src/step-generic-first.test.ts",
+        "scripts/fixtures/step-generic-first.ts",
+        "scripts/investigate-workflow-first.mjs",
+        "docs/step-generic-first.md",
+        "docs/step-generic-first-inference.json"
+      ]
     }
   },
   "sections": [
