@@ -164,10 +164,8 @@ function typeContracts() {
   }
   const save = async (change: Change<Receipt>) => ok(change.result), load = async (_input: number) => ok(receipt);
   business({ name: 'valid', load, save, operations: { return: [checkReceipt, returnDecision, includeChangedStock] } });
-  business({ name: 'invalid', load, save, operations: {
-    // @ts-expect-error checked decision cannot follow a loader without the receipt check
-    return: [returnDecision, includeChangedStock],
-  } });
+  // @ts-expect-error checked decision cannot follow a loader without the receipt check
+  business({ name: 'invalid', load, save, operations: { return: [returnDecision, includeChangedStock] } });
 }
 void typeContracts;
 

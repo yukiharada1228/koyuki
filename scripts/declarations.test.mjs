@@ -513,8 +513,8 @@ test('all 25 procurement business IDs are checked without executing the applicat
   const source = await readFile(join(root, file), 'utf8');
   const baseline = analyzeDeclarations([{ file, source }]);
   assert.equal(baseline.checkedDeclarations, 6); assert.equal(baseline.checkedOperationIds, 25);
-  assert.deepEqual(baseline.diagnostics, []); assert.equal(baseline.unresolved.length, 44);
-  assert.equal(baseline.checkedBusinessRuleLabels, 0);
+  assert.deepEqual(baseline.diagnostics, []); assert.equal(baseline.unresolved.length, 42);
+  assert.equal(baseline.checkedBusinessRuleLabels, 4);
   assert(baseline.unresolved.every(item => item.reason.includes('Business stage')));
   const expected = {
     request: ['create', 'edit', 'withdraw', 'reject', 'return', 'reassign', 'submit', 'approve'],
