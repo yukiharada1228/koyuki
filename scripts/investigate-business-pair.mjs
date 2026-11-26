@@ -87,7 +87,7 @@ if (binding) {
       ['literal-parameter-and-return', '(input: I) => Result<O, E>', '(input: I) => Result<Readonly<{ input: I; value: O }>, E>'],
     ]) candidates.push([name, candidate, originalModel.replace(signature, `export function withInput<I, O, E>(rule: ${parameter}): ${result} {`)]);
   }
-  if (literalAll) {
+  if (literalAll || inputLiteral) {
     let expanded = candidate;
     for (const [before, after] of [
       ['type Fn = Rule<never, unknown, unknown>;', 'type Fn = (input: never) => Result<unknown, unknown>;'],
@@ -101,6 +101,11 @@ if (binding) {
       expanded = expanded.replaceAll(before, after);
     }
     candidates.push(['expanded-rule-comparisons', expanded]);
+    if (inputLiteral) {
+      const signature = 'export function withInput<I, O, E>(rule: Rule<I, O, E>): Rule<I, Readonly<{ input: I; value: O }>, E> {';
+      candidates.push(['literal-return-and-expanded-comparisons', expanded, originalModel.replace(signature,
+        'export function withInput<I, O, E>(rule: Rule<I, O, E>): (input: I) => Result<Readonly<{ input: I; value: O }>, E> {')]);
+    }
   }
   if (literalConnection) {
     const checked = "F extends Fn ? Rule<I, O, ErrorOf<F>>";
