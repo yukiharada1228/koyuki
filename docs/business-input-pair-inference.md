@@ -88,3 +88,6 @@ withInput呼出しをstepで包む場合は、inlineでも書ける検査を追�
 [具体的な前段があるWorkflow](workflow-context-inference.md)では、genericなwithInputを変数・inline・
 無注釈callbackで接続できる条件を追加確認した。中間型も厳密に照合する。
 この条件付きの正例と、ここで再現した普通のbusiness関数列の制限は区別する。
+
+[後続の中間型補正の調査](business-pair-specialization-investigation.md)では、withInputの署名を変えずに
+business側だけで入力を補う3候補も検査した。operationsの先行束縛を含む例は通らず、coreへは採用していない。

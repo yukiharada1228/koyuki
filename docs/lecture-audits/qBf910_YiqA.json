@@ -256,6 +256,16 @@
         "scripts/fixtures/workflow-generic-first.ts",
         "scripts/investigate-workflow-first.mjs"
       ]
+    },
+    "businessPairSpecializationInvestigation": {
+      "implementationBaseCommit": "6f312ee0620c32df8745ba0f28091880900b58e6",
+      "scope": "Static investigation of three guarded business StageOutput input-pair candidates without changing withInput. All existing source baselines pass, but both inline and pre-bound operation tables remain rejected. No candidate adopted. Does not establish impossibility of other improvements. Three procurement annotations, independent trial and partial topic statuses remain; no new audio/frame review.",
+      "evidence": [
+        "scripts/investigate-business-pair.mjs",
+        "scripts/fixtures/business-input-pair.ts",
+        "docs/business-pair-specialization-investigation.md",
+        "docs/business-pair-specialization-investigation.json"
+      ]
     }
   },
   "sections": [
