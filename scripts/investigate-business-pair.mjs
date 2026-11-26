@@ -8,8 +8,9 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition'].includes(args[0])) throw Error('Use no arguments, --binding or --raw-definition');
-const binding = args[0] === '--binding';
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection'].includes(args[0])) throw Error('Use no arguments, --binding, --raw-definition or --literal-connection');
+const literalConnection = args[0] === '--literal-connection';
+const binding = args[0] === '--binding' || literalConnection;
 const rawDefinition = args[0] === '--raw-definition';
 const hash = value => createHash('sha256').update(value).digest('hex');
 function git(args) {
@@ -71,6 +72,11 @@ if (binding) {
     .replace('[RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>]', '[RuleOf<F>] extends [(input: I) => Result<O, ErrorOf<F>>]');
   if (candidate === original) throw Error('Binding candidate patch did not apply');
   candidates.push(['literal-call-contract', candidate]);
+  if (literalConnection) {
+    const checked = "F extends Fn ? Rule<I, O, ErrorOf<F>>";
+    if (candidate.split(checked).length !== 2) throw Error('Re-evaluate literal connection requirement');
+    candidates.push(['literal-guard-and-connection', candidate.replace(checked, 'F extends Fn ? ((input: I) => Result<O, ErrorOf<F>>)')]);
+  }
   const head = fixture.split('// Direct generic withInput calls')[0];
   const bound = head + `
 const config = { name: 'bound', load, save, operations: { quote: [quoted, finish] as const } };
@@ -129,7 +135,7 @@ try {
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), node: process.version,
