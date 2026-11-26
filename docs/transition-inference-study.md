@@ -390,3 +390,5 @@ node scripts/investigate-transition-inference.mjs --only current,direct-requirem
 
 今回の3候補も不採用。外側の文脈、関数生成、callbackの推論を、型の精度を維持しながら
 両立させる方法は引き続き未解決である。公開APIと実行エンジンは変更していない。
+
+[深い出力の推論候補](deep-output-investigation.md)では、再現例の受理と既存契約の回帰を分けて比較する。候補は不採用で、コアの制限は維持する。
