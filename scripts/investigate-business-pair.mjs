@@ -8,13 +8,14 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes'].includes(args[0])) throw Error('Unknown investigation mode');
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all', '--context-shapes', '--with-input-literal'].includes(args[0])) throw Error('Unknown investigation mode');
+const inputLiteral = args[0] === '--with-input-literal';
 const contextShapes = args[0] === '--context-shapes';
 const literalAll = args[0] === '--literal-all';
 const unconstrained = args[0] === '--unconstrained';
 const pairFirst = args[0] === '--pair-first' || unconstrained;
 const literalConnection = args[0] === '--literal-connection' || pairFirst || literalAll;
-const binding = args[0] === '--binding' || literalConnection || contextShapes;
+const binding = args[0] === '--binding' || literalConnection || contextShapes || inputLiteral;
 const rawDefinition = args[0] === '--raw-definition';
 const hash = value => createHash('sha256').update(value).digest('hex');
 function git(args) {
@@ -27,6 +28,7 @@ const commit = git(['rev-parse', 'HEAD']);
 const status = git(['status', '--porcelain', '--', ...sourcePaths]);
 if (status) throw Error('Commit investigation sources before collecting evidence');
 const original = await readFile(resolve(root, 'src/framework/business.ts'), 'utf8');
+const originalModel = await readFile(resolve(root, 'src/framework/model.ts'), 'utf8');
 const fixture = await readFile(resolve(root, 'scripts/fixtures/business-input-pair.ts'), 'utf8');
 const first = 'type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>';
 const last = '? I & Out<F> : Out<F>;';
@@ -76,6 +78,15 @@ if (binding) {
     .replace('[RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>]', '[RuleOf<F>] extends [(input: I) => Result<O, ErrorOf<F>>]');
   if (candidate === original) throw Error('Binding candidate patch did not apply');
   candidates.push(['literal-call-contract', candidate]);
+  if (inputLiteral) {
+    const signature = 'export function withInput<I, O, E>(rule: Rule<I, O, E>): Rule<I, Readonly<{ input: I; value: O }>, E> {';
+    if (originalModel.split(signature).length !== 2) throw Error('Re-evaluate withInput signature');
+    for (const [name, parameter, result] of [
+      ['literal-parameter', '(input: I) => Result<O, E>', 'Rule<I, Readonly<{ input: I; value: O }>, E>'],
+      ['literal-return', 'Rule<I, O, E>', '(input: I) => Result<Readonly<{ input: I; value: O }>, E>'],
+      ['literal-parameter-and-return', '(input: I) => Result<O, E>', '(input: I) => Result<Readonly<{ input: I; value: O }>, E>'],
+    ]) candidates.push([name, candidate, originalModel.replace(signature, `export function withInput<I, O, E>(rule: ${parameter}): ${result} {`)]);
+  }
   if (literalAll) {
     let expanded = candidate;
     for (const [before, after] of [
@@ -202,7 +213,7 @@ try {
   await symlink(resolve(root, 'node_modules'), join(directory, 'node_modules'), 'dir');
   try { await readFile(join(directory, 'src', probeName)); throw Error('Probe would overwrite source'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
-  for (const [candidate, source] of candidates) {
+  for (const [candidate, source, model = originalModel] of candidates) {
     const aliases = pairFirst ? `
 export type PairStudyFirst<P extends Pipeline> = FirstInput<P>;
 export type PairStudyLoaded<L extends Load, P extends Pipeline> = Loaded<Loader<L, P>>;
@@ -211,6 +222,7 @@ export type PairStudyOut<F extends Stage> = Out<F>;
 export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
 ` : '';
     await writeFile(join(directory, 'src/framework/business.ts'), source + aliases);
+    await writeFile(join(directory, 'src/framework/model.ts'), model);
     const baseline = compile();
     const probes = [];
     for (const [variant, text] of variants) {
@@ -222,12 +234,13 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
       probes.push({ variant, fixtureSha256: hash(text), ...result, existingContractDiagnostics });
       await rm(join(directory, 'src', probeName));
     }
-    reports.push({ candidate, businessSourceSha256: hash(source + aliases), baseline, probes });
+    reports.push({ candidate, businessSourceSha256: hash(source + aliases), modelSourceSha256: hash(model), baseline, probes });
   }
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
-    || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
+    || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original
+    || await readFile(resolve(root, 'src/framework/model.ts'), 'utf8') !== originalModel) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: inputLiteral ? 'with-input-signature' : contextShapes ? 'context-shapes' : literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), compilerEntrypointSha256: hash(await readFile(compiler)), node: process.version,
