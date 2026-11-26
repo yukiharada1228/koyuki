@@ -8,10 +8,11 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained'].includes(args[0])) throw Error('Use no arguments, --binding, --raw-definition, --literal-connection, --pair-first or --unconstrained');
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained', '--literal-all'].includes(args[0])) throw Error('Unknown investigation mode');
+const literalAll = args[0] === '--literal-all';
 const unconstrained = args[0] === '--unconstrained';
 const pairFirst = args[0] === '--pair-first' || unconstrained;
-const literalConnection = args[0] === '--literal-connection' || pairFirst;
+const literalConnection = args[0] === '--literal-connection' || pairFirst || literalAll;
 const binding = args[0] === '--binding' || literalConnection;
 const rawDefinition = args[0] === '--raw-definition';
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -74,6 +75,21 @@ if (binding) {
     .replace('[RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>]', '[RuleOf<F>] extends [(input: I) => Result<O, ErrorOf<F>>]');
   if (candidate === original) throw Error('Binding candidate patch did not apply');
   candidates.push(['literal-call-contract', candidate]);
+  if (literalAll) {
+    let expanded = candidate;
+    for (const [before, after] of [
+      ['type Fn = Rule<never, unknown, unknown>;', 'type Fn = (input: never) => Result<unknown, unknown>;'],
+      ['[Rule<I, I, ErrorOf<F>>]', '[(input: I) => Result<I, ErrorOf<F>>]'],
+      ['[Rule<I, I & Out<F>, ErrorOf<F>>]', '[(input: I) => Result<I & Out<F>, ErrorOf<F>>]'],
+      ['[Rule<I, Out<F>, ErrorOf<F>>]', '[(input: I) => Result<Out<F>, ErrorOf<F>>]'],
+      ['F extends Fn ? Rule<I, O, ErrorOf<F>>', 'F extends Fn ? ((input: I) => Result<O, ErrorOf<F>>)'],
+      ['readonly run: Rule<I, O, ErrorOf<F>>', 'readonly run: (input: I) => Result<O, ErrorOf<F>>'],
+    ]) {
+      if (!expanded.includes(before)) throw Error(`Re-evaluate expanded call comparison: ${before}`);
+      expanded = expanded.replaceAll(before, after);
+    }
+    candidates.push(['expanded-rule-comparisons', expanded]);
+  }
   if (literalConnection) {
     const checked = "F extends Fn ? Rule<I, O, ErrorOf<F>>";
     if (candidate.split(checked).length !== 2) throw Error('Re-evaluate literal connection requirement');
@@ -148,6 +164,7 @@ type ExactStageOutput = Assert<Equal<PairStudyStage<typeof quoted, Context>, Pai
   }
 }
 if (unconstrained) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'unconstrained-definition'].includes(name)));
+if (literalAll) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'expanded-rule-comparisons'].includes(name)));
 const compiler = resolve(root, process.env.KOYUKI_STUDY_TSC ?? 'node_modules/.bin/tsc');
 const version = spawnSync(compiler, ['--version'], { cwd: root, encoding: 'utf8' });
 if (version.status !== 0) throw Error('Compiler unavailable');
@@ -193,7 +210,7 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: literalAll ? 'expanded-rule-comparisons' : unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), compilerEntrypointSha256: hash(await readFile(compiler)), node: process.version,
