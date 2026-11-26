@@ -243,6 +243,17 @@
         "src/procurement-correction-decomposition.test.ts",
         "scripts/test-business-package.mjs"
       ]
+    },
+    "businessWorkflowStagesFollowUp": {
+      "implementationBaseCommit": "9bba7d67caacfb8f5b6e4cbed6a8dddc803dbc9d",
+      "scope": "Explicit Workflow objects in business preserve typed callback context, inner traces, selected capture and structure; ordinary run functions remain opaque. Correction probe covers the new entry; live domain migration and CLI expansion remain incomplete. No new lecture audio/frame review or independent user evaluation; partial topic statuses unchanged.",
+      "evidence": [
+        "docs/business-workflow-stages.md",
+        "src/business-workflow-stages.test.ts",
+        "src/procurement-correction-decomposition.test.ts",
+        "src/framework/business.ts",
+        "src/framework/workflow.ts"
+      ]
     }
   },
   "sections": [
