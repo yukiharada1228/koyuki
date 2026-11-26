@@ -158,7 +158,7 @@ async function run(build: Factory, backend: string, mode: Mode, persistOnConflic
       assert.equal(positions.length, 32);
       assert.deepEqual([...new Set(selected.map(row => `${row.operation}#${row.readAt}`))].sort(), positions);
     }
-    assert.equal(inputSelections, 272); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 272);
+    assert.equal(inputSelections, 274); assert.equal(resultSelections, mode === 'input-failure' ? 0 : 274);
     return { outcome, reports, reads, commits };
   } finally { if (repository instanceof SqliteProcurement) repository.close(); }
 }

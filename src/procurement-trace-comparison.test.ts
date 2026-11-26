@@ -23,7 +23,7 @@ async function reports(build: Builder) {
   const saveFailure = await commands.requests.create.runDetailed(input);
   assert.deepEqual(success.trace.map(entry => entry.status), ['ok', 'ok', 'ok', 'ok', 'ok']);
   assert.deepEqual(loadFailure.trace.map(entry => entry.status), ['error']); assert.equal(loadFailure.plan, null);
-  assert.deepEqual(ruleFailure.trace.map(entry => entry.status), ['ok', 'ok', 'error']); assert.equal(ruleFailure.plan, null);
+  assert.deepEqual(ruleFailure.trace.map(entry => entry.status), ['ok', 'ok', 'ok', 'error']); assert.equal(ruleFailure.plan, null);
   assert.deepEqual(saveFailure.trace.map(entry => entry.status), ['ok', 'ok', 'ok', 'ok', 'error']); assert.notEqual(saveFailure.plan, null);
   assert.deepEqual(saveFailure.result, { ok: false, error: { kind: 'Conflict' } });
   assert.equal(repository.commits, 1);

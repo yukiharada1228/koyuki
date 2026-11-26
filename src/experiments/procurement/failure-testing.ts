@@ -22,6 +22,7 @@ export const threeStage = new Set(['requests.create', 'receipts.return']);
 // Fixed trace names, not reflected from the runtime declaration under test.
 export const ruleSteps = (operation: string): string[] => operation === 'requests.create'
   ? ['authorize-creation', 'parse-lines', 'create-request-plan']
+  : operation === 'requests.edit' ? ['run:1', 'require-draft', 'parse-lines', 'edit-request-plan']
   : operation === 'receipts.correct'
   ? ['run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3']
   : threeStage.has(operation) ? ['run:1', 'run:2', 'run:3'] : split.has(operation) ? ['run:1', 'run:2'] : ['run:1'];

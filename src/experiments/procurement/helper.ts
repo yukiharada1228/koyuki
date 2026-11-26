@@ -1,5 +1,6 @@
 import { receiveOrder, checkReceipt, returnCheckedReceipt, receiptCorrectionInput, finishReceiptCorrection } from './domain.js';
 import { checkRequestCreation, parseRequestLines, requestCreationPlan } from './domain.js';
+import { checkRequestEdit, requestEditPlan } from './domain.js';
 import { includeReceivedStock, includeChangedStock, type ReceiptStockContext, type ReceiptDecision } from './inventory.js';
 import type { StageSink, StageCapture } from './trace-contract.js';
 import { procurementContext } from './context.js';
@@ -8,13 +9,32 @@ import type { ProcurementRepository, StorageError } from './repository.js';
 import { ok, type Result } from '../../framework/index.js';
 import type { Actor, Policy, Entity, Change, Receipt, RuleError, CreateInput, EditInput, SubmitInput, VersionInput, ReasonInput, PlaceInput, AmendInput, ReceiveInput, CorrectInput, RegisterInput, PaymentInput } from './domain.js';
 import type { StockInput, MoveInput, AdjustInput } from './inventory.js';
-import { checkBuyerRequest, editCheckedRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
+import { checkBuyerRequest, withdrawCheckedRequest, checkApproverRequest, rejectCheckedRequest, returnCheckedRequest, reassignCheckedRequest, checkInvoice, approveCheckedInvoice, voidCheckedInvoice, checkOrder, amendCheckedOrder, cancelCheckedOrder, completeCheckedOrder, submitCheckedRequest, approveCheckedRequest, placeCheckedOrder, registerInvoice, matchInvoice, recordPayment, cancelPayment } from './domain.js';
 import { checkStock, reserveCheckedStock, releaseCheckedStock, moveCheckedStock, adjustCheckedStock } from './inventory.js';
 
 /** helper TypeScript orchestration baseline: no business/Workflow execution. */
 export const helperProcurement = (repository: ProcurementRepository, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) => helperWithCommit(repository, identity, policy, observe, capture);
 export function helperWithCommit<E>(repository: ProcurementRepository<E>, identity: Actor, policy: Policy, observe?: StageSink, capture?: StageCapture) {
   const context = procurementContext(repository, identity, policy);
+  function checkedParsedAction<I, C, V, W, P, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, authorize: (value: C) => Result<V, RuleError>, check: (value: V) => Result<W, RuleError>, parse: (value: W) => Result<P, RuleError>, finish: (value: W, parsed: P) => Change<T>) {
+    return async (input: I) => {
+      const receiveLoad = capture?.('load', input);
+      const loaded = await load(input); receiveLoad?.(loaded); observe?.({ stage: 'load', status: loaded.ok ? 'ok' : 'error' }); if (!loaded.ok) return loaded;
+      const receiveAuthorize = capture?.('rule', loaded.value);
+      const authorized = authorize(loaded.value); receiveAuthorize?.(authorized); observe?.({ stage: 'rule', status: authorized.ok ? 'ok' : 'error' }); if (!authorized.ok) return authorized;
+      const receiveCheck = capture?.('rule:2', authorized.value);
+      const checked = check(authorized.value); receiveCheck?.(checked); observe?.({ stage: 'rule:2', status: checked.ok ? 'ok' : 'error' }); if (!checked.ok) return checked;
+      const receiveLines = capture?.('rule:3', checked.value);
+      const parsed = parse(checked.value);
+      const prepared = parsed.ok ? ok(Object.freeze({ input: checked.value, value: parsed.value })) : parsed;
+      receiveLines?.(prepared); observe?.({ stage: 'rule:3', status: prepared.ok ? 'ok' : 'error' }); if (!prepared.ok) return prepared;
+      const receivePlan = capture?.('rule:4', prepared.value);
+      const change = finish(prepared.value.input, prepared.value.value), changed = ok(change);
+      receivePlan?.(changed); observe?.({ stage: 'rule:4', status: 'ok' });
+      const receiveSave = capture?.('save', change);
+      const saved = await repository.commit(change, context.actor); receiveSave?.(saved); observe?.({ stage: 'save', status: saved.ok ? 'ok' : 'error' }); return saved;
+    };
+  }
   function parsedAction<I, C, V, P, T extends Entity, LE>(load: (input: I) => Promise<Result<C, LE>>, check: (value: C) => Result<V, RuleError>, parse: (value: V) => Result<P, RuleError>, finish: (value: V, parsed: P) => Change<T>) {
     return async (input: I) => {
       const receiveLoad = capture?.('load', input);
@@ -107,7 +127,7 @@ export function helperWithCommit<E>(repository: ProcurementRepository<E>, identi
   return {
     requests: {
       create: parsedAction(context.create, checkRequestCreation, value => parseRequestLines(value.input.lines), requestCreationPlan),
-      edit: checkedAction(context.request<EditInput>, checkBuyerRequest, editCheckedRequest),
+      edit: checkedParsedAction(context.request<EditInput>, checkBuyerRequest, checkRequestEdit, value => parseRequestLines(value.input.lines), requestEditPlan),
       submit: checkedAction(context.approval, checkBuyerRequest, submitCheckedRequest),
       withdraw: checkedAction(context.request<VersionInput>, checkBuyerRequest, withdrawCheckedRequest),
       approve: checkedAction(context.request<VersionInput>, checkApproverRequest, approveCheckedRequest),

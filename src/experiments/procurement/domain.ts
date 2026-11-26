@@ -215,10 +215,18 @@ export function editRequest(value: Loaded<EditInput, Request>): Result<Change<Dr
   return editCheckedRequest(checked.value);
 }
 export function editCheckedRequest(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>): Result<Change<Draft>, RuleError> {
-  if (value.current.state !== 'draft') return failure('WrongState');
+  const checked = checkRequestEdit(value); if (!checked.ok) return checked;
   const parsed = lines(value.input.lines); if (!parsed.ok) return parsed;
-  const result: Draft = { ...draftFrom(value.current), lines: parsed.value, totalCents: parsed.value.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) };
-  return ok(plan(result, [check(value.current)]));
+  return ok(requestEditPlan(checked.value, parsed.value));
+}
+export type EditableRequest = CheckedRequest<Loaded<EditInput, Draft>, 'buyer'>;
+export function checkRequestEdit(value: CheckedRequest<Loaded<EditInput, Request>, 'buyer'>): Result<EditableRequest, RuleError> {
+  if (value.current.state !== 'draft') return failure('WrongState');
+  return ok(value as EditableRequest);
+}
+export function requestEditPlan(value: EditableRequest, parsed: ParsedRequestLines): Change<Draft> {
+  const result: Draft = { ...draftFrom(value.current), lines: parsed, totalCents: parsed.reduce((sum, line) => sum + line.quantity * line.unitCents, 0) };
+  return plan(result, [check(value.current)]);
 }
 export function withdrawRequest(value: Loaded<VersionInput, Request>): Result<Change<Draft>, RuleError> {
   const checked = checkBuyerRequest(value); if (!checked.ok) return checked;

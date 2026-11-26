@@ -4,6 +4,7 @@ export function baselineStepName(operation: string, stage: BaselineStage['stage'
   if (stage === 'load') return `${operation}:load`;
   if (stage === 'save') return operation;
   const labels = operation === 'procurement.request.v1.create' ? ['authorize-creation', 'parse-lines', 'create-request-plan']
+    : operation === 'procurement.request.v1.edit' ? ['run:1', 'require-draft', 'parse-lines', 'edit-request-plan']
     : operation === 'procurement.receipt.v1.correct' ? ['run:1', 'revalidate-correction', 'correct-receipt-plan', 'run:3']
     : ['run:1', 'run:2', 'run:3', 'run:4'];
   const index = stage === 'rule' ? 0 : Number(stage.slice(5)) - 1;
