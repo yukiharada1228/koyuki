@@ -5,6 +5,9 @@
 公開済みnpm alpha.5にはbusinessが含まれないため、この手順はソースからpackした開発版を使う。
 公開版から始める場合は[alpha.5向けチュートリアル](getting-started.md)を参照する。
 
+開発版の宣言は[TypeScript 6.0.3と7.0.2のconsumerで検査](typescript-compatibility.md)している。
+以下の手順ではリポジトリと同じ7.0.2を固定して使う。
+
 ## 別のプロジェクトへ準備する
 
 Node 26と、このリポジトリの依存を使う開発手順である。
