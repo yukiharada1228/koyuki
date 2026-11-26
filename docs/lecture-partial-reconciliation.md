@@ -152,3 +152,7 @@ iz-24/qbf-19に対し、[stepのgeneric推論](step-generic-first.md)で、制�
 iz-24/qbf-19の[入力保持の追加調査](business-pair-binding-investigation.md)で、設定全体の先行束縛と単独の型計算を切り分けた。
 単独の関数型計算が通る場合でもbusiness全体は不受理のため、候補を採用せず、3つの文脈注釈を維持する。
 独立利用者の評価や9話題のpartialを変更する結果ではない。
+
+[開発版の最初のアプリケーション](development-start.md)を、公開済みalpha.5の導入手順と区別した。
+通常関数・businessからApplication/viewまでの本文を、実tarballと開発ツールだけの別プロジェクトで検査する。
+省略した検証の接続拒否も確認したが、保守者による導入例の成立であり、独立利用者の試用や9話題のpartialは未完了のままである。

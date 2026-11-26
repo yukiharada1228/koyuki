@@ -374,6 +374,17 @@
         "docs/business-pair-binding-investigation.md",
         "docs/business-pair-binding-investigation.json"
       ]
+    },
+    "developmentFirstAppFollowUp": {
+      "implementationBaseCommit": "3b93058d74e14128495fd6c597a2a9ae195d5a5a",
+      "scope": "README and tutorial distinguish published alpha.5 APIs from the development business entry. Complete first-app TS/JSON text is extracted into a fresh project with the actual development tarball and only TypeScript/tsx dev tools. Public declarations compile without installed @types/node. Code checks approval, execution states, stale-version stop, blocked dispatch and dismiss without another save. Omitting validation is rejected as an incompatible typed connection. Does not validate all shell commands, production persistence, authorization semantics or independent user DX. Core runtime unchanged. Partial statuses, three procurement annotations and source audio/frame review remain unchanged.",
+      "evidence": [
+        "README.md",
+        "docs/getting-started.md",
+        "docs/business.md",
+        "docs/development-start.md",
+        "scripts/test-business-package.mjs"
+      ]
     }
   },
   "sections": [

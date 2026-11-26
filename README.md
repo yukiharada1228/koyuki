@@ -2,8 +2,10 @@
 
 業務の状態・検証・遷移を宣言し、接続と実行を任せるTypeScriptフレームワーク。
 
+公開済みalpha.5を使う場合は次のとおりです。開発中のbusinessから始める場合は、[開発版の導入手順](docs/development-start.md)を使ってください。
+
 ```sh
-npm install koyuki@alpha
+npm install koyuki@0.1.0-alpha.5
 ```
 
 **実験段階のアルファ版です。** APIは変更される可能性があります。ES Modulesと
