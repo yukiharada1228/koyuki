@@ -8,8 +8,9 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first'].includes(args[0])) throw Error('Use no arguments, --binding, --raw-definition, --literal-connection or --pair-first');
-const pairFirst = args[0] === '--pair-first';
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition', '--literal-connection', '--pair-first', '--unconstrained'].includes(args[0])) throw Error('Use no arguments, --binding, --raw-definition, --literal-connection, --pair-first or --unconstrained');
+const unconstrained = args[0] === '--unconstrained';
+const pairFirst = args[0] === '--pair-first' || unconstrained;
 const literalConnection = args[0] === '--literal-connection' || pairFirst;
 const binding = args[0] === '--binding' || literalConnection;
 const rawDefinition = args[0] === '--raw-definition';
@@ -99,6 +100,19 @@ if (binding) {
 `;
       candidates.push(['pair-first-recursive-connection', prioritized.replace(connectionStart,
         connection + 'type MappedConnect<C, P extends readonly Stage[], O, Operation extends string> = {')]);
+      const raw = `type StudyRawCheck<D> = D extends { name: string; load: infer L extends Load; save: infer S extends SaveFn; operations: infer T extends Record<string, Entry>; replay?: never }
+  ? { operation?: (name: OperationNames<T>) => string;
+      save: S extends (value: SaveInput<S>, context: GroupExecution<OperationNames<T>, Requests<L, T>>) => Promise<Result<unknown, unknown>> ? S : never;
+      operations: { readonly [K in keyof T]: K extends string | number ? K extends 'then' ? never : Checked<L, T[K], SaveInput<S>, OperationName<K>> : never } }
+  : never;
+type StudyRawCommands<D extends object> = D extends { load: infer L extends Load; save: infer S extends SaveFn; operations: infer T extends Record<string, Entry> }
+  ? Commands<L, T, Value<SaveResult<S>>, Failure<SaveResult<S>>, never, D> : never;
+export function business<const D extends object>(definition: D & NoInfer<StudyRawCheck<D>>): StudyRawCommands<D>;
+`;
+      const marker = 'export function business<L extends Load, O, S extends Execution<unknown>';
+      const literal = candidate.replace(checked, 'F extends Fn ? ((input: I) => Result<O, ErrorOf<F>>)');
+      if (literal.split(marker).length !== 2) throw Error('Re-evaluate unconstrained definition candidate');
+      candidates.push(['unconstrained-definition', literal.replace(marker, raw + marker)]);
     }
   }
   const head = fixture.split('// Direct generic withInput calls')[0];
@@ -133,6 +147,7 @@ type ExactStageOutput = Assert<Equal<PairStudyStage<typeof quoted, Context>, Pai
     variants.push(['isolated-business-aliases', isolated]);
   }
 }
+if (unconstrained) candidates.splice(0, candidates.length, ...candidates.filter(([name]) => ['current', 'unconstrained-definition'].includes(name)));
 const compiler = resolve(root, 'node_modules/.bin/tsc');
 const version = spawnSync(compiler, ['--version'], { cwd: root, encoding: 'utf8' });
 if (version.status !== 0) throw Error('Compiler unavailable');
@@ -178,7 +193,7 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: unconstrained ? 'unconstrained-definition' : pairFirst ? 'pair-before-identity-and-proof' : literalConnection ? 'literal-guard-and-connection' : rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), node: process.version,
