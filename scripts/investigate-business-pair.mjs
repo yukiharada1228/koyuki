@@ -8,8 +8,9 @@ import { fileURLToPath } from 'node:url';
 // Investigate declarations in disposable source copies. Never patch the worktree.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
-if (args.length > 1 || args.length === 1 && args[0] !== '--binding') throw Error('Use no arguments or --binding');
+if (args.length > 1 || args.length === 1 && !['--binding', '--raw-definition'].includes(args[0])) throw Error('Use no arguments, --binding or --raw-definition');
 const binding = args[0] === '--binding';
+const rawDefinition = args[0] === '--raw-definition';
 const hash = value => createHash('sha256').update(value).digest('hex');
 function git(args) {
   const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
@@ -26,7 +27,7 @@ const first = 'type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out
 const last = '? I & Out<F> : Out<F>;';
 if (original.split(first).length !== 2 || original.split(last).length !== 2) throw Error('Re-evaluate declaration patch');
 const candidates = [['current', original]];
-for (const [name, shape] of binding ? [] : [
+for (const [name, shape] of binding || rawDefinition ? [] : [
   ['mapped-input', "{ [K in keyof O]: K extends 'input' ? I : O[K] }"],
   ['literal-pair', 'Readonly<{ input: I; value: O extends { readonly value: infer V } ? V : never }>'],
   ['intersection-input', 'O & Readonly<{ input: I }>'],
@@ -42,6 +43,26 @@ const variants = [
   ['bound-operations', fixture.replace('const inferred = business({', 'const inferredOperations = { quote: [quoted, finish] } as const;\nconst inferred = business({')
     .replace('operations: { quote: [quoted, finish] },', 'operations: inferredOperations,')],
 ];
+if (rawDefinition) {
+  // Infer the entire declaration without contextualizing the tuple, then verify
+  // its existing contracts. This is an investigation, not a public overload.
+  const marker = 'export function business<L extends Load, O, S extends Execution<unknown>';
+  const overload = `export function business<const D extends { name: string; load: Load; save: SaveFn; operations: Record<string, Entry>; replay?: never }>(definition: D & NoInfer<{
+  operation?: (name: OperationNames<D['operations']>) => string;
+  save: D['save'] extends (value: SaveInput<D['save']>, context: GroupExecution<OperationNames<D['operations']>, Requests<D['load'], D['operations']>>) => Promise<Result<unknown, unknown>> ? D['save'] : never;
+  operations: { readonly [K in keyof D['operations']]: K extends string | number ? K extends 'then' ? never : Checked<D['load'], D['operations'][K], SaveInput<D['save']>, OperationName<K>> : never };
+}>): Commands<D['load'], D['operations'], Value<SaveResult<D['save']>>, Failure<SaveResult<D['save']>>, never, D>;
+`;
+  if (original.split(marker).length !== 2) throw Error('Re-evaluate raw definition overload');
+  const raw = original.replace(marker, overload + marker);
+  const helper = "type InputPairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] };\n"
+    + 'type InputPairOutput<F extends Stage, I> = [Out<F>] extends [{ readonly input: unknown; readonly value: unknown }]\n'
+    + '  ? [RuleOf<F>] extends [(input: I) => Result<InputPairCandidate<Out<F>, I>, ErrorOf<F>>] ? InputPairCandidate<Out<F>, I> : Out<F>\n'
+    + '  : Out<F>;\n';
+  const pair = source => source.replace(first, helper + first).replace(last, '? I & Out<F> : InputPairOutput<F, I>;')
+    .replace('[RuleOf<F>] extends [Rule<I, O, ErrorOf<F>>]', '[RuleOf<F>] extends [(input: I) => Result<O, ErrorOf<F>>]');
+  candidates.push(['raw-definition', raw], ['raw-definition-and-literal-pair', pair(raw)]);
+}
 if (binding) {
   const helper = "type InputPairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] };\n"
     + 'type PairRuleOutput<R extends (...args: never[]) => unknown, I> = R extends (input: I) => Result<InputPairCandidate<Value<ReturnType<R>>, I>, Failure<ReturnType<R>>> ? InputPairCandidate<Value<ReturnType<R>>, I> : Value<ReturnType<R>>;\n'
@@ -99,7 +120,7 @@ try {
       const result = compile();
       const sites = result.diagnostics.filter(line => /error TS\d+/.test(line));
       const existingContractDiagnostics = sites.filter(line => !line.startsWith(`src/${probeName}(`)).length;
-      if (existingContractDiagnostics || sites.some(line => /TS(2305|2307|7006):/.test(line))) throw Error('Unexpected source/import/implicit-any diagnostic');
+      if (existingContractDiagnostics || sites.some(line => /TS(2305|2307|7006):/.test(line))) throw Error(`Unexpected source/import/implicit-any diagnostic in ${candidate}/${variant}:\n${result.diagnostics.join('\n')}`);
       probes.push({ variant, fixtureSha256: hash(text), ...result, existingContractDiagnostics });
       await rm(join(directory, 'src', probeName));
     }
@@ -108,7 +129,7 @@ try {
   if (git(['rev-parse', 'HEAD']) !== commit || git(['status', '--porcelain', '--', ...sourcePaths]) !== status
     || await readFile(resolve(root, 'src/framework/business.ts'), 'utf8') !== original) throw Error('Investigation source changed during collection');
   process.stdout.write(JSON.stringify({
-    schema: 'koyuki.business-pair-specialization.v1', study: binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
+    schema: 'koyuki.business-pair-specialization.v1', study: rawDefinition ? 'raw-definition-inference' : binding ? 'binding-and-call-contracts' : 'output-specialization', collectedAt: new Date().toISOString(),
     sourceGitCommit: commit, sourceDirty: false,
     collectorSha256: hash(await readFile(fileURLToPath(import.meta.url))),
     compiler: version.stdout.trim(), node: process.version,
