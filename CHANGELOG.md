@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- stepが文脈付き署名より先に元の関数を推論し、制約のないgeneric関数をinlineなwithInputで包んでもunknownへ固定しないようにした。単独のrule呼出しで入力・結果・入れ子の値のTを保持し、privateなclassとgenericな呼出し元、入力型がないcallbackの拒否も検査する。defineTransition全体の多相identity/未注釈evolveの制限は別に残る。
+
 - stepの戻り型から外側の期待型を逆流させないことで、business配列内のstep('quote', withInput(quote))を追加注釈・先行束縛なしで接続できるようにした。文脈付きStep型から無注釈callbackの入力を推論する検査も追加。名前なしのwithInput直接呼出しと、多相identity/未注釈evolveの例は未解消。
 
 - stepが単一の具体的なgeneric関数の型を保持する。先に束縛したwithInputを名前付き段階としてbusinessへ渡せ、購買の段階もstep呼出しへ統一した。互換な関数UnionのResult集約・不正な関数や証明欠落の拒否・既存の反射署名は維持する。配列内のwithInput直接呼出しは引き続き制限がある。

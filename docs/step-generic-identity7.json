@@ -1,12 +1,12 @@
 {
-  "collectedAt": "2026-11-26T14:28:17.690Z",
-  "sourceGitCommit": "19d88e09945ea1be50fab265ba961cc31a279acb",
+  "collectedAt": "2026-11-26T15:13:06.100Z",
+  "sourceGitCommit": "933f3be97146ad27633f398cffc0396e2d7ddb1b",
   "sourceDirty": false,
   "collectorSha256": "db4259b072f835b0b89c1574a9231905d6b3765f59bbeb6aef2b896bb59f736a",
   "probeSha256": "9394f4a13bfe4e661d5d3c823a1b0cd6f74d66bd2cb366794467d2c47696e6ba",
   "probeVariant": "generic-identity-named-step",
   "compiler": "Version 7.0.2",
-  "modelSourceSha256": "0e9c5e3cb9b58f08c4db3e05d6425405b00f10657f818fa596ffcedf3156429d",
+  "modelSourceSha256": "e3d5e9ad7175bb10e40f4553f817a78a0c8ea1d5aa02d6ff22c738336495401a",
   "existingContractsPass": true,
   "minimal": {
     "fixtureSha256": "178a08c242e30af01c52e19710551ab979e5392e67800ce27a19ab456dec423f",

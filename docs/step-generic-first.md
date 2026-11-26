@@ -16,6 +16,10 @@ const text = named.rule('approved');   // Result<{ item: string }, never>
 genericなwithInputも、businessの配列へstepで包んで渡せる。
 後続の19d88e0では戻り型から関数を逆推論しないようにし、step('quote', withInput(quote))のinline指定にも対応した。
 具体的なStep型から無注釈callbackの入力型を補う既存の書き方も検査する。
+さらに933f3beでは、文脈付きの関数署名を当てる前に元の関数を推論する順序へ変更した。
+これにより、制約のないTを使うstep('identity', withInput(identity))でも、Tをunknownへ固定しない。
+単独のnamed.ruleをnumber・string・privateなclassで呼ぶと、入力と結果の対応を保持する。
+withInputでitem:Tへ包む場合も、独立したgenericな呼出し元から同じTを取り出せる。
 [実行できる例](business-input-retention.md)のcalculate段階と、[購買の入荷・返品・数量訂正](procurement-direct-receipt-stages.md)へ適用した。
 在庫用の文脈型を繰り返す必要はなく、段階名・状態型・失敗停止・選択観測は維持する。
 
@@ -27,7 +31,7 @@ step自体のParameters/ReturnTypeの反射は、末尾の従来署名を維持�
 
 新しいbusinessの名前付き入力保持の検査は、修正前に接続と厳密型で失敗し、修正後に成功する。
 同じ[stepの検査](../src/step-generic-first.test.ts)で、元の関数型の厳密一致と上記の非identityな出力の対応も検査する。
-全体1,141件、TypeScript 6.0.3/7.0.2の配布物各797件、既存の不正定義・対照検査で確認する。
+全体1,143件、TypeScript 6.0.3/7.0.2の配布物各799件、既存の不正定義・対照検査で確認する。
 単独のstepの正例を、任意の多相変換や独立利用者の開発体験の保証にしない。
 
 名前なしの配列要素として[withInput(quote), finish]と直接呼ぶgenericな例は、まだ不受理である。
@@ -35,6 +39,8 @@ step自体のParameters/ReturnTypeの反射は、末尾の従来署名を維持�
 元のdefineTransitionの多相identityと未注釈evolveの例も、[6.0.3](step-generic-identity6.json)・
 [7.0.2](step-generic-identity7.json)で再確認し、不受理のままである。既存契約の追加診断は0。
 単独のnamed.ruleの呼出しにおける型の対応と、宣言全体の文脈付き推論を区別する。
+段階を横断する補正の候補は、既存のgenericな呼出し元の結果にTやT & Tを重複して残し、
+元の厳密型の検査を通さなかったため採用していない。単独の型計算や正例だけの成功で全体を置き換えない。
 
 ## 初回の入力制約の改善
 

@@ -535,6 +535,24 @@
         "src/business-input-pair.test.ts",
         "src/framework/model.ts"
       ]
+    },
+    "unconstrainedNamedRuleFollowUp": {
+      "implementationBaseCommit": "933f3be97146ad27633f398cffc0396e2d7ddb1b",
+      "sections": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Implementation-only follow-up. Infer the actual callable before applying contextual step signatures. An inline withInput around an unconstrained generic identity or nested item:T transform no longer becomes an unknown-input/output function at the naming boundary. Two new runtime/static consumer tests verify exact rule identity types, number/string/private class correlation, original object references, frozen pairs and a separately generic caller. Untyped callbacks without a domain input contract remain rejected, and existing contextual callback, union, async/scalar and missing-proof contracts are preserved. Original defineTransition identity/unannotated evolve remains rejected in refreshed TS 6.0.3 and 7.0.2 source records. No transition-stage output correction or runtime body change was adopted; no new lecture-source/audio/frame review or independent-user evidence; partial statuses remain.",
+      "audioDirectlyReviewed": false,
+      "allFramesReviewed": false,
+      "independentUserTrialCompleted": false,
+      "evidence": [
+        "docs/step-generic-first.md",
+        "docs/step-generic-identity6.json",
+        "docs/step-generic-identity7.json",
+        "src/step-generic-first.test.ts",
+        "src/framework/model.ts"
+      ]
     }
   },
   "sections": [
