@@ -29,6 +29,7 @@ const status = git(['status', '--porcelain', '--', ...sourcePaths]);
 if (status) throw Error('Commit investigation sources before collecting evidence');
 const original = await readFile(resolve(root, 'src/framework/business.ts'), 'utf8');
 const originalModel = await readFile(resolve(root, 'src/framework/model.ts'), 'utf8');
+const inputSignature = originalModel.match(/^export function withInput<[^\n]+\{$/m)?.[0];
 const fixture = await readFile(resolve(root, 'scripts/fixtures/business-input-pair.ts'), 'utf8');
 const first = 'type StageOutput<F extends Stage, I> = [Out<F>] extends [I] ? Out<F>';
 const last = '? I & Out<F> : Out<F>;';
@@ -79,9 +80,10 @@ if (binding) {
   if (candidate === original) throw Error('Binding candidate patch did not apply');
   candidates.push(['literal-call-contract', candidate]);
   if (inputLiteral) {
-    const signature = 'export function withInput<I, O, E>(rule: Rule<I, O, E>): Rule<I, Readonly<{ input: I; value: O }>, E> {';
-    if (originalModel.split(signature).length !== 2) throw Error('Re-evaluate withInput signature');
+    const signature = inputSignature;
+    if (!signature || originalModel.split(signature).length !== 2) throw Error('Re-evaluate withInput signature');
     for (const [name, parameter, result] of [
+      ['aliased-return', 'Rule<I, O, E>', 'Rule<I, Readonly<{ input: I; value: O }>, E>'],
       ['literal-parameter', '(input: I) => Result<O, E>', 'Rule<I, Readonly<{ input: I; value: O }>, E>'],
       ['literal-return', 'Rule<I, O, E>', '(input: I) => Result<Readonly<{ input: I; value: O }>, E>'],
       ['literal-parameter-and-return', '(input: I) => Result<O, E>', '(input: I) => Result<Readonly<{ input: I; value: O }>, E>'],
@@ -102,7 +104,8 @@ if (binding) {
     }
     candidates.push(['expanded-rule-comparisons', expanded]);
     if (inputLiteral) {
-      const signature = 'export function withInput<I, O, E>(rule: Rule<I, O, E>): Rule<I, Readonly<{ input: I; value: O }>, E> {';
+      const signature = inputSignature;
+      if (!signature) throw Error('Re-evaluate withInput signature');
       candidates.push(['literal-return-and-expanded-comparisons', expanded, originalModel.replace(signature,
         'export function withInput<I, O, E>(rule: Rule<I, O, E>): (input: I) => Result<Readonly<{ input: I; value: O }>, E> {')]);
     }
@@ -230,6 +233,11 @@ export type PairStudyStage<F extends Stage, I> = StageOutput<F, I>;
     await writeFile(join(directory, 'src/framework/model.ts'), model);
     const baseline = compile();
     const probes = [];
+    if (!baseline.accepted) {
+      reports.push({ candidate, businessSourceSha256: hash(source + aliases), modelSourceSha256: hash(model), baseline, probes,
+        probesSkipped: 'Existing source contracts rejected this candidate; do not interpret missing probe results as acceptance.' });
+      continue;
+    }
     for (const [variant, text] of variants) {
       await writeFile(join(directory, 'src', probeName), text);
       const result = compile();

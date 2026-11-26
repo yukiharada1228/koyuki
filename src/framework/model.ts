@@ -147,7 +147,7 @@ export function defineTransition<const A extends object, const T extends readonl
 /** Carry the original input alongside a successful requirement, without Result plumbing.
  * Only the pair is frozen. Domain values and purity remain the caller's responsibility.
  */
-export function withInput<I, O, E>(rule: Rule<I, O, E>): Rule<I, Readonly<{ input: I; value: O }>, E> {
+export function withInput<I, O, E>(rule: Rule<I, O, E>): (input: I) => Result<Readonly<{ input: I; value: O }>, E> {
   return input => {
     const result = rule(input);
     return result.ok ? { ok: true, value: Object.freeze({ input, value: result.value }) } : result;

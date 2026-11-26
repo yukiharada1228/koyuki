@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { business, workflow, withInput, ok, err, type Result } from './framework/index.js';
+import { business, workflow, withInput, ok, err, type Result, type Rule } from './framework/index.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
 type Base = Readonly<{ amount: number }>;
@@ -8,6 +8,14 @@ class Context { #host = 'trusted'; constructor(readonly amount: number, readonly
 function currency(value: Context): Result<Context, 'UnsupportedCurrency'> { return value.currency === 'JPY' ? ok(value) : err('UnsupportedCurrency'); }
 function quote<T extends Base>(value: T): Result<number, 'Declined'> { return value.amount > 0 ? ok(value.amount * 2) : err('Declined'); }
 const quoted = withInput(quote);
+// Consumers can express the same input-retention contract through the public
+// Rule alias as well as a literal callable. This must retain private class facts.
+type Value<R> = R extends { ok: true; value: infer O } ? O : never;
+type Failure<R> = R extends { ok: false; error: infer E } ? E : never;
+type PairCandidate<O, I> = { [K in keyof O]: K extends 'input' ? I : O[K] };
+type Retained<F extends (...args: never[]) => unknown, I> = F extends Rule<I, PairCandidate<Value<ReturnType<F>>, I>, Failure<ReturnType<F>>>
+  ? PairCandidate<Value<ReturnType<F>>, I> : Value<ReturnType<F>>;
+type AliasRetainsContext = Assert<Equal<Retained<typeof quoted, Context>, Readonly<{ input: Context; value: number }>>>;
 const boundPair = workflow('currency', currency).then('quote', quoted);
 const inlinePair = workflow('currency', currency).then('quote', withInput(quote));
 const callbackPair = workflow('currency', currency).then('quote', withInput(value => quote(value)));
@@ -46,6 +54,7 @@ function typeContracts() {
   // The preceding concrete context does not authorize discarding it, nor supply
   // additional authorization that the actual functions do not promise.
   const broad = (_value: Context): Result<Readonly<{ input: Base; value: number }>, 'Declined'> => ok({ input: { amount: 1 }, value: 2 });
+  type BroadStaysBroad = Assert<Equal<Retained<typeof broad, Context>, Readonly<{ input: Base; value: number }>>>;
   workflow('currency', currency).then('broad', broad).then('finish', pair => {
     // @ts-expect-error a monomorphic broad return does not retain the host context
     pair.input.host();
