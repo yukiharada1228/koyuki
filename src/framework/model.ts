@@ -231,15 +231,21 @@ export function defineTransition<const A extends object, const T extends readonl
 
 type RequirementValue<R> = R extends { ok: true; value: infer V } ? V : never;
 type RequirementError<R> = R extends { ok: false; error: infer E } ? E : never;
+// Every selected function must accept the supplied input. Distribute over the
+// functions, not their parameter unions, before intersecting the domains.
+type RequirementUnion<F, All = F> = F extends unknown ? [All] extends [F] ? false : true : never;
+type RequirementInput<F extends (input: never) => unknown> =
+  (F extends unknown ? (input: Parameters<F>[0]) => void : never) extends (input: infer I) => void ? I : never;
 // Capture the whole result before extracting errors. Inferring E directly from
-// unrelated object error variants can select only the first variant. One public
-// signature keeps native higher-order generic propagation; the implementation
-// signature is not an additional callable overload. Three explicit type arguments
-// retain their existing meaning through R's default.
+// unrelated object error variants can select only the first variant. Keep this
+// signature first so ordinary and generic functions retain native higher-order
+// propagation. The fallback captures a selected function union as a whole.
+// Three explicit type arguments retain their existing meaning through R's default.
 /** Carry the original input alongside a successful requirement, without Result plumbing.
  * Only the pair is frozen. Domain values and purity remain the caller's responsibility.
  */
 export function withInput<I, O, E, R extends Result<O, E> = Result<O, E>>(rule: (input: I) => R): (input: I) => Result<Readonly<{ input: I; value: RequirementValue<R> }>, RequirementError<R>>;
+export function withInput<F extends (input: never) => Result<unknown, unknown>>(rule: F & (RequirementUnion<F> extends true ? unknown : never)): (input: RequirementInput<F>) => Result<Readonly<{ input: RequirementInput<F>; value: RequirementValue<ReturnType<F>> }>, RequirementError<ReturnType<F>>>;
 export function withInput<I, O, E>(rule: Rule<I, O, E>): (input: I) => Result<Readonly<{ input: I; value: O }>, E> {
   return input => {
     const result = rule(input);

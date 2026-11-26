@@ -215,6 +215,7 @@ try {
   writeFileSync(join(consumer, 'business-generic-load.test.ts'), readFileSync(join(root, 'src/business-generic-load.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-inline-step.test.ts'), readFileSync(join(root, 'src/transition-inline-step.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'transition-value-fields.test.ts'), readFileSync(join(root, 'src/transition-value-fields.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
+  writeFileSync(join(consumer, 'with-input-alternatives.test.ts'), readFileSync(join(root, 'src/with-input-alternatives.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'generic-object-correlation.test.ts'), readFileSync(join(root, 'src/generic-object-correlation.test.ts'), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'"));
   const quickstart = readFileSync(join(root, 'docs/business.md'), 'utf8').split('```ts\n')[1].split('```')[0];
   writeFileSync(join(consumer, 'business-quickstart.ts'), quickstart);
@@ -255,6 +256,32 @@ try {
     } finally { writeFileSync(modelDeclarations, guardedModel); }
   }
   console.log('Verified generic record and input/value containers reject invented input properties; removing each packed witness guard fails its refusal contract.');
+  const alternativeSignature = /^export declare function withInput<F extends[\s\S]*?RequirementError<ReturnType<F>>>;/gm;
+  if ([...guardedModel.matchAll(alternativeSignature)].length !== 1) throw Error('Selected-function withInput declaration changed; re-evaluate negative control');
+  try {
+    writeFileSync(modelDeclarations, guardedModel.replace(alternativeSignature, ''));
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || rejected.signal || !rejected.status ||
+        !output.split('\n').some(line => line.includes('with-input-alternatives.test.ts') && /TS(?:2769|2345)/.test(line))) {
+      throw Error('Removing the alternative declaration did not reject selected requirements: ' + output);
+    }
+  } finally { writeFileSync(modelDeclarations, guardedModel); }
+  const alternativeTests = readFileSync(join(consumer, 'with-input-alternatives.test.ts'), 'utf8').split('\n');
+  const amountOnly = alternativeTests.findIndex(line => line.includes("intersected(true)({ amount: 3 })")) + 1;
+  if (!amountOnly) throw Error('Selected-input refusal contract changed');
+  try {
+    const widened = guardedModel.replace(alternativeSignature, match => match.replaceAll('RequirementInput<F>', 'Parameters<F>[0]'));
+    if (widened === guardedModel) throw Error('Common-input negative control did not apply');
+    writeFileSync(modelDeclarations, widened);
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    if (rejected.error || rejected.signal || !rejected.status ||
+        !output.includes(`with-input-alternatives.test.ts(${amountOnly - 1},5): error TS2578`)) {
+      throw Error('Accepting either selected input did not expose the unsafe call: ' + output);
+    }
+  } finally { writeFileSync(modelDeclarations, guardedModel); }
+  console.log('Verified selected requirements retain all result alternatives and require a common input; removing the fallback rejects valid selections, while accepting either input fails the refusal contract.');
   const resultCapture = /^export declare function withInput<[\s\S]*?RequirementError<R>>;/gm;
   if ([...guardedModel.matchAll(resultCapture)].length !== 1) throw Error('Whole-result withInput declaration changed; re-evaluate negative control');
   try {
@@ -263,7 +290,7 @@ try {
     const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
     const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
     if (rejected.error || rejected.signal || !rejected.status ||
-        !output.split('\n').some(line => line.includes('procurement-finance-errors.test.ts') && line.includes('TS2345'))) {
+        !output.split('\n').some(line => line.includes('procurement-finance-errors.test.ts') && /TS(?:2345|2769)/.test(line))) {
       throw Error('Restoring first-error inference did not reject inferred error variants: ' + output);
     }
   } finally { writeFileSync(modelDeclarations, guardedModel); }
