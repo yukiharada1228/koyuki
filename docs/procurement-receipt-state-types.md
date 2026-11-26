@@ -1,5 +1,10 @@
 # 入荷・返品・訂正の状態型を保存計画まで保持する
 
+後続の点検では、checkReceiptの成功型にも、実際に検証済みのcurrent:acceptedとorder:placedを
+反映した。閉じた状態へ差し替えて検証印を再利用するコードを型で拒否し、その2つの状態型だけを
+外す対照では拒否契約が失敗する。実行時の検証手順・同じ文脈への参照は維持する。
+任意のaliasによる変更や型アサーションまで防ぐ保証ではない。
+
 [6モデルの点検](procurement-state-contract-review.md)で残っていたReceipt側を修正した。
 returnReceipt/returnCheckedReceiptはreturned、correctReceipt/correctCheckedReceiptと
 finishReceiptCorrectionはacceptedのChangeを返す。receiveOrderのprivateな数量検証印は維持する。

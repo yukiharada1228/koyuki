@@ -376,7 +376,11 @@ export function cancelPayment(value: Loaded<ReasonInput, Payment>): Result<Chang
 
 export type ReceiptFacts = Readonly<{ order: Order; receipts: readonly Receipt[]; invoices: readonly Invoice[] }>;
 declare const receiptCheck: unique symbol;
-export type CheckedReceipt<T> = T & Readonly<{ [receiptCheck]: true }>;
+export type CheckedReceipt<T> = T & Readonly<{
+  current: Extract<Receipt, { state: 'accepted' }>;
+  order: Extract<Order, { state: 'placed' }>;
+  [receiptCheck]: true;
+}>;
 export function checkReceipt<T extends Loaded<VersionInput, Receipt> & ReceiptFacts>(value: T): Result<CheckedReceipt<T>, RuleError> {
   const { input, actor, current, order, receipts, invoices } = value;
   if (!allowed(actor, 'warehouse', current.groupId)) return failure('Denied');

@@ -143,6 +143,12 @@ function typeContracts() {
   // @ts-expect-error a public marker cannot fabricate the private proof
   correctCheckedReceipt({ ...receipt, receiptCheck: true });
   const checked = checkReceipt(receipt); if (!checked.ok) return;
+  const accepted: 'accepted' = checked.value.current.state;
+  const placed: 'placed' = checked.value.order.state;
+  // @ts-expect-error returned state cannot reuse an accepted-receipt validation proof
+  returnCheckedReceipt({ ...checked.value, current: { ...checked.value.current, state: 'returned', reason: 'done', returnedBy: 'warehouse' } });
+  // @ts-expect-error closed order cannot reuse a placed-order validation proof
+  correctCheckedReceipt({ ...checked.value, order: { ...checked.value.order, state: 'completed' } });
   returnDecision(checked.value); correctDecision.run(checked.value);
   const received = receiveOrder(receiptCorrectionInput(checked.value));
   if (received.ok) finishReceiptCorrection(checked.value, received.value);

@@ -254,6 +254,16 @@ try {
     if (rejected.error || !rejected.status || contracts.length < 4) throw Error(`Broad receipt types did not fail the exact-state contracts:\n${output}`);
   } finally { writeFileSync(financeDomain, preciseReceipts); }
   console.log('Verified receipt states reach stock plans and public operations, and reject widened producer types.');
+  const receiptFacts = "  current: Extract<Receipt, { state: 'accepted' }>;\n  order: Extract<Order, { state: 'placed' }>;\n";
+  if (preciseReceipts.split(receiptFacts).length !== 2) throw Error('Re-evaluate checked-receipt state facts');
+  try {
+    writeFileSync(financeDomain, preciseReceipts.replace(receiptFacts, ''));
+    const rejected = spawnSync('npm', ['run', 'check'], { cwd: consumer, encoding: 'utf8' });
+    const output = `${rejected.stdout ?? ''}${rejected.stderr ?? ''}`;
+    const contracts = output.split('\n').filter(line => line.includes('procurement-receipt-pipeline.test.ts') && line.includes('TS2578'));
+    if (rejected.error || !rejected.status || contracts.length !== 2) throw Error(`Missing receipt state facts did not fail both refusal contracts:\n${output}`);
+  } finally { writeFileSync(financeDomain, preciseReceipts); }
+  console.log('Verified checked receipts retain accepted/placed facts and reject state replacement; removing the facts fails both refusal contracts.');
   // Reintroduce the adapters' old silent clone behavior in this disposable copy.
   const storageGuard = join(consumer, 'procurement/storage-values.ts');
   const guardedStorage = readFileSync(storageGuard, 'utf8');
