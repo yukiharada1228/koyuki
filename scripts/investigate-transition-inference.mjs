@@ -18,7 +18,9 @@ const sourceGitCommit = git(['rev-parse', 'HEAD']);
 const sourceStatus = git(['status', '--porcelain', '--', ...sourcePaths]);
 const original = await readFile(resolve(root, 'src/framework/model.ts'), 'utf8');
 const requirement = 'require?: T & ConnectedStages<StageOutput<NoInfer<A>>, T>;';
-if (!original.includes(requirement)) throw new Error('Declaration changed: re-evaluate candidate patches');
+const specializedRequirement = 'require?: T & NoInfer<ConnectedStages<StageOutput<NoInfer<A>>, T>>;';
+const historicalLayout = original.includes(requirement);
+if (!historicalLayout && !original.includes(specializedRequirement)) throw new Error('Declaration changed: re-evaluate candidate patches');
 const inlineProbe = `
 import { defineTransition, withInput, transition, ok, err, type Result } from './framework/index.js';
 const quote = (amount: number): Result<number, 'Declined'> => amount > 0 ? ok(amount * 2) : err('Declined');
@@ -42,6 +44,22 @@ const probes = {
   'generic-identity-named-step': inlineProbe.replace('withInput, transition,', 'withInput, step, transition,')
     .replace(/^const quote = .*$/m, "const quote = <T>(value: T): Result<T, 'Declined'> => ok(value);")
     .replace('require: [withInput(quote)],', "require: [step('quote', withInput(quote))],"),
+  'generic-identity-scoped-caller': `
+import { defineTransition, withInput, step, transition, ok, type Result } from './framework/index.js';
+const identity = <I>(input: I): Result<I, 'Declined'> => ok(input);
+function forward<T>(input: T) {
+  const flow = transition(defineTransition({
+    validate: (value: T): Result<T, never> => ok(value),
+    require: [step('identity', withInput(identity))],
+    evolve: pair => ok({ before: pair.input, after: pair.value }),
+  }));
+  return flow.run(input);
+}
+const input = { amount: 3, currency: 'JPY' as const }, result = forward(input);
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const exact: Equal<typeof result, Result<{ before: typeof input; after: typeof input }, 'Declined'>> = true;
+void exact;
+`,
 };
 probes['business-input-pair-explicit'] = probes['business-input-pair'].split('// Direct generic withInput calls')[0];
 probes['business-input-pair-inline'] = probes['business-input-pair-explicit']
@@ -213,6 +231,9 @@ for (let index = 0; index < args.length; index += 2) {
   else probeVariant = value;
 }
 if (!selected.length || selected.some(name => !candidates.some(([candidate]) => candidate === name))) throw new Error('Unknown candidate name');
+// Historical patches target the pre-specialization layout. Do not silently
+// apply only part of a candidate after the stage/output contracts have changed.
+if (!historicalLayout && selected.some(name => name !== 'current')) throw new Error('Historical candidates require the original declaration layout; use --only current or re-evaluate the patches');
 if (!Object.hasOwn(probes, probeVariant)) throw new Error('Unknown probe variant');
 const probe = probes[probeVariant];
 const temporary = await mkdtemp(join(tmpdir(), 'koyuki-inference-'));

@@ -1,5 +1,9 @@
 # inlineのgeneric要件と遷移callbackの推論
 
+[遷移全体の入力保持](transition-pair-context.md)では、名前付きのgeneric要件を具体的な前段へ適用できるようにした。
+元の名前付きidentityと未注釈evolveの例も受理する。以下の過去の不受理の記録は、各commit時点の結果として読む。
+名前なしinlineと未確定のTを使う別のgeneric呼び出し元は、引き続き未解消である。
+
 ## 既存のstepで書ける範囲と残る制限
 
 現行APIでも、具体的な要件関数を名前付き段階にすると、次の例はevolveの型注釈なしで通る。

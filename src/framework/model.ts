@@ -26,7 +26,10 @@ export function step<I, O, E, F extends object>(name: string, rule: Rule<I, O, E
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E>;
 export function step<I, O, E>(name: string, rule: Rule<I, O, E>): Step<I, O, E> { return { name, rule }; }
 type AnyStep = Step<never, unknown, unknown>;
-type Output<T> = T extends Step<never, infer O, unknown> ? O : never;
+// The callable already declares the specialized success; do not infer it again
+// through a Step shape when consuming a normalized transition definition.
+type Output<T> = ReturnType<Extract<T, AnyStep>['rule']> extends infer R
+  ? R extends { ok: true; value: infer O } ? O : never : never;
 type Failure<T> = T extends Step<never, unknown, infer E> ? E : never;
 type End<I, T extends readonly AnyStep[]> = T extends readonly [infer H, ...infer R extends readonly AnyStep[]] ? End<Output<H>, R> : I;
 // Express the expected input at each slot, rather than collapsing a bad chain to never.
@@ -123,11 +126,28 @@ type StageCall<T> = T extends (...args: never[]) => unknown ? T : T extends { re
 type StageInput<T> = [StageCall<T>] extends [(input: infer I) => unknown] ? I : never;
 type StageOutput<T> = T extends Stage<never, infer O, unknown> ? O : never;
 type StageFailure<T> = T extends Stage<never, unknown, infer E> ? E : never;
-type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<StageOutput<H>, R> : I;
+type PairShape<O, I, Both extends boolean> = {
+  [K in keyof O]: K extends 'input' ? I : Both extends true ? K extends 'value' ? I : O[K] : O[K]
+};
+type InputPairOutput<F, I, O, E> = [StageCall<F>] extends [(input: I) => Result<PairShape<O, I, false>, E>]
+  ? [PairShape<O, I, false>] extends [O] ? PairShape<O, I, false> : O : O;
+// Keep already-concrete pairs exactly as declared, including a scoped generic
+// caller's T. Only specialize a wider pair if its actual producer promises the
+// candidate for this input, and the candidate retains all declared output facts.
+type PairOutput<F, I, O = StageOutput<F>, E = StageFailure<F>> = [O] extends [{ readonly input: I; readonly value: unknown }] ? O
+  : [O] extends [{ readonly input: unknown; readonly value: unknown }]
+    ? [StageCall<F>] extends [(input: I) => Result<PairShape<O, I, true>, E>]
+      ? [PairShape<O, I, true>] extends [O] ? PairShape<O, I, true> : InputPairOutput<F, I, O, E>
+      : InputPairOutput<F, I, O, E>
+    : O;
+type StageEnd<I, T extends readonly AnyStage[]> = T extends readonly [infer H, ...infer R extends readonly AnyStage[]] ? StageEnd<PairOutput<H, I>, R> : I;
 type ConnectedStages<I, T extends readonly AnyStage[]> = T extends readonly [infer H extends AnyStage, ...infer R extends readonly AnyStage[]]
-  ? readonly [Stage<I, StageOutput<H>, StageFailure<H>>, ...ConnectedStages<StageOutput<H>, R>]
+  ? readonly [Stage<I, PairOutput<H, I>, StageFailure<H>>, ...ConnectedStages<PairOutput<H, I>, R>]
   : readonly [];
-type NamedStages<T extends readonly AnyStage[]> = { readonly [K in keyof T]: Step<StageInput<T[K]>, StageOutput<T[K]>, StageFailure<T[K]>> };
+type NamedStages<T extends readonly AnyStage[], I, A extends readonly AnyStep[] = readonly []> = number extends T['length']
+  ? { readonly [K in keyof T]: Step<I, PairOutput<T[K], I>, StageFailure<T[K]>> }
+  : T extends readonly [infer H extends AnyStage, ...infer R extends readonly AnyStage[]]
+    ? NamedStages<R, PairOutput<H, I>, readonly [...A, Step<I, PairOutput<H, I>, StageFailure<H>>]> : A;
 function named<I, O, E>(stage: Stage<I, O, E>, name: string): Step<I, O, E> {
   return Object.freeze(typeof stage === 'function' ? step(name, stage) : step(stage.name, stage.rule));
 }
@@ -138,16 +158,16 @@ export function defineTransition<const A extends object, const T extends readonl
   // Infer the supplied value before checking its stage contract; contextual Rule<never,...>
   // otherwise contaminates nested generic calls such as collectEach(validateLine).
   validate: A & NoInfer<A extends AnyStage ? unknown : never>;
-  require?: T & ConnectedStages<StageOutput<NoInfer<A>>, T>;
+  require?: T & NoInfer<ConnectedStages<StageOutput<NoInfer<A>>, T>>;
   evolve: Stage<NoInfer<StageEnd<StageOutput<A>, T>>, O, E>;
 }): {
   readonly validate: Step<StageInput<A>, StageOutput<A>, StageFailure<A>>;
-  readonly require: NamedStages<T>;
+  readonly require: NamedStages<T, StageOutput<A>>;
   readonly evolve: Step<StageEnd<StageOutput<A>, T>, O, E>;
 } {
   // Adjacency is proved by the declaration. JS map erases only tuple positions.
   const stages: readonly AnyStage[] = definition.require ?? [];
-  const requirements = Object.freeze(stages.map((stage, index) => named(stage, `require:${index + 1}`))) as NamedStages<T>;
+  const requirements = Object.freeze(stages.map((stage, index) => named(stage, `require:${index + 1}`))) as NamedStages<T, StageOutput<A>>;
   const validation = definition.validate as Stage<StageInput<A>, StageOutput<A>, StageFailure<A>>;
   return Object.freeze({ validate: named(validation, 'validate'), require: requirements, evolve: named(definition.evolve, 'evolve') });
 }
