@@ -44,11 +44,12 @@ try {
     ...(name === 'expense-replay' ? [["'../../expenses/repository.js'", "'./domain/repository.js'"]] : []),
     ["'./runtime.js'", "'koyuki/experimental'"],
   ]);
+  source('src/experiments/react-business/leave-domain.ts', 'leave-domain.ts', [["'../../framework/index.js'", "'koyuki'"], ["'../../expenses/domain.js'", "'./domain/expenses.js'"]]);
   source('src/expenses/domain.ts', 'domain/expenses.ts', [["'../framework/index.js'", "'koyuki'"], ["'../examples/expense.js'", "'./routing.js'"]]);
   source('src/examples/expense.ts', 'domain/routing.ts', [["'../framework/index.js'", "'koyuki'"]]);
   source('src/expenses/repository.ts', 'domain/repository.ts', [["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'./expenses.js'"]]);
   writeFileSync(join(workspace, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
-  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'captured-exports.tsx', 'expense.tsx', 'expense-replay.tsx', 'expense-budget.tsx', 'leave.tsx', 'key-contracts.ts', 'domain/*.ts'] }, null, 2));
+  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'captured-exports.tsx', 'expense.tsx', 'expense-replay.tsx', 'expense-budget.tsx', 'leave.tsx', 'leave-domain.ts', 'key-contracts.ts', 'domain/*.ts'] }, null, 2));
   if (verify) {
     run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], workspace);
     for (const dependency of ['react', '@types/react', '@types/node']) assert(!existsSync(join(workspace, 'node_modules', dependency)), `Unexpected dependency: ${dependency}`);
@@ -90,9 +91,35 @@ try {
         writeFileSync(sdkIndex, sdkDeclarations);
         writeFileSync(config, original);
       }
+      const leaveDomain = join(workspace, 'leave-domain.ts');
+      const originalDomain = readFileSync(leaveDomain, 'utf8');
+      const proof = '[authorization]: true';
+      assert(originalDomain.includes(proof));
+      try {
+        // All public fields remain valid: removing only the proof requirement
+        // must make the two authorization-omission controls stop producing errors.
+        writeFileSync(leaveDomain, originalDomain.replace(proof, ''));
+        const diagnostics = run('npm', ['run', 'check'], workspace, true);
+        const codes = [...new Set(diagnostics.match(/TS[0-9]+/g) ?? [])];
+        assert.deepEqual(codes, ['TS2578'], diagnostics);
+        assert(diagnostics.includes('key-contracts.ts'), diagnostics);
+        assert.equal((diagnostics.match(/TS2578/g) ?? []).length, 2, diagnostics);
+      } finally { writeFileSync(leaveDomain, originalDomain); }
       console.log(`TypeScript ${version}: installed experimental subpath, strict inputs/results, JSX, declaration emit and declaration-only consumer passed without Node types.`);
     }
     console.log(run('npm', ['start'], workspace).trim());
+    const businessDomain = join(workspace, 'leave-domain.ts');
+    const validDomain = readFileSync(businessDomain, 'utf8');
+    const selfApprovalGuard = "  if (actor.id === current.owner) return err('SelfApproval');\n";
+    assert(validDomain.includes(selfApprovalGuard));
+    try {
+      writeFileSync(businessDomain, validDomain.replace(selfApprovalGuard, ''));
+      run('npm', ['run', 'check'], workspace);
+      const failure = run('npm', ['start'], workspace, true);
+      assert(failure.includes('leave self-approval was allowed or changed state'), failure);
+    } finally { writeFileSync(businessDomain, validDomain); }
+    console.log('A type-correct missing self-approval guard was rejected by the business execution check.');
+
     const main = join(workspace, 'main.tsx'), original = readFileSync(main, 'utf8');
     writeFileSync(main, original.replace('commits === 1', 'commits === 2'));
     assert(run('npm', ['start'], workspace, true).includes('replay repeated business work'));

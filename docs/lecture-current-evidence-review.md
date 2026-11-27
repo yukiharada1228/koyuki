@@ -1,6 +1,6 @@
 # 全84話題の判定と現行実装への経路を点検する
 
-[React風の組み立て](lecture-react-authoring-review.md)では、部品・Context・Hooksから純粋な計算、途中I/O、保存、再送を既存実行機構へ接続する。[選択capture](authoring-capture.md)で必要な途中状態も再実行せず取得し、実tarballと生成宣言をTypeScript 6/7で検査する。一般の型推論・API安定化・原資料等の残件と9話題のpartialは維持する。
+[React風の組み立て](lecture-react-authoring-review.md)では、部品・Context・Hooksから純粋な計算、途中I/O、保存、再送を既存実行機構へ接続する。[選択capture](authoring-capture.md)で必要な途中状態も再実行せず取得し、実tarballと生成宣言をTypeScript 6/7で検査する。[休暇モデルの点検](leave-authorization-proof.md)では、認可の省略を許していた型を修正し、型の接続と業務仕様テストを区別する。一般の型推論・API安定化・原資料等の残件と9話題のpartialは維持する。
 
 [入れ子の段階の要求型](business-request-prefix.md)を改善し、購買25操作の定義から残るload型引数指定3箇所も削除した。操作定義では当初の15箇所が0箇所となり、既存の厳密な入力比較とload全体の保証は維持する。任意の多相変換・原音確認等の残件と9話題のpartialは変更しない。
 

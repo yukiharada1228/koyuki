@@ -1,6 +1,6 @@
 # 部分充足9話題を、残る作業の種類ごとに再点検する
 
-[React風の組み立て](lecture-react-authoring-review.md)では、部品・Context・Hooksから純粋な計算、途中I/O、保存、再送を既存実行機構へ接続する。[選択capture](authoring-capture.md)で必要な途中状態も再実行せず取得し、実tarballと生成宣言をTypeScript 6/7で検査する。一般の型推論・API安定化・原資料等の残件と9話題のpartialは維持する。
+[React風の組み立て](lecture-react-authoring-review.md)では、部品・Context・Hooksから純粋な計算、途中I/O、保存、再送を既存実行機構へ接続する。[選択capture](authoring-capture.md)で必要な途中状態も再実行せず取得し、実tarballと生成宣言をTypeScript 6/7で検査する。[休暇モデルの点検](leave-authorization-proof.md)では、認可の省略を許していた型を修正し、型の接続と業務仕様テストを区別する。一般の型推論・API安定化・原資料等の残件と9話題のpartialは維持する。
 
 [検証済みの証明を加える共通関数](business-verified-request.md)も、入力の文脈を保持する契約を確認して後段の要求型を推論する。経費課題の共通検証へ証明を追加し、型引数を省いた関数列でも検証の省略を型検査で拒否する。実行runtimeは変更せず、一般の多相変換等の残件は維持する。
 

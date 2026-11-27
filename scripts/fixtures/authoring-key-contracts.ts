@@ -57,3 +57,15 @@ const exactCapturedResult: Equal<Awaited<typeof captured>['result'], Result<numb
 const exactCapturedValue: Equal<Awaited<typeof captured>['observations'][number]['result'], boolean> = true; void exactCapturedValue;
 // @ts-expect-error Selected capture must retain the required input type.
 void app.inspect(key, {}, { input: () => null, result: result => result.ok });
+
+import { approveLeave, type PendingLeave, type LeaveApprover, type ApprovedLeave } from './leave-domain.js';
+const pendingLeave: PendingLeave = { kind: 'pending', id: 'leave-1', owner: 'owner', days: 2 };
+const eligibleApprover: LeaveApprover = { id: 'boss', role: 'manager', active: true };
+const missingAuthorization = { current: pendingLeave, actor: eligibleApprover };
+function invalidLeaveApproval() {
+  // @ts-expect-error All public fields are valid; the authorization proof itself is missing.
+  approveLeave(missingAuthorization);
+  // @ts-expect-error A pending-only loader still cannot skip the authorization stage.
+  useOperation({ name: 'skip-leave-authorization', load: async (_input: string) => ok(missingAuthorization), execute: workflow('approve', approveLeave), save: async (value: ApprovedLeave) => ok(value) });
+}
+void invalidLeaveApproval;

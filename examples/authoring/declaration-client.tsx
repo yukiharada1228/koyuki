@@ -6,9 +6,11 @@ import { Expenses, approval, type ExpenseRepository } from './declarations/expen
 import { BudgetExpenses, budgetApproval, type BudgetPolicyRepository } from './declarations/expense-budget.js';
 import { ReplayExpenses, replayedApproval, type ReplayExpenseRepository, type ReplayStorageError } from './declarations/expense-replay.js';
 import type { Actor, Change, ExpenseState, RuleError } from './declarations/domain/expenses.js';
+import { Leaves, leaveApproval, type LeaveRepository } from './declarations/leave.js';
+import type { AuthorizedLeave, LeaveApprover, ApprovedLeave } from './declarations/leave-domain.js';
 import type { LoadError } from './declarations/domain/repository.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
-export function checkDeclarations(repository: ExpenseRepository, replayRepository: ReplayExpenseRepository, actor: Actor, policies: BudgetPolicyRepository) {
+export function checkDeclarations(repository: ExpenseRepository, replayRepository: ReplayExpenseRepository, actor: Actor, policies: BudgetPolicyRepository, leaves: LeaveRepository) {
   const app = createApplication(<Expenses repository={repository} actor={actor} />);
   const result = app.dispatch(approval, { id: 'one', expectedVersion: 1 });
   const exact: Equal<typeof result, Promise<Result<Change, RuleError | 'LoadFailed' | 'SaveFailed'>>> = true;
@@ -35,5 +37,11 @@ export function checkDeclarations(repository: ExpenseRepository, replayRepositor
   const exactExported: Equal<Awaited<typeof exported>['observations'], readonly StepObservation<{ step: string }, boolean>[]> = true;
   const exportedReplay = captureReplayedExpense(replayRepository, actor, { requestId: 'one', input: { id: 'one', expectedVersion: 1 } });
   const exactExportedReplay: Equal<Awaited<typeof exportedReplay>['result'], Result<Execution<ExpenseState>, LoadError | RuleError | ReplayStorageError | ReplayInputError>> = true;
-  return { exactExported, exactExportedReplay, exact, exactReport, exactReplayResult, exactBudget, exactCapturedInput, exactCapturedResult, exactCapturedReplay, exactCapturedAttempt };
+  const leave = createApplication(<Leaves repository={leaves} actor={actor} />);
+  const leaveResult = leave.dispatch(leaveApproval, { id: 'one' });
+  const exactLeaveResult: Equal<typeof leaveResult, Promise<Result<ApprovedLeave, 'AlreadyDecided' | 'Forbidden' | 'SelfApproval' | 'NotFound' | 'SaveConflict'>>> = true;
+  const exactApprover: Equal<AuthorizedLeave['actor'], LeaveApprover> = true;
+  const exactRole: Equal<AuthorizedLeave['actor']['role'], 'manager'> = true;
+  const exactActive: Equal<AuthorizedLeave['actor']['active'], true> = true;
+  return { exactLeaveResult, exactApprover, exactRole, exactActive, exactExported, exactExportedReplay, exact, exactReport, exactReplayResult, exactBudget, exactCapturedInput, exactCapturedResult, exactCapturedReplay, exactCapturedAttempt };
 }

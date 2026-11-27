@@ -588,6 +588,24 @@
         "scripts/test-authoring-package.mjs",
         "examples/authoring/captured-exports.tsx"
       ]
+    },
+    "leaveAuthorizationProofFollowUp": {
+      "implementationBaseCommit": "a15c936af4a8d21475f2bf8956969df0a2119402",
+      "topicIds": [
+        "w0o-12",
+        "w0o-21"
+      ],
+      "scope": "Reproduced a typed authorization-omission counterexample in the old leave sample. Split pure domain functions from authoring, require a private authorization proof and retain manager/active facts with detached scalar snapshots. Preserve rejection priority and validate both proof omission and type-correct missing business guards in packaged TypeScript 6/7 checks. Does not transfer speaker experience into Koyuki outcomes, claim general authorization correctness, source audio review or change statuses.",
+      "evidence": [
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ]
     }
   },
   "sections": [
@@ -765,7 +783,15 @@
         "src/collection-validation.test.ts",
         "src/with-input.test.ts",
         "docs/lecture-local-asr-w0o-followup.md",
-        "docs/lecture-local-asr-w0o-followup.json"
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
       ],
       "remaining": []
     },
@@ -1067,7 +1093,15 @@
         "docs/lecture-local-asr-w0o-followup.md",
         "docs/lecture-local-asr-w0o-followup.json",
         "src/tag-prepersistence.test.ts",
-        "src/registration.test.ts"
+        "src/registration.test.ts",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
       ],
       "remaining": []
     },

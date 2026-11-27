@@ -94,6 +94,9 @@ const leaves: LeaveRepository = {
   async load(input, actor) { return input.id === leave.id ? ok({ current: leave, actor }) : err('NotFound'); },
   async save(next) { if (leave.kind !== 'pending') return err('SaveConflict'); leave = next; return ok(next); },
 };
+const selfApprovalApp = createApplication(<Leaves repository={leaves} actor={{ ...actor, id: 'owner' }} />);
+const selfApproval = await selfApprovalApp.dispatch(leaveApproval, { id: leave.id });
+check(!selfApproval.ok && selfApproval.error === 'SelfApproval' && leave.kind === 'pending', 'leave self-approval was allowed or changed state');
 const leaveApp = createApplication(<Leaves repository={leaves} actor={actor} />);
 check(value(await leaveApp.dispatch(leaveApproval, { id: leave.id })).kind === 'approved', 'leave approval failed');
 const denied = await leaveApp.inspect(leaveApproval, { id: leave.id });

@@ -129,3 +129,7 @@ npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx sr
 ## 選択した途中状態のcapture
 
 [inspectの選択capture](authoring-capture.md)を追加した。第3引数のselectorで必要な状態や成否を選び、一度の実行からobservationsとobservationErrorsを取得する。元の業務Resultと再送レポートは維持し、live spanも同じ実行へ接続する。
+
+## 休暇の業務モデルの点検
+
+[認可の前提](leave-authorization-proof.md)を再点検した。純粋な状態・関数はleave-domain.tsへ分け、認可の証明とmanager/activeを型に残す。Hooksの見た目だけでなく、必要な検証を省けない接続と業務仕様の両方を検査する。
