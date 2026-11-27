@@ -105,3 +105,6 @@ class Process<I, O, E> {
 export function process<I>() {
   return registerStructure(new Process<I, I, never>(async input => ({ result: ok(input), trace: [] })), emptyStructure);
 }
+
+// Public type name for consumers exporting composed processes; no runtime constructor export.
+export type { Process };

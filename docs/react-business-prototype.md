@@ -121,3 +121,7 @@ npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx sr
 [推論の専用検査](../src/authoring-inferred-key.test.tsx)では、通常・再送のハンドルが入力、保存後の成功値、閉じたエラー型、詳細レポートを保持することを厳密比較する。ハンドルの定義だけではHookを呼ばず、部品の評価で一度だけ呼ぶ。runとrunDetailedの入力・成功・エラーが矛盾するHookの登録は拒否する。詳細レポート側から通常実行の型を広げて不整合を隠すことは許可しない。
 
 この変更も実tarballと生成宣言だけを読むconsumerをTypeScript 6/7で検査する。最終APIへ型アサーションを追加する方法や、業務の成功型・エラー型をunknownへ広げる方法は使っていない。任意の多相変換や古いbusinessの外側generic actor型の制限を解消する変更ではない。
+
+## 途中I/Oを含む業務
+
+[Processの接続](authoring-process.md)では、loadまたはexecuteへ詳細形式のProcessを渡し、純粋な計算と途中の外部照会を組み合わせる。予算ポリシー付き経費承認を追加し、内部trace・live span・再送時の省略・配布宣言を検査する。通常の同期Ruleと純粋なWorkflowの実行経路は維持する。

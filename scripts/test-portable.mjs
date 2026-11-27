@@ -28,8 +28,11 @@ export const result = (async () => {
     const dependency = authoringUseContext(authoringDependency);
     let receipt = null;
     return authoringUseOperation({ name: authoringOperationId,
-      load: async input => ok(input + dependency),
-      execute: workflow('authoring-increment', input => ok(input + 1)).then('authoring-double', input => ok(input * 2)),
+      load: effectProcess().effect('authoring-read-input', async input => ok(input + dependency)),
+      execute: effectProcess()
+        .through(workflow('authoring-increment', input => ok(input + 1)))
+        .effect('authoring-read-policy', async value => ok({ value, multiplier: 2 }))
+        .through(workflow('authoring-double', input => ok(input.value * input.multiplier))),
       save: async value => { authoringWrites++; receipt = value; return ok({ kind: 'committed', value }); },
       replay: { lookup: () => ok(receipt === null ? { kind: 'missing' } : { kind: 'found', value: receipt }), resolveAfter: () => false },
     });

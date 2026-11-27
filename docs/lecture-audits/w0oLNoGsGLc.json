@@ -555,6 +555,22 @@
         "examples/authoring/declaration-client.tsx",
         "scripts/test-portable.mjs"
       ]
+    },
+    "authoringMiddleIOFollowUp": {
+      "implementationBaseCommit": "264ef7ae14f40a232ad290cf4b7b0edd35b7c272",
+      "topicIds": [
+        "w0o-14"
+      ],
+      "scope": "Connect explicit Process objects through detailed load and execute in the experimental Hooks API. Preserve pure Workflow/Rule execution and distinct middle IO, error propagation, nested live spans and receipt skip. Add a public type-only Process name for portable consumer declaration emit; runtime constructor remains private. Typed approval-policy example, packaged TypeScript 6/7 and declaration-only consumers. No original audio review, universal inference or cross-system atomicity claim; topic statuses unchanged.",
+      "evidence": [
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
+      ]
     }
   },
   "sections": [
@@ -819,7 +835,14 @@
         "src/shipping/feature.ts",
         "src/registration/delivery.ts",
         "docs/lecture-local-asr-w0o-followup.md",
-        "docs/lecture-local-asr-w0o-followup.json"
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
       ],
       "remaining": []
     },

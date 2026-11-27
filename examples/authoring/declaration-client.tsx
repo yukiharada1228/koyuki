@@ -2,11 +2,12 @@
 import { h, createApplication } from 'koyuki/experimental';
 import type { Result, Execution, ReplayInputError, ReplayReport } from 'koyuki';
 import { Expenses, approval, type ExpenseRepository } from './declarations/expense.js';
+import { BudgetExpenses, budgetApproval, type BudgetPolicyRepository } from './declarations/expense-budget.js';
 import { ReplayExpenses, replayedApproval, type ReplayExpenseRepository, type ReplayStorageError } from './declarations/expense-replay.js';
 import type { Actor, Change, ExpenseState, RuleError } from './declarations/domain/expenses.js';
 import type { LoadError } from './declarations/domain/repository.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
-export function checkDeclarations(repository: ExpenseRepository, replayRepository: ReplayExpenseRepository, actor: Actor) {
+export function checkDeclarations(repository: ExpenseRepository, replayRepository: ReplayExpenseRepository, actor: Actor, policies: BudgetPolicyRepository) {
   const app = createApplication(<Expenses repository={repository} actor={actor} />);
   const result = app.dispatch(approval, { id: 'one', expectedVersion: 1 });
   const exact: Equal<typeof result, Promise<Result<Change, RuleError | 'LoadFailed' | 'SaveFailed'>>> = true;
@@ -19,5 +20,8 @@ export function checkDeclarations(repository: ExpenseRepository, replayRepositor
     // @ts-expect-error Missing required version must still fail after declaration emit.
     void app.dispatch(approval, { id: 'one' });
   }
-  return { exact, exactReport, exactReplayResult };
+  const budget = createApplication(<BudgetExpenses repository={repository} policies={policies} actor={actor} />);
+  const budgetResult = budget.dispatch(budgetApproval, { id: 'one', expectedVersion: 1 });
+  const exactBudget: Equal<typeof budgetResult, Promise<Result<Change, RuleError | 'LoadFailed' | 'SaveFailed' | 'BudgetUnavailable' | 'ApprovalLimitExceeded'>>> = true;
+  return { exact, exactReport, exactReplayResult, exactBudget };
 }

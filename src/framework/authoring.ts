@@ -1,9 +1,9 @@
 /** Experimental authoring API. Mount is synchronous; IO belongs to dispatch. */
-import { defineCommand, workflow, withReplay, type Result, type Execution, type ReplayBoundary, type ReplayInputError, type ReplayReport } from './index.js';
+import { defineCommand, defineAction, process, workflow, withReplay, type Result, type Execution, type ReplayBoundary, type ReplayInputError, type ReplayReport } from './index.js';
 import { Workflow, type Rule } from './workflow.js';
 import { bindDetailed, bindDetailedFunction, invokeDetailed, registerDetailed } from './instrumentation.js';
 import { executionSession, type ExecutionOptions, type OperationReport } from './execution.js';
-import type { ActionReport } from './action.js';
+import type { ActionLoad, ActionReport } from './action.js';
 type Handler<I, O, E> = (input: I) => Promise<Result<O, E>>;
 export interface OperationKey<I, O, E, D extends OperationReport<O, E> = ActionReport<O, E>> {
   readonly name: string;
@@ -67,15 +67,24 @@ export function useContext<T>(context: ReturnType<typeof createContext<T>>): T {
 }
 type Definition<I, C, LE, O, DE, S, SE> = {
   name: string;
-  load: (input: I) => Promise<Result<C, LE>>;
-  execute: Rule<NoInfer<C>, O, DE> | (Workflow<C, O, DE> & { readonly run: Rule<NoInfer<C>, O, DE> });
+  load: ActionLoad<I, C, LE>;
+  execute: Rule<NoInfer<C>, O, DE> | (Workflow<C, O, DE> & { readonly run: Rule<NoInfer<C>, O, DE> })
+    | { readonly runDetailed: (input: NoInfer<C>) => Promise<ActionReport<O, DE>> };
   save: (value: NoInfer<O>, request: NoInfer<I>) => Promise<Result<S, SE>>;
 };
 function commandFor<I, C, LE, O, DE, S, SE>(definition: Definition<I, C, LE, O, DE, S, SE>) {
-  const decide = definition.execute instanceof Workflow ? definition.execute
-    : workflow(`${definition.name}:execute`, definition.execute);
-  const forRequest = (request: I) => defineCommand({ operation: definition.name, load: definition.load,
-    decide, save: (value: O) => definition.save(value, request) });
+  const execute = definition.execute;
+  const decide = execute instanceof Workflow ? execute
+    : typeof execute === 'function' ? workflow(`${definition.name}:execute`, execute) : undefined;
+  const effectful = typeof execute === 'object' && !(execute instanceof Workflow) ? execute : undefined;
+  const forRequest = (request: I) => decide
+    ? defineCommand({ operation: definition.name, load: definition.load,
+      decide, save: (value: O) => definition.save(value, request) })
+    : defineAction({ loadName: `${definition.name}:load`, load: definition.load,
+      mutation: process<C>()
+        .effect(`${definition.name}:execute`, effectful!)
+        .effect(definition.name, (value: O) => definition.save(value, request)),
+    });
   return {
     run: (request: I) => forRequest(request).run(request),
     runDetailed: registerDetailed((request: I) => forRequest(request).runDetailed(request),

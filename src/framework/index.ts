@@ -7,6 +7,7 @@ export { defineAction } from './action.js';
 export type { ActionReport, ActionLoad } from './action.js';
 export { combine, collect, collectEach, foldEach } from './validation.js';
 export { process } from './process.js';
+export type { Process } from './process.js';
 export { defineCommand } from './command.js';
 export { defineTarget, defineRequestTarget, transition, step, defineTransition, withInput } from './model.js';
 export { defineProgram, effect, next } from './program.js';

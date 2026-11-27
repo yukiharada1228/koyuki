@@ -38,7 +38,7 @@ try {
     for (const [before, after] of replacements) { assert(text.includes(before), `Missing import rewrite: ${before}`); text = text.replaceAll(before, after); }
     writeFileSync(join(workspace, to), text);
   };
-  for (const name of ['expense', 'expense-replay', 'leave']) source(`src/experiments/react-business/${name}.tsx`, `${name}.tsx`, [
+  for (const name of ['expense', 'expense-replay', 'expense-budget', 'leave']) source(`src/experiments/react-business/${name}.tsx`, `${name}.tsx`, [
     ["'../../framework/index.js'", "'koyuki'"], ["'../../expenses/domain.js'", "'./domain/expenses.js'"],
     ...(name === 'expense-replay' ? [["'../../expenses/repository.js'", "'./domain/repository.js'"]] : []),
     ["'./runtime.js'", "'koyuki/experimental'"],
@@ -47,7 +47,7 @@ try {
   source('src/examples/expense.ts', 'domain/routing.ts', [["'../framework/index.js'", "'koyuki'"]]);
   source('src/expenses/repository.ts', 'domain/repository.ts', [["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'./expenses.js'"]]);
   writeFileSync(join(workspace, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
-  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'expense.tsx', 'expense-replay.tsx', 'leave.tsx', 'key-contracts.ts', 'domain/*.ts'] }, null, 2));
+  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'expense.tsx', 'expense-replay.tsx', 'expense-budget.tsx', 'leave.tsx', 'key-contracts.ts', 'domain/*.ts'] }, null, 2));
   if (verify) {
     run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], workspace);
     for (const dependency of ['react', '@types/react', '@types/node']) assert(!existsSync(join(workspace, 'node_modules', dependency)), `Unexpected dependency: ${dependency}`);
@@ -71,6 +71,24 @@ try {
       writeFileSync(join(workspace, 'declaration-client.tsx'), declarationClient.replace('const exact: Equal<typeof result, Promise<Result<Change,', 'const exact: Equal<typeof result, Promise<Result<string,'));
       assert(run('npm', ['exec', '--', 'tsc', '-p', clientConfig], workspace, true).includes('TS2322'));
       writeFileSync(join(workspace, 'declaration-client.tsx'), declarationClient);
+      // Removing only the public type name must preserve ordinary checking but
+      // reproduce the consumer declaration-serialization failure.
+      const sdkIndex = join(workspace, 'node_modules/koyuki/dist/index.d.ts');
+      const sdkDeclarations = readFileSync(sdkIndex, 'utf8');
+      const processExport = "export type { Process } from './process.js';";
+      assert(sdkDeclarations.includes(processExport));
+      try {
+        writeFileSync(sdkIndex, sdkDeclarations.replace(processExport, ''));
+        const exportConfig = join(workspace, 'process-export-control.json');
+        writeFileSync(exportConfig, JSON.stringify({ compilerOptions: JSON.parse(original).compilerOptions, files: ['expense-budget.tsx'] }));
+        run('npm', ['exec', '--', 'tsc', '-p', exportConfig], workspace);
+        writeFileSync(exportConfig, JSON.stringify({ compilerOptions: { ...emit.compilerOptions, outDir: './negative-declarations' }, files: ['expense-budget.tsx'] }));
+        const failure = run('npm', ['exec', '--', 'tsc', '-p', exportConfig], workspace, true);
+        assert(/TS4094|TS7056|TS2742|TS2883/.test(failure), failure);
+      } finally {
+        writeFileSync(sdkIndex, sdkDeclarations);
+        writeFileSync(config, original);
+      }
       console.log(`TypeScript ${version}: installed experimental subpath, strict inputs/results, JSX, declaration emit and declaration-only consumer passed without Node types.`);
     }
     console.log(run('npm', ['start'], workspace).trim());

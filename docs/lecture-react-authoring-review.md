@@ -48,3 +48,7 @@ commandForのrunDetailedへ既存のregisterDetailedを接続し、要求ごと�
 [推論検査](../src/authoring-inferred-key.test.tsx)は通常と再送の異なる詳細形式、厳密な成功・エラー型、矛盾した詳細実行の拒否を対象にする。既存の配布物検査では移行後の実ソースを使い、生成した宣言だけを読むconsumerも同じ型を確認する。新しい実行機構・Result・Hooksの実行規則を追加したものではない。
 
 iz-22/24・qbf-19の記述負担への具体的な改善として扱い、原音確認・一般の多相変換・API安定化・人間の学習負担の残件と区別する。これだけで講演全体の完成としない。
+
+## 途中I/Oを含む組み立て
+
+[詳細形式のProcessの接続](authoring-process.md)を追加し、権限検証後のポリシー照会と純粋な上限判定・状態生成をHooksから接続した。iz-17/20/21とw0o-14の計算とI/Oの分離を新しい組み立て入口でも扱う具体例である。Processの公開型を追加し、利用者が合成したProcessをexportする際の宣言生成も修正する。同期Ruleへ非同期処理を混ぜず、既存のProcess・Action・Commandを利用する。原音確認・一般の推論・API安定化等の残件と各statusは維持する。

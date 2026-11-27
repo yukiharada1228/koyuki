@@ -3,6 +3,7 @@ import { h, createApplication } from 'koyuki/experimental';
 import { ok, err, type Result, type ExecutionEvent } from 'koyuki';
 import { Expenses, approval, type ExpenseRepository } from './expense.js';
 import { ReplayExpenses, replayedApproval, type ReplayExpenseRepository } from './expense-replay.js';
+import { BudgetExpenses, budgetApproval } from './expense-budget.js';
 import { Leaves, leaveApproval, type LeaveRepository, type LeaveState } from './leave.js';
 import type { ExpenseState } from './domain/expenses.js';
 function check(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
@@ -22,6 +23,14 @@ const report = await app.inspect(approval, input);
 check(value(report.result).next.kind === 'approved', 'expense approval failed');
 check(report.trace.some(row => row.step === 'authorize-approval'), 'inner rule trace was lost');
 check(events.some(row => row.kind === 'span-started' && row.step === 'approve'), 'live span was lost');
+
+let policyReads = 0;
+const policies = { async read() { policyReads++; return ok({ approvalLimit: 2000 }); } };
+const budgetApp = createApplication(<BudgetExpenses repository={repository} policies={policies} actor={actor} />);
+check(policyReads === 0, 'budget policy read during assembly');
+const budgetReport = await budgetApp.inspect(budgetApproval, input);
+check(value(budgetReport.result).next.kind === 'approved', 'budget approval failed');
+check(budgetReport.trace.some(row => row.step === 'read-budget-policy') && budgetReport.trace.some(row => row.step === 'check-budget-policy'), 'middle IO or pure rule trace was lost');
 
 // Single-process demo adapter: CAS and receipt update have no intervening await.
 // Production hosts must provide a transactional adapter for this same contract.

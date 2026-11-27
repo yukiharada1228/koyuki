@@ -1,5 +1,5 @@
-import { operationKey, createApplication } from 'koyuki/experimental';
-import { ok, err, type Result } from 'koyuki';
+import { operationKey, createApplication, useOperation } from 'koyuki/experimental';
+import { ok, err, process, workflow, type Result, type Process } from 'koyuki';
 const key = operationKey('contract', () => ({
   run: async (_input: Readonly<{ id: string }>): Promise<Result<number, 'Unavailable'>> => ok(1),
   runDetailed: async (_input: Readonly<{ id: string }>) => ({ result: ok(1), trace: [], plan: null }),
@@ -21,3 +21,33 @@ operationKey('wrong-output', () => ({ run: async (_input: string) => ok(1), runD
 operationKey('wrong-error', () => ({ run: async (_input: string): Promise<Result<number, 'Expected'>> => ok(1), runDetailed: async (_input: string) => ({ result: err<'Unexpected'>('Unexpected'), trace: [], plan: null }) }));
 // @ts-expect-error Key creation takes a synchronous custom Hook, not an async factory.
 operationKey('async-hook', async () => ({ run: async (_input: string) => ok(1), runDetailed: async (_input: string) => ({ result: ok(1), trace: [], plan: null }) }));
+
+function useDetailedProcess() {
+  return useOperation({ name: 'detailed-process',
+    load: process<number>().effect('read', async input => ok(input)),
+    execute: process<number>().through(workflow('double', (value: number) => ok(value * 2))),
+    save: async (value: number) => ok(String(value)),
+  });
+}
+const processKey = operationKey('detailed-process', useDetailedProcess);
+const processResult = app.dispatch(processKey, 3);
+const exactProcess: Equal<typeof processResult, Promise<Result<string, never>>> = true; void exactProcess;
+function invalidProcesses() {
+  // @ts-expect-error The explicit IO process must accept the actual load output.
+  useOperation({ name: 'bad-input', load: async (_input: string) => ok(1), execute: process<string>().effect('text', async text => ok(text.length)), save: async (value: number) => ok(value) });
+  // @ts-expect-error Save must accept the IO process output.
+  useOperation({ name: 'bad-save', load: async (_input: string) => ok(1), execute: process<number>().effect('text', async value => ok(String(value))), save: async (value: number) => ok(value) });
+}
+void invalidProcesses;
+
+const namedProcessType: Process<number, number, never> = process<number>();
+void namedProcessType;
+
+// The middle policy read is a typed prerequisite, not an optional callback.
+import { validateApproval, type Loaded } from './domain/expenses.js';
+import { approveWithBudgetPolicy } from './expense-budget.js';
+function omittedPolicyRead() {
+  // @ts-expect-error Authorization alone does not supply the required budget policy.
+  process<Loaded>().through(workflow('authorize', validateApproval)).through(approveWithBudgetPolicy);
+}
+void omittedPolicyRead;

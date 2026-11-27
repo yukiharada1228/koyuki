@@ -840,6 +840,25 @@
         "docs/lecture-react-authoring-review.md",
         "scripts/test-authoring-package.mjs"
       ]
+    },
+    "authoringMiddleIOFollowUp": {
+      "implementationBaseCommit": "264ef7ae14f40a232ad290cf4b7b0edd35b7c272",
+      "topicIds": [
+        "iz-17",
+        "iz-20",
+        "iz-21",
+        "iz-22"
+      ],
+      "scope": "Connect explicit Process objects through detailed load and execute in the experimental Hooks API. Preserve pure Workflow/Rule execution and distinct middle IO, error propagation, nested live spans and receipt skip. Add a public type-only Process name for portable consumer declaration emit; runtime constructor remains private. Typed approval-policy example, packaged TypeScript 6/7 and declaration-only consumers. No original audio review, universal inference or cross-system atomicity claim; topic statuses unchanged.",
+      "evidence": [
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
+      ]
     }
   },
   "sections": [
@@ -1096,7 +1115,14 @@
         "docs/result-boundaries.md",
         "src/framework/result.ts",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
       ],
       "remaining": []
     },
@@ -1141,7 +1167,13 @@
         "src/framework/process.ts",
         "src/registration/delivery.ts",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
       ],
       "remaining": []
     },
@@ -1156,7 +1188,13 @@
         "docs/process.md",
         "src/framework/process.ts",
         "docs/lecture-local-asr-iz-followup.md",
-        "docs/lecture-local-asr-iz-followup.json"
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
       ],
       "remaining": []
     },
@@ -1233,7 +1271,11 @@
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx",
         "scripts/test-portable.mjs",
-        "src/authoring-inferred-key.test.tsx"
+        "src/authoring-inferred-key.test.tsx",
+        "docs/authoring-process.md",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
