@@ -26,7 +26,7 @@ export interface BusinessOperation<I, O, E, D extends OperationReport<O, E> = Ac
 }
 type Node = Readonly<{ evaluate: () => void }>;
 type Children = Node | readonly Children[] | null;
-interface Frame { values: ReadonlyMap<symbol, unknown>; handlers: Map<object, unknown>; names: Set<string>; events: Map<string, BusinessEvent<never>>; routes: Map<object, object[]>; collect?: BusinessEvent<never>[] }
+interface Frame { values: ReadonlyMap<symbol, unknown>; handlers: Map<object, unknown>; names: Set<string>; events: Map<string, BusinessEvent<never>>; routes: Map<object, object[]>; collect?: BusinessEvent<never>[]; guards?: readonly ExecutionGuard[] }
 let current: Frame | undefined;
 function frame(): Frame {
   if (!current) throw new Error('HooksRequireComponentEvaluation');
@@ -73,6 +73,47 @@ export function useContext<T>(context: ReturnType<typeof createContext<T>>): T {
   const values = frame().values;
   if (!values.has(context.id)) throw new Error('MissingContextProvider');
   return values.get(context.id) as T;
+}
+/** Execution gates are separate from the domain Result and run before replay lookup or IO. */
+type ExecutionGuard = (operation: Readonly<{ name: string }>) => Result<void, unknown> | Promise<Result<void, unknown>>;
+export class ExecutionDenied extends Error {
+  constructor(readonly operation: string, readonly reason: unknown) {
+    super(`ExecutionDenied:${operation}`); this.name = 'ExecutionDenied';
+  }
+}
+/** Captures dependencies now; evaluates the gate on every handler invocation. */
+export function Guard({ useCheck, children }: { useCheck: () => ExecutionGuard; children: Children }): Node {
+  return { evaluate() {
+    const parent = frame(), check = useCheck();
+    within({ ...parent, guards: [...(parent.guards ?? []), check] }, () => visit(children));
+  } };
+}
+function guarded<H extends object>(name: string, handler: H): H {
+  const guards = frame().guards ?? [];
+  if (!guards.length) return handler;
+  const bound = handler as unknown as OperationHandler<unknown, unknown, unknown, OperationReport<unknown, unknown>>;
+  const detail = bindDetailedFunction(bound, bound.runDetailed);
+  const perform = async (input: unknown, observe?: StageObserver) => {
+    for (const check of guards) {
+      const receive = observe?.(`${name}:guard`, undefined);
+      let result: Result<void, unknown>;
+      try { result = await check(Object.freeze({ name })); }
+      catch (cause) { receive?.defect?.(); throw cause; }
+      receive?.(result);
+      if (!result.ok) throw new ExecutionDenied(name, result.error);
+    }
+    return invokeDetailed(detail, input, observe);
+  };
+  const protectedHandler = {
+    run: async (input: unknown) => (await perform(input)).result,
+    runDetailed: registerDetailed((input: unknown) => perform(input), perform),
+  };
+  emittedEvents.set(protectedHandler, emittedEvents.get(handler) ?? []);
+  return protectedHandler as unknown as H;
+}
+/** A reusable tree template; each scope mounts fresh handlers with isolated Providers. */
+export function createApplicationTemplate(root: Node, options?: AuthoringOptions) {
+  return Object.freeze({ scope: (provide: (children: Node) => Node) => createApplication(provide(root), options) });
 }
 type Definition<I, C, LE, O, DE, S, SE> = {
   name: string;
@@ -157,6 +198,22 @@ type ConnectedDefinition<N extends ResourceSpec, X, S, SE> = {
   readonly emits?: readonly Emission<DecisionOutput<NoInfer<X>>>[];
   readonly useSave: () => (value: DecisionOutput<NoInfer<X>>, input: NeedsInput<NoInfer<N>>, events: readonly EventEnvelope[]) => Promise<Result<S, SE>>;
 };
+// Specialize only if the supplied save actually promises the decision's narrower
+// result. A broad monomorphic adapter may return another valid state and must stay broad.
+type SavedCandidate<O, S> = [O] extends [S] ? O
+  : S extends { readonly kind: 'committed' | 'replayed'; readonly value: infer V }
+    ? [O] extends [V] ? { [K in keyof S]: K extends 'value' ? O : S[K] } : never : never;
+type SavedOutput<D, O, S, E, I, C = SavedCandidate<O, S>> = [C] extends [never] ? S
+  : D extends { useSave: () => (value: O, input: I, events: readonly EventEnvelope[]) => Promise<Result<C, E>> } ? C : S;
+/** Capture a generic save before checking its boundary, without forcing its union
+ * return through contextual S inference. Ordinary inline saves use the contextual overload below. */
+export function defineOperation<N extends ResourceSpec, X, const F extends object>(name: string, definition: {
+  readonly needs: N;
+  readonly execute: X & NoInfer<Decision<NeedsValues<N>>>;
+  readonly emits?: readonly Emission<DecisionOutput<NoInfer<X>>>[];
+  readonly useSave: () => F & NoInfer<F extends (value: DecisionOutput<X>, input: NeedsInput<N>, events: readonly EventEnvelope[]) => Promise<Result<unknown, unknown>> ? unknown : never>;
+  readonly useReplay?: never;
+}): BusinessOperation<NeedsInput<N>, SavedOutput<{ useSave: () => F }, DecisionOutput<X>, DecisionOutput<F>, DecisionError<F>, NeedsInput<N>>, NeedsError<N> | DecisionError<X> | DecisionError<F>, ActionReport<SavedOutput<{ useSave: () => F }, DecisionOutput<X>, DecisionOutput<F>, DecisionError<F>, NeedsInput<N>>, NeedsError<N> | DecisionError<X> | DecisionError<F>> & EventReport>;
 /** A data declaration: resource dependencies and event relations are compiled at mount. */
 export function defineOperation<N extends ResourceSpec, X, S, SE, RE>(name: string, definition:
   ConnectedDefinition<N, X, Execution<S>, SE> & { readonly useReplay: () => ReplayBoundary<NeedsInput<N>, NoInfer<S>, NeedsError<N> | DecisionError<X> | SE, RE> }
@@ -172,6 +229,7 @@ export function defineOperation<I, C, LE, O, DE, S, SE>(name: string, useDefinit
   Omit<Definition<I, C, LE, O, DE, S, SE>, 'name'> & { name?: never; needs?: never; emits?: never; replay?: never }
 ): BusinessOperation<I, S, LE | DE | SE, ActionReport<S, LE | DE | SE>>;
 export function defineOperation(name: string, factory: (() => object) | { needs: ResourceSpec; execute: unknown; useSave: () => Function; emits?: readonly Emission<never>[]; useReplay?: () => object }) {
+  if (!name.trim()) throw new Error('EmptyOperationName');
   return Object.freeze({ name, use() {
     const scope = frame(), collect: BusinessEvent<never>[] = [];
     const handler = within({ ...scope, collect }, () => {
@@ -183,7 +241,7 @@ export function defineOperation(name: string, factory: (() => object) | { needs:
     });
     const events = [...new Set([...(emittedEvents.get(handler) ?? []), ...collect])];
     emittedEvents.set(handler, events); scope.collect?.push(...events);
-    return handler;
+    return guarded(name, handler);
   } });
 }
 
@@ -192,16 +250,17 @@ export interface BusinessQuery<I, O, E> extends BusinessOperation<I, O, E> { rea
 export function defineQuery<N extends ResourceSpec, X>(name: string, definition: {
   needs: N; select: X & NoInfer<Rule<NeedsValues<N>, unknown, unknown> | Workflow<NeedsValues<N>, unknown, unknown>>;
 }): BusinessQuery<NeedsInput<N>, DecisionOutput<X>, NeedsError<N> | DecisionError<X>> {
+  if (!name.trim()) throw new Error('EmptyQueryName');
   return Object.freeze({ name, query: true as const, use() {
     frame();
     const select = definition.select as Rule<NeedsValues<N>, unknown, unknown> | Workflow<NeedsValues<N>, unknown, unknown>;
     const mutation = select instanceof Workflow ? select : workflow(`${name}:select`, select);
     const action = defineAction({ loadName: `${name}:load`, load: loadResources(definition.needs), mutation: process<NeedsValues<N>>().through(mutation) });
     const perform = (input: NeedsInput<N>, observe?: StageObserver) => invokeDetailed(bindDetailed(action), snapshotData(input), observe);
-    return {
+    return guarded(name, {
       run: async (input: NeedsInput<N>) => (await perform(input)).result,
       runDetailed: registerDetailed((input: NeedsInput<N>) => perform(input), perform),
-    } as OperationHandler<NeedsInput<N>, DecisionOutput<X>, NeedsError<N> | DecisionError<X>, ActionReport<DecisionOutput<X>, NeedsError<N> | DecisionError<X>>>;
+    } as OperationHandler<NeedsInput<N>, DecisionOutput<X>, NeedsError<N> | DecisionError<X>, ActionReport<DecisionOutput<X>, NeedsError<N> | DecisionError<X>>>);
   } });
 }
 export function Query<I, O, E>({ query }: { query: BusinessQuery<I, O, E> }): Node { return Operation({ operation: query }); }
@@ -290,7 +349,7 @@ export function createApplication(root: Node, options?: AuthoringOptions) {
       context?.emit({ kind: 'completed', status: report.result.ok ? 'ok' : 'error' });
       return recorder ? { ...report, ...recorder.report() } : report;
     } catch (cause) {
-      context?.emit({ kind: 'completed', status: 'defect' });
+      context?.emit({ kind: 'completed', status: cause instanceof ExecutionDenied ? 'denied' : 'defect' });
       throw cause;
     }
   }
@@ -321,7 +380,7 @@ export function createApplication(root: Node, options?: AuthoringOptions) {
           record(deliveries, { eventId: envelope.id, event: envelope.type, operation: consumer.name, status: report.result.ok ? 'ok' : 'error', trace: report.trace, ...(!report.result.ok ? { error: report.result.error } : {}) });
           if ('publications' in report) queue.push(...report.publications as readonly EventEnvelope[]);
         } catch (error) {
-          record(deliveries, { eventId: envelope.id, event: envelope.type, operation: consumer.name, status: 'defect', error });
+          record(deliveries, { eventId: envelope.id, event: envelope.type, operation: consumer.name, status: error instanceof ExecutionDenied ? 'denied' : 'defect', error });
         }
       }
     }

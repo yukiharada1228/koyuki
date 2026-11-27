@@ -135,7 +135,7 @@ export interface EventDelivery {
   readonly eventId: string;
   readonly event: string;
   readonly operation: string | null;
-  readonly status: 'ok' | 'error' | 'defect' | 'external' | 'limit';
+  readonly status: 'ok' | 'error' | 'defect' | 'denied' | 'external' | 'limit';
   readonly trace?: readonly unknown[];
   readonly error?: unknown;
 }

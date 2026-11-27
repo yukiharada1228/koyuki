@@ -22,7 +22,7 @@ type ExecutionDetail = (
   | { readonly kind: 'step'; readonly step: string; readonly status: 'ok' | 'error' | 'skipped'; readonly scope: 'operation' | 'replay'; readonly timing: 'reported-after-run' }
   | { readonly kind: 'span-started'; readonly spanId: string; readonly parentSpanId: string | null; readonly step: string }
   | { readonly kind: 'span-completed'; readonly spanId: string; readonly parentSpanId: string | null; readonly step: string; readonly status: StageStatus; readonly durationMs: number }
-  | { readonly kind: 'completed'; readonly status: 'ok' | 'error' | 'defect' | 'rejected'; readonly revision?: number }
+  | { readonly kind: 'completed'; readonly status: 'ok' | 'error' | 'defect' | 'rejected' | 'denied'; readonly revision?: number }
 );
 export type ExecutionEvent = ExecutionMetadata & ExecutionDetail;
 export type ExecutionObserver = (event: ExecutionEvent) => void;
