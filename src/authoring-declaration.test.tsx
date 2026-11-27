@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as authoring from './framework/authoring.js';
 import { h, defineOperation, createContext, useContext, createApplication, Operation } from './framework/authoring.js';
-import { workflow, ok, err, type Result, type Execution, type ExecutionEvent, type ReplayInputError, type StepObservation } from './framework/index.js';
+import { workflow, process, ok, err, type Result, type Execution, type ExecutionEvent, type ReplayInputError, type StepObservation } from './framework/index.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Request = { id: string };
 const Owner = createContext<string>();
@@ -76,9 +76,53 @@ test('declared replay retains its envelope, skips cached business work and expos
   assert.deepEqual(repeated.result, ok({ kind: 'replayed', value: 'ONE' }));
   assert.equal(repeated.attempt, null); assert.equal(commits, 1);
 });
-test('a declared custom Hook can be reused without another operation registration path', async () => {
-  const approval = defineOperation('approval', () => ({ load: async (input: Request) => ok(input.id), execute: (id: string) => ok(id), save: async value => ok(value) }));
-  function Reused() { approval.use(); return <Operation operation={approval} />; }
-  const app = createApplication(<Reused />);
-  assert.deepEqual(await app.execute(approval, { id: 'one' }), ok('one'));
+test('a custom Hook composes a fresh handler with internal trace and failure propagation', async () => {
+  let factories = 0, saves = 0, notifications = 0;
+  const approval = defineOperation('approval', () => {
+    factories++;
+    const owner = useContext(Owner);
+    return {
+      load: async (input: Request) => ok({ id: input.id, owner }),
+      execute: workflow('authorize', (value: { id: string; owner: string }): Result<string, 'Denied'> =>
+        value.id === 'denied' ? err('Denied') : ok(value.owner)),
+      save: async value => { saves++; return ok(value); },
+    };
+  });
+  function useApprovalNotification() {
+    const handler = approval.use();
+    return process<Request>().effect('approve', handler);
+  }
+  const notify = defineOperation('approval.notify', () => ({
+    load: async (input: Request) => ok(input),
+    execute: useApprovalNotification(),
+    save: async owner => { notifications++; return ok({ notified: owner }); },
+  }));
+  function Hooks() {
+    assert.notEqual(approval.use(), approval.use());
+    return <Operation operation={notify} />;
+  }
+  const events: ExecutionEvent[] = [];
+  const app = createApplication(<Owner.Provider value="boss"><Hooks /></Owner.Provider>, { observeExecution: event => events.push(event) });
+  assert.equal(factories, 3); assert.equal(saves, 0); assert.equal(notifications, 0);
+  const report = await app.executeDetailed(notify, { id: 'one' });
+  assert.deepEqual(report.result, ok({ notified: 'boss' }));
+  assert(report.trace.some(row => row.step === 'authorize'));
+  assert(events.some(event => event.kind === 'span-started' && event.step === 'authorize'));
+  assert.deepEqual(await app.execute(notify, { id: 'denied' }), err('Denied'));
+  assert.equal(saves, 1); assert.equal(notifications, 1); assert.equal(factories, 3);
+  await assert.rejects(async () => app.execute(approval, { id: 'one' }), /UnregisteredOperation/);
+});
+test('names are unique across Provider scopes in one application, but local to each application', async () => {
+  let duplicateFactories = 0;
+  const first = defineOperation('same.v1', () => ({ load: async (input: string) => ok(input), execute: (input: string) => ok(input), save: async value => ok(value) }));
+  const other = defineOperation('same.v1', () => {
+    duplicateFactories++;
+    return { load: async (input: string) => ok(input), execute: (input: string) => ok(input), save: async value => ok(value) };
+  });
+  assert.throws(() => createApplication(<Owner.Provider value="a"><Operation operation={first} /><Owner.Provider value="b"><Operation operation={other} /></Owner.Provider></Owner.Provider>), /DuplicateOperation:same.v1/);
+  assert.equal(duplicateFactories, 0);
+  const a = createApplication(<Operation operation={first} />);
+  const b = createApplication(<Operation operation={other} />);
+  assert.deepEqual(await Promise.all([a.execute(first, 'a'), b.execute(other, 'b')]), [ok('a'), ok('b')]);
+  await assert.rejects(async () => a.execute(other, 'x'), /UnregisteredOperation:same.v1/);
 });

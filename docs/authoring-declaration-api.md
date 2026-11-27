@@ -77,3 +77,20 @@ approveExpenseは従来の `workflow(...).then(...)` による通常の業務関
 - 新しい宣言・自動登録・executeDetailedをNode globalなしのVMで実行。公開runtimeは29 module、外部依存ゼロのまま。
 
 これらは今回のAPI整理の証拠であり、講演の原音未確認や全内容の完全反映の判定を変更するものではない。
+
+## 操作名とHookの契約
+
+同じアプリ内では、別の宣言や別のProviderでも同名の操作登録を拒否し、`DuplicateOperation:名前`を投げる。重複側のHookは評価しない。別のアプリ間では同名を許可する。実行時の照合は引き続き宣言オブジェクトによるため、同名の別オブジェクトをexecuteへ渡しても登録済み操作を呼べない。
+
+`.use()`は呼ぶたびに現在のProviderから新しいハンドラーを組み立てる。状態保持・キャッシュ・再描画は行わず、登録もしない。通常の利用ではOperationへの登録だけでよい。組み合わせる場合は返されたハンドラーをProcessに渡すと、内部のルールまでtraceが残る。
+
+```ts
+function useApprovalAndNotification() {
+  const approvalHandler = approval.use();
+  return process<Input>()
+    .effect('approve', approvalHandler)
+    .effect('notify', notifications.send);
+}
+```
+
+これは承認の保存後に通知する逐次処理であり、二つの保存を一つのtransactionにするものではない。通知の失敗で承認を巻き戻さない。原子性が必要なら一つのsave内で状態とoutboxを保存する。再送が必要な承認には、replay設定のある操作のハンドラーを使い、通知側にも適切な再送境界を設ける。`handler.run`だけを通常の非同期関数として渡すより、ハンドラー全体を渡す方が内部traceを引き継げる。

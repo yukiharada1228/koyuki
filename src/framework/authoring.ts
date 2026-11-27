@@ -12,12 +12,12 @@ type OperationHandler<I, O, E, D extends OperationReport<O, E>> = {
 };
 export interface BusinessOperation<I, O, E, D extends OperationReport<O, E> = ActionReport<O, E>> {
   readonly name: string;
-  /** A synchronous custom Hook, evaluated in the component's Provider scope. */
+  /** Builds a fresh handler synchronously in the current Provider scope; no caching or state. */
   readonly use: () => OperationHandler<I, O, E, D>;
 }
 type Node = Readonly<{ evaluate: () => void }>;
 type Children = Node | readonly Children[] | null;
-interface Frame { values: ReadonlyMap<symbol, unknown>; handlers: Map<object, unknown> }
+interface Frame { values: ReadonlyMap<symbol, unknown>; handlers: Map<object, unknown>; names: Set<string> }
 let current: Frame | undefined;
 function frame(): Frame {
   if (!current) throw new Error('HooksRequireComponentEvaluation');
@@ -120,15 +120,16 @@ export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation 
   operation: BusinessOperation<I, O, E, D>;
 }): Node {
   return { evaluate() {
-    const handlers = frame().handlers;
-    if (handlers.has(operation)) throw new Error(`DuplicateOperation:${operation.name}`);
+    const { handlers, names } = frame();
+    if (handlers.has(operation) || names.has(operation.name)) throw new Error(`DuplicateOperation:${operation.name}`);
     const handler = operation.use();
     handlers.set(operation, { run: handler.run.bind(handler), runDetailed: bindDetailedFunction(handler, handler.runDetailed) });
+    names.add(operation.name);
   } };
 }
 export function createApplication(root: Node, options?: ExecutionOptions) {
   const handlers = new Map<object, unknown>();
-  within({ values: new Map(), handlers }, () => visit(root));
+  within({ values: new Map(), handlers, names: new Set() }, () => visit(root));
   const executions = executionSession(options);
   function entry<I, O, E, D extends OperationReport<O, E>>(operation: BusinessOperation<I, O, E, D>) {
     const handler = handlers.get(operation) as {
