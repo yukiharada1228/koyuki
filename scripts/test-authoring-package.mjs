@@ -31,6 +31,7 @@ try {
     scope: 'Unpublished development tarball built from the current working tree; base commit alone does not identify its content.',
   }, null, 2));
   copyFileSync(join(root, 'examples/authoring/main.tsx'), join(workspace, 'main.tsx'));
+  copyFileSync(join(root, 'examples/authoring/three-businesses.tsx'), join(workspace, 'three-businesses.tsx'));
   copyFileSync(join(root, 'examples/authoring/captured-exports.tsx'), join(workspace, 'captured-exports.tsx'));
   copyFileSync(join(root, 'scripts/fixtures/authoring-key-contracts.ts'), join(workspace, 'key-contracts.ts'));
   copyFileSync(join(root, 'examples/authoring/README.md'), join(workspace, 'README.md'));
@@ -39,17 +40,20 @@ try {
     for (const [before, after] of replacements) { assert(text.includes(before), `Missing import rewrite: ${before}`); text = text.replaceAll(before, after); }
     writeFileSync(join(workspace, to), text);
   };
-  for (const name of ['expense', 'expense-replay', 'expense-budget', 'leave']) source(`src/experiments/react-business/${name}.tsx`, `${name}.tsx`, [
+  for (const name of ['expense', 'expense-replay', 'expense-budget', 'leave', 'leave-replay', 'registration']) source(`src/experiments/react-business/${name}.tsx`, `${name}.tsx`, [
     ["'../../framework/index.js'", "'koyuki'"], ["'../../expenses/domain.js'", "'./domain/expenses.js'"],
+    ...(name === 'registration' ? [["'../../registration/domain.js'", "'./domain/registration.js'"], ["'../../registration/secrets.js'", "'./domain/registration-secrets.js'"]] : []),
     ...(name === 'expense-replay' ? [["'../../expenses/repository.js'", "'./domain/repository.js'"]] : []),
     ["'./runtime.js'", "'koyuki/experimental'"],
   ]);
   source('src/experiments/react-business/leave-domain.ts', 'leave-domain.ts', [["'../../framework/index.js'", "'koyuki'"], ["'../../expenses/domain.js'", "'./domain/expenses.js'"]]);
+  copyFileSync(join(root, 'src/registration/secrets.ts'), join(workspace, 'domain/registration-secrets.ts'));
+  source('src/registration/domain.ts', 'domain/registration.ts', [["'../framework/index.js'", "'koyuki'"]]);
   source('src/expenses/domain.ts', 'domain/expenses.ts', [["'../framework/index.js'", "'koyuki'"], ["'../examples/expense.js'", "'./routing.js'"]]);
   source('src/examples/expense.ts', 'domain/routing.ts', [["'../framework/index.js'", "'koyuki'"]]);
   source('src/expenses/repository.ts', 'domain/repository.ts', [["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'./expenses.js'"]]);
   writeFileSync(join(workspace, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
-  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'captured-exports.tsx', 'expense.tsx', 'expense-replay.tsx', 'expense-budget.tsx', 'leave.tsx', 'leave-domain.ts', 'key-contracts.ts', 'domain/*.ts'] }, null, 2));
+  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'captured-exports.tsx', 'expense.tsx', 'expense-replay.tsx', 'expense-budget.tsx', 'leave.tsx', 'leave-replay.tsx', 'registration.tsx', 'three-businesses.tsx', 'leave-domain.ts', 'key-contracts.ts', 'domain/*.ts'] }, null, 2));
   if (verify) {
     run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], workspace);
     for (const dependency of ['react', '@types/react', '@types/node']) assert(!existsSync(join(workspace, 'node_modules', dependency)), `Unexpected dependency: ${dependency}`);

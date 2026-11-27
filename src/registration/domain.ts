@@ -10,12 +10,19 @@ export interface Loaded<I> { readonly current: Registration | null; readonly inp
 declare const proof: unique symbol;
 type ValidStart = Loaded<StartInput> & { readonly [proof]: 'start' };
 type ValidConfirm = { readonly current: Extract<Registration, { kind: 'awaiting' }>; readonly input: ConfirmInput; readonly [proof]: 'confirm' };
-export type Change = Readonly<
-  { expectedVersion: 0; next: Extract<Registration, { kind: 'awaiting' }>; event: EmailRequested } |
-  { expectedVersion: 1; next: Extract<Registration, { kind: 'confirmed' }>; event: null }
-> & { readonly [proof]: 'change' };
-type StartChange = Extract<Change, { readonly expectedVersion: 0 }>;
-type ConfirmationChange = Extract<Change, { readonly expectedVersion: 1 }>;
+export interface StartChange {
+  readonly expectedVersion: 0;
+  readonly next: Extract<Registration, { kind: 'awaiting' }>;
+  readonly event: EmailRequested;
+  readonly [proof]: 'change';
+}
+export interface ConfirmationChange {
+  readonly expectedVersion: 1;
+  readonly next: Extract<Registration, { kind: 'confirmed' }>;
+  readonly event: null;
+  readonly [proof]: 'change';
+}
+export type Change = StartChange | ConfirmationChange;
 export function validateStart(value: Loaded<StartInput>): Result<ValidStart, RuleError> {
   const { id, email, token, tokenDigest } = value.input;
   if (!id.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !token || !/^[a-f0-9]{64}$/.test(tokenDigest)) return err({ kind: 'InvalidInput' });

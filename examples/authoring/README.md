@@ -14,6 +14,8 @@ npm start
 
 準備ツールは開発版tarballと、実際の経費・休暇の業務関数、部品、Hooks、サンプルmainをコピーする。既存フォルダーを上書きしない。準備後は元リポジトリへ依存せず、通常のnpmパッケージのimportだけで実行する。ReactやNode型はインストールしない。開発時のTypeScript・tsxと、Koyukiだけを使用する。
 
+会員登録の業務関数とHooks、休暇の再送Hookも含む。`three-businesses.tsx`は同じProvider・Hooks・Fragmentを使って3業務を一つのアプリへ組み立てる。永続保存adapterはホストが渡す。実DBによる再送・rollback・登録outboxの検証はリポジトリ側のテストで行い、Node型なしのこの試用パックへSQLite実装は含めない。
+
 `expense.tsx`は純粋な合成を作り、ContextからRepository・操作者を取得するカスタムHookを定義する。operationKey(name, useCustomHook)がそのHookから入力・成功・エラー・詳細レポートを推論するため、ハンドル側へ同じ型を重ねて書く必要はない。ハンドルを作るときにHookは評価されない。`expense-replay.tsx`は同じ業務関数に再送境界を加える。`leave-domain.ts`は休暇の状態と認可・遷移を純粋関数として定義し、`leave.tsx`は同じ組み立て方を別ドメインへ適用する。認可成功の証明を次の関数が要求するため、pendingだけの取得でも認可の段階は省略できない。`expense-budget.tsx`は権限検証と状態生成の間にポリシーのI/Oを置き、純粋なWorkflowと明示的なProcessを組み合わせる。main.tsxから明示的にdispatch/inspectを呼ぶまで、フレームワークはI/Oを実行しない。
 
 mainのreceipt adapterは単一プロセスのデモ用メモリ実装。永続的な再送や複数プロセスの原子性は保証しない。本番では状態とreceiptを同じtransactionで保存するアダプターが必要になる。既存SQLiteアダプターとの接続はリポジトリ側のテストで検査する。

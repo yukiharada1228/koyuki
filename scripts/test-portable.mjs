@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { h as authoringH, createContext as authoringContext, useContext as authoringUseContext, useOperation as authoringUseOperation, Operation as AuthoringOperation, operationKey as authoringKey, createApplication as mountAuthoring } from './dist/authoring.js';
+import { h as authoringH, Fragment as AuthoringFragment, createContext as authoringContext, useContext as authoringUseContext, useOperation as authoringUseOperation, Operation as AuthoringOperation, operationKey as authoringKey, createApplication as mountAuthoring } from './dist/authoring.js';
 import { exploreModel, sampleModel, sampleModelAsync } from './dist/testing.js';
 import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
@@ -43,7 +43,7 @@ export const result = (async () => {
     return authoringH(AuthoringOperation, { operation: authoringOperation, handler });
   }
   const authoringEvents = [];
-  const authoringApp = mountAuthoring(authoringH(authoringDependency.Provider, { value: 10 }, authoringH(PortableBusiness, null)), { observeExecution: event => authoringEvents.push(event) });
+  const authoringApp = mountAuthoring(authoringH(AuthoringFragment, null, authoringH(authoringDependency.Provider, { value: 10 }, authoringH(PortableBusiness, null))), { observeExecution: event => authoringEvents.push(event) });
   const authoringCapture = { input: (_value, step) => step, result: result => result.ok };
   const authoringFirst = await authoringApp.inspect(authoringOperation, 2, authoringCapture);
   const authoringReplay = await authoringApp.inspect(authoringOperation, 2, authoringCapture);

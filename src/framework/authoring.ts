@@ -46,6 +46,10 @@ export namespace h { export namespace JSX {
   export type Element = Node;
   export interface ElementChildrenAttribute { children: unknown }
 } }
+/** Group sibling operations without introducing another dependency scope. */
+export function Fragment({ children }: { children: Children }): Node {
+  return { evaluate: () => visit(children) };
+}
 export function createContext<T>() {
   const id = Symbol('Context');
   return {

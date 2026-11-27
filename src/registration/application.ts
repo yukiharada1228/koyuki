@@ -1,10 +1,8 @@
 import { defineUseCase, defineTransition, ok } from '../framework/index.js';
 import { validateStart, start, validateConfirm, confirm, type StartInput, type ConfirmInput, type Loaded, type Change } from './domain.js';
 import { RegistrationRepository } from './repository.js';
-export async function digest(token: string): Promise<string> {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
-  return Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
-}
+import { digestToken as digest } from './secrets.js';
+export { digestToken as digest } from './secrets.js';
 export function registration(repository: RegistrationRepository) {
   const load = <I extends { id: string }>(input: I) => {
     const result = repository.read(input.id);

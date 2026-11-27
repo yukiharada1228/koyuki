@@ -9,7 +9,23 @@ import type { Actor, Change, ExpenseState, RuleError } from './declarations/doma
 import { Leaves, leaveApproval, type LeaveRepository } from './declarations/leave.js';
 import type { AuthorizedLeave, LeaveApprover, ApprovedLeave } from './declarations/leave-domain.js';
 import type { LoadError } from './declarations/domain/repository.js';
+import { createBusinessApplication, replayedLeaveApproval, registrationRequest, registrationConfirmation } from './declarations/three-businesses.js';
+import type { Registration, RuleError as RegistrationRuleError } from './declarations/domain/registration.js';
+import type { RegistrationStorageError } from './declarations/registration.js';
+import type { LeaveStorageError } from './declarations/leave-replay.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+export function checkThreeBusinesses(ports: Parameters<typeof createBusinessApplication>[0]) {
+  const app = createBusinessApplication(ports);
+  const leave = app.dispatch(replayedLeaveApproval, { requestId: 'one', input: { id: 'one' } });
+  const registration = app.dispatch(registrationRequest, { requestId: 'two', id: 'two', email: 'two@example.test' });
+  const exactLeave: Equal<typeof leave, Promise<Result<Execution<ApprovedLeave>, LeaveStorageError | 'AlreadyDecided' | 'Forbidden' | 'SelfApproval' | ReplayInputError>>> = true;
+  const exactRegistration: Equal<typeof registration, Promise<Result<Execution<Registration>, RegistrationStorageError | RegistrationRuleError | ReplayInputError>>> = true;
+  if (false) {
+    // @ts-expect-error A registration payload cannot stand in for a confirmation token.
+    void app.dispatch(registrationConfirmation, { requestId: 'three', id: 'two', email: 'two@example.test' });
+  }
+  return { exactLeave, exactRegistration };
+}
 export function checkDeclarations(repository: ExpenseRepository, replayRepository: ReplayExpenseRepository, actor: Actor, policies: BudgetPolicyRepository, leaves: LeaveRepository) {
   const app = createApplication(<Expenses repository={repository} actor={actor} />);
   const result = app.dispatch(approval, { id: 'one', expectedVersion: 1 });

@@ -5,7 +5,7 @@ import { restore, type Registration, type Change, type EmailRequested } from './
 export type StorageError = { kind: 'StorageUnavailable' } | { kind: 'Conflict' } | { kind: 'CorruptRegistration' };
 export interface Delivery { readonly event: EmailRequested; readonly claim: string }
 export class RegistrationRepository {
-  private readonly db: DatabaseSync;
+  protected readonly db: DatabaseSync;
   constructor(path: string) {
     this.db = new DatabaseSync(path);
     this.db.exec(`PRAGMA busy_timeout=2000; PRAGMA foreign_keys=ON;
@@ -26,18 +26,24 @@ export class RegistrationRepository {
   async save(change: Change): Promise<Result<Registration, StorageError>> {
     try {
       this.db.exec('BEGIN IMMEDIATE');
-      const existing = this.read(change.next.id);
-      const restored = restore(change.next);
-      if (!existing.ok || !restored.ok) { this.db.exec('ROLLBACK'); return !existing.ok ? existing : restored; }
-      if ((existing.value?.version ?? 0) !== change.expectedVersion) { this.db.exec('ROLLBACK'); return err({ kind: 'Conflict' }); }
-      if (change.expectedVersion === 0) this.db.prepare('INSERT INTO registrations VALUES(?,?,?)').run(change.next.id, change.next.version, JSON.stringify(change.next));
-      else this.db.prepare('UPDATE registrations SET version=?,state=? WHERE id=? AND version=?').run(change.next.version, JSON.stringify(change.next), change.next.id, change.expectedVersion);
-      if (change.event) this.db.prepare('INSERT INTO email_outbox(id,registration_id,payload) VALUES(?,?,?)').run(change.event.id, change.next.id, JSON.stringify(change.event));
-      this.db.exec('COMMIT'); return ok(restored.value);
+      const saved = this.commit(change);
+      if (!saved.ok) { this.db.exec('ROLLBACK'); return saved; }
+      this.db.exec('COMMIT'); return saved;
     } catch {
       try { this.db.exec('ROLLBACK'); } catch { /* transaction may not have started */ }
       return err({ kind: 'StorageUnavailable' });
     }
+  }
+  /** Runs within the caller's storage transaction, including outbox insertion. */
+  protected commit(change: Change): Result<Registration, StorageError> {
+    const existing = this.read(change.next.id);
+    const restored = restore(change.next);
+    if (!existing.ok || !restored.ok) return !existing.ok ? existing : restored;
+    if ((existing.value?.version ?? 0) !== change.expectedVersion) return err({ kind: 'Conflict' });
+    if (change.expectedVersion === 0) this.db.prepare('INSERT INTO registrations VALUES(?,?,?)').run(change.next.id, change.next.version, JSON.stringify(change.next));
+    else this.db.prepare('UPDATE registrations SET version=?,state=? WHERE id=? AND version=?').run(change.next.version, JSON.stringify(change.next), change.next.id, change.expectedVersion);
+    if (change.event) this.db.prepare('INSERT INTO email_outbox(id,registration_id,payload) VALUES(?,?,?)').run(change.event.id, change.next.id, JSON.stringify(change.event));
+    return ok(restored.value);
   }
   async claim(now: number, leaseMs: number): Promise<Result<Delivery, StorageError | { kind: 'EmptyOutbox' } | { kind: 'InvalidLease' }>> {
     if (!Number.isSafeInteger(now) || now < 0 || !Number.isSafeInteger(leaseMs) || leaseMs <= 0 || !Number.isSafeInteger(now + leaseMs)) return err({ kind: 'InvalidLease' });
