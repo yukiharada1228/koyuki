@@ -1,4 +1,5 @@
 /** @jsx h */
+import { bookingId, actorId } from './experiments/declarative-booking/domain.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -12,18 +13,18 @@ test('state and emitted events roll back together; a new process can deliver the
   const directory = mkdtempSync(join(tmpdir(), 'koyuki-event-wiring-')), path = join(directory, 'booking.sqlite');
   let repository = new SqliteBookings(path);
   try {
-    repository.seed({ kind: 'draft', id: 'one', owner: 'alice', startsAt: 2_000_000_000_000 });
+    repository.seed({ kind: 'draft', id: valid(bookingId('one')), owner: valid(actorId('alice')), startsAt: 2_000_000_000_000 });
     const sender = { async send(_mail: Mail) { return err('DeliveryUnavailable' as const); } };
-    const make = (id: string, role: 'member' | 'manager') => createApplication(<ActorContext.Provider value={{ id, role }}><Fragment><BookingBusiness repository={repository} /><NotificationBusiness sender={sender} /></Fragment></ActorContext.Provider>);
+    const make = (id: string, role: 'member' | 'manager') => createApplication(<ActorContext.Provider value={{ id: valid(actorId(id)), role }}><Fragment><BookingBusiness repository={repository} /><NotificationBusiness sender={sender} /></Fragment></ActorContext.Provider>);
     const owner = make('alice', 'member'), manager = make('boss', 'manager');
-    assert((await owner.execute(submitBooking, { id: 'one' })).ok);
+    assert((await owner.execute(submitBooking, { id: valid(bookingId('one')) })).ok);
     repository.db.exec("CREATE TRIGGER reject_event BEFORE INSERT ON booking_outbox BEGIN SELECT RAISE(ABORT, 'outbox failed'); END");
-    const failed = await manager.executeDetailed(approveBooking, { id: 'one' });
+    const failed = await manager.executeDetailed(approveBooking, { id: valid(bookingId('one')) });
     assert.deepEqual(failed.result, err('StorageFailed')); assert.equal(failed.deliveries.length, 0);
     assert.equal(repository.pending().length, 0);
-    const current = await repository.load({ id: 'one' }); assert(current.ok); assert.equal(current.value.kind, 'requested');
+    const current = await repository.load({ id: valid(bookingId('one')) }); assert(current.ok); assert.equal(current.value.kind, 'requested');
     repository.db.exec('DROP TRIGGER reject_event');
-    const first = await manager.executeDetailed(approveBooking, { id: 'one' });
+    const first = await manager.executeDetailed(approveBooking, { id: valid(bookingId('one')) });
     assert(first.result.ok); assert.equal(first.deliveries[0]?.status, 'error');
     const eventId = repository.pending()[0]!.id;
     repository.close(); repository = new SqliteBookings(path);
@@ -34,11 +35,17 @@ test('state and emitted events roll back together; a new process can deliver the
       assert(report.deliveries.every(delivery => delivery.status === 'ok'));
       repository.acknowledge(event.id);
     }
-    assert.deepEqual(received, [{ bookingId: 'one', owner: 'alice' }]); assert.equal(repository.pending().length, 0);
+    assert.deepEqual(received, [{ bookingId: 'one', owner: valid(actorId('alice')) }]); assert.equal(repository.pending().length, 0);
     assert.equal(first.publications[0]?.id, eventId);
-    const stored = await repository.load({ id: 'one' }); assert(stored.ok); assert.equal(stored.value.kind, 'confirmed');
+    const stored = await repository.load({ id: valid(bookingId('one')) }); assert(stored.ok); assert.equal(stored.value.kind, 'confirmed');
     repository.db.prepare('UPDATE bookings SET data=? WHERE id=?').run('{}', 'one');
-    const corrupt = await make('boss', 'manager').executeDetailed(approveBooking, { id: 'one' });
+    const corrupt = await make('boss', 'manager').executeDetailed(approveBooking, { id: valid(bookingId('one')) });
     assert.deepEqual(corrupt.result, err('StorageFailed')); assert.equal(corrupt.deliveries.length, 0);
   } finally { repository.close(); rmSync(directory, { recursive: true, force: true }); }
 });
+
+// Only known test seeds use this assertion; external failures remain Result values.
+function valid<T, E>(result: import('./framework/index.js').Result<T, E>): T {
+  if (!result.ok) throw new Error('InvalidTestFixture:' + result.error);
+  return result.value;
+}

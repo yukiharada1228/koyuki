@@ -2,6 +2,10 @@
 
 開発版`koyuki/experimental`の新しい操作宣言。必要な情報を`needs`、発生イベントを`emits`、受け手を`On`で一度宣言すると、取得の順序・値の組み立て・失敗停止・保存後の配送をruntimeへ任せられる。Reactらしい業務部品を推奨する組み立て方とし、業務の核は通常のTypeScript関数のままにする。実行時外部依存は追加しない。
 
+予約ID・操作者IDは検証付きの別型にしています。[識別子と接続の安全性](identifier-safety.md)で、文字列の役割、既存の接続保証、構成時検査の範囲を説明します。
+
+既存APIだけで予約の日程変更を追加する[業務追加・仕様変更の試用](rescheduling-business-study.md)では、承認済みのまま日時を変える保存競合と、保存後の通知まで扱います。
+
 ## 試す
 
 リポジトリのルートで実行する。SQLite統合検証はNode.js 26で確認する。公開済みnpm alpha.5にはこのAPIは含まれず、開発版tarballを用意する。
@@ -45,6 +49,8 @@ const actor = defineResource('authenticated-actor', () => {
 ```
 
 runtimeが`{ booking, actor }`を組み立て、`approval`へ渡す。各操作でloadのResultを分岐して値を取り出す必要はない。操作入力はresourceの要求から推論し、業務関数へ渡すフィールドや保存の型も検査する。resourceを使わないホスト提供値は、引き続きContext内で確保できる。
+
+入力の状態型を保つgenericな保存Hookは、操作の成功型でもその状態を保持する。[保存後の型推論と保証範囲](authoring-save-inference.md)を参照。広い型を返す保存やDTO変換を、計算結果の型だけで狭めることはしない。
 
 業務関数は次のような普通の合成であり、JSXやRepositoryなしで実行・テストできる。
 

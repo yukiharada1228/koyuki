@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ok, err, workflow, process, type Result, type Execution } from './framework/index.js';
-import { h, Fragment, createContext, useContext, defineResource, defineEvent, emit, defineOperation, Operation, On, createApplication, type BusinessResource } from './framework/authoring.js';
+import { h, Fragment, createContext, useContext, defineResource, defineEvent, emit, defineOperation, Operation, On, createApplication, defineQuery, type BusinessResource } from './framework/authoring.js';
 const Owner = createContext<string>();
 test('resources are resolved once per execution, retain internal live spans and capture separate Providers', async () => {
   let reads = 0;
@@ -211,4 +211,68 @@ test('runtime-selected resource and table declarations require the input of ever
       void app.execute(tables, { id: 'one' });
     }
   }
+});
+
+test('duplicate declaration names and invalid routes fail before any business IO', () => {
+  let reads = 0, writes = 0;
+  const resource = (name: string) => defineResource(name, () => (_input: number) => { reads++; return ok(1); });
+  const first = resource('shared'), other = resource('shared');
+  const operation = (name: string, needs = { first }) => defineOperation(name, {
+    needs, execute: ({ first }: { first: number }) => ok(first),
+    useSave: () => async (value: number) => { writes++; return ok(value); },
+  });
+  const one = operation('same.v1'), two = operation('same.v1');
+  assert.throws(() => createApplication(<Fragment><Operation operation={one} /><Operation operation={two} /></Fragment>), /DuplicateOperation:same.v1/);
+  const ambiguous = defineOperation('ambiguous', { needs: { first, other }, execute: ({ first }: { first: number; other: number }) => ok(first), useSave: () => async (value: number) => { writes++; return ok(value); } });
+  assert.throws(() => createApplication(<Operation operation={ambiguous} />), /DuplicateResource:shared/);
+  const event = defineEvent<number>('same-event'), alias = defineEvent<number>('same-event');
+  const producer = defineOperation('producer', { needs: first, execute: (n: number) => ok(n), emits: [emit(event)], useSave: () => async (n: number) => { writes++; return ok(n); } });
+  assert.throws(() => createApplication(<Operation operation={producer} />), /UnhandledEvent:same-event/);
+  assert.throws(() => createApplication(<Fragment><Operation operation={producer} /><On event={alias} operation={one} /></Fragment>), /DuplicateEvent:same-event/);
+  assert.throws(() => operation(' '), /EmptyOperationName/);
+  assert.throws(() => defineQuery('', { needs: first, select: (n: number) => ok(n) }), /EmptyQueryName/);
+  assert.equal(reads, 0); assert.equal(writes, 0);
+});
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+
+type Pending = Readonly<{ kind: 'pending'; id: string }>;
+type Done = Readonly<{ kind: 'done'; id: string }>;
+type State = Pending | Done;
+const savedSource = defineResource('save-source', () => (input: { id: string }) => ok(input.id));
+const decideDone = (id: string): Result<Done, 'Denied'> => ok({ kind: 'done', id });
+const preserving = async <T extends State>(value: T): Promise<Result<T, 'Offline'>> => ok(value);
+const wrapped = async <T extends State>(value: T): Promise<Result<{ readonly kind: 'committed'; readonly value: T }, 'Offline'>> => ok({ kind: 'committed', value });
+const broad = async (value: State): Promise<Result<State, 'Offline'>> => ok({ kind: 'pending', id: value.id });
+export const preservedSave = defineOperation('save-preserved', { needs: savedSource, execute: decideDone, useSave: () => preserving });
+export const wrappedSave = defineOperation('save-wrapped', { needs: savedSource, execute: decideDone, useSave: () => wrapped });
+export const broadSave = defineOperation('save-broad', { needs: savedSource, execute: decideDone, useSave: () => broad });
+export const transformedSave = defineOperation('save-transformed', { needs: savedSource, execute: decideDone, useSave: () => async (value: Done): Promise<Result<{ saved: string }, 'Offline'>> => ok({ saved: value.id }) });
+export const saveApp = createApplication(<Fragment><Operation operation={preservedSave} /><Operation operation={wrappedSave} /><Operation operation={broadSave} /><Operation operation={transformedSave} /></Fragment>);
+async function savedContract() {
+  const direct = await saveApp.execute(preservedSave, { id: 'one' });
+  const envelope = await saveApp.execute(wrappedSave, { id: 'one' });
+  const wide = await saveApp.execute(broadSave, { id: 'one' });
+  const transformed = await saveApp.execute(transformedSave, { id: 'one' });
+  const a: Equal<typeof direct, Result<Done, 'Denied' | 'Offline'>> = true;
+  const b: Equal<typeof envelope, Result<{ readonly kind: 'committed'; readonly value: Done }, 'Denied' | 'Offline'>> = true;
+  const c: Equal<typeof wide, Result<State, 'Denied' | 'Offline'>> = true;
+  const d: Equal<typeof transformed, Result<{ saved: string }, 'Denied' | 'Offline'>> = true;
+  void a; void b; void c; void d;
+  if (false) {
+    // @ts-expect-error A broad save can return Pending, so its output must not narrow to Done.
+    const unsound: Result<Done, 'Denied' | 'Offline'> = wide;
+    void unsound;
+    // @ts-expect-error Saving cannot accept an incompatible decision value.
+    defineOperation('wrong-save-state', { needs: savedSource, execute: decideDone, useSave: () => async (value: Pending) => ok(value) });
+  }
+  return { direct, envelope, wide, transformed };
+}
+
+test('generic saves retain narrow states while broad and transforming saves keep their actual outputs', async () => {
+  const results = await savedContract();
+  assert.deepEqual(results.direct, ok({ kind: 'done', id: 'one' }));
+  assert.deepEqual(results.envelope, ok({ kind: 'committed', value: { kind: 'done', id: 'one' } }));
+  assert.deepEqual(results.wide, ok({ kind: 'pending', id: 'one' }));
+  assert.deepEqual(results.transformed, ok({ saved: 'one' }));
 });

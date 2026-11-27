@@ -1,12 +1,31 @@
 import { ok, err, workflow, type Result } from 'koyuki';
-export type Actor = Readonly<{ id: string; role: 'member' | 'manager' }>;
-type Details = Readonly<{ id: string; owner: string; startsAt: number }>;
+// Brands belong to this business model. JSON/DB values must be validated again.
+declare const bookingIdBrand: unique symbol;
+declare const actorIdBrand: unique symbol;
+export type BookingId = string & { readonly [bookingIdBrand]: true };
+export type ActorId = string & { readonly [actorIdBrand]: true };
+/** Validation failures are ordinary domain values, including at host boundaries. */
+export function bookingId(value: unknown): Result<BookingId, 'InvalidBookingId'> {
+  return typeof value === 'string' && value.trim() ? ok(value as BookingId) : err('InvalidBookingId');
+}
+export function actorId(value: unknown): Result<ActorId, 'InvalidActorId'> {
+  return typeof value === 'string' && value.trim() ? ok(value as ActorId) : err('InvalidActorId');
+}
+/** HTTP bodies are unknown; validate before dispatching any business operation. */
+export function parseBookingInput(value: unknown): Result<Input, 'InvalidBookingInput' | 'InvalidBookingId'> {
+  if (!value || typeof value !== 'object' || !('id' in value)) return err('InvalidBookingInput');
+  const id = bookingId(value.id);
+  return id.ok ? ok({ id: id.value }) : id;
+}
+
+export type Actor = Readonly<{ id: ActorId; role: 'member' | 'manager' }>;
+type Details = Readonly<{ id: BookingId; owner: ActorId; startsAt: number }>;
 export type Draft = Details & Readonly<{ kind: 'draft' }>;
 export type Requested = Details & Readonly<{ kind: 'requested' }>;
-export type Confirmed = Details & Readonly<{ kind: 'confirmed'; approvedBy: string }>;
-export type Cancelled = Details & Readonly<{ kind: 'cancelled'; approvedBy: string; cancelledBy: string }>;
+export type Confirmed = Details & Readonly<{ kind: 'confirmed'; approvedBy: ActorId }>;
+export type Cancelled = Details & Readonly<{ kind: 'cancelled'; approvedBy: ActorId; cancelledBy: ActorId }>;
 export type Booking = Draft | Requested | Confirmed | Cancelled;
-export type Input = Readonly<{ id: string }>;
+export type Input = Readonly<{ id: BookingId }>;
 export type Context = Readonly<{ booking: Booking; actor: Actor }>;
 export type CancellationContext = Context & Readonly<{ now: number; cancellationHours: number }>;
 const verified: unique symbol = Symbol('VerifiedBooking');
