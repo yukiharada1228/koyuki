@@ -1,13 +1,16 @@
 /** Unpublished authoring experiment. Mount is synchronous; IO belongs to dispatch. */
-import { defineCommand, workflow, type Result } from '../../framework/index.js';
+import { defineCommand, workflow, withReplay, type Result, type Execution, type ReplayBoundary, type ReplayInputError, type ReplayReport } from '../../framework/index.js';
+import { Workflow, type Rule } from '../../framework/workflow.js';
 import type { ActionReport } from '../../framework/action.js';
 type Handler<I, O, E> = (input: I) => Promise<Result<O, E>>;
-export interface OperationKey<I, O, E> {
+export interface OperationKey<I, O, E, D = ActionReport<O, E>> {
   readonly name: string;
-  // Function property makes the input contravariant and preserves the result contract.
-  readonly contract?: Handler<I, O, E>;
+  readonly contract?: { run: Handler<I, O, E>; detail: () => D };
 }
 export function operationKey<I, O, E>(name: string): OperationKey<I, O, E> { return Object.freeze({ name }); }
+export function replayOperationKey<I, O, E, RE>(name: string): OperationKey<I, Execution<O>, E | RE | ReplayInputError, ReplayReport<O, E, RE>> {
+  return Object.freeze({ name });
+}
 type Node = Readonly<{ evaluate: () => void }>;
 type Children = Node | readonly Children[] | null;
 interface Frame { values: ReadonlyMap<symbol, unknown>; handlers: Map<object, unknown> }
@@ -54,20 +57,48 @@ export function useContext<T>(context: ReturnType<typeof createContext<T>>): T {
   if (!values.has(context.id)) throw new Error('MissingContextProvider');
   return values.get(context.id) as T;
 }
-export function useOperation<I, C, LE, O, DE, S, SE>(definition: {
+type Definition<I, C, LE, O, DE, S, SE> = {
   name: string;
   load: (input: I) => Promise<Result<C, LE>>;
-  execute: (input: NoInfer<C>) => Result<O, DE>;
-  save: (value: NoInfer<O>) => Promise<Result<S, SE>>;
-}) {
-  frame();
-  const command = defineCommand({ operation: definition.name, load: definition.load,
-    decide: workflow(`${definition.name}:execute`, definition.execute), save: definition.save });
-  return { run: (input: I) => command.run(input), runDetailed: command.runDetailed.bind(command) };
+  execute: Rule<NoInfer<C>, O, DE> | (Workflow<C, O, DE> & { readonly run: Rule<NoInfer<C>, O, DE> });
+  save: (value: NoInfer<O>, request: NoInfer<I>) => Promise<Result<S, SE>>;
+};
+function commandFor<I, C, LE, O, DE, S, SE>(definition: Definition<I, C, LE, O, DE, S, SE>) {
+  const decide = definition.execute instanceof Workflow ? definition.execute
+    : workflow(`${definition.name}:execute`, definition.execute);
+  const forRequest = (request: I) => defineCommand({ operation: definition.name, load: definition.load,
+    decide, save: (value: O) => definition.save(value, request) });
+  return {
+    run: (request: I) => forRequest(request).run(request),
+    runDetailed: (request: I) => forRequest(request).runDetailed(request),
+  };
 }
-export function Operation<I, O, E>({ operation, handler }: {
-  operation: OperationKey<I, O, E>;
-  handler: { run: Handler<NoInfer<I>, NoInfer<O>, NoInfer<E>>; runDetailed: (input: NoInfer<I>) => Promise<ActionReport<NoInfer<O>, NoInfer<E>>> };
+export function useOperation<I, C, LE, O, DE, S, SE, RE>(definition:
+  Definition<I, C, LE, O, DE, Execution<S>, SE> & { replay: ReplayBoundary<NoInfer<I>, NoInfer<S>, LE | DE | SE, RE> }
+): {
+  run: Handler<I, Execution<S>, LE | DE | SE | RE | ReplayInputError>;
+  runDetailed: (input: I) => Promise<ReplayReport<S, LE | DE | SE, RE>>;
+};
+export function useOperation<I, C, LE, O, DE, S, SE>(definition:
+  Definition<I, C, LE, O, DE, S, SE> & { replay?: never }
+): {
+  run: Handler<I, S, LE | DE | SE>;
+  runDetailed: (input: I) => Promise<ActionReport<S, LE | DE | SE>>;
+};
+export function useOperation(definition: Definition<unknown, unknown, unknown, unknown, unknown, unknown, unknown> & {
+  replay?: ReplayBoundary<unknown, unknown, unknown, unknown>;
+}): unknown {
+  frame();
+  const command = commandFor(definition);
+  // The replay overload requires save to return the atomic commit/replay envelope.
+  return definition.replay ? withReplay(command as {
+    run: Handler<unknown, Execution<unknown>, unknown>;
+    runDetailed: (input: unknown) => Promise<ActionReport<Execution<unknown>, unknown>>;
+  }, definition.replay) : command;
+}
+export function Operation<I, O, E, D>({ operation, handler }: {
+  operation: OperationKey<I, O, E, D>;
+  handler: { run: Handler<NoInfer<I>, NoInfer<O>, NoInfer<E>>; runDetailed: (input: NoInfer<I>) => Promise<NoInfer<D>> };
 }): Node {
   return { evaluate() {
     const handlers = frame().handlers;
@@ -79,13 +110,13 @@ export function createApplication(root: Node) {
   const handlers = new Map<object, unknown>();
   within({ values: new Map(), handlers }, () => visit(root));
   return Object.freeze({
-    dispatch<I, O, E>(operation: OperationKey<I, O, E>, input: NoInfer<I>): Promise<Result<O, E>> {
+    dispatch<I, O, E, D>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<Result<O, E>> {
       const handler = handlers.get(operation) as { run: Handler<I, O, E> } | undefined;
       if (!handler) throw new Error(`UnregisteredOperation:${operation.name}`);
       return handler.run(input);
     },
-    inspect<I, O, E>(operation: OperationKey<I, O, E>, input: NoInfer<I>): Promise<ActionReport<O, E>> {
-      const handler = handlers.get(operation) as { runDetailed: (input: I) => Promise<ActionReport<O, E>> } | undefined;
+    inspect<I, O, E, D>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<D> {
+      const handler = handlers.get(operation) as { runDetailed: (input: I) => Promise<D> } | undefined;
       if (!handler) throw new Error(`UnregisteredOperation:${operation.name}`);
       return handler.runDetailed(input);
     },

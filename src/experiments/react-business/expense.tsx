@@ -18,7 +18,7 @@ export function useExpenseApproval() {
   const actor = useActor();
   return useOperation({ name: approval.name,
     load: (input: Input) => expenses.load(input, actor),
-    execute: approveExpense.run,
+    execute: approveExpense,
     save: change => expenses.save(change),
   });
 }
