@@ -37,7 +37,7 @@ ExpensesはRepositoryとActorのProviderを組み合わせる部品。呼び出�
 
 JSXは部品の評価をProviderのスコープ内まで遅延する。組み立て時には操作を登録し、フレームワークからload・execute・saveを呼び出さない。executeまたはexecuteDetailedを明示的に呼ぶと既存エンジンで実行する。executeDetailedも保存を伴い、プレビューではない。旧dispatch/inspect aliasは削除した。
 
-各createApplicationは独立したContextと登録表を持つ。Hooksを呼べるのは同期的なコンポーネント評価中だけで、評価の終了・例外時に以前のスコープへ戻す。非同期処理には操作者やRepositoryをクロージャとして渡す。dispatch中にグローバルな現在のContextを読み出さない。
+各createApplicationは独立したContextと登録表を持つ。Hooksを呼べるのは同期的なコンポーネント評価中だけで、評価の終了・例外時に以前のスコープへ戻す。非同期処理には操作者やRepositoryをクロージャとして渡す。実行中にグローバルな現在のContextを読み出さない。
 
 この仕組みは利用者の関数の純粋性を強制するものではない。部品の中で直接I/Oを書けば実行される。コンポーネントは同期的な組み立て関数として書く。
 
@@ -82,7 +82,7 @@ return {
 };
 ```
 
-業務関数の変更は不要。Hookにはlookupと回復対象の失敗の指定が追加され、saveは元の要求も受け取る。要求ごとのsaveクロージャを作り、同時実行でも最後に届いた要求で上書きしない。操作者はHook評価時にコピーして固定し、lookupとsaveへ同じ認証済みidentityを渡す。withReplayはdispatch入力をsnapshotしてからlookupと実行へ渡す。
+業務関数の変更は不要。Hookにはlookupと回復対象の失敗の指定が追加され、saveは元の要求も受け取る。要求ごとのsaveクロージャを作り、同時実行でも最後に届いた要求で上書きしない。操作者はHook評価時にコピーして固定し、lookupとsaveへ同じ認証済みidentityを渡す。withReplayは実行入力をsnapshotしてからlookupと実行へ渡す。
 
 再送もdefineOperationという同じ入口を使い、入力・保存値・エラーとReplayReportを推論する。型を明記する場合はBusinessOperationを使う。再送設定に対してExecutionを返さないsaveは型検査で拒否する。通常実行と再送実行では戻り値とレポートの形が異なるため、ここは利用者が区別して理解する必要がある。
 
@@ -90,7 +90,7 @@ return {
 
 ## 休暇承認への適用
 
-[休暇承認の例](../src/experiments/react-business/leave.tsx)も、独立したworkflow、RepositoryのProvider、カスタムHook、Operation、dispatchの同じ構成で記述する。追加のランタイムAPIは不要だった。これは組み立て方を比較するための小さな別ドメイン例であり、既存の休暇サンプル全体を移行したものではない。
+[休暇承認の例](../src/experiments/react-business/leave.tsx)も、独立したworkflow、RepositoryのProvider、カスタムHook、Operation、executeの同じ構成で記述する。追加のランタイムAPIは不要だった。これは組み立て方を比較するための小さな別ドメイン例であり、既存の休暇サンプル全体を移行したものではない。
 
 操作ハンドル3箇所の型引数は合計10個から0個になった。残る書き心地の負担は、識別子と型付きハンドルの宣言そのものと、再送アダプターの要求identityを組み立てる関数。今後は複数操作での共有を評価し、業務固有の永続化契約を暗黙化しない範囲で重複を減らす。
 
@@ -123,7 +123,7 @@ npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx sr
 
 ## 選択した途中状態のcapture
 
-[inspectの選択capture](authoring-capture.md)を追加した。第3引数のselectorで必要な状態や成否を選び、一度の実行からobservationsとobservationErrorsを取得する。元の業務Resultと再送レポートは維持し、live spanも同じ実行へ接続する。
+[executeDetailedの選択capture](authoring-capture.md)を追加した。第3引数のselectorで必要な状態や成否を選び、一度の実行からobservationsとobservationErrorsを取得する。元の業務Resultと再送レポートは維持し、live spanも同じ実行へ接続する。
 
 ## 休暇の業務モデルの点検
 

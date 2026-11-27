@@ -1,6 +1,6 @@
 # Hooksから途中のI/Oと純粋な計算を組み立てる
 
-開発版のkoyuki/experimentalにおけるuseOperationは、load → 純粋なWorkflow → saveに加え、明示したProcessをexecuteへ受け取る。loadにも詳細形式のProcessを渡せる。同期の計算とI/Oを区別しつつ、既存の実行機構へ接続する。
+開発版のkoyuki/experimentalでは、defineOperationの定義に、load → 純粋なWorkflow → saveだけでなく、明示したProcessをexecuteへ渡せる。loadにも詳細形式のProcessを渡せる。同期の計算とI/Oを区別しつつ、既存の実行機構へ接続する。
 
 ## 経費の権限検証と予算ポリシー照会
 
@@ -14,19 +14,19 @@ export function budgetApprovalProcess(policies: BudgetPolicyRepository) {
     .through(approveWithBudgetPolicy);
 }
 
-function useBudgetExpenseApproval() {
+const budgetApproval = defineOperation('expense.approve-with-budget.v1', () => {
   const expenses = useContext(ExpenseRepositoryContext);
   const policies = useContext(BudgetPolicyContext);
   const actor = useActor();
-  return useOperation({
-    name: approvalId,
+  return {
     load: (input: Input) => expenses.load(input, actor),
     execute: budgetApprovalProcess(policies),
     save: change => expenses.save(change),
-  });
-}
+  };
+});
 
-const budgetApproval = operationKey(approvalId, useBudgetExpenseApproval);
+// Providerの内側で登録する。
+// <Operation operation={budgetApproval} />
 ```
 
 validateApproval、予算ポリシーの判定、状態生成は同期の純粋関数。Processは権限検証後にポリシーを取得し、成功値をbudgetへ加えて次の計算へ渡すI/Oのshellである。Hooksの中にResultの取り出し・失敗伝播のifは書かない。型付きの安定した識別子、load/save、外部依存の注入は通常例と同じ。

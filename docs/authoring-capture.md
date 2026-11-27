@@ -2,7 +2,7 @@
 
 実行とcaptureの入口はexecuteDetailed。旧inspect aliasは削除した。観測だけでなく、業務の実行と保存を伴う。
 
-開発版koyuki/experimentalのcreateApplicationでは、inspectの第3引数へ既存のWorkflowCaptureを渡せる。明示した各段階の入力・Resultから、必要な項目だけを選び、同じ実行のレポートへ返す。
+開発版koyuki/experimentalのcreateApplicationでは、executeDetailedの第3引数へ既存のWorkflowCaptureを渡せる。明示した各段階の入力・Resultから、必要な項目だけを選び、同じ実行のレポートへ返す。
 
 ```tsx
 function selectedState(value: unknown): string | null {
@@ -22,11 +22,11 @@ console.log(report.observations);
 console.log(report.observationErrors);
 ```
 
-inspectは業務を実行し、成功すれば保存も行う。captureはその一度の実行を観測し、観測のためにload・業務計算・途中I/O・saveを再実行しない。第3引数を省略した戻り型と動作は維持する。
+executeDetailedは業務を実行し、成功すれば保存も行う。captureはその一度の実行を観測し、観測のためにload・業務計算・途中I/O・saveを再実行しない。第3引数を省略した戻り型と動作は維持する。
 
 ## 選ぶ値と返すレポート
 
-inputとresultのselectorは同期の純粋関数として書く。selectorの返した値だけをsnapshotするため、未選択のフィールドを観測用に複製しない。inputはその段階を実行する前、resultはResultが返った後に選択する。呼出し元の値を後から変更しても、すでに取得したsnapshotは変わらない。並行するinspectも別々の観測配列を持つ。
+inputとresultのselectorは同期の純粋関数として書く。selectorの返した値だけをsnapshotするため、未選択のフィールドを観測用に複製しない。inputはその段階を実行する前、resultはResultが返った後に選択する。呼出し元の値を後から変更しても、すでに取得したsnapshotは変わらない。並行するexecuteDetailedも別々の観測配列を持つ。
 
 観測配列・行はreadonlyとして返す。選んだ値の型はselectorから推論する。元の詳細レポートのresult・trace・planや、再送のattemptはそのまま保持し、独自レポートに同名のobservations/observationErrorsがある場合は今回のcapture結果へ置き換える。置き換える名前の型を元の型と交差させない。
 
