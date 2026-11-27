@@ -6,7 +6,7 @@ import { ReplayExpenses, replayedApproval, type ReplayExpenseRepository, type Re
 import { ReplaySqliteExpenses, type ExpenseRequest, type ReplayStorageError } from './expenses/sqlite-replay.js';
 import { expenseReplayCommands } from './expenses/replay.js';
 import { draftExpense, type Actor, type Change, type ExpenseState, type RuleError } from './expenses/domain.js';
-import { ok, err, type Result, type Execution, type ReplayReport, type ReplayInputError } from './framework/index.js';
+import { ok, err, type Result, type Execution, type ReplayReport, type ReplayInputError, type ExecutionEvent } from './framework/index.js';
 import type { LoadError } from './expenses/repository.js';
 import { approveExpense } from './experiments/react-business/expense.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
@@ -32,7 +32,8 @@ function counted(repository: ReplaySqliteExpenses, calls: string[], pause?: () =
 test('Hooks use the atomic receipt adapter and retain domain step traces; replay skips all business work', async t => {
   const repository = new ReplaySqliteExpenses(':memory:'); t.after(() => repository.close()); await seed(repository);
   const calls: string[] = [];
-  const app = createApplication(<ReplayExpenses repository={counted(repository, calls)} actor={manager} />);
+  const events: ExecutionEvent[] = [];
+  const app = createApplication(<ReplayExpenses repository={counted(repository, calls)} actor={manager} />, { sessionId: 'replay-jsx', observeExecution: event => events.push(event) });
   assert.deepEqual(calls, []);
   const sent = structuredClone(call);
   const pending = app.inspect(replayedApproval, sent);
@@ -41,6 +42,13 @@ test('Hooks use the atomic receipt adapter and retain domain step traces; replay
   assert.equal(value(first.result).kind, 'committed');
   assert.deepEqual(first.attempt?.trace?.map(row => row.step), ['expense.approve.v1:load', 'authorize-approval', 'approve', 'expense.approve.v1']);
   assert.deepEqual(calls, ['lookup:boss', 'load:boss', 'save:boss']);
+  assert.equal(events.some(event => event.kind === 'span-started' && event.step === 'authorize-approval'), true);
+  assert.equal(events.some(event => event.kind === 'span-started' && event.step === 'replay.lookup:before'), true);
+  events.length = 0;
+  const observedReplay = await app.inspect(replayedApproval, call);
+  assert.equal(value(observedReplay.result).kind, 'replayed');
+  assert.equal(events.some(event => event.kind === 'span-started' && event.step === 'authorize-approval'), false);
+  assert.equal(events.some(event => event.kind === 'completed' && event.status === 'ok'), true);
   calls.length = 0;
   // A new request-scoped tree can find the same persisted receipt.
   const another = createApplication(<ReplayExpenses repository={counted(repository, calls)} actor={manager} />);

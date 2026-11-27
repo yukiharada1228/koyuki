@@ -525,6 +525,21 @@
       "independentUserTrialCompleted": false,
       "directAudioReviewedInThisFollowUp": false,
       "allFramesReviewedInThisFollowUp": false
+    },
+    "reactAuthoringLiveFollowUp": {
+      "implementationBaseCommit": "3cab583d63e699d6ba132d36fe84962d0e59a62f",
+      "topicIds": [
+        "w0o-13"
+      ],
+      "scope": "Unpublished React-style authoring, pure Workflow composition, scoped receipt replay and live execution spans. Runtime wrappers now preserve the existing live instrumentation capability. Does not resolve universal inference, publish the prototype, verify original audio/continuous frames, or establish independent human DX. Existing topic statuses and source review flags remain unchanged.",
+      "evidence": [
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx"
+      ]
     }
   },
   "sections": [
@@ -758,7 +773,13 @@
         "src/experiments/procurement/domain.ts",
         "docs/procurement-request-edit.md",
         "src/procurement-application-io-exceptions.test.ts",
-        "docs/procurement-application-io-exceptions.md"
+        "docs/procurement-application-io-exceptions.md",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx"
       ],
       "remaining": [
         "履歴の保存先・公開項目・保持削除、opaque関数内部・分散相関はhostの設計または未提供の範囲である。講演のdump可能性を、既定の全値永続収集という必須仕様へ読み替えない。",

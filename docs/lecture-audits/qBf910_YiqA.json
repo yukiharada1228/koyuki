@@ -727,6 +727,21 @@
         "src/framework/model.ts",
         "src/framework/business.ts"
       ]
+    },
+    "reactAuthoringLiveFollowUp": {
+      "implementationBaseCommit": "3cab583d63e699d6ba132d36fe84962d0e59a62f",
+      "topicIds": [
+        "qbf-19"
+      ],
+      "scope": "Unpublished React-style authoring, pure Workflow composition, scoped receipt replay and live execution spans. Runtime wrappers now preserve the existing live instrumentation capability. Does not resolve universal inference, publish the prototype, verify original audio/continuous frames, or establish independent human DX. Existing topic statuses and source review flags remain unchanged.",
+      "evidence": [
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx"
+      ]
     }
   },
   "sections": [
@@ -1127,7 +1142,13 @@
         "src/business-verified-request.test.ts",
         "scripts/fixtures/onboarding-staged-solution.ts",
         "scripts/check-exported-business.mjs",
-        "scripts/fixtures/business-verified-exports.ts"
+        "scripts/fixtures/business-verified-exports.ts",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",

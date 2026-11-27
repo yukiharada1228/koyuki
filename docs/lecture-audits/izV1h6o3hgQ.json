@@ -793,6 +793,22 @@
         "src/framework/model.ts",
         "src/framework/business.ts"
       ]
+    },
+    "reactAuthoringLiveFollowUp": {
+      "implementationBaseCommit": "3cab583d63e699d6ba132d36fe84962d0e59a62f",
+      "topicIds": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Unpublished React-style authoring, pure Workflow composition, scoped receipt replay and live execution spans. Runtime wrappers now preserve the existing live instrumentation capability. Does not resolve universal inference, publish the prototype, verify original audio/continuous frames, or establish independent human DX. Existing topic statuses and source review flags remain unchanged.",
+      "evidence": [
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx"
+      ]
     }
   },
   "sections": [
@@ -1173,7 +1189,13 @@
         "docs/business-input-retention.md",
         "src/business-input-pair.test.ts",
         "docs/procurement-direct-receipt-stages.md",
-        "docs/step-generic-first.md"
+        "docs/step-generic-first.md",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
@@ -1271,7 +1293,13 @@
         "src/business-verified-request.test.ts",
         "scripts/fixtures/onboarding-staged-solution.ts",
         "scripts/check-exported-business.mjs",
-        "scripts/fixtures/business-verified-exports.ts"
+        "scripts/fixtures/business-verified-exports.ts",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",

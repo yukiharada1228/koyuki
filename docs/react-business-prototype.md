@@ -51,6 +51,20 @@ JSXは部品の評価をProviderのスコープ内まで遅延する。組み立
 - 再描画、useState、useEffect、Hook呼び出し順の追跡、asyncコンポーネントは実装していない。Reactとの互換ランタイムではない。
 - Providerの値は参照として渡す。認証済みActorの値の変更管理やHTTPリクエストのライフサイクルは呼び出し元の責務。
 
+## 実行中の通知
+
+createApplicationの第2引数へ既存のExecutionOptionsを渡せる。observeExecution、またはアプリのsubscribeExecutionから、実行ID・各ルールのlive span・完了通知を受け取る。Hookの要求別CommandとOperation登録が、既存の詳細実行の観測能力を引き継ぐ。dispatchとinspectは同じ詳細実行の経路を使い、観測のために業務を再実行しない。
+
+```tsx
+const app = createApplication(<Expenses repository={repository} actor={actor} />, {
+  sessionId: 'host-request-1',
+  observeExecution: event => record(event),
+});
+await app.dispatch(approval, input);
+```
+
+観測者の失敗は業務のResultから分離する。業務I/Oの想定外の例外は元のままrejectし、終端通知はdefectとなる。既存defineApplicationのcrashedへの変換やprojection管理を、この入口に追加したものではない。
+
 ## 再送付き経費承認
 
 [再送版のHook](../src/experiments/react-business/expense-replay.tsx)は、同じapproveExpenseを使う。
@@ -88,7 +102,7 @@ return useOperation({
 
 ```sh
 npm run check
-npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx src/react-business-leave.test.tsx
+npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx src/react-business-leave.test.tsx src/react-business-execution.test.tsx
 ```
 
 [再送テスト](../src/react-business-replay.test.tsx)は既存のSQLiteアダプターを使用し、保存済み要求、同時重複、応答喪失、要求payload変更、操作者の違い、dispatch後の入力変更、Hook評価後の操作者変更、異なる要求の並行処理を確認する。[休暇テスト](../src/react-business-leave.test.tsx)では同じ構成で成功・失敗・個別ルールのtraceを検査する。SQLiteはテスト用のI/Oアダプターであり、試作ランタイムはNode APIをimportしない。
