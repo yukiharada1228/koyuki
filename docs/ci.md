@@ -6,6 +6,7 @@ Node 26系、Ubuntuのhosted runnerを使い、actionsは確認したreleaseのc
 | job | 実行する検査 |
 | --- | --- |
 | Core and portable package | npm ci、型検査、全rootテスト、実tarballの依存・配布宣言・Node型なし検査、Node globalなしの実行、生成した100/500操作の型・拒否・実行検査 |
+| Installed expense budget and policy change | 予算付き経費の公開import、TS6/7・生成宣言、SQLite・再送・通知・監査・二アダプター契約、予算versionの負例、承認閾値の変更比較 |
 | Installed consumer and policy change | 開発版を別ディレクトリへinstallしたHTTP/GraphQL/Application・再送・移行・型推論・SQLite writer等と、承認規則変更の比較 |
 | Installed registration adapter | 永続outbox・lease・ack回復・人の確認・別OSプロセス |
 | Installed prisma adapter | Prisma context・typed rollback・複数行の原子保存・commit失敗・migration |
