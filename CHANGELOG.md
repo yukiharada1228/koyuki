@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+変更なし。
+
+## 0.1.0-alpha.6 — 2026-11-28
+
 ### 実行スコープ・保存契約・開発版Quick Start
 
 - `koyuki/experimental`へ`createApplicationTemplate`と`Guard`を追加。業務ツリーから実行ごとのActorを分離し、配下の操作・Queryを再送照会・業務I/Oより前に認可する。
@@ -10,7 +14,7 @@
 - 予約ID・操作者IDを検証付き生成関数で区別し、予約の日程変更・キャンセル手数料・永続再送・返金イベントをSQLiteで検証。
 - 予算付き経費精算に、多段階承認・差し戻し・予算CAS・監査/outbox/receiptの同時保存を追加。通常TSとの比較、二アダプターの共通契約、閾値変更を配布物で検査し、独立したCI jobへ追加。
 - 推奨Quick StartをJSX・実行スコープへ統一。サンプルの`createBookingApp(repository, actor)`は`createBookingApp(repository).scope(...)`へ変更し、main/trace/verifyをtsxへ移行。
-- 実験APIとサンプルは公開済みalpha.5と区別する。[次のalphaに向けたリリースノート案](docs/releases/next-alpha.md)を参照。
+- 実験APIとサンプルは公開済みalpha.5と区別する。[次のalphaに向けたリリースノート案](docs/releases/0.1.0-alpha.6.md)を参照。
 
 
 - stepが文脈付き署名より先に元の関数を推論し、制約のないgeneric関数をinlineなwithInputで包んでもunknownへ固定しないようにした。単独のrule呼出しで入力・結果・入れ子の値のTを保持し、privateなclassとgenericな呼出し元、入力型がないcallbackの拒否も検査する。defineTransition全体の多相identity/未注釈evolveの制限は別に残る。

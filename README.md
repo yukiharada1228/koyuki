@@ -2,21 +2,21 @@
 
 独立したTypeScriptの業務関数を、ReactらしいContext・Hooks・JSXで組み立てる業務フレームワーク。状態・検証・遷移は業務側で定義し、型付きの接続・失敗停止・実行記録・イベント配送を共通の実行器へ任せます。
 
-## 開発版のQuick Start
+## Quick Start（alpha.6）
 
 **[最初の業務操作を作る](examples/authoring-quickstart/README.md)** を推奨の入口とします。普通の業務関数から始め、Operation → JSXの実行スコープ → Guard → trace → 再送へ進みます。
 
 ```sh
-# この開発版のチェックアウトのルートで
+# リポジトリのv0.1.0-alpha.6チェックアウトで
 npm ci
-npm run prepare:authoring:quickstart -- ../my-bookings
+npm run prepare:authoring:quickstart:registry -- ../my-bookings
 cd ../my-bookings
 npm install
 npm run check
 npm start
 ```
 
-既存ディレクトリは上書きしません。準備したプロジェクトは開発版tarballと公開importのみで動きます。**公開済みnpm alpha.5には`koyuki/experimental`は含まれません。** 未コミットの変更がある場合、新しくcloneした公開リポジトリだけでは同じ開発版になりません。
+既存ディレクトリは上書きしません。`koyuki@0.1.0-alpha.6`をnpmから取得して使用します。**alpha.5以前には`koyuki/experimental`は含まれません。** ローカルの未公開変更を試す場合は`prepare:authoring:quickstart`で開発版tarballを作れます。公開内容は[alpha.6のリリースノート](docs/releases/0.1.0-alpha.6.md)を参照してください。
 
 業務ツリーは`createApplicationTemplate`、操作者は実行ごとの`scope`とProviderで構成します。構成時に業務I/Oは始まらず、`execute` / `executeDetailed`で実行します。React自体は不要で、再描画・useState・useEffectは提供しません。APIは実験段階です。
 

@@ -83,7 +83,9 @@
     "test:connections:package": "node scripts/test-wiring-package.mjs --verify",
     "prepare:connections": "node scripts/test-wiring-package.mjs --prepare",
     "demo:authoring:dashboard": "tsx src/experiments/react-business/dashboard-demo.tsx",
-    "test:expense-budget:package": "node scripts/test-expense-budget-package.mjs"
+    "test:expense-budget:package": "node scripts/test-expense-budget-package.mjs",
+    "test:authoring:quickstart:registry": "node scripts/authoring-quickstart.mjs --verify --registry",
+    "prepare:authoring:quickstart:registry": "node scripts/authoring-quickstart.mjs --registry --prepare"
   },
   "devDependencies": {
     "@babel/parser": "8.1.3",
@@ -99,7 +101,7 @@
     "tsx": "latest",
     "typescript": "latest"
   },
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.6",
   "description": "Declarative, functional business workflows for TypeScript",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

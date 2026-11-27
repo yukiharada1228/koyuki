@@ -1,23 +1,23 @@
 # 最初の業務操作を作る
 
-React経験者向けの開発版Quick Start。純粋な業務関数 → Operation → JSXの実行スコープ → Guard → trace → 再送の順に試す。
+React経験者向けのalpha.6 Quick Start。純粋な業務関数 → Operation → JSXの実行スコープ → Guard → trace → 再送の順に試す。
 
-公開済みnpm alpha.5には`koyuki/experimental`が含まれないため、この開発版チェックアウトからtarballを作る。Reactは不要。Hooksは構成時に依存を取得する仕組みで、Reactの再描画・useState・useEffectは提供しない。
+alpha.6のnpmパッケージに含まれる`koyuki/experimental`を使う。alpha.5以前にはこの入口は含まれない。Reactは不要。Hooksは構成時に依存を取得する仕組みで、Reactの再描画・useState・useEffectは提供しない。
 
 ## 1. 独立プロジェクトで実行する
 
-Node.js 22以上とnpmが必要。この開発版のリポジトリのルートで実行する。未公開の変更を含む場合、GitHubを新しくcloneしただけでは同じ内容にならないので、変更を含むチェックアウトを使用する。
+Node.js 22以上とnpmが必要。リポジトリのv0.1.0-alpha.6タグのチェックアウトで実行する。
 
 ```sh
 npm ci
-npm run prepare:authoring:quickstart -- ../my-bookings
+npm run prepare:authoring:quickstart:registry -- ../my-bookings
 cd ../my-bookings
 npm install
 npm run check
 npm start
 ```
 
-成功すると`{ ok: true, value: { kind: 'cancelled', id: 'booking-1', owner: 'alice' } }`が表示される。既存フォルダーは上書きしない。コピーされたtarballと公開importのみで動き、元リポジトリへの相対importはない。`DEVELOPMENT.json`には作成元コミットとtarballのhashを記録するが、未コミットの変更までそのコミットに含まれているという意味ではない。
+成功すると`{ ok: true, value: { kind: 'cancelled', id: 'booking-1', owner: 'alice' } }`が表示される。既存フォルダーは上書きしない。npmから取得したalpha.6と公開importのみで動き、元リポジトリへの相対importはない。`REGISTRY.json`に対象版とregistryのintegrityを記録する。未公開の変更を試す場合は`prepare:authoring:quickstart`でtarballを使う。この場合だけ`DEVELOPMENT.json`へ作成元コミットとtarballのhashを記録する。
 
 ## 2. 業務関数を読む
 
@@ -119,6 +119,6 @@ npm run verify
 
 成功・拒否・未検出・重複実行・保存回数・純粋な核・内部traceを検査する。操作は`cancellation`の参照を登録と実行で共有し、名前の再入力をしない。同名操作は構成時に拒否する。予約IDと操作者IDの取り違え、未検証文字列、余分なactor入力は`npm run check`の負例で検査する。
 
-このリポジトリのルートでは`npm run test:authoring:quickstart`が準備から実行、認可ガード、ルール変更まで検証する。公開版alpha.5の使用手順とは混同しない。
+このリポジトリのルートでは`npm run test:authoring:quickstart`が準備から実行、認可ガード、ルール変更まで検証する。公開されたalpha.6を検証するには`npm run test:authoring:quickstart:registry`を使う。
 
 次にリポジトリの`docs/execution-scopes.md`、`docs/declarative-connections.md`、`docs/expense-budget-study.md`へ進む。予算付き経費精算のSQLite例はNode.js 26を使用する。独立プロジェクトへコピーしたこのREADMEからは、これらを元リポジトリで参照する。

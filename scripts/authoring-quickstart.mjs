@@ -6,7 +6,9 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const args = process.argv.slice(2);
+const registry = process.argv.includes('--registry');
+const args = process.argv.slice(2).filter(arg => arg !== '--registry');
+const version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version;
 const verify = args.length === 1 && args[0] === '--verify';
 assert(verify || (args.length === 2 && args[0] === '--prepare'), 'Use --verify or --prepare /unused/path');
 function run(command, args, cwd = root, fail = false) {
@@ -19,16 +21,30 @@ const temp = mkdtempSync(join(tmpdir(), 'koyuki-authoring-quickstart-'));
 try {
   const consumer = verify ? join(temp, 'consumer') : resolve(args[1]);
   assert(!existsSync(consumer), 'Refusing to overwrite an existing directory');
-  run('npm', ['run', 'build']);
-  const pack = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temp]))[0];
+  let dependency = version;
   mkdirSync(consumer);
-  copyFileSync(join(temp, pack.filename), join(consumer, 'koyuki-development.tgz'));
-  writeFileSync(join(consumer, 'DEVELOPMENT.json'), JSON.stringify({ baseCommit: run('git', ['rev-parse', 'HEAD']).trim(), sha256: createHash('sha256').update(readFileSync(join(temp, pack.filename))).digest('hex'), scope: 'Unpublished tarball built from current working tree. Not the npm registry alpha.5.' }, null, 2));
+  if (registry) {
+    const integrity = JSON.parse(run('npm', ['view', `koyuki@${version}`, 'dist.integrity', '--json', '--registry=https://registry.npmjs.org']));
+    writeFileSync(join(consumer, 'REGISTRY.json'), JSON.stringify({ package: `koyuki@${version}`, registry: 'https://registry.npmjs.org', integrity }, null, 2));
+  } else {
+    run('npm', ['run', 'build']);
+    const pack = JSON.parse(run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temp]))[0];
+    copyFileSync(join(temp, pack.filename), join(consumer, 'koyuki-development.tgz'));
+    dependency = 'file:./koyuki-development.tgz';
+    writeFileSync(join(consumer, 'DEVELOPMENT.json'), JSON.stringify({ baseCommit: run('git', ['rev-parse', 'HEAD']).trim(), sha256: createHash('sha256').update(readFileSync(join(temp, pack.filename))).digest('hex'), scope: 'Tarball built from current working tree; not fetched from npm registry.' }, null, 2));
+  }
   for (const file of ['domain.ts', 'app.tsx', 'main.tsx', 'trace.tsx', 'replay.tsx', 'verify.tsx', 'access.tsx', 'tsconfig.json', 'README.md']) copyFileSync(join(root, 'examples/authoring-quickstart', file), join(consumer, file));
-  writeFileSync(join(consumer, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx', trace: 'tsx trace.tsx', replay: 'tsx replay.tsx', verify: 'tsx verify.tsx', access: 'tsx access.tsx' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
-  if (!verify) { console.log(`Prepared ${consumer}. Run npm install, npm run check and npm start there. Unpublished development package only.`); }
+  writeFileSync(join(consumer, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx', trace: 'tsx trace.tsx', replay: 'tsx replay.tsx', verify: 'tsx verify.tsx', access: 'tsx access.tsx' }, dependencies: { koyuki: dependency }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
+  if (!verify) { console.log(`Prepared ${consumer}. Run npm install, npm run check and npm start there. ${registry ? `Registry package koyuki@${version}.` : 'Development tarball only.'}`); }
   else {
-    run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], consumer);
+    run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', ...(registry ? ['--registry=https://registry.npmjs.org'] : [])], consumer);
+    if (registry) {
+      const metadata = JSON.parse(readFileSync(join(consumer, 'REGISTRY.json'), 'utf8'));
+      const installed = JSON.parse(readFileSync(join(consumer, 'package-lock.json'), 'utf8')).packages['node_modules/koyuki'];
+      assert.equal(installed.version, version);
+      assert.equal(installed.integrity, metadata.integrity);
+      assert(installed.resolved.startsWith('https://registry.npmjs.org/koyuki/'));
+    }
     for (const name of ['react', '@types/react', '@types/node']) assert(!existsSync(join(consumer, 'node_modules', name)), `Unexpected ${name}`);
     for (const version of ['7.0.2', '6.0.3']) {
       if (version === '6.0.3') run('npm', ['install', '--save-dev', `typescript@${version}`, '--ignore-scripts', '--no-audit', '--no-fund'], consumer);
@@ -59,6 +75,6 @@ if (result.ok || result.error !== 'CancellationLocked' || repository.saves !== 0
 console.log('Domain-only rule change and inferred failure passed.');`);
     run('npm', ['run', 'check'], consumer);
     console.log(run('npm', ['exec', '--', 'tsx', 'changed.tsx'], consumer).trim());
-    console.log('Installed Quick Start verified without React or Node types; app, Providers and executor stayed unchanged.');
+    console.log(`Installed ${registry ? `registry koyuki@${version}` : 'development'} Quick Start verified without React or Node types; app, Providers and executor stayed unchanged.`);
   }
 } finally { rmSync(temp, { recursive: true, force: true }); }
