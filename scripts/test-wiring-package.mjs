@@ -32,7 +32,7 @@ try {
     writeFileSync(join(consumer, 'connected', file), source);
   }
   copyFileSync(join(root, 'scripts/fixtures/authoring-wiring-contracts.tsx'), join(consumer, 'connected/contracts.tsx'));
-  for (const file of ['authoring-wiring.test.tsx', 'authoring-wiring-contracts.test.tsx', 'authoring-wiring-sqlite.test.tsx']) {
+  for (const file of ['authoring-wiring.test.tsx', 'authoring-wiring-contracts.test.tsx', 'authoring-wiring-sqlite.test.tsx', 'authoring-view.test.tsx']) {
     const source = readFileSync(join(root, 'src', file), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'").replaceAll("'./framework/authoring.js'", "'koyuki/experimental'")
       .replaceAll("'./experiments/declarative-booking/business.js'", "'../connected/business.js'")
       .replaceAll("'./experiments/declarative-booking/domain.js'", "'../connected/domain.js'")
@@ -54,11 +54,29 @@ try {
     run('npm', ['run', 'check'], consumer);
     const emit = { ...config, compilerOptions: { ...config.compilerOptions, noEmit: false, declaration: true, emitDeclarationOnly: true, outDir: './declarations' } };
     writeFileSync(join(consumer, 'emit.json'), JSON.stringify(emit)); run('npm', ['exec', '--', 'tsc', '-p', 'emit.json'], consumer);
-    console.log(`TypeScript ${version}: installed needs, events, On, exact errors and declaration generation passed.`);
+    writeFileSync(join(consumer, 'declaration-client.ts'), `import { session } from './declarations/connected/contracts.js';
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const snapshot = session.snapshot();
+const exact: Equal<typeof snapshot.view.error, 'Missing' | 'Offline' | null> = true; void exact;
+if (false) {
+  // @ts-expect-error Inferred session input survives exported declarations.
+  void session.dispatch({ type: 'change', input: {} });
+}
+`);
+    writeFileSync(join(consumer, 'declaration-client.json'), JSON.stringify({ compilerOptions: config.compilerOptions, files: ['declaration-client.ts'] }));
+    run('npm', ['exec', '--', 'tsc', '-p', 'declaration-client.json'], consumer);
+    console.log(`TypeScript ${version}: resources, events, lifecycle/view contracts and generated-declaration consumer passed.`);
   }
   console.log(run('npm', ['start'], consumer).trim());
-  console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-wiring.test.tsx', 'integration/authoring-wiring-contracts.test.tsx', 'integration/authoring-wiring-sqlite.test.tsx'], consumer).trim());
+  console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-wiring.test.tsx', 'integration/authoring-wiring-contracts.test.tsx', 'integration/authoring-wiring-sqlite.test.tsx', 'integration/authoring-view.test.tsx'], consumer).trim());
   const runtime = join(consumer, 'node_modules/koyuki/dist/authoring.js'), source = readFileSync(runtime, 'utf8');
+  const unprojected = source.replace('reduce: binding.reduce,', 'reduce: state => state,'); assert.notEqual(source, unprojected);
+  try {
+    writeFileSync(runtime, unprojected);
+    const refused = run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-view.test.tsx'], consumer, true);
+    assert(refused.includes('fail'));
+  } finally { writeFileSync(runtime, source); }
+  console.log('Removing presentation projection was rejected by installed lifecycle tests.');
   const broken = source.replace('await route(report.publications)', 'await route([])'); assert.notEqual(source, broken);
   writeFileSync(runtime, broken);
   assert(run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-wiring.test.tsx'], consumer, true).includes('fail'));

@@ -1,6 +1,6 @@
 /** @jsx h */
 import { ok, err, type Result } from 'koyuki';
-import { h, Fragment, createApplication, defineResource, defineOperation, defineEvent, emit, Operation, On } from 'koyuki/experimental';
+import { h, Fragment, createApplication, defineResource, defineOperation, defineEvent, emit, Operation, On, defineView, projection } from 'koyuki/experimental';
 const current = defineResource('current', () => async (input: { id: string }): Promise<Result<number, 'Missing'>> => input.id ? ok(1) : err('Missing'));
 const actor = defineResource('actor', () => () => ok('host'));
 const changed = defineEvent<number>('changed');
@@ -26,4 +26,24 @@ if (false) {
   defineOperation('bad-context', { needs: { current }, execute: (values: { current: string }) => ok(values), useSave: () => async (value: { current: string }) => ok(value) });
   // @ts-expect-error Saved value must accept the decision's success value.
   defineOperation('bad-save', { needs: { current }, execute: (values: { current: number }) => ok(values.current), useSave: () => async (value: string) => ok(value) });
+}
+
+export const screen = defineView({
+  initial: () => 0,
+  operations: { change: projection(producer, (_state: number, output) => output) },
+  view: state => ({ value: state.data, busy: state.kind === 'running', error: state.kind === 'failed' ? state.error : null }),
+});
+export const session = await app.start(screen);
+const snapshot = session.snapshot();
+const exactError: Equal<typeof snapshot.view.error, 'Missing' | 'Offline' | null> = true; void exactError;
+if (false) {
+  // @ts-expect-error Session events retain the underlying operation input.
+  void session.dispatch({ type: 'change', input: {} });
+  // @ts-expect-error Projection cannot consume a different success type.
+  projection(producer, (_state: number, value: string) => value.length);
+}
+
+if (false) {
+  // @ts-expect-error Handwritten bindings must also accept the true success type.
+  void app.start({ initial: () => 0, operations: { bad: { operation: producer, reduce: (_state: number, value: string) => value.length } }, view: state => state.data });
 }

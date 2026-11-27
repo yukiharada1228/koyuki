@@ -142,3 +142,40 @@ npm run test:connections:package
 ```
 
 実tarballへTypeScript 6/7を接続し、入力・文脈・保存・イベントpayloadの不適合を拒否すること、宣言生成、実行、SQLiteでのrollback・再接続を確認する。自動配送を取り除いた反例が業務テストで失敗することも確認する。`npm run test:portable`は依存取得とイベント配送をNodeグローバルなしのブラウザー用bundleで検査する。
+
+## JSXの構成から状態とviewへ
+
+`createApplication(JSX)`で登録した操作は、`app.start(...)`から既存のApplicationの状態管理にも接続できる。新しい状態機械を増やさず、`ready / running / failed / crashed`、購読、要求のsnapshot、同一セッション内の実行順序とrevision検査を再利用する。
+
+```ts
+const screen = defineView({
+  initial: (): { accepted: readonly string[] } => ({ accepted: [] }),
+  operations: {
+    request: projection(requestAutomaticApproval,
+      (state: { accepted: readonly string[] }, result) => ({
+        accepted: [...new Set([...state.accepted, result.value.id])],
+      })),
+  },
+  view: state => ({
+    accepted: state.data.accepted,
+    busy: state.kind === 'running',
+    error: state.kind === 'failed' ? state.error : null,
+  }),
+});
+const session = await app.start(screen);
+const unsubscribe = session.subscribe(snapshot => console.log(snapshot.view));
+await session.dispatch({ type: 'request', input: { id: 'two' } });
+unsubscribe();
+```
+
+`defineView`・`projection`は`koyuki/experimental`からimportする。`defineView`は再利用する定義の型推論を保持するための関数で、同じ内容をstartへ直接渡してもよい。operationはJSXに登録した同じオブジェクトを参照する。ここでは再登録せず、表示用の操作名と成功値の反映方法を宣言する。要求・成功・失敗の型を保持し、viewのstateとエラーは推論する。通常の業務型や表示データ型は必要である。
+
+- startと購読では業務I/Oを実行しない。未登録操作・同じ操作の重複したprojectionはstartで拒否する。
+- dispatchごとにrunningを通知し、取得・計算・保存・自動配送には同じ実行経路を使う。業務失敗はfailed、例外やprojectionの例外はcrashedとなり、直前の表示データを保持する。dismissでreadyへ戻れる。保存後の表示計算が失敗してもDBは巻き戻らないため、再実行時は業務の再送契約が必要である。
+- 各startは独立した表示状態と実行キューを持つ。snapshotや購読へ返す値を変更しても内部状態は変わらない。複数セッションは同じRepositoryを共有できるが、DB側の競合制御は引き続き必要。
+- sessionのdispatchが返すResultは「状態機械が要求を受け付けたか」である。業務の成否はsnapshot.stateのkind/errorを見る。業務Resultや詳細traceそのものが必要な箇所ではapp.execute / executeDetailedも引き続き使える。
+- projectionはdispatchした**起点操作の結果**を表示データへ反映する。自動配送先の状態を勝手に表示へマージしない。例のacceptedは申請受付であり、DBの最新承認状態を表すものではない。後続状態が必要なら認可済みqueryで読み直す等の表示方針を実装する。
+- 再送でもprojectionは実行する。成功件数を無条件に加算するのではなく、idで置換・重複除去する等、表示側でも再送の意味を扱う。receiptは過去の結果であり、最新のDB状態とは限らない。
+- app.executeや別セッションのdispatchで、既存のsessionの表示状態は自動更新されない。session.subscribeはそのsessionの状態だけを購読する。subscribeExecution / subscribeDeliveryは同じapp全体の通知であり、セッション専用のフィルターではない。操作者の境界は引き続きアプリのProviderで分ける。
+
+実行例は`connected/demo.tsx`に含む。経費・休暇・会員登録のSQLite例でも、同じstart / defineView / projectionで再送結果から表示を更新し、表示セッションが独立することを検査する。Reactの再描画やuseState/useEffectを実装したという意味ではなく、業務操作の実行と表示用の状態管理を同じ入口から使えるようにしたものである。

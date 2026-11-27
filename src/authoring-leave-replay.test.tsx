@@ -5,7 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { h, Fragment, createApplication } from './framework/authoring.js';
+import { h, Fragment, createApplication, defineView, projection } from './framework/authoring.js';
 import { ReplayLeaves, replayedLeaveApproval } from './experiments/react-business/leave-replay.js';
 import { SqliteReplayLeaves } from './experiments/react-business/leave-sqlite.js';
 import { Registrations, registrationRequest } from './experiments/react-business/registration.js';
@@ -83,5 +83,28 @@ test('sibling business components have independent Providers and concurrent exec
     assert.deepEqual(await leaves.load(request.input, manager), ok({ current: { ...pending, kind: 'approved', by: 'boss' }, actor: manager }));
     assert.equal(events.filter(event => event.kind === 'completed').length, 3);
     assert.equal(new Set(events.map(event => event.executionId)).size, 3);
+    type Screen = { expense: string | null; leave: string | null; registration: string | null; receipts: readonly string[] };
+    const screen = defineView({
+      initial: (): Screen => ({ expense: null, leave: null, registration: null, receipts: [] }),
+      operations: {
+        expense: projection(replayedApproval, (state: Screen, output) => ({ ...state, expense: output.value.kind, receipts: [...state.receipts, output.kind] })),
+        leave: projection(replayedLeaveApproval, (state: Screen, output) => ({ ...state, leave: output.value.kind, receipts: [...state.receipts, output.kind] })),
+        register: projection(registrationRequest, (state: Screen, output) => ({ ...state, registration: output.value.kind, receipts: [...state.receipts, output.kind] })),
+      },
+      view: state => ({ ...state.data, busy: state.kind === 'running', error: state.kind === 'failed' ? state.error : null }),
+    });
+    const session = await app.start(screen), independent = await app.start(screen);
+    await Promise.all([
+      session.dispatch({ type: 'expense', input: { requestId: 'approve-expense', input: { id: 'expense', expectedVersion: 2 } } }),
+      session.dispatch({ type: 'leave', input: request }),
+      session.dispatch({ type: 'register', input: { requestId: 'register', id: 'person', email: 'person@example.test' } }),
+    ]);
+    assert.deepEqual(session.snapshot().view, { expense: 'approved', leave: 'approved', registration: 'awaiting', receipts: ['replayed', 'replayed', 'replayed'], busy: false, error: null });
+    assert.deepEqual(independent.snapshot().state.data.receipts, []);
+    if (false) {
+      // @ts-expect-error The selected operation determines its request payload.
+      void session.dispatch({ type: 'leave', input: { id: 'holiday' } });
+    }
+
   } finally { expenses.close(); leaves.close(); registrations.close(); }
 });

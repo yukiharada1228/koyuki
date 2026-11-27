@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { h as authoringH, Fragment as AuthoringFragment, createContext as authoringContext, useContext as authoringUseContext, defineOperation as authoringDefineOperation, Operation as AuthoringOperation, createApplication as mountAuthoring, defineResource as authoringResource, defineEvent as authoringEvent, emit as authoringEmit, On as AuthoringOn } from './dist/authoring.js';
+import { h as authoringH, Fragment as AuthoringFragment, createContext as authoringContext, useContext as authoringUseContext, defineOperation as authoringDefineOperation, Operation as AuthoringOperation, createApplication as mountAuthoring, defineResource as authoringResource, defineEvent as authoringEvent, emit as authoringEmit, On as AuthoringOn, projection as authoringProjection, defineView as authoringView } from './dist/authoring.js';
 import { exploreModel, sampleModel, sampleModelAsync } from './dist/testing.js';
 import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
@@ -52,6 +52,12 @@ export const result = (async () => {
   const connections = mountAuthoring(authoringH(AuthoringFragment, null, authoringH(AuthoringOperation, { operation: connected }), authoringH(AuthoringOn, { event: changed, operation: notify })));
   const connectedReport = await connections.executeDetailed(connected, { value: 1 });
   if (!connectedReport.result.ok || connectedReport.result.value !== 6 || resourceReads !== 1 || connectedWrites !== 1 || notifications !== 1 || connectedReport.deliveries[0].status !== 'ok' || typeof connectedReport.publications[0].id !== 'string') throw new Error('Portable dependency graph and event routing failed');
+  const connectedView = authoringView({ initial: () => 0, operations: { change: authoringProjection(connected, (_state, value) => value) }, view: state => ({ value: state.data, busy: state.kind === 'running' }) });
+  const connectedSession = await connections.start(connectedView);
+  const phases = [];
+  connectedSession.subscribe(snapshot => phases.push(snapshot.state.kind));
+  await connectedSession.dispatch({ type: 'change', input: { value: 2 } });
+  if (connectedSession.snapshot().view.value !== 9 || phases.join(',') !== 'ready,running,ready' || notifications !== 2) throw new Error('Portable JSX lifecycle and view failed');
   const authoringCapture = { input: (_value, step) => step, result: result => result.ok };
   const authoringFirst = await authoringApp.executeDetailed(authoringOperation, 2, authoringCapture);
   const authoringReplay = await authoringApp.executeDetailed(authoringOperation, 2, authoringCapture);

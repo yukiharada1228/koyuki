@@ -24,6 +24,8 @@ JSXを使わず通常関数とbusinessから始めたい場合は、[業務ア�
 
 新しい[依存とイベント接続の宣言](docs/declarative-connections.md)では、`needs`で取得・依存を、`emits`と`On`で業務間の接続を宣言できます。取得結果のResultを手で組み立てたり、承認後の通知を呼び出し側から直接実行する記述をruntimeへ移します。申請→承認→通知を配布物だけで試せます。
 
+JSXで登録した操作は`app.start({ initial, operations, view })`から表示用の状態管理にも接続できます。`projection`で成功値の反映を宣言し、実行中・失敗・例外・購読は既存のApplicationへ委ねます。詳しくは[接続とviewのガイド](docs/declarative-connections.md#jsxの構成から状態とviewへ)を参照してください。
+
 コアはWeb標準APIのみ・実行時外部依存ゼロを方針とします。[依存の契約と自動検証](docs/runtime.md)を参照してください。
 
 複数の業務を同じ実行契約で実装できることを価値仮説としています。

@@ -7,6 +7,9 @@ import { executionSession, type ExecutionOptions, type OperationReport } from '.
 import type { ActionLoad, ActionReport } from './action.js';
 import { loadResources, trackPublications, collectPublications, type ResourceTable, type NeedsInput, type NeedsValues, type NeedsError, type Emission, type BusinessEvent, type EventEnvelope, type EventReport, type EventDelivery } from './wiring.js';
 import { snapshotData } from './snapshot.js';
+import { defineApplication, type ApplicationState, type Operation as ApplicationOperation } from './application.js';
+export type { Operation as ApplicationOperation } from './application.js';
+import { operationEntries } from './operation-table.js';
 export { defineResource, defineEvent, emit } from './wiring.js';
 export type { BusinessResource, BusinessEvent, EventEnvelope, EventReport, EventDelivery } from './wiring.js';
 const emittedEvents = new WeakMap<object, readonly BusinessEvent<never>[]>();
@@ -228,6 +231,28 @@ function validateRoutes(handlers: Map<object, unknown>, events: Map<string, Busi
   };
   for (const event of events.values()) visit(event);
 }
+/** A projection belongs to a session's presentation, never to the domain operation. */
+export function projection<S, I, O, E, D extends OperationReport<O, E>>(
+  operation: BusinessOperation<I, O, E, D>, reduce: (state: S, output: NoInfer<O>) => S,
+) { return Object.freeze({ operation, reduce }); }
+type ProjectionTable<S> = Record<string, {
+  readonly operation: BusinessOperation<never, unknown, unknown, OperationReport<unknown, unknown>>;
+  readonly reduce: (state: S, output: never) => S;
+}>;
+type BoundProjections<S, T extends ProjectionTable<S>> = {
+  [K in keyof T]: T[K]['operation'] extends BusinessOperation<infer I, infer O, infer E, OperationReport<infer O, infer E>>
+    ? ApplicationOperation<S, I, O, E> : never
+};
+type CheckedProjections<S, T extends ProjectionTable<S>> = {
+  [K in keyof T]: T[K]['operation'] extends BusinessOperation<infer I, infer O, infer E, OperationReport<infer O, infer E>>
+    ? T[K]['reduce'] extends (state: S, output: O) => S ? unknown : never : never
+};
+/** Preserve inferred operation/input/error types in a reusable view definition. */
+export function defineView<S, const T extends ProjectionTable<S>, V>(definition: {
+  initial: () => S;
+  operations: T & NoInfer<CheckedProjections<S, T>>;
+  view: (state: ApplicationState<S, BoundProjections<S, T>>) => V;
+}) { return definition; }
 export interface AuthoringOptions extends ExecutionOptions { readonly maxDeliveries?: number }
 export function createApplication(root: Node, options?: AuthoringOptions) {
   const handlers = new Map<object, unknown>();
@@ -327,10 +352,35 @@ export function createApplication(root: Node, options?: AuthoringOptions) {
     entry(operation);
     return executeDetailed(operation, input).then(report => report.result);
   }
+  /** Start an isolated presentation session over the already mounted JSX tree. */
+  async function start<S, const T extends ProjectionTable<S>, V>(definition: {
+    initial: () => S;
+    operations: T & NoInfer<CheckedProjections<S, T>>;
+    view: (state: ApplicationState<S, BoundProjections<S, T>>) => V;
+  }) {
+    const selected = new Set<object>();
+    const operations = Object.fromEntries(operationEntries(definition.operations).map(([name, binding]) => {
+      // Reject missing registrations before initial/view or any business IO runs.
+      entry(binding.operation);
+      if (selected.has(binding.operation)) throw new Error(`DuplicateProjection:${binding.operation.name}`);
+      selected.add(binding.operation);
+      return [name, {
+        run: (input: unknown) => execute(binding.operation, input as never),
+        runDetailed: (input: unknown) => executeDetailed(binding.operation, input as never),
+        reduce: binding.reduce,
+      }];
+    })) as BoundProjections<S, T>;
+    const program = defineApplication({ initial: definition.initial, operations, view: definition.view });
+    const session = await program.start();
+    return Object.freeze({ ...session, subscribeExecution: executions.subscribe,
+      subscribeDelivery(listener: (delivery: EventDelivery) => void) { deliveryListeners.add(listener); return () => { deliveryListeners.delete(listener); }; },
+    });
+  }
   return Object.freeze({
     subscribeExecution: executions.subscribe,
     subscribeDelivery(listener: (delivery: EventDelivery) => void) { deliveryListeners.add(listener); return () => { deliveryListeners.delete(listener); }; },
     deliver,
+    start,
     execute,
     executeDetailed,
   });
