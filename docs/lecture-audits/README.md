@@ -14,6 +14,8 @@
 
 3本の保存済み字幕4034行を割り当てた。全編の音声・画面との照合や、すべての提案の実装が完了したという意味ではない。
 
+[partialの9区間の要件再読](../lecture-source-requirements-review.md)では、講演の主張と追加機能・運用・評価上の課題を区別した。原音確認の代替や分類の格上げには使っていない。
+
 その後、[別経路のローカル音声認識](../lecture-local-asr.md)とのペア文面比較を全84話題で完了した。
 [1本目](../lecture-local-asr-iz-followup.md)・[2本目](../lecture-local-asr-qbf-followup.md)・
 [3本目](../lecture-local-asr-w0o-followup.md)に判断と来歴を記録する。
