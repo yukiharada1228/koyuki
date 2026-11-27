@@ -10,23 +10,10 @@ type OperationHandler<I, O, E, D extends OperationReport<O, E>> = {
   readonly run: Handler<I, O, E>;
   readonly runDetailed: (input: I) => Promise<D>;
 };
-export interface OperationKey<I, O, E, D extends OperationReport<O, E> = ActionReport<O, E>> {
+export interface BusinessOperation<I, O, E, D extends OperationReport<O, E> = ActionReport<O, E>> {
   readonly name: string;
-  readonly contract?: { run: Handler<I, O, E>; detail: () => D };
-}
-export interface DeclaredOperation<I, O, E, D extends OperationReport<O, E>> extends OperationKey<I, O, E, D> {
-  /** A custom Hook: evaluated only within a mounted component's Provider scope. */
+  /** A synchronous custom Hook, evaluated in the component's Provider scope. */
   readonly use: () => OperationHandler<I, O, E, D>;
-}
-/** Infer the complete operation contract from a custom Hook without evaluating it. */
-export function operationKey<I, O, E, D extends OperationReport<NoInfer<O>, NoInfer<E>>>(name: string, useHandler: () => {
-  readonly run: Handler<I, O, E>;
-  readonly runDetailed: (input: NoInfer<I>) => Promise<D>;
-}): OperationKey<I, O, E, D>;
-export function operationKey<I, O, E>(name: string): OperationKey<I, O, E>;
-export function operationKey(name: string, _useHandler?: unknown) { return Object.freeze({ name }); }
-export function replayOperationKey<I, O, E, RE>(name: string): OperationKey<I, Execution<O>, E | RE | ReplayInputError, ReplayReport<O, E, RE>> {
-  return Object.freeze({ name });
 }
 type Node = Readonly<{ evaluate: () => void }>;
 type Children = Node | readonly Children[] | null;
@@ -107,21 +94,6 @@ function commandFor<I, C, LE, O, DE, S, SE>(definition: Definition<I, C, LE, O, 
 type RuntimeDefinition = Definition<unknown, unknown, unknown, unknown, unknown, unknown, unknown> & {
   replay?: ReplayBoundary<unknown, unknown, unknown, unknown>;
 };
-export function useOperation<I, C, LE, O, DE, S, SE, RE>(definition:
-  Definition<I, C, LE, O, DE, Execution<S>, SE> & { replay: ReplayBoundary<NoInfer<I>, NoInfer<S>, LE | DE | SE, RE> }
-): {
-  run: Handler<I, Execution<S>, LE | DE | SE | RE | ReplayInputError>;
-  runDetailed: (input: I) => Promise<ReplayReport<S, LE | DE | SE, RE>>;
-};
-export function useOperation<I, C, LE, O, DE, S, SE>(definition:
-  Definition<I, C, LE, O, DE, S, SE> & { replay?: never }
-): {
-  run: Handler<I, S, LE | DE | SE>;
-  runDetailed: (input: I) => Promise<ActionReport<S, LE | DE | SE>>;
-};
-export function useOperation(definition: RuntimeDefinition): unknown {
-  return useDefinition(definition);
-}
 function useDefinition(definition: RuntimeDefinition): unknown {
   frame();
   const command = commandFor(definition);
@@ -134,10 +106,10 @@ function useDefinition(definition: RuntimeDefinition): unknown {
 /** Declare an operation once; reuse it for JSX registration and execution. */
 export function defineOperation<I, C, LE, O, DE, S, SE, RE>(name: string, useDefinition: () =>
   Omit<Definition<I, C, LE, O, DE, Execution<S>, SE>, 'name'> & { name?: never; replay: ReplayBoundary<NoInfer<I>, NoInfer<S>, LE | DE | SE, RE> }
-): DeclaredOperation<I, Execution<S>, LE | DE | SE | RE | ReplayInputError, ReplayReport<S, LE | DE | SE, RE>>;
+): BusinessOperation<I, Execution<S>, LE | DE | SE | RE | ReplayInputError, ReplayReport<S, LE | DE | SE, RE>>;
 export function defineOperation<I, C, LE, O, DE, S, SE>(name: string, useDefinition: () =>
   Omit<Definition<I, C, LE, O, DE, S, SE>, 'name'> & { name?: never; replay?: never }
-): DeclaredOperation<I, S, LE | DE | SE, ActionReport<S, LE | DE | SE>>;
+): BusinessOperation<I, S, LE | DE | SE, ActionReport<S, LE | DE | SE>>;
 export function defineOperation(name: string, factory: () => object) {
   return Object.freeze({ name, use() {
     frame();
@@ -145,29 +117,20 @@ export function defineOperation(name: string, factory: () => object) {
   } });
 }
 export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation }: {
-  operation: DeclaredOperation<I, O, E, D>;
-  handler?: never;
-}): Node;
-export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation, handler }: {
-  operation: OperationKey<I, O, E, D>;
-  handler: { run: Handler<NoInfer<I>, NoInfer<O>, NoInfer<E>>; runDetailed: (input: NoInfer<I>) => Promise<NoInfer<D>> };
-}): Node;
-export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation, handler }: {
-  operation: OperationKey<I, O, E, D>;
-  handler?: OperationHandler<I, O, E, D>;
+  operation: BusinessOperation<I, O, E, D>;
 }): Node {
   return { evaluate() {
     const handlers = frame().handlers;
     if (handlers.has(operation)) throw new Error(`DuplicateOperation:${operation.name}`);
-    const bound = handler ?? (operation as DeclaredOperation<I, O, E, D>).use();
-    handlers.set(operation, { run: bound.run.bind(bound), runDetailed: bindDetailedFunction(bound, bound.runDetailed) });
+    const handler = operation.use();
+    handlers.set(operation, { run: handler.run.bind(handler), runDetailed: bindDetailedFunction(handler, handler.runDetailed) });
   } };
 }
 export function createApplication(root: Node, options?: ExecutionOptions) {
   const handlers = new Map<object, unknown>();
   within({ values: new Map(), handlers }, () => visit(root));
   const executions = executionSession(options);
-  function entry<I, O, E, D extends OperationReport<O, E>>(operation: OperationKey<I, O, E, D>) {
+  function entry<I, O, E, D extends OperationReport<O, E>>(operation: BusinessOperation<I, O, E, D>) {
     const handler = handlers.get(operation) as {
       run: Handler<I, O, E>;
       runDetailed: (input: I) => Promise<D>;
@@ -175,9 +138,9 @@ export function createApplication(root: Node, options?: ExecutionOptions) {
     if (!handler) throw new Error(`UnregisteredOperation:${operation.name}`);
     return handler;
   }
-  function inspect<I, O, E, D extends OperationReport<O, E>, A, B>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>, capture: WorkflowCapture<A, B>): Promise<Omit<D, 'observations' | 'observationErrors'> & ObservationReport<A, B>>;
-  function inspect<I, O, E, D extends OperationReport<O, E>>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<D>;
-  async function inspect<I, O, E, D extends OperationReport<O, E>, A, B>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>, capture?: WorkflowCapture<A, B>) {
+  function executeDetailed<I, O, E, D extends OperationReport<O, E>, A, B>(operation: BusinessOperation<I, O, E, D>, input: NoInfer<I>, capture: WorkflowCapture<A, B>): Promise<Omit<D, 'observations' | 'observationErrors'> & ObservationReport<A, B>>;
+  function executeDetailed<I, O, E, D extends OperationReport<O, E>>(operation: BusinessOperation<I, O, E, D>, input: NoInfer<I>): Promise<D>;
+  async function executeDetailed<I, O, E, D extends OperationReport<O, E>, A, B>(operation: BusinessOperation<I, O, E, D>, input: NoInfer<I>, capture?: WorkflowCapture<A, B>) {
     const handler = entry(operation), context = executions.create(operation.name);
     context?.emit({ kind: 'queued' });
     context?.emit({ kind: 'started' });
@@ -199,17 +162,13 @@ export function createApplication(root: Node, options?: ExecutionOptions) {
       throw cause;
     }
   }
-  function execute<I, O, E, D extends OperationReport<O, E>>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<Result<O, E>> {
+  function execute<I, O, E, D extends OperationReport<O, E>>(operation: BusinessOperation<I, O, E, D>, input: NoInfer<I>): Promise<Result<O, E>> {
     entry(operation);
-    return inspect(operation, input).then(report => report.result);
+    return executeDetailed(operation, input).then(report => report.result);
   }
   return Object.freeze({
     subscribeExecution: executions.subscribe,
     execute,
-    executeDetailed: inspect,
-    /** @deprecated Use execute. Executes the operation, including saving. */
-    dispatch: execute,
-    /** @deprecated Use executeDetailed. Executes the operation, including saving. */
-    inspect,
+    executeDetailed,
   });
 }

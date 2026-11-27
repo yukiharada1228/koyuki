@@ -1,6 +1,6 @@
 # React経験者向けの業務ロジック組み立て試作
 
-宣言と実行名の後続整理は [操作の宣言API](authoring-declaration-api.md) を参照。現在の推奨入口はdefineOperationとexecute/executeDetailed。以下で旧inspect/dispatchやuseOperationに触れる箇所は、同じ挙動を持つ互換経路の説明も含む。
+現在の入口はdefineOperationとexecute/executeDetailed。旧inspect/dispatch、useOperation/operationKey、手動handler propは削除した。[操作の宣言APIと移行](authoring-declaration-api.md)を参照。
 
 目的はReactの内部を再現することではなく、部品・props・Context・カスタムHooksで業務処理を組み立てる体験を確かめること。組み立てランタイムは `src/framework/authoring.ts` に移し、開発版tarballの実験サブパス `koyuki/experimental` から利用できる。経費・休暇の例は `src/experiments/react-business/` に置く。公開済みnpm alpha.5には含まれない。Reactや新たな実行時依存は追加していない。
 
@@ -35,7 +35,7 @@ ExpensesはRepositoryとActorのProviderを組み合わせる部品。呼び出�
 
 ## 評価と実行の境界
 
-JSXは部品の評価をProviderのスコープ内まで遅延する。組み立て時には操作を登録し、フレームワークからload・execute・saveを呼び出さない。executeまたはexecuteDetailedを明示的に呼ぶと既存エンジンで実行する。executeDetailedも保存を伴い、プレビューではない。旧dispatch/inspectは同じ関数への互換aliasとして残す。
+JSXは部品の評価をProviderのスコープ内まで遅延する。組み立て時には操作を登録し、フレームワークからload・execute・saveを呼び出さない。executeまたはexecuteDetailedを明示的に呼ぶと既存エンジンで実行する。executeDetailedも保存を伴い、プレビューではない。旧dispatch/inspect aliasは削除した。
 
 各createApplicationは独立したContextと登録表を持つ。Hooksを呼べるのは同期的なコンポーネント評価中だけで、評価の終了・例外時に以前のスコープへ戻す。非同期処理には操作者やRepositoryをクロージャとして渡す。dispatch中にグローバルな現在のContextを読み出さない。
 
@@ -43,9 +43,9 @@ JSXは部品の評価をProviderのスコープ内まで遅延する。組み立
 
 ## 試作で見つけた設計上の負担
 
-- JSXの子孫の全操作型を静的に回収する設計にはしていない。defineOperationの宣言を登録と実行で共有し、別のoperationKeyとhandler接続を不要にした。型はHookから推論し、定義時にHookは評価しない。通常の業務型とRepository契約は残る。旧useOperation/operationKeyも互換として維持する。
+- JSXの子孫の全操作型を静的に回収する設計にはしていない。defineOperationの宣言を登録と実行で共有し、別のoperationKeyとhandler接続を不要にした。型はHookから推論し、定義時にHookは評価しない。通常の業務型とRepository契約は残る。旧useOperation/operationKeyは公開しない。
 - executeには通常の関数または既存のWorkflowを渡せる。Workflowをそのまま渡すと内部のルール名・失敗位置をアプリのexecuteDetailedから追える。通常の関数は一段として扱う。関数の本体を解析してtraceを復元することはしない。
-- 再送はuseOperationのreplay設定から既存のwithReplayへ接続する。永続的な変更とreceiptの原子的保存はアダプターの責務。同時要求のloadやsaveの呼び出し回数そのものを一回に制限する機能ではない。操作識別子・要求ID・操作者・入力・ポリシー版の照合もアダプターの契約に含まれる。
+- 再送は操作定義のreplay設定から既存のwithReplayへ接続する。永続的な変更とreceiptの原子的保存はアダプターの責務。同時要求のloadやsaveの呼び出し回数そのものを一回に制限する機能ではない。操作識別子・要求ID・操作者・入力・ポリシー版の照合もアダプターの契約に含まれる。
 - 再描画、useState、useEffect、Hook呼び出し順の追跡、asyncコンポーネントは実装していない。Reactとの互換ランタイムではない。
 - Providerの値は参照として渡す。認証済みActorの値の変更管理やHTTPリクエストのライフサイクルは呼び出し元の責務。
 
@@ -84,7 +84,7 @@ return {
 
 業務関数の変更は不要。Hookにはlookupと回復対象の失敗の指定が追加され、saveは元の要求も受け取る。要求ごとのsaveクロージャを作り、同時実行でも最後に届いた要求で上書きしない。操作者はHook評価時にコピーして固定し、lookupとsaveへ同じ認証済みidentityを渡す。withReplayはdispatch入力をsnapshotしてからlookupと実行へ渡す。
 
-再送もdefineOperationという同じ入口を使い、入力・保存値・エラーとReplayReportを推論する。明示的に型を書く既存のoperationKey/replayOperationKeyも維持する。再送設定に対してExecutionを返さないsaveは型検査で拒否する。通常実行と再送実行では戻り値とレポートの形が異なるため、ここは利用者が区別して理解する必要がある。
+再送もdefineOperationという同じ入口を使い、入力・保存値・エラーとReplayReportを推論する。型を明記する場合はBusinessOperationを使う。再送設定に対してExecutionを返さないsaveは型検査で拒否する。通常実行と再送実行では戻り値とレポートの形が異なるため、ここは利用者が区別して理解する必要がある。
 
 アプリのexecuteDetailedでは、再送境界のtraceと、実行した場合の `attempt.trace` を分けて返す。キャッシュが見つかった場合はattemptがnullとなる。失敗時はauthorize-approvalなどの個別ルールまで辿れ、成功済みreceiptならload・業務計算・saveを行わない。
 

@@ -6,7 +6,7 @@
 
 ## 利用する契約
 
-全例で、純粋関数を `workflow(...).then(...)` で合成し、`defineOperation(name, useDefinition)` のカスタムHookが取得・計算・保存・再送の定義を返す。宣言した操作自体を `<Operation operation={...} />` と実行で共有し、入力・成功・エラー・詳細レポートを推論する。Repositoryと操作者はProviderで渡す。組み立て時にはI/Oを実行しない。旧useOperation/operationKeyは互換として維持する。
+全例で、純粋関数を `workflow(...).then(...)` で合成し、`defineOperation(name, useDefinition)` のカスタムHookが取得・計算・保存・再送の定義を返す。宣言した操作自体を `<Operation operation={...} />` と実行で共有し、入力・成功・エラー・詳細レポートを推論する。Repositoryと操作者はProviderで渡す。組み立て時にはI/Oを実行しない。旧useOperation/operationKeyは削除した。
 
 複数の業務部品は `Fragment` で並べる。これは新しい依存スコープも実行状態も持たない。Reactの再レンダリング・Effect・非同期コンポーネントの再現ではない。
 
@@ -19,7 +19,7 @@ await app.execute(registrationRequest, { requestId, id, email });
 await app.execute(registrationConfirmation, { requestId, id, token, now });
 ```
 
-`executeDetailed`は同じ入力で実行し、内部traceと再送のattemptを返す。第3引数のcaptureは明示した項目だけを記録する。`subscribeExecution`または生成時のobserverでlive spanを受け取る。executeDetailedも保存を実行するので、プレビュー用途で重ねて実行しない。旧inspectは互換aliasである。
+`executeDetailed`は同じ入力で実行し、内部traceと再送のattemptを返す。第3引数のcaptureは明示した項目だけを記録する。`subscribeExecution`または生成時のobserverでlive spanを受け取る。executeDetailedも保存を実行するので、プレビュー用途で重ねて実行しない。旧inspect aliasは削除した。
 
 ## 各業務の境界
 

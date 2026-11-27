@@ -1,7 +1,7 @@
 /** @jsx h */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { h, createApplication, operationKey, Operation } from './framework/authoring.js';
+import { h, createApplication, Operation } from './framework/authoring.js';
 import { ok, err, type Result, type ExecutionEvent, type StepObservation } from './framework/index.js';
 import { Expenses, approval, type ExpenseRepository } from './experiments/react-business/expense.js';
 import { BudgetExpenses, budgetApproval, type BudgetPolicyRepository } from './experiments/react-business/expense-budget.js';
@@ -38,7 +38,7 @@ test('selected inputs and results are captured once, after projection, without r
   let getterReads = 0;
   Object.defineProperty(source, 'secret', { enumerable: true, get() { getterReads++; throw new Error('Do not read'); } });
   const app = createApplication(<Expenses repository={f.repository} actor={manager} />);
-  const report = await app.inspect(approval, source, {
+  const report = await app.executeDetailed(approval, source, {
     input: (value, step) => ({ id: id(value), step, state: expenseState(value) }),
     result: result => ({ ok: result.ok, state: result.ok ? expenseState(result.value) : null }),
   });
@@ -59,13 +59,13 @@ test('selected inputs and results are captured once, after projection, without r
   assert.equal(Object.isFrozen(report.observations), true);
   if (false) {
     // @ts-expect-error Capture must not weaken required request fields.
-    void app.inspect(approval, { id: 'one' }, { input: () => null, result: result => result.ok });
+    void app.executeDetailed(approval, { id: 'one' }, { input: () => null, result: result => result.ok });
   }
 });
 test('capture failures are metadata and never stop or repeat business execution or live notification', async () => {
   const f = fixture(), events: ExecutionEvent[] = [];
   const app = createApplication(<Expenses repository={f.repository} actor={manager} />, { observeExecution: event => events.push(event) });
-  const report = await app.inspect(approval, input, {
+  const report = await app.executeDetailed(approval, input, {
     input: (_value, step) => { if (step === 'authorize-approval') throw new Error('input projection'); return step; },
     result: (result, step) => { if (step === 'approve') throw new Error('result projection'); return result.ok; },
   });
@@ -83,7 +83,7 @@ test('middle IO and inner pure rules share one selected capture and live executi
   let reads = 0;
   const policies: BudgetPolicyRepository = { async read() { reads++; return ok({ approvalLimit: 2000 }); } };
   const app = createApplication(<BudgetExpenses repository={f.repository} policies={policies} actor={manager} />, { sessionId: 'capture', observeExecution: event => events.push(event) });
-  const report = await app.inspect(budgetApproval, input, { input: (value, step) => ({ id: id(value), step }), result: result => result.ok });
+  const report = await app.executeDetailed(budgetApproval, input, { input: (value, step) => ({ id: id(value), step }), result: result => result.ok });
   assert.equal(report.result.ok, true); assert.equal(reads, 1); assert.deepEqual(f.calls, ['load', 'save']);
   assert.deepEqual(report.observations.map(row => row.step), report.trace.map(row => row.step));
   assert.equal(report.observations.some(row => row.step === 'read-budget-policy' && row.input.id === 'one' && row.result), true);
@@ -93,7 +93,7 @@ test('middle IO and inner pure rules share one selected capture and live executi
 test('domain failure remains a domain failure when its capture fails', async () => {
   const f = fixture();
   const app = createApplication(<Expenses repository={f.repository} actor={{ ...manager, active: false }} />);
-  const report = await app.inspect(approval, input, { input: () => { throw new Error('capture'); }, result: () => null });
+  const report = await app.executeDetailed(approval, input, { input: () => { throw new Error('capture'); }, result: () => null });
   assert.deepEqual(report.result, err({ kind: 'Forbidden' }));
   assert.deepEqual(f.calls, ['load']);
   assert.equal(report.observationErrors.length, 2);
@@ -114,11 +114,11 @@ test('receipt replay observes the replay boundary without fabricating domain obs
   const app = createApplication(<ReplayExpenses repository={repository} actor={manager} />);
   const request = { requestId: 'approval', input: { id: 'one', expectedVersion: 2 } };
   const capture = { input: (_value: unknown, step: string) => step, result: (result: Result<unknown, unknown>) => result.ok };
-  const first = await app.inspect(replayedApproval, request, capture);
+  const first = await app.executeDetailed(replayedApproval, request, capture);
   assert.equal(first.result.ok, true);
   assert.equal(first.observations.some(row => row.step === 'authorize-approval'), true);
   assert.deepEqual(calls, ['lookup', 'load', 'save']); calls.length = 0;
-  const repeated = await app.inspect(replayedApproval, request, capture);
+  const repeated = await app.executeDetailed(replayedApproval, request, capture);
   assert.equal(repeated.result.ok && repeated.result.value.kind === 'replayed', true);
   assert.equal(repeated.attempt, null);
   assert.deepEqual(repeated.observations.map(row => row.step), ['replay.snapshot', 'replay.lookup:before']);
@@ -131,11 +131,11 @@ test('selected capture replaces custom report observation metadata without inter
       calls++; return { result: ok(input), trace: [], plan: null, observations: 'host-metadata', observationErrors: 7 };
     } };
   }
-  const key = operationKey('opaque', useOpaque);
-  function Opaque() { const handler = useOpaque(); return <Operation operation={key} handler={handler} />; }
+  const key = { name: 'opaque', use: useOpaque };
+  function Opaque() { return <Operation operation={key} />; }
   const app = createApplication(<Opaque />);
-  const plain = await app.inspect(key, 1); assert.equal(plain.observations, 'host-metadata');
-  const captured = await app.inspect(key, 1, { input: () => 1, result: result => result.ok });
+  const plain = await app.executeDetailed(key, 1); assert.equal(plain.observations, 'host-metadata');
+  const captured = await app.executeDetailed(key, 1, { input: () => 1, result: result => result.ok });
   const exact: Equal<typeof captured.observations, readonly StepObservation<number, boolean>[]> = true; void exact;
   assert.equal(calls, 2);
   assert.deepEqual(captured.observations, []); assert.deepEqual(captured.observationErrors, []);
@@ -150,7 +150,7 @@ test('accidental native async selectors produce capture errors without unhandled
     const app = createApplication(<Expenses repository={f.repository} actor={manager} />);
     const fail = async () => { throw new Error('accidental async selector'); };
     const capture = phase === 'input' ? { input: fail, result: () => null } : { input: () => null, result: fail };
-    const report = await app.inspect(approval, input, capture);
+    const report = await app.executeDetailed(approval, input, capture);
     assert.equal(report.result.ok, true); assert.deepEqual(f.calls, ['load', 'save']);
     assert.equal(report.observations.length, 0);
     assert.equal(report.observationErrors.length, 4);
@@ -163,8 +163,8 @@ test('concurrent selected captures own their snapshots independently', async () 
   const f = fixture();
   const app = createApplication(<Expenses repository={f.repository} actor={manager} />);
   const [first, second] = await Promise.all([
-    app.inspect(approval, input, { input: () => ({ label: 'first' }), result: result => result.ok }),
-    app.inspect(approval, input, { input: () => ({ label: 'second' }), result: result => String(result.ok) }),
+    app.executeDetailed(approval, input, { input: () => ({ label: 'first' }), result: result => result.ok }),
+    app.executeDetailed(approval, input, { input: () => ({ label: 'second' }), result: result => String(result.ok) }),
   ]);
   assert.equal(first.observations.every(row => row.input.label === 'first' && row.result === true), true);
   assert.equal(second.observations.every(row => row.input.label === 'second' && row.result === 'true'), true);

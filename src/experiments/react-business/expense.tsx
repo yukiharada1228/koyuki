@@ -21,7 +21,6 @@ export const approval = defineOperation('expense.approve.v1', () => {
     save: change => expenses.save(change),
   };
 });
-export const useExpenseApproval = approval.use;
 export function ApproveExpense() {
   return <Operation operation={approval} />;
 }

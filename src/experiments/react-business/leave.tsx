@@ -20,7 +20,6 @@ export const leaveApproval = defineOperation('leave.approve.v1', () => {
     save: value => repository.save(value),
   };
 });
-export const useLeaveApproval = leaveApproval.use;
 export function Leaves({ repository, actor }: { repository: LeaveRepository; actor: Actor }) {
   return <LeaveRepositoryContext.Provider value={repository}>
     <ActorContext.Provider value={actor}><Operation operation={leaveApproval} /></ActorContext.Provider>

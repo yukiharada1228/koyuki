@@ -1,7 +1,7 @@
 /** @jsx h */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { h, createApplication, createContext, useContext, useOperation, operationKey, Operation } from './framework/authoring.js';
+import { h, createApplication, createContext, useContext, defineOperation, Operation } from './framework/authoring.js';
 import { process, workflow, ok, err, type Result, type Execution, type Receipt, type ReplayInputError, type ExecutionEvent } from './framework/index.js';
 import { BudgetExpenses, budgetApproval, approveWithBudgetPolicy, type BudgetPolicyRepository } from './experiments/react-business/expense-budget.js';
 import type { ExpenseRepository } from './experiments/react-business/expense.js';
@@ -30,7 +30,7 @@ test('Hooks compose an explicit middle IO read with pure rules, exact errors and
   const events: ExecutionEvent[] = [];
   const app = createApplication(<BudgetExpenses {...f} actor={manager} />, { observeExecution: event => events.push(event) });
   assert.deepEqual(f.calls, []);
-  const output = app.dispatch(budgetApproval, input);
+  const output = app.execute(budgetApproval, input);
   const exact: Equal<typeof output, Promise<Result<Change, RuleError | 'LoadFailed' | 'SaveFailed' | 'BudgetUnavailable' | 'ApprovalLimitExceeded'>>> = true; void exact;
   await reading;
   assert.deepEqual(f.calls, ['load:boss', 'policy:boss']);
@@ -41,7 +41,7 @@ test('Hooks compose an explicit middle IO read with pure rules, exact errors and
   assert.equal(readSpan?.kind === 'span-started' && executeSpan?.kind === 'span-started' && readSpan.parentSpanId === executeSpan.spanId, true);
   release(); assert.equal((await output).ok, true);
   assert.deepEqual(f.calls, ['load:boss', 'policy:boss', 'save']);
-  const report = await app.inspect(budgetApproval, input);
+  const report = await app.executeDetailed(budgetApproval, input);
   assert.deepEqual(report.trace.map(row => row.step), ['expense.approve-with-budget.v1:load', 'authorize-approval', 'read-budget-policy', 'check-budget-policy', 'approve', 'expense.approve-with-budget.v1:execute', 'expense.approve-with-budget.v1']);
 });
 test('load, authorization, policy IO and pure policy failure each stop the remaining stages', async () => {
@@ -49,7 +49,7 @@ test('load, authorization, policy IO and pure policy failure each stop the remai
     const f = fixture(stage === 'load' || stage === 'policy' ? stage : undefined, stage === 'limit' ? 10 : 2000);
     const actor = stage === 'authorize' ? { ...manager, active: false } : manager;
     const app = createApplication(<BudgetExpenses {...f} actor={actor} />);
-    const report = await app.inspect(budgetApproval, input);
+    const report = await app.executeDetailed(budgetApproval, input);
     const expected = stage === 'load' ? err('LoadFailed') : stage === 'authorize' ? err({ kind: 'Forbidden' }) : stage === 'policy' ? err('BudgetUnavailable') : err('ApprovalLimitExceeded');
     assert.deepEqual(report.result, expected);
     assert.deepEqual(f.calls, stage === 'load' || stage === 'authorize' ? ['load:boss'] : ['load:boss', 'policy:boss']);
@@ -59,17 +59,14 @@ test('load, authorization, policy IO and pure policy failure each stop the remai
 });
 test('a detailed Process may also prepare the initial load without losing its internal stages', async () => {
   const calls: string[] = [];
-  function useCalculation() {
-    return useOperation({ name: 'calculation',
+  const calculation = defineOperation('calculation', () => ({
       load: process<number>().effect('read-input', async input => { calls.push('read'); return ok(input + 1); }),
       execute: workflow('double', (input: number) => ok(input * 2)),
       save: async (output: number) => { calls.push('save'); return ok(output); },
-    });
-  }
-  const calculation = operationKey('calculation', useCalculation);
-  function Calculation() { const handler = useCalculation(); return <Operation operation={calculation} handler={handler} />; }
+  }));
+  function Calculation() { return <Operation operation={calculation} />; }
   const app = createApplication(<Calculation />);
-  const report = await app.inspect(calculation, 3);
+  const report = await app.executeDetailed(calculation, 3);
   assert.deepEqual(report.result, ok(8));
   assert.deepEqual(calls, ['read', 'save']);
   assert.deepEqual(report.trace.map(row => row.step), ['read-input', 'calculation:load', 'double', 'calculation']);
@@ -78,25 +75,24 @@ test('Process execution retains request-scoped dependencies and skips middle IO 
   const Identity = createContext<string>();
   const calls: string[] = [];
   const receipts = new Map<string, string>();
-  function useCalculation() {
+  const key = defineOperation('replay-process', () => {
     const actor = useContext(Identity);
-    return useOperation({ name: 'replay-process',
+    return {
       load: async (input: number): Promise<Result<number, 'LoadFailed'>> => { calls.push(`load:${actor}`); return ok(input); },
       execute: process<number>().effect('read-policy', async input => { calls.push(`policy:${actor}`); await Promise.resolve(); return ok(`${actor}:${input}`); }),
       save: async (output: string, input: number): Promise<Result<Execution<string>, 'SaveFailed'>> => { calls.push(`save:${actor}`); receipts.set(`${actor}:${input}`, output); return ok({ kind: 'committed', value: output }); },
       replay: { lookup: (input: number): Result<Receipt<string>, 'LookupFailed'> => { const receipt = receipts.get(`${actor}:${input}`); return ok(receipt === undefined ? { kind: 'missing' } : { kind: 'found', value: receipt }); }, resolveAfter: () => false },
-    });
-  }
-  const key = operationKey('replay-process', useCalculation);
-  function Calculation() { const handler = useCalculation(); return <Operation operation={key} handler={handler} />; }
+    };
+  });
+  function Calculation() { return <Operation operation={key} />; }
   const first = createApplication(<Identity.Provider value="first"><Calculation /></Identity.Provider>);
   const second = createApplication(<Identity.Provider value="second"><Calculation /></Identity.Provider>);
-  const running = await Promise.all([first.dispatch(key, 1), second.dispatch(key, 2)]);
+  const running = await Promise.all([first.execute(key, 1), second.execute(key, 2)]);
   const exact: Equal<typeof running[number], Result<Execution<string>, 'LoadFailed' | 'SaveFailed' | 'LookupFailed' | ReplayInputError>> = true; void exact;
   assert.deepEqual(running, [ok({ kind: 'committed', value: 'first:1' }), ok({ kind: 'committed', value: 'second:2' })]);
   assert.equal(calls.includes('policy:first') && calls.includes('policy:second'), true);
   const before = [...calls];
-  const replay = await second.inspect(key, 2);
+  const replay = await second.executeDetailed(key, 2);
   assert.deepEqual(replay.result, ok({ kind: 'replayed', value: 'second:2' }));
   assert.equal(replay.attempt, null); assert.deepEqual(calls, before);
 });
@@ -105,7 +101,7 @@ test('unexpected middle IO rejection propagates its original cause and closes bo
   const f = fixture(), cause = new Error('policy read rejected'), events: ExecutionEvent[] = [];
   const policies: BudgetPolicyRepository = { async read() { throw cause; } };
   const app = createApplication(<BudgetExpenses repository={f.repository} policies={policies} actor={manager} />, { observeExecution: event => events.push(event) });
-  await assert.rejects(app.dispatch(budgetApproval, input), error => error === cause);
+  await assert.rejects(app.execute(budgetApproval, input), error => error === cause);
   assert.deepEqual(f.calls, ['load:boss']);
   for (const step of ['read-budget-policy', 'expense.approve-with-budget.v1:execute']) {
     assert.equal(events.some(event => event.kind === 'span-completed' && event.step === step && event.status === 'defect'), true);

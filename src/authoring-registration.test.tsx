@@ -26,7 +26,7 @@ test('registration uses the same Hook, Provider, replay and capture API across d
     const events: ExecutionEvent[] = [];
     let app = createApplication(<Registrations repository={f.repository} actor={actor} />, { observeExecution: event => events.push(event) });
     assert.deepEqual(f.repository.read('one'), { ok: true, value: null });
-    const first = await app.inspect(registrationRequest, request, {
+    const first = await app.executeDetailed(registrationRequest, request, {
       input: (_value, step) => step, result: result => result.ok,
     });
     assert.equal(first.result.ok && first.result.value.kind, 'committed');
@@ -40,19 +40,19 @@ test('registration uses the same Hook, Provider, replay and capture API across d
     const reopened = new ReplayRegistrationRepository(f.path);
     try {
       app = createApplication(<Registrations repository={reopened} actor={actor} />);
-      const replay = await app.inspect(registrationRequest, request);
+      const replay = await app.executeDetailed(registrationRequest, request);
       assert.equal(replay.result.ok && replay.result.value.kind, 'replayed'); assert.equal(replay.attempt, null);
       assert.deepEqual(await reopened.claim(200, 100), err({ kind: 'EmptyOutbox' }));
       const confirmation = { requestId: 'confirm-one', id: 'one', token, now: 20 };
-      const confirmed = await app.inspect(registrationConfirmation, confirmation);
+      const confirmed = await app.executeDetailed(registrationConfirmation, confirmation);
       assert.equal(confirmed.result.ok && confirmed.result.value.kind, 'committed');
       assert.equal(confirmed.result.ok && confirmed.result.value.value.kind, 'confirmed');
       assert(confirmed.attempt?.trace?.some(row => row.step === 'confirm-registration'));
-      const repeated = await app.inspect(registrationConfirmation, confirmation);
+      const repeated = await app.executeDetailed(registrationConfirmation, confirmation);
       assert.equal(repeated.result.ok && repeated.result.value.kind, 'replayed'); assert.equal(repeated.attempt, null);
-      assert.deepEqual(await app.dispatch(registrationRequest, { ...request, email: 'changed@example.test' }), err({ kind: 'IdempotencyConflict' }));
+      assert.deepEqual(await app.execute(registrationRequest, { ...request, email: 'changed@example.test' }), err({ kind: 'IdempotencyConflict' }));
       const other = createApplication(<Registrations repository={reopened} actor={{ ...actor, id: 'other' }} />);
-      assert.deepEqual(await other.dispatch(registrationRequest, request), err({ kind: 'IdempotencyConflict' }));
+      assert.deepEqual(await other.execute(registrationRequest, request), err({ kind: 'IdempotencyConflict' }));
     } finally { reopened.close(); }
   } finally { f.cleanup(); }
 });
@@ -61,12 +61,12 @@ test('receipt insertion failure rolls back both registration and outbox; retry c
   try {
     db.exec("CREATE TRIGGER fail_receipt BEFORE INSERT ON registration_receipts BEGIN SELECT RAISE(ABORT,'fail'); END");
     const app = createApplication(<Registrations repository={f.repository} actor={actor} />);
-    assert.deepEqual(await app.dispatch(registrationRequest, request), err({ kind: 'StorageUnavailable' }));
+    assert.deepEqual(await app.execute(registrationRequest, request), err({ kind: 'StorageUnavailable' }));
     assert.deepEqual(f.repository.read('one'), { ok: true, value: null });
     assert.equal(db.prepare('SELECT count(*) AS n FROM email_outbox').get()?.n, 0);
     assert.equal(db.prepare('SELECT count(*) AS n FROM registration_receipts').get()?.n, 0);
     db.exec('DROP TRIGGER fail_receipt');
-    const result = await app.dispatch(registrationRequest, request);
+    const result = await app.execute(registrationRequest, request);
     assert.equal(result.ok && result.value.kind, 'committed');
   } finally { db.close(); f.cleanup(); }
 });
@@ -75,7 +75,7 @@ test('concurrent identical registration requests commit once and create one emai
   try {
     const a = createApplication(<Registrations repository={f.repository} actor={actor} />);
     const b = createApplication(<Registrations repository={second} actor={actor} />);
-    const results = await Promise.all([a.dispatch(registrationRequest, request), b.dispatch(registrationRequest, request)]);
+    const results = await Promise.all([a.execute(registrationRequest, request), b.execute(registrationRequest, request)]);
     assert.deepEqual(results.map(result => result.ok && result.value.kind).sort(), ['committed', 'replayed']);
     assert.equal(db.prepare('SELECT count(*) AS n FROM email_outbox').get()?.n, 1);
     assert.equal(db.prepare('SELECT count(*) AS n FROM registration_receipts').get()?.n, 1);
@@ -87,16 +87,16 @@ test('domain calculations remain independently callable and invalid confirmation
   const f = fixture();
   try {
     const app = createApplication(<Registrations repository={f.repository} actor={actor} />);
-    await app.dispatch(registrationRequest, request);
-    const report = await app.inspect(registrationConfirmation, { requestId: 'bad', id: 'one', token: 'wrong', now: 0 });
+    await app.execute(registrationRequest, request);
+    const report = await app.executeDetailed(registrationConfirmation, { requestId: 'bad', id: 'one', token: 'wrong', now: 0 });
     assert.deepEqual(report.result, err({ kind: 'InvalidConfirmation' }));
     assert(!report.attempt?.trace?.some(row => row.step === 'confirm-registration'));
     assert.equal(f.repository.read('one').ok, true);
     if (false) {
       // @ts-expect-error The Hook-derived key retains the registration input.
-      void app.dispatch(registrationRequest, { requestId: 'missing', id: 'one' });
+      void app.execute(registrationRequest, { requestId: 'missing', id: 'one' });
       // @ts-expect-error Confirmation does not accept a registration payload.
-      void app.dispatch(registrationConfirmation, request);
+      void app.execute(registrationConfirmation, request);
     }
   } finally { f.cleanup(); }
 });
@@ -104,7 +104,7 @@ test('a valid confirmation decision cannot be saved under a different token iden
   const f = fixture();
   try {
     const app = createApplication(<Registrations repository={f.repository} actor={actor} />);
-    await app.dispatch(registrationRequest, request);
+    await app.execute(registrationRequest, request);
     const delivery = await f.repository.claim(0, 100);
     assert(delivery.ok); if (!delivery.ok) throw new Error('ExpectedDelivery');
     const loaded = f.repository.read('one');

@@ -31,23 +31,24 @@ const report = await app.executeDetailed(approval, input);
 
 executeとexecuteDetailedは、どちらも取得・計算・保存を実行する。結果とtraceの両方が必要ならexecuteDetailedだけを呼び、report.resultを読む。実行済みの結果を調べるためにもう一度呼ばない。
 
-defineOperationは、操作の名前と同期のカスタムHookを保持する。宣言時にはHookを呼ばない。OperationをProviderの内側で評価するときに初めてHookを呼び、既存useOperationと同じ経路でハンドラを組み立てる。load・業務関数・saveは明示的な実行まで呼ばない。部品やHook内に利用者が直接書いた副作用まで防ぐ機能ではない。
+defineOperationは、操作の名前と同期のカスタムHookを保持する。宣言時にはHookを呼ばない。OperationをProviderの内側で評価するときに初めてHookを呼び、既存の実行エンジンへ接続する。load・業務関数・saveは明示的な実行まで呼ばない。部品やHook内に利用者が直接書いた副作用まで防ぐ機能ではない。
 
 Hookの返す定義にはnameを書かない。名前はdefineOperationの一箇所にあり、内部の保存・trace名にも使われる。名前の二重指定は型検査で拒否する。Contextは実行時に再参照せず、同期評価中に確保したRepository・操作者をクロージャで渡す。
 
 approveExpenseは従来の `workflow(...).then(...)` による通常の業務関数の合成であり、Hooksなしでも実行できる。Processによる途中I/Oや詳細load、再送のreplay設定もそのまま定義へ渡せる。replayがある場合はExecution/ReplayReportを推論し、保存には原子的なreceiptを返すadapterを要求する。
 
-## 既存APIの扱い
+## 破壊的変更と移行
 
-| これまで | 推奨 | 互換性 |
+| 削除した入口 | 現在の入口 | 移行 |
 | --- | --- | --- |
-| useOperation + operationKey + handlerの接続 | defineOperation + Operationへの登録 | 旧APIも利用可能。既存のカスタムHookと手動handler登録を維持 |
-| app.dispatch | app.execute | 同じ関数へのalias。保存・失敗・例外の挙動は変えない |
-| app.inspect | app.executeDetailed | 同じ関数へのalias。captureの第3引数と戻り型も維持 |
+| useOperation / operationKey / replayOperationKey / JSXのhandler prop | defineOperation + Operationへの登録 | 名前とHookを一つの宣言へ集約 |
+| app.dispatch | app.execute | 呼出し名を変更。互換aliasなし |
+| app.inspect | app.executeDetailed | 呼出し名を変更。captureの第3引数は引き続き利用可能 |
+| OperationKey / DeclaredOperation型 | BusinessOperation型 | 宣言から推論するため通常は明示不要 |
 
 この変更はexperimentalのcreateApplicationが対象。別の入口であるcoreのdefineApplicationの操作名まで一括変更していない。inspectは純粋なWorkflow側にも存在するため、そちらの意味も変更しない。
 
-宣言した操作の `.use` は、ハンドラを必要とする既存のカスタムHookで利用できる同期Hook。例の旧useExpenseApproval等のexportは互換aliasとして残す。通常の利用例では別名を作る必要はない。
+宣言した操作の `.use` は、別のカスタムHookで再利用できる同期Hook。例の旧useExpenseApproval等の互換exportも削除した。通常の登録・実行では別名を作る必要はない。React互換性のためのAPIは追加していない。
 
 ## 経費・休暇・登録での比較
 
@@ -62,13 +63,13 @@ approveExpenseは従来の `workflow(...).then(...)` による通常の業務関
 | JSXのOperation登録 | 4 | 4 |
 | 操作名の文字列 | 4 | 4 |
 
-操作名は以前も文字列として一度だけ定義されていた。今回なくしたのは、名前の定数をHookとキーへ引き渡す記述、別のキー作成、handlerの接続である。新しい推奨形は宣言とJSX登録の2箇所で、その同じ値を実行にも使う。互換Hook aliasや公開済みの例の部品は残し、ソース全体から全宣言が消えたとはしない。
+操作名は以前も文字列として一度だけ定義されていた。今回なくしたのは、名前の定数をHookとキーへ引き渡す記述、別のキー作成、handlerの接続である。宣言とJSX登録の2箇所で、その同じ値を実行にも使う。業務部品とProviderの宣言は残り、ソース全体から全宣言が消えたとはしない。
 
 入力・成功・エラー型の型引数、Hookの戻り型注釈は追加していない。状態・業務関数の通常の型、Repositoryの契約、再送identityを作る関数は残る。業務の順序・信頼境界・保存の原子性を推測で補わない。これは保守者AIの具体例の評価であり、人間の初回利用の分かりやすさや開発速度の実証ではない。
 
 ## 検証
 
-- 全ソース型検査と関連45件の実行テスト。宣言時I/Oなし、Providerの捕捉、失敗停止、個別ルールのlive span、capture、再送の省略、旧入口との互換性を確認。
+- 全ソース型検査と関連45件の実行テスト。宣言時I/Oなし、Providerの捕捉、失敗停止、個別ルールのlive span、capture、再送の省略、旧入口が公開されていないことを確認。
 - 全1270件の実行テスト。
 - 実tarball上でTypeScript 6/7のNode型なしの型検査・宣言生成・宣言だけを読むconsumer。操作の入力・エラー・capture・再送reportを維持。
 - 不適合な段階、認可の欠落、不適合なsave、Executionを返さない再送保存、非同期の定義Hook、名前の二重指定を型検査で拒否。

@@ -28,7 +28,6 @@ export const replayedApproval = defineOperation('expense.approve.v1', () => {
     },
   };
 });
-export const useReplayExpenseApproval = replayedApproval.use;
 export function ReplayApproveExpense() {
   return <Operation operation={replayedApproval} />;
 }

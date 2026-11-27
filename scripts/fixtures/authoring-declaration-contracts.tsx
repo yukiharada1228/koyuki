@@ -1,7 +1,9 @@
 /** @jsx h */
-import { h, defineOperation, Operation, createApplication, operationKey } from 'koyuki/experimental';
+import { h, defineOperation, Operation, createApplication } from 'koyuki/experimental';
+import * as authoring from 'koyuki/experimental';
 import { workflow, ok, type Result, type Execution, type ReplayInputError, type ReplayReport, type StepObservation } from 'koyuki';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+const noLegacyExports: Equal<Extract<keyof typeof authoring, 'useOperation' | 'operationKey' | 'replayOperationKey'>, never> = true; void noLegacyExports;
 type Request = { id: string };
 type Authorized = { id: string; authorized: true };
 const load = async (input: Request): Promise<Result<string, 'LoadFailed'>> => ok(input.id);
@@ -22,12 +24,18 @@ const report = replayApp.executeDetailed(replay, { id: 'one' });
 const exactReplay: Equal<typeof report, Promise<ReplayReport<number, 'LoadFailed' | 'Denied' | 'SaveConflict', 'LookupFailed'>>> = true; void exactReplay;
 const exactReplayResult: Equal<Awaited<typeof report>['result'], Result<Execution<number>, 'LoadFailed' | 'Denied' | 'SaveConflict' | 'LookupFailed' | ReplayInputError>> = true; void exactReplayResult;
 if (false) {
+  // @ts-expect-error There is one execution name, without a legacy alias.
+  void app.dispatch(approval, { id: 'one' });
+  // @ts-expect-error Detailed execution is an explicit execution API.
+  void app.inspect(approval, { id: 'one' });
+  // @ts-expect-error Registration no longer accepts a separate manual handler.
+  void <Operation operation={approval} handler={approval.use()} />;
   // @ts-expect-error Required input remains required.
   void app.execute(approval, {});
   // @ts-expect-error Capture cannot widen the required request.
   void app.executeDetailed(approval, {}, { input: () => null, result: () => true });
   // @ts-expect-error Bare legacy keys have no Hook to register automatically.
-  void <Operation operation={operationKey<Request, number, never>('bare')} />;
+  void <Operation operation={{ name: 'bare' }} />;
   // @ts-expect-error The definition cannot silently rename its operation.
   defineOperation('one-name', () => ({ name: 'second-name', load, execute: decide, save }));
   // @ts-expect-error A Promise-returning component definition is not a synchronous Hook.

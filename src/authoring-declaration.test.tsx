@@ -1,12 +1,14 @@
 /** @jsx h */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { h, defineOperation, createContext, useContext, createApplication, Operation, operationKey, useOperation } from './framework/authoring.js';
+import * as authoring from './framework/authoring.js';
+import { h, defineOperation, createContext, useContext, createApplication, Operation } from './framework/authoring.js';
 import { workflow, ok, err, type Result, type Execution, type ExecutionEvent, type ReplayInputError, type StepObservation } from './framework/index.js';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Request = { id: string };
 const Owner = createContext<string>();
 test('one declaration supplies the name, Provider-bound Hook, JSX registration and inferred execution contract', async () => {
+  for (const name of ['useOperation', 'operationKey', 'replayOperationKey']) assert.equal(name in authoring, false);
   let declarations = 0, loads = 0, saves = 0;
   const decide = workflow('check', (input: { id: string; owner: string }): Result<{ by: string }, 'Denied'> =>
     input.id === 'denied' ? err('Denied') : ok({ by: input.owner }));
@@ -35,15 +37,14 @@ test('one declaration supplies the name, Provider-bound Hook, JSX registration a
   assert(events.some(event => event.kind === 'span-started' && event.step === 'check'));
   assert.deepEqual(await app.execute(approval, { id: 'denied' }), err('Denied'));
   assert.equal(saves, 1);
-  assert.equal(app.execute, app.dispatch); assert.equal(app.executeDetailed, app.inspect);
+  assert.equal('dispatch' in app, false); assert.equal('inspect' in app, false);
   if (false) {
     // @ts-expect-error The request must survive declaration inference.
     void app.execute(approval, {});
     // @ts-expect-error Detailed execution must retain the same input contract.
     void app.executeDetailed(approval, { id: 1 });
-    const bare = operationKey<Request, string, never>('bare');
-    // @ts-expect-error A legacy key without a definition still needs a handler.
-    void <Operation operation={bare} />;
+    // @ts-expect-error A name alone is not an executable operation declaration.
+    void <Operation operation={{ name: 'bare' }} />;
   }
 });
 test('the same declaration captures separate Providers and separate concurrent executions', async () => {
@@ -75,10 +76,9 @@ test('declared replay retains its envelope, skips cached business work and expos
   assert.deepEqual(repeated.result, ok({ kind: 'replayed', value: 'ONE' }));
   assert.equal(repeated.attempt, null); assert.equal(commits, 1);
 });
-test('legacy custom Hooks and JSX handlers still register with the new execution names', async () => {
-  function useLegacy() { return useOperation({ name: 'legacy', load: async (input: Request) => ok(input.id), execute: (id: string) => ok(id), save: async value => ok(value) }); }
-  const key = operationKey('legacy', useLegacy);
-  function Legacy() { const handler = useLegacy(); return <Operation operation={key} handler={handler} />; }
-  const app = createApplication(<Legacy />);
-  assert.deepEqual(await app.execute(key, { id: 'one' }), ok('one'));
+test('a declared custom Hook can be reused without another operation registration path', async () => {
+  const approval = defineOperation('approval', () => ({ load: async (input: Request) => ok(input.id), execute: (id: string) => ok(id), save: async value => ok(value) }));
+  function Reused() { approval.use(); return <Operation operation={approval} />; }
+  const app = createApplication(<Reused />);
+  assert.deepEqual(await app.execute(approval, { id: 'one' }), ok('one'));
 });

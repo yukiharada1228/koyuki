@@ -24,7 +24,6 @@ export const replayedLeaveApproval = defineOperation('leave.approve.v1', () => {
     replay: { lookup: request => repository.receipt(identity(request)), resolveAfter: error => error === 'SaveConflict' || error === 'StorageUnavailable' || error === 'AlreadyDecided' },
   };
 });
-export const useReplayLeaveApproval = replayedLeaveApproval.use;
 export function ReplayLeaves({ repository, actor }: { repository: ReplayLeaveRepository; actor: Actor }) {
   return <ReplayLeaveContext.Provider value={repository}><ActorContext.Provider value={actor}><Operation operation={replayedLeaveApproval} /></ActorContext.Provider></ReplayLeaveContext.Provider>;
 }

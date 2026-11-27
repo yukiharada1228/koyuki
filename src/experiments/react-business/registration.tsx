@@ -49,8 +49,6 @@ export const registrationConfirmation = defineOperation('registration.confirm.v1
     replay: { lookup: input => repository.receipt(call(input)), resolveAfter: error => error.kind === 'Conflict' || error.kind === 'StorageUnavailable' || error.kind === 'InvalidConfirmation' },
   };
 });
-export const useRegistrationRequest = registrationRequest.use;
-export const useRegistrationConfirmation = registrationConfirmation.use;
 export function Registrations({ repository, actor }: { repository: RegistrationPort; actor: Actor }) {
   return <RegistrationContext.Provider value={repository}><ActorContext.Provider value={actor}><Fragment><Operation operation={registrationRequest} /><Operation operation={registrationConfirmation} /></Fragment></ActorContext.Provider></RegistrationContext.Provider>;
 }

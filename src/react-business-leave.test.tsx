@@ -14,18 +14,18 @@ test('leave approval uses the same components and Hooks and preserves individual
   };
   const app = createApplication(<Leaves repository={repository} actor={manager} />);
   assert.deepEqual(calls, []);
-  const report = await app.inspect(leaveApproval, { id: 'holiday' });
+  const report = await app.executeDetailed(leaveApproval, { id: 'holiday' });
   assert.deepEqual(report.result, ok({ kind: 'approved', id: 'holiday', owner: 'employee', days: 3, by: 'boss' }));
   assert.deepEqual(report.trace.map(row => row.step), ['leave.approve.v1:load', 'authorize-leave', 'approve-leave', 'leave.approve.v1']);
   assert.deepEqual(calls, ['load:boss', 'save']);
   calls.length = 0;
-  const refusal = await app.inspect(leaveApproval, { id: 'holiday' });
+  const refusal = await app.executeDetailed(leaveApproval, { id: 'holiday' });
   assert.deepEqual(refusal.result, err('AlreadyDecided'));
   assert.deepEqual(refusal.trace.at(-1), { step: 'authorize-leave', status: 'error' });
   assert.deepEqual(calls, ['load:boss']);
   if (false) {
     // @ts-expect-error The same input contract survives the leave component tree.
-    void app.dispatch(leaveApproval, { requestId: 'wrong' });
+    void app.execute(leaveApproval, { requestId: 'wrong' });
   }
 });
 test('leave rules also run without Hooks or persistence', () => {

@@ -35,7 +35,6 @@ export const budgetApproval = defineOperation('expense.approve-with-budget.v1', 
     save: change => expenses.save(change),
   };
 });
-export const useBudgetExpenseApproval = budgetApproval.use;
 export function BudgetExpenses({ repository, policies, actor }: { repository: ExpenseRepository; policies: BudgetPolicyRepository; actor: Actor }) {
   return <ExpenseRepositoryContext.Provider value={repository}><BudgetPolicyContext.Provider value={policies}>
     <ActorContext.Provider value={actor}><Operation operation={budgetApproval} /></ActorContext.Provider>

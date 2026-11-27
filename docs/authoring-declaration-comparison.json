@@ -1,11 +1,11 @@
 {
   "baseCommit": "47012ba67707a5b9ca0bf2463bddfad9c1b430ef",
-  "scope": "Literal source counts for four operations in three example files. Compatibility Hook aliases and domain/repository declarations remain. Not a productivity or whole-system complexity measurement.",
+  "scope": "Literal source counts for four operations in three example files. Domain/repository declarations remain; legacy authoring exports and execution aliases are removed. Not a productivity or whole-system complexity measurement.",
   "files": [
     {
       "file": "src/experiments/react-business/expense-replay.tsx",
       "beforeSha256": "43c55501ae076b6a7339c18c95696f5bc298e18ca2af5587597d5abee46f6fe3",
-      "afterSha256": "3251687c84c39dfed58293e088c79522e891f59af10006afe1bfbf77dff02ac4",
+      "afterSha256": "4ffaf09deaaea87f08ae0883f3c032f7cfe1a9c330881a2dbb38ef2bef03f882",
       "before": {
         "defineOperation": 0,
         "operationKey": 1,
@@ -26,7 +26,7 @@
     {
       "file": "src/experiments/react-business/leave-replay.tsx",
       "beforeSha256": "34318efb6d4d60e5eede4e51cce023c3662db9ef57f1c3895350bac8a624ee33",
-      "afterSha256": "256bf8b61c95c99b8539b1d06733bb751ebb096f94f627676b5cc81229e10dc4",
+      "afterSha256": "1400ffe80249b23ea715abe72f088b5e8ebdff4fe5bbc233a039dafa33d9c54c",
       "before": {
         "defineOperation": 0,
         "operationKey": 1,
@@ -47,7 +47,7 @@
     {
       "file": "src/experiments/react-business/registration.tsx",
       "beforeSha256": "fccc439c7cd1c304276ede23c1462153335de5cfb98a7b155219adc09c8b6841",
-      "afterSha256": "fea2c508aa7d64e899bbbe2efffd8a32f99824eade1a57a79a1abc09cd404de9",
+      "afterSha256": "f628d21413b374992efa621696413af8beddd57e662d8f24eb122a8257d8a420",
       "before": {
         "defineOperation": 0,
         "operationKey": 2,

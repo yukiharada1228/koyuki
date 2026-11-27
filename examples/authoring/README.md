@@ -18,7 +18,7 @@ npm start
 
 `expense.tsx`は純粋な合成を作り、`defineOperation('expense.approve.v1', () => { ... })` のカスタムHook内でContextからRepository・操作者を取得する。Hookは名前を持たない操作定義を返し、入力・成功・エラー・詳細レポートを推論する。定義時にHookは評価されない。宣言した操作を`<Operation operation={approval} />`と`app.execute(approval, input)`で共有するため、operationKeyやhandlerの手書き接続は不要。
 
-`expense-replay.tsx`は同じ業務関数に再送境界を加える。`leave-domain.ts`は休暇の状態と認可・遷移を純粋関数として定義し、認可成功の証明を次の関数が要求する。`registration.tsx`は登録・確認を同じ宣言で組み立てる。`expense-budget.tsx`は途中に明示的なProcessのI/Oを置く。execute/executeDetailedを呼ぶまで、フレームワークはI/Oを実行しない。旧useOperation/operationKey、dispatch/inspectは互換として残す。
+`expense-replay.tsx`は同じ業務関数に再送境界を加える。`leave-domain.ts`は休暇の状態と認可・遷移を純粋関数として定義し、認可成功の証明を次の関数が要求する。`registration.tsx`は登録・確認を同じ宣言で組み立てる。`expense-budget.tsx`は途中に明示的なProcessのI/Oを置く。execute/executeDetailedを呼ぶまで、フレームワークはI/Oを実行しない。旧useOperation/operationKey、dispatch/inspectは削除した。
 
 mainのreceipt adapterは単一プロセスのデモ用メモリ実装。永続的な再送や複数プロセスの原子性は保証しない。本番では状態とreceiptを同じtransactionで保存するアダプターが必要になる。既存SQLiteアダプターとの接続はリポジトリ側のテストで検査する。
 

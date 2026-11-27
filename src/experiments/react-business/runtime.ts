@@ -1,3 +1,3 @@
-// Source-study compatibility entry; the package exposes this API at koyuki/experimental.
-export { h, Fragment, createContext, useContext, useOperation, defineOperation, Operation, operationKey, replayOperationKey, createApplication } from '../../framework/authoring.js';
-export type { OperationKey, DeclaredOperation } from '../../framework/authoring.js';
+// Example-local barrel; packaged consumers import koyuki/experimental.
+export { h, Fragment, createContext, useContext, defineOperation, Operation, createApplication } from '../../framework/authoring.js';
+export type { BusinessOperation } from '../../framework/authoring.js';

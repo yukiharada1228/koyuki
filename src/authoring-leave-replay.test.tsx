@@ -28,19 +28,19 @@ test('leave approval persists its replay boundary across mounts and storage conn
     const actor: { -readonly [K in keyof Actor]: Actor[K] } = { ...manager };
     const app = createApplication(<ReplayLeaves repository={repository} actor={actor} />, { observeExecution: event => events.push(event) });
     actor.id = 'changed-after-mount'; actor.active = false;
-    const first = await app.inspect(replayedLeaveApproval, request, { input: (_value, step) => step, result: result => result.ok });
+    const first = await app.executeDetailed(replayedLeaveApproval, request, { input: (_value, step) => step, result: result => result.ok });
     assert.deepEqual(first.result, ok({ kind: 'committed', value: { ...pending, kind: 'approved', by: 'boss' } }));
     assert(first.observations.some(row => row.step === 'approve-leave'));
     assert(events.some(event => event.kind === 'completed' && event.status === 'ok'));
     repository.close(); repository = new SqliteReplayLeaves(path);
     const resumed = createApplication(<ReplayLeaves repository={repository} actor={manager} />);
-    const replay = await resumed.inspect(replayedLeaveApproval, request);
+    const replay = await resumed.executeDetailed(replayedLeaveApproval, request);
     assert.equal(replay.result.ok && replay.result.value.kind, 'replayed'); assert.equal(replay.attempt, null);
     const other = createApplication(<ReplayLeaves repository={repository} actor={{ ...manager, id: 'other' }} />);
-    assert.deepEqual(await other.dispatch(replayedLeaveApproval, request), err('IdempotencyConflict'));
+    assert.deepEqual(await other.execute(replayedLeaveApproval, request), err('IdempotencyConflict'));
     if (false) {
       // @ts-expect-error Replay does not weaken the business request contract.
-      void resumed.dispatch(replayedLeaveApproval, { requestId: 'missing' });
+      void resumed.execute(replayedLeaveApproval, { requestId: 'missing' });
     }
   } finally { repository.close(); rmSync(directory, { recursive: true, force: true }); }
 });
@@ -51,11 +51,11 @@ test('leave state and receipt roll back together, then concurrent retry commits 
     first.seed(pending);
     const app = createApplication(<ReplayLeaves repository={first} actor={manager} />);
     db.exec("CREATE TRIGGER fail_receipt BEFORE INSERT ON leave_receipts BEGIN SELECT RAISE(ABORT,'failure'); END");
-    assert.deepEqual(await app.dispatch(replayedLeaveApproval, request), err('StorageUnavailable'));
+    assert.deepEqual(await app.execute(replayedLeaveApproval, request), err('StorageUnavailable'));
     assert.deepEqual(await first.load(request.input, manager), ok({ current: pending, actor: manager }));
     db.exec('DROP TRIGGER fail_receipt');
     const other = createApplication(<ReplayLeaves repository={second} actor={manager} />);
-    const results = await Promise.all([app.dispatch(replayedLeaveApproval, request), other.dispatch(replayedLeaveApproval, request)]);
+    const results = await Promise.all([app.execute(replayedLeaveApproval, request), other.execute(replayedLeaveApproval, request)]);
     assert.deepEqual(results.map(result => result.ok && result.value.kind).sort(), ['committed', 'replayed']);
     assert.equal(db.prepare('SELECT count(*) AS n FROM leave_receipts').get()?.n, 1);
   } finally { first.close(); second.close(); db.close(); rmSync(directory, { recursive: true, force: true }); }
@@ -75,9 +75,9 @@ test('sibling business components have independent Providers and concurrent exec
       <Registrations repository={registrations} actor={{ id: 'signup-session', role: 'employee', active: true }} />
     </Fragment>, { sessionId: 'siblings', observeExecution: event => events.push(event) });
     const results = await Promise.all([
-      app.dispatch(replayedApproval, { requestId: 'approve-expense', input: { id: 'expense', expectedVersion: 2 } }),
-      app.dispatch(replayedLeaveApproval, request),
-      app.dispatch(registrationRequest, { requestId: 'register', id: 'person', email: 'person@example.test' }),
+      app.execute(replayedApproval, { requestId: 'approve-expense', input: { id: 'expense', expectedVersion: 2 } }),
+      app.execute(replayedLeaveApproval, request),
+      app.execute(registrationRequest, { requestId: 'register', id: 'person', email: 'person@example.test' }),
     ]);
     assert(results.every(result => result.ok && result.value.kind === 'committed'));
     assert.deepEqual(await leaves.load(request.input, manager), ok({ current: { ...pending, kind: 'approved', by: 'boss' }, actor: manager }));
