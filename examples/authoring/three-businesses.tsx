@@ -21,3 +21,5 @@ export function createBusinessApplication(ports: {
 export { replayedApproval } from './expense-replay.js';
 export { replayedLeaveApproval } from './leave-replay.js';
 export { registrationRequest, registrationConfirmation } from './registration.js';
+
+export { businessDashboard } from './dashboard.js';

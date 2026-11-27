@@ -53,6 +53,7 @@ const fingerprint = (request: Parameters<ReplayExpenseRepository['receipt']>[0])
   request.operation, request.actor.id, request.actor.role, request.actor.active, request.input.id, request.input.expectedVersion,
 ]);
 const replayRepository: ReplayExpenseRepository = {
+  read: id => id === saved.id ? ok(saved) : err({ kind: 'NotFound' }),
   async load(input, actor) {
     const result = await repository.load(input, actor);
     return result.ok ? result : err({ kind: 'RepositoryUnavailable' });

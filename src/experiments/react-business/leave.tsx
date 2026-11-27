@@ -1,6 +1,6 @@
 /** @jsx h */
 import { workflow, type Result } from '../../framework/index.js';
-import { h, createContext, useContext, defineOperation, Operation } from './runtime.js';
+import { h, createContext, useContext, defineOperation, Operation, defineResource } from './runtime.js';
 import { ActorContext, useActor } from './expense.js';
 import type { Actor } from '../../expenses/domain.js';
 import { authorizeLeave, approveLeave, type LeaveInput, type LeaveContext, type ApprovedLeave } from './leave-domain.js';
@@ -11,14 +11,13 @@ export interface LeaveRepository {
   save(value: ApprovedLeave): Promise<Result<ApprovedLeave, 'SaveConflict'>>;
 }
 export const LeaveRepositoryContext = createContext<LeaveRepository>();
-export const leaveApproval = defineOperation('leave.approve.v1', () => {
-  const repository = useContext(LeaveRepositoryContext);
-  const actor = useActor();
-  return {
-    load: (input: LeaveInput) => repository.load(input, actor),
-    execute: leaveDecision,
-    save: value => repository.save(value),
-  };
+const leaveContext = defineResource('leave-context', () => {
+  const repository = useContext(LeaveRepositoryContext), actor = useActor();
+  return (input: LeaveInput) => repository.load(input, actor);
+});
+export const leaveApproval = defineOperation('leave.approve.v1', {
+  needs: leaveContext, execute: leaveDecision,
+  useSave: () => { const repository = useContext(LeaveRepositoryContext); return (value: ApprovedLeave) => repository.save(value); },
 });
 export function Leaves({ repository, actor }: { repository: LeaveRepository; actor: Actor }) {
   return <LeaveRepositoryContext.Provider value={repository}>

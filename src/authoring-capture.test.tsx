@@ -36,7 +36,8 @@ function fixture() {
 test('selected inputs and results are captured once, after projection, without reading unselected accessors', async () => {
   const f = fixture(), source = { ...input, token: 'private-token' };
   let getterReads = 0;
-  Object.defineProperty(source, 'secret', { enumerable: true, get() { getterReads++; throw new Error('Do not read'); } });
+  const loaded = Object.defineProperty({ ...current }, 'secret', { enumerable: true, get() { getterReads++; throw new Error('Do not read'); } });
+  f.repository.load = async (input, actor) => { f.calls.push('load'); return ok({ current: loaded, input, actor }); };
   const app = createApplication(<Expenses repository={f.repository} actor={manager} />);
   const report = await app.executeDetailed(approval, source, {
     input: (value, step) => ({ id: id(value), step, state: expenseState(value) }),
@@ -48,7 +49,7 @@ test('selected inputs and results are captured once, after projection, without r
   assert.equal(report.result.ok, true);
   assert.equal(getterReads, 0); assert.deepEqual(report.observationErrors, []);
   assert.deepEqual(f.calls, ['load', 'save']);
-  assert.deepEqual(report.observations.map(row => row.step), ['expense.approve.v1:load', 'authorize-approval', 'approve', 'expense.approve.v1']);
+  assert.deepEqual(report.observations.map(row => row.step), ['resource:expense-context', 'expense.approve.v1:load', 'authorize-approval', 'approve', 'expense.approve.v1']);
   assert.equal(report.observations.every(row => row.result.ok), true);
   const transition = report.observations.find(row => row.step === 'approve');
   assert.equal(transition?.input.state, 'manager');
@@ -74,8 +75,8 @@ test('capture failures are metadata and never stop or repeat business execution 
     { step: 'authorize-approval', phase: 'input', kind: 'CaptureFailed' },
     { step: 'approve', phase: 'result', kind: 'CaptureFailed' },
   ]);
-  assert.deepEqual(report.observations.map(row => row.step), ['expense.approve.v1:load', 'expense.approve.v1']);
-  assert.equal(events.filter(event => event.kind === 'span-completed').length, 4);
+  assert.deepEqual(report.observations.map(row => row.step), ['resource:expense-context', 'expense.approve.v1:load', 'expense.approve.v1']);
+  assert.equal(events.filter(event => event.kind === 'span-completed').length, 5);
   assert.equal(events.some(event => event.kind === 'completed' && event.status === 'ok'), true);
 });
 test('middle IO and inner pure rules share one selected capture and live execution', async () => {
@@ -96,7 +97,7 @@ test('domain failure remains a domain failure when its capture fails', async () 
   const report = await app.executeDetailed(approval, input, { input: () => { throw new Error('capture'); }, result: () => null });
   assert.deepEqual(report.result, err({ kind: 'Forbidden' }));
   assert.deepEqual(f.calls, ['load']);
-  assert.equal(report.observationErrors.length, 2);
+  assert.equal(report.observationErrors.length, 3);
 });
 test('receipt replay observes the replay boundary without fabricating domain observations', async t => {
   const stored = new ReplaySqliteExpenses(':memory:'); t.after(() => stored.close());
@@ -107,9 +108,10 @@ test('receipt replay observes the replay boundary without fabricating domain obs
   assert.equal((await expenseReplayCommands(stored, employee).submit.run({ requestId: 'seed', input })).ok, true);
   const calls: string[] = [];
   const repository: ReplayExpenseRepository = {
+    read: id => stored.read(id),
     async load(input, actor) { calls.push('load'); return stored.load(input, actor); },
     receipt(request) { calls.push('lookup'); return stored.receipt(request); },
-    async saveRequest(request, change) { calls.push('save'); return stored.saveRequest(request, change); },
+    async saveRequest(request, change, events) { calls.push('save'); return stored.saveRequest(request, change, events); },
   };
   const app = createApplication(<ReplayExpenses repository={repository} actor={manager} />);
   const request = { requestId: 'approval', input: { id: 'one', expectedVersion: 2 } };
@@ -153,7 +155,7 @@ test('accidental native async selectors produce capture errors without unhandled
     const report = await app.executeDetailed(approval, input, capture);
     assert.equal(report.result.ok, true); assert.deepEqual(f.calls, ['load', 'save']);
     assert.equal(report.observations.length, 0);
-    assert.equal(report.observationErrors.length, 4);
+    assert.equal(report.observationErrors.length, 5);
     assert.equal(report.observationErrors.every(error => error.phase === phase), true);
   }
   await new Promise<void>(resolve => setImmediate(resolve));
@@ -168,6 +170,6 @@ test('concurrent selected captures own their snapshots independently', async () 
   ]);
   assert.equal(first.observations.every(row => row.input.label === 'first' && row.result === true), true);
   assert.equal(second.observations.every(row => row.input.label === 'second' && row.result === 'true'), true);
-  assert.equal(first.observations.length, 4); assert.equal(second.observations.length, 4);
+  assert.equal(first.observations.length, 5); assert.equal(second.observations.length, 5);
   assert.deepEqual(f.calls, ['load', 'load', 'save', 'save']);
 });

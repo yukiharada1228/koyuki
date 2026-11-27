@@ -12,13 +12,17 @@ type ResourceSuccess<R> = R extends { ok: true; value: infer V } ? V : never;
 type ResourceFailure<R> = R extends { ok: false; error: infer E } ? E : never;
 type ResourceCallInput<F> = [F] extends [(input: infer I) => unknown] ? I : never;
 export type ResourceTable = Readonly<Record<string, BusinessResource<never, unknown, unknown>>>;
+export type ResourceSpec = ResourceTable | BusinessResource<never, unknown, unknown>;
 type RequiredCall<R> = R extends BusinessResource<infer I, unknown, unknown> ? unknown extends I ? never : (input: I) => void : never;
 type RequiredCalls<N extends ResourceTable> = { [K in keyof N]: RequiredCall<N[K]> }[keyof N];
 // Preserve unions accepted by one resource, intersect requirements of selections.
-export type NeedsInput<N extends ResourceTable> = [RequiredCalls<N>] extends [never] ? unknown
+type TableInput<N extends ResourceTable> = [RequiredCalls<N>] extends [never] ? unknown
   : [RequiredCalls<N>] extends [(input: infer I) => void] ? I : never;
-export type NeedsValues<N extends ResourceTable> = { readonly [K in keyof N]: N[K] extends BusinessResource<never, infer V, unknown> ? V : never };
-export type NeedsError<N extends ResourceTable> = N[keyof N] extends BusinessResource<never, unknown, infer E> ? E : never;
+export type NeedsInput<N extends ResourceSpec> = [N] extends [BusinessResource<never, unknown, unknown>]
+  ? [RequiredCall<N>] extends [never] ? unknown : [RequiredCall<N>] extends [(input: infer I) => void] ? I : never
+  : TableInput<Extract<N, ResourceTable>>;
+export type NeedsValues<N extends ResourceSpec> = N extends BusinessResource<never, infer V, unknown> ? V : { readonly [K in keyof N]: N[K] extends BusinessResource<never, infer V, unknown> ? V : never };
+export type NeedsError<N extends ResourceSpec> = N extends BusinessResource<never, unknown, infer E> ? E : N[keyof N] extends BusinessResource<never, unknown, infer E> ? E : never;
 type ResourceLoader = (input: never) => Result<unknown, unknown> | Promise<Result<unknown, unknown>>;
 type ResourceDeclaration = { readonly needs: ResourceTable; readonly useLoad: () => ResourceLoader };
 const dependencies = new WeakMap<object, ResourceDeclaration>();
@@ -49,7 +53,7 @@ function entries(needs: ResourceTable) {
     return [key, descriptor.value as BusinessResource<never, unknown, unknown>] as const;
   });
 }
-export function loadResources<N extends ResourceTable>(needs: N): { readonly runDetailed: (input: NeedsInput<N>) => Promise<ActionReport<NeedsValues<N>, NeedsError<N>>> } {
+export function loadResources<N extends ResourceSpec>(needs: N): { readonly runDetailed: (input: NeedsInput<N>) => Promise<ActionReport<NeedsValues<N>, NeedsError<N>>> } {
   type Resource = BusinessResource<never, unknown, unknown>;
   interface Node { resource: Resource; fields: readonly (readonly [string, Resource])[] | undefined; load: ResourceLoader }
   const nodes = new Map<object, Node>(), names = new Map<string, object>(), active = new Set<object>();
@@ -64,7 +68,8 @@ export function loadResources<N extends ResourceTable>(needs: N): { readonly run
     const load = declaration ? declaration.useLoad() : resource.use();
     nodes.set(resource, { resource, fields, load }); active.delete(resource);
   };
-  const fields = entries(needs);
+  const direct = typeof Object.getOwnPropertyDescriptor(needs, 'use')?.value === 'function';
+  const fields = direct ? [['value', needs as BusinessResource<never, unknown, unknown>] as const] : entries(needs as ResourceTable);
   for (const [, resource] of fields) bind(resource);
   const perform = async (input: NeedsInput<N>, observe?: StageObserver): Promise<ActionReport<NeedsValues<N>, NeedsError<N>>> => {
     const cache = new Map<object, Promise<Result<unknown, unknown>>>(), trace: { step: string; status: 'ok' | 'error' }[] = [];
@@ -95,7 +100,7 @@ export function loadResources<N extends ResourceTable>(needs: N): { readonly run
     };
     const result = await context(fields);
     // Field/value and error correspondence is checked at the public declarations.
-    return { result: result as Result<NeedsValues<N>, NeedsError<N>>, trace, plan: null };
+    return { result: (direct && result.ok ? ok(result.value.value) : result) as Result<NeedsValues<N>, NeedsError<N>>, trace, plan: null };
   };
   return { runDetailed: registerDetailed((input: NeedsInput<N>) => perform(input), perform) };
 }

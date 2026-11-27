@@ -23,12 +23,12 @@ test('JSX dispatch emits live spans while IO is still pending and retains each d
   assert.equal(events.some(event => event.kind === 'completed'), false);
   release(); assert.equal((await running).ok, true);
   assert.deepEqual(calls, ['load', 'save']);
-  assert.deepEqual(events.filter(event => event.kind === 'span-started').map(event => event.step), ['expense.approve.v1:load', 'authorize-approval', 'approve', 'expense.approve.v1']);
+  assert.deepEqual(events.filter(event => event.kind === 'span-started').map(event => event.step), ['expense.approve.v1:load', 'resource:expense-context', 'authorize-approval', 'approve', 'expense.approve.v1']);
   assert.equal(events.every(event => event.executionId === 'jsx-live/1'), true);
   assert.equal(events.some(event => event.kind === 'completed' && event.status === 'ok'), true);
   const started = events.filter(event => event.kind === 'span-started').map(event => event.spanId);
   const completed = events.filter(event => event.kind === 'span-completed').map(event => event.spanId);
-  assert.deepEqual(completed, started);
+  assert.deepEqual(completed, [started[1], started[0], ...started.slice(2)]);
 });
 test('concurrent calls on one JSX application have distinct execution IDs', async () => {
   const events: ExecutionEvent[] = [];
@@ -43,8 +43,8 @@ test('concurrent calls on one JSX application have distinct execution IDs', asyn
   for (const id of ['parallel/1', 'parallel/2']) {
     const own = events.filter(event => event.executionId === id);
     assert.equal(own.filter(event => event.kind === 'completed').length, 1);
-    assert.equal(own.filter(event => event.kind === 'span-started').length, 4);
-    assert.equal(own.filter(event => event.kind === 'span-completed').length, 4);
+    assert.equal(own.filter(event => event.kind === 'span-started').length, 5);
+    assert.equal(own.filter(event => event.kind === 'span-completed').length, 5);
   }
   stop(); const size = events.length;
   await app.execute(approval, input);

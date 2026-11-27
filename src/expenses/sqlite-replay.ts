@@ -1,3 +1,5 @@
+import { businessOutbox } from '../adapters/sqlite-business-events.js';
+import type { EventEnvelope } from '../framework/authoring.js';
 import type { SqliteAuditOptions } from '../adapters/sqlite-audit.js';
 import { createHash } from 'node:crypto';
 import { ok, err, type Result, type Receipt, type Execution } from '../framework/index.js';
@@ -39,6 +41,7 @@ function matchesOperation(operation: ExpenseOperation, state: ExpenseState): boo
 /** Optional receipt boundary sharing the ordinary expense storage transaction. */
 export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseReplayRepository {
   private readonly definitionVersion: string;
+  readonly events: ReturnType<typeof businessOutbox>;
   constructor(path: string, options: { audit?: SqliteAuditOptions; definitionVersion?: string } = {}) {
     // A host-owned version scopes replay; payloads cannot select an old policy.
     // Keep the default byte-for-byte compatible with existing fingerprints.
@@ -47,6 +50,7 @@ export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseRepla
       throw new TypeError('InvalidExpenseDefinitionVersion');
     super(path, options);
     this.definitionVersion = definitionVersion;
+    this.events = businessOutbox(this.db);
     try { this.db.exec('CREATE TABLE IF NOT EXISTS expense_receipts(request_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result_json TEXT NOT NULL)'); }
     catch (error) { this.close(); throw error; }
   }
@@ -63,13 +67,13 @@ export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseRepla
       return ok({ kind: 'found', value: restored.value });
     } catch { return err({ kind: 'RepositoryUnavailable' }); }
   }
-  async saveRequest(request: ExpenseRequest, change: Change): Promise<Result<Execution<ExpenseState>, ReplayStorageError>> {
+  async saveRequest(request: ExpenseRequest, change: Change, events: readonly EventEnvelope[] = []): Promise<Result<Execution<ExpenseState>, ReplayStorageError>> {
     try {
-      return this.transaction.run(() => this.commitRequest(request, change));
+      return this.transaction.run(() => this.commitRequest(request, change, events));
     } catch { return err({ kind: 'RepositoryUnavailable' }); }
   }
 
-  private commitRequest(request: ExpenseRequest, change: Change): Result<Execution<ExpenseState>, ReplayStorageError> {
+  private commitRequest(request: ExpenseRequest, change: Change, events: readonly EventEnvelope[]): Result<Execution<ExpenseState>, ReplayStorageError> {
     const cached = this.receipt(request); if (!cached.ok) return cached;
     if (cached.value.kind === 'found') return ok({ kind: 'replayed', value: cached.value.value });
     if (change.next.id !== request.input.id || change.expectedVersion !== request.input.expectedVersion ||
@@ -80,6 +84,7 @@ export class ReplaySqliteExpenses extends SqliteExpenses implements ExpenseRepla
         (!('reason' in request.input) || !('reason' in change.next) || change.next.reason !== request.input.reason.trim())) return err({ kind: 'InvalidRequest' });
     const saved = this.commit(change); if (!saved.ok) return saved;
     this.db.prepare('INSERT INTO expense_receipts VALUES(?,?,?)').run(request.requestId, fingerprint(request, this.definitionVersion), JSON.stringify(saved.value));
+    this.events.append(events);
     return ok({ kind: 'committed', value: saved.value });
   }
 }

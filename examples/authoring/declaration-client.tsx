@@ -36,7 +36,7 @@ export function checkDeclarations(repository: ExpenseRepository, replayRepositor
   const exactCapturedResult: Equal<Captured['result'], Result<Change, RuleError | 'LoadFailed' | 'SaveFailed'>> = true;
   const replay = createApplication(<ReplayExpenses repository={replayRepository} actor={actor} />);
   const report = replay.executeDetailed(replayedApproval, { requestId: 'one', input: { id: 'one', expectedVersion: 1 } });
-  const exactReport: Equal<typeof report, Promise<ReplayReport<ExpenseState, LoadError | RuleError | ReplayStorageError, ReplayStorageError>>> = true;
+  const exactReport: Equal<typeof report, Promise<ReplayReport<ExpenseState, LoadError | RuleError | ReplayStorageError, ReplayStorageError> & import('koyuki/experimental').EventReport>> = true;
   const capturedReplay = replay.executeDetailed(replayedApproval, { requestId: 'one', input: { id: 'one', expectedVersion: 1 } }, { input: () => null, result: result => result.ok });
   const exactCapturedReplay: Equal<Awaited<typeof capturedReplay>['result'], Result<Execution<ExpenseState>, LoadError | RuleError | ReplayStorageError | ReplayInputError>> = true;
   const exactCapturedAttempt: Equal<Awaited<typeof capturedReplay>['attempt'], ReplayReport<ExpenseState, LoadError | RuleError | ReplayStorageError, ReplayStorageError>['attempt']> = true;

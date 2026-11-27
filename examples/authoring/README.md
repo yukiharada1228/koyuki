@@ -27,3 +27,12 @@ mainのreceipt adapterは単一プロセスのデモ用メモリ実装。永続�
 一括検証は `npm run test:authoring:package`。別プロジェクトへ実tarballをインストールし、TypeScript 6/7のNode型なしの型検査・宣言生成と、経費承認・休暇承認・再送・操作者分離・live spanを実行する。これは保守者のAI評価であり、人間の初見評価ではない。
 
 検証モードはさらに、Node上の別integrationテストで、新しい会員登録HookとSQLite adapterを実tarballへ接続する。再接続・登録と確認の再送・rollback・同時要求を検査する。このDB用テストは準備モードの試用パックには含めず、Node型なしの型検査対象とも分ける。
+
+
+## 三業務の宣言と表示更新
+
+`dashboard.ts`のbusinessDashboardは、再送対応の経費承認・休暇承認・会員登録・確認に共通のviewを定義する。各業務コンポーネントがQueryもProvider内で登録し、viewはrefreshQueryのonでイベントとの関係を宣言する。`await app.start(businessDashboard(target))`で初期データを読み、session.dispatchの後続処理が終わると該当Queryを読み直す。呼出し元の手動loadやResult分岐は不要。
+
+Query失敗はsnapshot.state.queriesへ保持し、保存済み業務の成功を取り消さない。外部の永続イベントをviewへ反映する入口はsession.deliver、再取得のみの入口はsession.refresh。snapshot.state.refreshingで再取得中を判定する。複数セッションや別プロセスの変更は、ホストがそのセッションへイベントを届ける。
+
+サンプルのイベントoutboxは開発用で、本番のlease・schedulerを提供するものではない。メール送信は行わない。詳しくはリポジトリのdocs/declarative-connections.mdを参照。

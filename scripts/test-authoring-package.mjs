@@ -37,6 +37,8 @@ try {
   copyFileSync(join(root, 'scripts/fixtures/authoring-key-contracts.ts'), join(workspace, 'key-contracts.ts'));
   copyFileSync(join(root, 'scripts/fixtures/authoring-declaration-contracts.tsx'), join(workspace, 'declaration-contracts.tsx'));
   copyFileSync(join(root, 'examples/authoring/README.md'), join(workspace, 'README.md'));
+  // The actual shared view is copied as source and typechecked against the installed SDK.
+
   const source = (from, to, replacements) => {
     let text = readFileSync(join(root, from), 'utf8');
     for (const [before, after] of replacements) { assert(text.includes(before), `Missing import rewrite: ${before}`); text = text.replaceAll(before, after); }
@@ -48,6 +50,7 @@ try {
     ...(name === 'expense-replay' ? [["'../../expenses/repository.js'", "'./domain/repository.js'"]] : []),
     ["'./runtime.js'", "'koyuki/experimental'"],
   ]);
+  source('src/experiments/react-business/dashboard.ts', 'dashboard.ts', [["'../../framework/authoring.js'", "'koyuki/experimental'"], ["'../../expenses/domain.js'", "'./domain/expenses.js'"]]);
   source('src/experiments/react-business/leave-domain.ts', 'leave-domain.ts', [["'../../framework/index.js'", "'koyuki'"], ["'../../expenses/domain.js'", "'./domain/expenses.js'"]]);
   copyFileSync(join(root, 'src/registration/secrets.ts'), join(workspace, 'domain/registration-secrets.ts'));
   source('src/registration/domain.ts', 'domain/registration.ts', [["'../framework/index.js'", "'koyuki'"]]);
@@ -55,7 +58,7 @@ try {
   source('src/examples/expense.ts', 'domain/routing.ts', [["'../framework/index.js'", "'koyuki'"]]);
   source('src/expenses/repository.ts', 'domain/repository.ts', [["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'./expenses.js'"]]);
   writeFileSync(join(workspace, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
-  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'captured-exports.tsx', 'expense.tsx', 'expense-replay.tsx', 'expense-budget.tsx', 'leave.tsx', 'leave-replay.tsx', 'registration.tsx', 'three-businesses.tsx', 'leave-domain.ts', 'key-contracts.ts', 'declaration-contracts.tsx', 'domain/*.ts'] }, null, 2));
+  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'captured-exports.tsx', 'expense.tsx', 'expense-replay.tsx', 'expense-budget.tsx', 'leave.tsx', 'leave-replay.tsx', 'registration.tsx', 'three-businesses.tsx', 'dashboard.ts', 'leave-domain.ts', 'key-contracts.ts', 'declaration-contracts.tsx', 'domain/*.ts'] }, null, 2));
   if (verify) {
     run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], workspace);
     for (const dependency of ['react', '@types/react', '@types/node']) assert(!existsSync(join(workspace, 'node_modules', dependency)), `Unexpected dependency: ${dependency}`);
@@ -120,7 +123,9 @@ try {
     source('src/registration/repository.ts', 'integration/repository.ts', [
       ["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'../domain/registration.js'"],
     ]);
+    source('src/adapters/sqlite-business-events.ts', 'integration/business-outbox.ts', [["'../framework/authoring.js'", "'koyuki/experimental'"]]);
     source('src/registration/replay-repository.ts', 'integration/replay-repository.ts', [
+      ["'../adapters/sqlite-business-events.js'", "'./business-outbox.js'"], ["'../framework/authoring.js'", "'koyuki/experimental'"],
       ["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'../domain/registration.js'"],
       ["'./secrets.js'", "'../domain/registration-secrets.js'"],
       ["'../experiments/react-business/registration.js'", "'../registration.js'"],
@@ -164,6 +169,19 @@ try {
       ["'./expenses/domain.js'", "'../domain/expenses.js'"],
     ]);
     console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/three-businesses.test.tsx'], workspace).trim());
+    source('src/authoring-dashboard.test.tsx', 'integration/dashboard.test.tsx', [
+      ["'./framework/authoring.js'", "'koyuki/experimental'"],
+      ["'./experiments/react-business/expense-replay.js'", "'../expense-replay.js'"],
+      ["'./experiments/react-business/leave-replay.js'", "'../leave-replay.js'"],
+      ["'./experiments/react-business/registration.js'", "'../registration.js'"],
+      ["'./experiments/react-business/dashboard.js'", "'../dashboard.js'"],
+      ["'./experiments/react-business/leave-sqlite.js'", "'./sqlite-adapters.mjs'"],
+      ["'./expenses/sqlite-replay.js'", "'./sqlite-adapters.mjs'"],
+      ["'./registration/replay-repository.js'", "'./sqlite-adapters.mjs'"],
+      ["'./expenses/domain.js'", "'../domain/expenses.js'"],
+      ["'./expenses/replay.js'", "'./sqlite-adapters.mjs'"],
+    ]);
+    console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/dashboard.test.tsx'], workspace).trim());
     console.log('Installed three-business authoring: SQLite-backed expense, leave and registration run concurrently with isolated Providers; durable leave replay and rollback passed.');
     const businessDomain = join(workspace, 'leave-domain.ts');
     const validDomain = readFileSync(businessDomain, 'utf8');

@@ -5,13 +5,14 @@ import { Workflow, type Rule, type WorkflowCapture, type StageObserver, type Sta
 import { bindDetailed, bindDetailedFunction, invokeDetailed, registerDetailed } from './instrumentation.js';
 import { executionSession, type ExecutionOptions, type OperationReport } from './execution.js';
 import type { ActionLoad, ActionReport } from './action.js';
-import { loadResources, trackPublications, collectPublications, type ResourceTable, type NeedsInput, type NeedsValues, type NeedsError, type Emission, type BusinessEvent, type EventEnvelope, type EventReport, type EventDelivery } from './wiring.js';
+import { loadResources, trackPublications, collectPublications, type ResourceSpec, type NeedsInput, type NeedsValues, type NeedsError, type Emission, type BusinessEvent, type EventEnvelope, type EventReport, type EventDelivery } from './wiring.js';
 import { snapshotData } from './snapshot.js';
-import { defineApplication, type ApplicationState, type Operation as ApplicationOperation } from './application.js';
+import { startView, type ViewDefinition, type ProjectionTable, type RefreshTable } from './authoring-view.js';
+export { projection, defineView, refreshQuery } from './authoring-view.js';
+export type { ViewDefinition, ProjectionTable, RefreshTable, BoundProjections, CheckedProjections, CheckedQueries, QueryStatus, ViewState, EventTrigger, ViewExecutor } from './authoring-view.js';
 export type { Operation as ApplicationOperation } from './application.js';
-import { operationEntries } from './operation-table.js';
 export { defineResource, defineEvent, emit } from './wiring.js';
-export type { BusinessResource, BusinessEvent, EventEnvelope, EventReport, EventDelivery } from './wiring.js';
+export type { BusinessResource, BusinessEvent, EventEnvelope, EventReport, EventDelivery, ResourceSpec, ResourceTable, NeedsInput, NeedsValues, NeedsError } from './wiring.js';
 const emittedEvents = new WeakMap<object, readonly BusinessEvent<never>[]>();
 type Handler<I, O, E> = (input: I) => Promise<Result<O, E>>;
 type OperationHandler<I, O, E, D extends OperationReport<O, E>> = {
@@ -150,17 +151,17 @@ type DecisionSuccess<R> = R extends { ok: true; value: infer O } ? O : never;
 type DecisionFailure<R> = R extends { ok: false; error: infer E } ? E : never;
 type DecisionOutput<X> = DecisionSuccess<DecisionResult<X>>;
 type DecisionError<X> = DecisionFailure<DecisionResult<X>>;
-type ConnectedDefinition<N extends ResourceTable, X, S, SE> = {
+type ConnectedDefinition<N extends ResourceSpec, X, S, SE> = {
   readonly needs: N;
   readonly execute: X & NoInfer<Decision<NeedsValues<N>>>;
   readonly emits?: readonly Emission<DecisionOutput<NoInfer<X>>>[];
   readonly useSave: () => (value: DecisionOutput<NoInfer<X>>, input: NeedsInput<NoInfer<N>>, events: readonly EventEnvelope[]) => Promise<Result<S, SE>>;
 };
 /** A data declaration: resource dependencies and event relations are compiled at mount. */
-export function defineOperation<N extends ResourceTable, X, S, SE, RE>(name: string, definition:
+export function defineOperation<N extends ResourceSpec, X, S, SE, RE>(name: string, definition:
   ConnectedDefinition<N, X, Execution<S>, SE> & { readonly useReplay: () => ReplayBoundary<NeedsInput<N>, NoInfer<S>, NeedsError<N> | DecisionError<X> | SE, RE> }
 ): BusinessOperation<NeedsInput<N>, Execution<S>, NeedsError<N> | DecisionError<X> | SE | RE | ReplayInputError, ReplayReport<S, NeedsError<N> | DecisionError<X> | SE, RE> & EventReport>;
-export function defineOperation<N extends ResourceTable, X, S, SE>(name: string, definition:
+export function defineOperation<N extends ResourceSpec, X, S, SE>(name: string, definition:
   ConnectedDefinition<N, X, S, SE> & { readonly useReplay?: never }
 ): BusinessOperation<NeedsInput<N>, S, NeedsError<N> | DecisionError<X> | SE, ActionReport<S, NeedsError<N> | DecisionError<X> | SE> & EventReport>;
 /** Declare an operation once; reuse it for JSX registration and execution. */
@@ -170,7 +171,7 @@ export function defineOperation<I, C, LE, O, DE, S, SE, RE>(name: string, useDef
 export function defineOperation<I, C, LE, O, DE, S, SE>(name: string, useDefinition: () =>
   Omit<Definition<I, C, LE, O, DE, S, SE>, 'name'> & { name?: never; needs?: never; emits?: never; replay?: never }
 ): BusinessOperation<I, S, LE | DE | SE, ActionReport<S, LE | DE | SE>>;
-export function defineOperation(name: string, factory: (() => object) | { needs: ResourceTable; execute: unknown; useSave: () => Function; emits?: readonly Emission<never>[]; useReplay?: () => object }) {
+export function defineOperation(name: string, factory: (() => object) | { needs: ResourceSpec; execute: unknown; useSave: () => Function; emits?: readonly Emission<never>[]; useReplay?: () => object }) {
   return Object.freeze({ name, use() {
     const scope = frame(), collect: BusinessEvent<never>[] = [];
     const handler = within({ ...scope, collect }, () => {
@@ -185,6 +186,25 @@ export function defineOperation(name: string, factory: (() => object) | { needs:
     return handler;
   } });
 }
+
+/** A read-only declaration: no persistence stage is available. */
+export interface BusinessQuery<I, O, E> extends BusinessOperation<I, O, E> { readonly query: true }
+export function defineQuery<N extends ResourceSpec, X>(name: string, definition: {
+  needs: N; select: X & NoInfer<Rule<NeedsValues<N>, unknown, unknown> | Workflow<NeedsValues<N>, unknown, unknown>>;
+}): BusinessQuery<NeedsInput<N>, DecisionOutput<X>, NeedsError<N> | DecisionError<X>> {
+  return Object.freeze({ name, query: true as const, use() {
+    frame();
+    const select = definition.select as Rule<NeedsValues<N>, unknown, unknown> | Workflow<NeedsValues<N>, unknown, unknown>;
+    const mutation = select instanceof Workflow ? select : workflow(`${name}:select`, select);
+    const action = defineAction({ loadName: `${name}:load`, load: loadResources(definition.needs), mutation: process<NeedsValues<N>>().through(mutation) });
+    const perform = (input: NeedsInput<N>, observe?: StageObserver) => invokeDetailed(bindDetailed(action), snapshotData(input), observe);
+    return {
+      run: async (input: NeedsInput<N>) => (await perform(input)).result,
+      runDetailed: registerDetailed((input: NeedsInput<N>) => perform(input), perform),
+    } as OperationHandler<NeedsInput<N>, DecisionOutput<X>, NeedsError<N> | DecisionError<X>, ActionReport<DecisionOutput<X>, NeedsError<N> | DecisionError<X>>>;
+  } });
+}
+export function Query<I, O, E>({ query }: { query: BusinessQuery<I, O, E> }): Node { return Operation({ operation: query }); }
 
 export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation }: {
   operation: BusinessOperation<I, O, E, D>;
@@ -231,28 +251,6 @@ function validateRoutes(handlers: Map<object, unknown>, events: Map<string, Busi
   };
   for (const event of events.values()) visit(event);
 }
-/** A projection belongs to a session's presentation, never to the domain operation. */
-export function projection<S, I, O, E, D extends OperationReport<O, E>>(
-  operation: BusinessOperation<I, O, E, D>, reduce: (state: S, output: NoInfer<O>) => S,
-) { return Object.freeze({ operation, reduce }); }
-type ProjectionTable<S> = Record<string, {
-  readonly operation: BusinessOperation<never, unknown, unknown, OperationReport<unknown, unknown>>;
-  readonly reduce: (state: S, output: never) => S;
-}>;
-type BoundProjections<S, T extends ProjectionTable<S>> = {
-  [K in keyof T]: T[K]['operation'] extends BusinessOperation<infer I, infer O, infer E, OperationReport<infer O, infer E>>
-    ? ApplicationOperation<S, I, O, E> : never
-};
-type CheckedProjections<S, T extends ProjectionTable<S>> = {
-  [K in keyof T]: T[K]['operation'] extends BusinessOperation<infer I, infer O, infer E, OperationReport<infer O, infer E>>
-    ? T[K]['reduce'] extends (state: S, output: O) => S ? unknown : never : never
-};
-/** Preserve inferred operation/input/error types in a reusable view definition. */
-export function defineView<S, const T extends ProjectionTable<S>, V>(definition: {
-  initial: () => S;
-  operations: T & NoInfer<CheckedProjections<S, T>>;
-  view: (state: ApplicationState<S, BoundProjections<S, T>>) => V;
-}) { return definition; }
 export interface AuthoringOptions extends ExecutionOptions { readonly maxDeliveries?: number }
 export function createApplication(root: Node, options?: AuthoringOptions) {
   const handlers = new Map<object, unknown>();
@@ -352,26 +350,32 @@ export function createApplication(root: Node, options?: AuthoringOptions) {
     entry(operation);
     return executeDetailed(operation, input).then(report => report.result);
   }
-  /** Start an isolated presentation session over the already mounted JSX tree. */
-  async function start<S, const T extends ProjectionTable<S>, V>(definition: {
-    initial: () => S;
-    operations: T & NoInfer<CheckedProjections<S, T>>;
-    view: (state: ApplicationState<S, BoundProjections<S, T>>) => V;
-  }) {
-    const selected = new Set<object>();
-    const operations = Object.fromEntries(operationEntries(definition.operations).map(([name, binding]) => {
-      // Reject missing registrations before initial/view or any business IO runs.
-      entry(binding.operation);
-      if (selected.has(binding.operation)) throw new Error(`DuplicateProjection:${binding.operation.name}`);
-      selected.add(binding.operation);
-      return [name, {
-        run: (input: unknown) => execute(binding.operation, input as never),
-        runDetailed: (input: unknown) => executeDetailed(binding.operation, input as never),
-        reduce: binding.reduce,
-      }];
-    })) as BoundProjections<S, T>;
-    const program = defineApplication({ initial: definition.initial, operations, view: definition.view });
-    const session = await program.start();
+  async function start<S, const T extends ProjectionTable<S>, V, const Q extends RefreshTable<S> = {}>(definition: ViewDefinition<S, T, Q, V>) {
+    const session = await startView(definition, {
+      async deliver(envelope) {
+        const report = await deliver(envelope);
+        const affected = report.deliveries.filter(row => row.operation !== null || row.status === 'external').map(row => row.event);
+        for (const row of report.deliveries) if (row.status === 'ok') {
+          for (const [key, handler] of handlers) if ((key as { name: string }).name === row.operation)
+            affected.push(...(emittedEvents.get(handler as object) ?? []).map(event => event.name));
+        }
+        return { invalidates: [...new Set(affected)] };
+      },
+      ensure: operation => { entry(operation); },
+      eventKnown: event => events.get(event.name) === event,
+      invalidates(operation, report) {
+        // Conservative read invalidation is not event publication: replay and
+        // unknown commit outcomes must still refresh the latest read model.
+        const affected = [...(emittedEvents.get(entry(operation)) ?? []).map(event => event.name),
+          ...(report?.publications ?? []).map(event => event.type), ...(report?.deliveries ?? []).map(delivery => delivery.event)];
+        for (const delivery of report?.deliveries ?? []) if (delivery.status === 'ok') {
+          for (const [key, handler] of handlers) if ((key as { name: string }).name === delivery.operation)
+            affected.push(...(emittedEvents.get(handler as object) ?? []).map(event => event.name));
+        }
+        return [...new Set(affected)];
+      },
+      execute: (operation, input) => executeDetailed(operation, input as never),
+    });
     return Object.freeze({ ...session, subscribeExecution: executions.subscribe,
       subscribeDelivery(listener: (delivery: EventDelivery) => void) { deliveryListeners.add(listener); return () => { deliveryListeners.delete(listener); }; },
     });

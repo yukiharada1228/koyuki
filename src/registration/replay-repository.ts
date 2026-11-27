@@ -1,3 +1,5 @@
+import { businessOutbox } from '../adapters/sqlite-business-events.js';
+import type { EventEnvelope } from '../framework/authoring.js';
 import { ok, err, type Result, type Receipt, type Execution } from '../framework/index.js';
 import { digestToken } from './secrets.js';
 import { RegistrationRepository } from './repository.js';
@@ -19,8 +21,10 @@ async function fingerprint(call: RegistrationCall) {
 }
 /** Demonstration SQLite adapter: state, outbox, and receipt share one transaction. */
 export class ReplayRegistrationRepository extends RegistrationRepository {
+  readonly events: ReturnType<typeof businessOutbox>;
   constructor(path: string) {
     super(path);
+    this.events = businessOutbox(this.db);
     try { this.db.exec('CREATE TABLE IF NOT EXISTS registration_receipts(request_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, result_json TEXT NOT NULL)'); }
     catch (cause) { this.close(); throw cause; }
   }
@@ -39,7 +43,7 @@ export class ReplayRegistrationRepository extends RegistrationRepository {
     if (!valid(call)) return err({ kind: 'InvalidRequest' });
     try { return this.lookup(call, await fingerprint(call)); } catch { return err({ kind: 'StorageUnavailable' }); }
   }
-  async saveRequest(call: RegistrationCall, change: Change): Promise<Result<Execution<Registration>, RegistrationStorageError>> {
+  async saveRequest(call: RegistrationCall, change: Change, events: readonly EventEnvelope[] = []): Promise<Result<Execution<Registration>, RegistrationStorageError>> {
     if (!valid(call)) return err({ kind: 'InvalidRequest' });
     try {
       const key = await fingerprint(call);
@@ -63,6 +67,7 @@ export class ReplayRegistrationRepository extends RegistrationRepository {
       const saved = this.commit(change);
       if (!saved.ok) { this.db.exec('ROLLBACK'); return saved; }
       this.db.prepare('INSERT INTO registration_receipts VALUES(?,?,?)').run(call.input.requestId, key, JSON.stringify(saved.value));
+      this.events.append(events);
       this.db.exec('COMMIT');
       return ok({ kind: 'committed', value: saved.value });
     } catch {

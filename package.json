@@ -81,7 +81,8 @@
     "test:authoring:quickstart": "node scripts/authoring-quickstart.mjs --verify",
     "test:booking:composition": "node scripts/test-booking-composition.mjs",
     "test:connections:package": "node scripts/test-wiring-package.mjs --verify",
-    "prepare:connections": "node scripts/test-wiring-package.mjs --prepare"
+    "prepare:connections": "node scripts/test-wiring-package.mjs --prepare",
+    "demo:authoring:dashboard": "tsx src/experiments/react-business/dashboard-demo.tsx"
   },
   "devDependencies": {
     "@babel/parser": "8.1.3",

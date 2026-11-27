@@ -145,7 +145,7 @@ npm run test:connections:package
 
 ## JSXの構成から状態とviewへ
 
-`createApplication(JSX)`で登録した操作は、`app.start(...)`から既存のApplicationの状態管理にも接続できる。新しい状態機械を増やさず、`ready / running / failed / crashed`、購読、要求のsnapshot、同一セッション内の実行順序とrevision検査を再利用する。
+`createApplication(JSX)`で登録した操作は、`app.start(...)`から表示用の状態管理へ接続できる。既存のProgramのキュー・snapshot・revision検査を利用し、`ready / running / failed / crashed`にQuery再取得の状態を組み合わせる。
 
 ```ts
 const screen = defineView({
@@ -170,12 +170,57 @@ unsubscribe();
 
 `defineView`・`projection`は`koyuki/experimental`からimportする。`defineView`は再利用する定義の型推論を保持するための関数で、同じ内容をstartへ直接渡してもよい。operationはJSXに登録した同じオブジェクトを参照する。ここでは再登録せず、表示用の操作名と成功値の反映方法を宣言する。要求・成功・失敗の型を保持し、viewのstateとエラーは推論する。通常の業務型や表示データ型は必要である。
 
-- startと購読では業務I/Oを実行しない。未登録操作・同じ操作の重複したprojectionはstartで拒否する。
+- マウントと購読では業務I/Oを実行しない。startにqueriesを宣言した場合は、その初期取得を実行する。未登録操作・同じ操作の重複したprojectionはstartで拒否する。
 - dispatchごとにrunningを通知し、取得・計算・保存・自動配送には同じ実行経路を使う。業務失敗はfailed、例外やprojectionの例外はcrashedとなり、直前の表示データを保持する。dismissでreadyへ戻れる。保存後の表示計算が失敗してもDBは巻き戻らないため、再実行時は業務の再送契約が必要である。
 - 各startは独立した表示状態と実行キューを持つ。snapshotや購読へ返す値を変更しても内部状態は変わらない。複数セッションは同じRepositoryを共有できるが、DB側の競合制御は引き続き必要。
 - sessionのdispatchが返すResultは「状態機械が要求を受け付けたか」である。業務の成否はsnapshot.stateのkind/errorを見る。業務Resultや詳細traceそのものが必要な箇所ではapp.execute / executeDetailedも引き続き使える。
-- projectionはdispatchした**起点操作の結果**を表示データへ反映する。自動配送先の状態を勝手に表示へマージしない。例のacceptedは申請受付であり、DBの最新承認状態を表すものではない。後続状態が必要なら認可済みqueryで読み直す等の表示方針を実装する。
+- projectionはdispatchした**起点操作の結果**を表示データへ反映する。自動配送先の状態を勝手に表示へマージしない。例のacceptedは申請受付であり、DBの最新承認状態を表すものではない。後続状態は、後述する`queries`と`refreshQuery`で認可済みQueryへ接続できる。
 - 再送でもprojectionは実行する。成功件数を無条件に加算するのではなく、idで置換・重複除去する等、表示側でも再送の意味を扱う。receiptは過去の結果であり、最新のDB状態とは限らない。
-- app.executeや別セッションのdispatchで、既存のsessionの表示状態は自動更新されない。session.subscribeはそのsessionの状態だけを購読する。subscribeExecution / subscribeDeliveryは同じapp全体の通知であり、セッション専用のフィルターではない。操作者の境界は引き続きアプリのProviderで分ける。
+- app.executeや別セッションのdispatchで、既存のsessionの表示状態は自動更新されない。外部の永続イベントをこのsessionへ反映するときはsession.deliverを使う。session.subscribeはそのsessionの状態だけを購読する。subscribeExecution / subscribeDeliveryは同じapp全体の通知であり、セッション専用のフィルターではない。操作者の境界は引き続きアプリのProviderで分ける。
 
 実行例は`connected/demo.tsx`に含む。経費・休暇・会員登録のSQLite例でも、同じstart / defineView / projectionで再送結果から表示を更新し、表示セッションが独立することを検査する。Reactの再描画やuseState/useEffectを実装したという意味ではなく、業務操作の実行と表示用の状態管理を同じ入口から使えるようにしたものである。
+
+
+## イベントからQuery再取得、view更新まで
+
+[三業務の共通view](../src/experiments/react-business/dashboard.ts)は、経費・休暇・会員登録を同じ宣言方式で扱う。`defineQuery`は`needs`と純粋な`select`を持ち、保存段階を持たない。`<Query query={expenseQuery} />`でRepository・ActorのProvider内に登録する。マウント時にはロードしない。
+
+```ts
+const screen = defineView({
+  initial: (): Screen => ({ expense: null, targetId: 'expense' }),
+  operations: { approve: projection(replayedApproval) },
+  queries: {
+    expense: refreshQuery(expenseQuery, {
+      input: (state: Screen) => ({ id: state.targetId }),
+      on: [expenseChanged],
+      reduce: (state: Screen, expense) => ({ ...state, expense }),
+    }),
+  },
+  view: state => ({
+    expense: state.data.expense,
+    busy: state.kind === 'running' || state.refreshing,
+    error: state.kind === 'failed' ? state.error : null,
+    query: state.queries.expense,
+  }),
+});
+```
+
+startが初期Queryを読み、dispatchによる後続イベントの配送が終わると、該当するQueryを一回ずつ再取得してviewを通知する。Queryの入力・成功値・エラー型も推論する。Queryが表示データを担う場合、`projection(operation)`だけで起点操作を登録でき、ダミーのreduceは不要。業務側にviewや読み直しcallbackを渡さない。
+
+Queryの状態は`queries.<name>.kind`のidle / running / ready / failed / crashedで表す。Query失敗・select失敗・Query用reduceの例外でも、保存済みの業務を未保存の失敗へ変換しない。直前の表示データと起点操作の結果を保持し、他の独立したQueryは読み続ける。`session.refresh()`で業務を再実行せず全Queryを再取得できる。Queryの初期ロードを含むstartはasyncであり、初期取得失敗もsessionのqueriesに現れる。
+
+再送・結果不明の保存・例外に備え、起点操作が宣言するemitsと成功した配送先のemitsも**再取得の条件**に使う。実際のイベントを再発行したと見なす処理ではない。検証で失敗して状態が変わらなかった場合も、保守的な読み直しが発生し得る。業務処理の失敗停止と、独立した表示用Queryの再取得は別の経路である。receiptにある過去の状態で最新のconfirmedをawaitingへ上書きしない。
+
+永続イベントを受け取る場合は`await session.deliver(envelope)`で、decoder検証・配送・Query再取得・view更新を同じセッションのキューへ渡せる。decoderで拒否したpayloadからは再取得しない。返るResultは状態機械の受付結果で、配送の成否はsubscribeDeliveryで観測する。配送レポートでackを判定する別workerは引き続きapp.deliverを使う。別プロセスや別セッションのDB変更を勝手に検出する機能ではなく、外部通知の入口をホストが接続する。
+
+三業務のQueryは、更新用の期待versionを使わず現在値を読み、Actorの認可を実行する。会員登録は元の要求のreceiptで同じ認証済みidentityであることを確かめ、token / tokenDigestを表示モデルへ含めない。サンプルのmanager / financeは経費・休暇の全件を参照できる方針であり、組織・担当範囲の認可は実際のアプリで定義する。
+
+SQLiteサンプルは、状態・receipt・表示更新用イベントを同じトランザクションで保存する。business_eventsはJSON形式の開発用outboxで、pending / acknowledgeを提供する。複数workerのlease・scheduler・運用制御まで備えた配送基盤ではない。既存のメールoutboxとは用途を分け、ここで発行するイベントには対象idだけを載せる。
+
+```sh
+npm run demo:authoring:dashboard
+npm run test:authoring:package
+npm run test:connections:package
+```
+
+デモは実メールを送信しない。経費承認・休暇承認・会員登録・確認リンクの処理後に、呼出し元がDBを読み直さずviewが更新される。登録の古いreceiptを再送してもconfirmed表示が維持される。

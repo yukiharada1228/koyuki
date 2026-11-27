@@ -1,8 +1,8 @@
 /** @jsx h */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { h, createApplication, defineOperation } from './experiments/react-business/runtime.js';
-import { ReplayExpenses, replayedApproval, type ReplayExpenseRepository, type ReplayStorageError as HookStorageError } from './experiments/react-business/expense-replay.js';
+import { h, createApplication, defineOperation, defineView, projection, refreshQuery, type EventEnvelope } from './experiments/react-business/runtime.js';
+import { ReplayExpenses, replayedApproval, expenseQuery, expenseChanged, type ReplayExpenseRepository, type ReplayStorageError as HookStorageError } from './experiments/react-business/expense-replay.js';
 import { ReplaySqliteExpenses, type ExpenseRequest, type ReplayStorageError } from './expenses/sqlite-replay.js';
 import { expenseReplayCommands } from './expenses/replay.js';
 import { draftExpense, type Actor, type Change, type ExpenseState, type RuleError } from './expenses/domain.js';
@@ -13,7 +13,7 @@ type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B 
 type Assert<T extends true> = T;
 type Hook = ReturnType<typeof replayedApproval.use>;
 type HookResult = Assert<Equal<Awaited<ReturnType<Hook['run']>>, Result<Execution<ExpenseState>, LoadError | RuleError | HookStorageError | ReplayInputError>>>;
-type HookReport = Assert<Equal<Awaited<ReturnType<Hook['runDetailed']>>, ReplayReport<ExpenseState, LoadError | RuleError | HookStorageError, HookStorageError>>>;
+type HookReport = Assert<Equal<Awaited<ReturnType<Hook['runDetailed']>>, ReplayReport<ExpenseState, LoadError | RuleError | HookStorageError, HookStorageError> & import('./framework/authoring.js').EventReport>>;
 const employee: Actor = { id: 'owner', active: true, role: 'employee' };
 const manager: Actor = { id: 'boss', active: true, role: 'manager' };
 function value<T, E>(result: Result<T, E>): T { assert.equal(result.ok, true); if (!result.ok) throw new Error('ExpectedSuccess'); return result.value; }
@@ -24,9 +24,10 @@ async function seed(repository: ReplaySqliteExpenses, id = 'one') {
 const call = { requestId: 'approval', input: { id: 'one', expectedVersion: 2 } };
 function counted(repository: ReplaySqliteExpenses, calls: string[], pause?: () => Promise<void>): ReplayExpenseRepository {
   return {
+    read: id => repository.read(id),
     async load(input, actor) { calls.push(`load:${actor.id}`); await pause?.(); return repository.load(input, actor); },
     receipt(request) { calls.push(`lookup:${request.actor.id}`); return repository.receipt(request); },
-    saveRequest(request, change) { calls.push(`save:${request.actor.id}`); return repository.saveRequest(request, change); },
+    saveRequest(request, change, events) { calls.push(`save:${request.actor.id}`); return repository.saveRequest(request, change, events); },
   };
 }
 test('Hooks use the atomic receipt adapter and retain domain step traces; replay skips all business work', async t => {
@@ -40,7 +41,7 @@ test('Hooks use the atomic receipt adapter and retain domain step traces; replay
   sent.input.expectedVersion = 99;
   const first = await pending;
   assert.equal(value(first.result).kind, 'committed');
-  assert.deepEqual(first.attempt?.trace?.map(row => row.step), ['expense.approve.v1:load', 'authorize-approval', 'approve', 'expense.approve.v1']);
+  assert.deepEqual(first.attempt?.trace?.map(row => row.step), ['resource:expense-approval-context', 'expense.approve.v1:load', 'authorize-approval', 'approve', 'expense.approve.v1']);
   assert.deepEqual(calls, ['lookup:boss', 'load:boss', 'save:boss']);
   assert.equal(events.some(event => event.kind === 'span-started' && event.step === 'authorize-approval'), true);
   assert.equal(events.some(event => event.kind === 'span-started' && event.step === 'replay.lookup:before'), true);
@@ -73,7 +74,7 @@ test('domain failure exposes the exact failing rule and never saves', async t =>
   const report = await app.executeDetailed(replayedApproval, call);
   assert.deepEqual(report.result, err({ kind: 'SelfApproval' }));
   assert.deepEqual(report.attempt?.trace, [
-    { step: 'expense.approve.v1:load', status: 'ok' }, { step: 'authorize-approval', status: 'error' },
+    { step: 'resource:expense-approval-context', status: 'ok' }, { step: 'expense.approve.v1:load', status: 'ok' }, { step: 'authorize-approval', status: 'error' },
   ]);
   assert.deepEqual(calls, ['lookup:owner', 'load:owner']);
   assert.equal(value(repository.read('one')).version, 2);
@@ -99,8 +100,8 @@ test('overlapping requests with an identical key cannot read another actor recei
 test('concurrent duplicates commit once and recover a lost commit response through the receipt', async t => {
   class LostResponse extends ReplaySqliteExpenses {
     commits = 0;
-    override async saveRequest(request: ExpenseRequest, change: Change): Promise<Result<Execution<ExpenseState>, ReplayStorageError>> {
-      const result = await super.saveRequest(request, change);
+    override async saveRequest(request: ExpenseRequest, change: Change, events: readonly EventEnvelope[] = []): Promise<Result<Execution<ExpenseState>, ReplayStorageError>> {
+      const result = await super.saveRequest(request, change, events);
       if (result.ok && result.value.kind === 'committed') this.commits++;
       return result.ok ? err({ kind: 'RepositoryUnavailable' }) : result;
     }
@@ -135,5 +136,39 @@ test('different requests on one Hook retain their own request envelope through a
   for (const request of requests) {
     assert.equal(value(await app.execute(replayedApproval, request)).kind, 'replayed');
     assert.equal(value(repository.read(request.input.id)).version, 3);
+  }
+});
+
+test('lost commit responses refresh the latest query without republishing or rerunning the domain transition', async () => {
+  for (const throws of [false, true]) {
+    class LostResponse extends ReplaySqliteExpenses {
+      writes = 0;
+      override async saveRequest(request: ExpenseRequest, change: Change, events: readonly EventEnvelope[] = []): Promise<Result<Execution<ExpenseState>, ReplayStorageError>> {
+        const result = await super.saveRequest(request, change, events);
+        if (result.ok && result.value.kind === 'committed' && request.operation === 'approve') {
+          this.writes++;
+          if (throws) throw new Error('commit response lost');
+          return err({ kind: 'RepositoryUnavailable' });
+        }
+        return result;
+      }
+    }
+    const repository = new LostResponse(':memory:');
+    try {
+      await seed(repository); repository.writes = 0;
+      const app = createApplication(<ReplayExpenses repository={repository} actor={manager} />);
+      const screen = defineView({
+        initial: (): ExpenseState | null => null,
+        operations: { approve: projection(replayedApproval) },
+        queries: { current: refreshQuery(expenseQuery, { input: (_state: ExpenseState | null) => ({ id: 'one' }), on: [expenseChanged], reduce: (_state: ExpenseState | null, value) => value }) },
+        view: state => ({ current: state.data, queries: state.queries, kind: state.kind }),
+      });
+      const session = await app.start(screen);
+      assert.equal(session.snapshot().view.current?.kind, 'manager');
+      await session.dispatch({ type: 'approve', input: call });
+      assert.equal(session.snapshot().view.current?.kind, 'approved');
+      assert.equal(session.snapshot().view.kind, throws ? 'crashed' : 'ready');
+      assert.equal(repository.writes, 1); assert.equal(repository.events.pending().length, 1);
+    } finally { repository.close(); }
   }
 });

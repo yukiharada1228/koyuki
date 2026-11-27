@@ -32,7 +32,7 @@ try {
     writeFileSync(join(consumer, 'connected', file), source);
   }
   copyFileSync(join(root, 'scripts/fixtures/authoring-wiring-contracts.tsx'), join(consumer, 'connected/contracts.tsx'));
-  for (const file of ['authoring-wiring.test.tsx', 'authoring-wiring-contracts.test.tsx', 'authoring-wiring-sqlite.test.tsx', 'authoring-view.test.tsx']) {
+  for (const file of ['authoring-wiring.test.tsx', 'authoring-wiring-contracts.test.tsx', 'authoring-wiring-sqlite.test.tsx', 'authoring-view.test.tsx', 'authoring-refresh.test.tsx']) {
     const source = readFileSync(join(root, 'src', file), 'utf8').replaceAll("'./framework/index.js'", "'koyuki'").replaceAll("'./framework/authoring.js'", "'koyuki/experimental'")
       .replaceAll("'./experiments/declarative-booking/business.js'", "'../connected/business.js'")
       .replaceAll("'./experiments/declarative-booking/domain.js'", "'../connected/domain.js'")
@@ -68,15 +68,22 @@ if (false) {
     console.log(`TypeScript ${version}: resources, events, lifecycle/view contracts and generated-declaration consumer passed.`);
   }
   console.log(run('npm', ['start'], consumer).trim());
-  console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-wiring.test.tsx', 'integration/authoring-wiring-contracts.test.tsx', 'integration/authoring-wiring-sqlite.test.tsx', 'integration/authoring-view.test.tsx'], consumer).trim());
+  console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-wiring.test.tsx', 'integration/authoring-wiring-contracts.test.tsx', 'integration/authoring-wiring-sqlite.test.tsx', 'integration/authoring-view.test.tsx', 'integration/authoring-refresh.test.tsx'], consumer).trim());
   const runtime = join(consumer, 'node_modules/koyuki/dist/authoring.js'), source = readFileSync(runtime, 'utf8');
-  const unprojected = source.replace('reduce: binding.reduce,', 'reduce: state => state,'); assert.notEqual(source, unprojected);
+  const viewRuntime = join(consumer, 'node_modules/koyuki/dist/authoring-view.js'), viewSource = readFileSync(viewRuntime, 'utf8');
+  const unprojected = viewSource.replace('reduce(snapshotData(state.data), snapshotData(result.value))', 'snapshotData(state.data)'); assert.notEqual(viewSource, unprojected);
   try {
-    writeFileSync(runtime, unprojected);
+    writeFileSync(viewRuntime, unprojected);
     const refused = run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-view.test.tsx'], consumer, true);
     assert(refused.includes('fail'));
-  } finally { writeFileSync(runtime, source); }
+  } finally { writeFileSync(viewRuntime, viewSource); }
   console.log('Removing presentation projection was rejected by installed lifecycle tests.');
+  const unrefreshed = viewSource.replace('return ok(withRefresh(completed, names));', 'return ok(withRefresh(completed, []));'); assert.notEqual(viewSource, unrefreshed);
+  try {
+    writeFileSync(viewRuntime, unrefreshed);
+    assert(run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-refresh.test.tsx'], consumer, true).includes('fail'));
+  } finally { writeFileSync(viewRuntime, viewSource); }
+  console.log('Removing automatic query refresh was rejected by installed event-to-view tests.');
   const broken = source.replace('await route(report.publications)', 'await route([])'); assert.notEqual(source, broken);
   writeFileSync(runtime, broken);
   assert(run('npm', ['exec', '--', 'tsx', '--test', 'integration/authoring-wiring.test.tsx'], consumer, true).includes('fail'));

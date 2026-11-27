@@ -1,3 +1,5 @@
+import { businessOutbox } from '../../adapters/sqlite-business-events.js';
+import type { EventEnvelope } from '../../framework/authoring.js';
 // Example adapter only. Node and SQLite are not dependencies of koyuki/experimental.
 import { DatabaseSync } from 'node:sqlite';
 import { ok, err, type Result, type Receipt, type Execution } from '../../framework/index.js';
@@ -24,9 +26,11 @@ async function fingerprint(request: LeaveIdentity) {
 }
 export class SqliteReplayLeaves implements ReplayLeaveRepository {
   private readonly db: DatabaseSync;
+  readonly events: ReturnType<typeof businessOutbox>;
   constructor(path: string) {
     this.db = new DatabaseSync(path);
     this.db.exec('PRAGMA busy_timeout=2000; CREATE TABLE IF NOT EXISTS leaves(id TEXT PRIMARY KEY,state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS leave_receipts(request_id TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,result_json TEXT NOT NULL)');
+    this.events = businessOutbox(this.db);
   }
   close() { this.db.close(); }
   seed(value: PendingLeave) {
@@ -55,7 +59,7 @@ export class SqliteReplayLeaves implements ReplayLeaveRepository {
     try { return this.lookup(request, await fingerprint(request)); }
     catch (cause) { return err(cause instanceof SyntaxError ? 'CorruptLeave' : 'StorageUnavailable'); }
   }
-  async saveRequest(request: LeaveIdentity, next: ApprovedLeave): Promise<Result<Execution<ApprovedLeave>, LeaveStorageError>> {
+  async saveRequest(request: LeaveIdentity, next: ApprovedLeave, events: readonly EventEnvelope[] = []): Promise<Result<Execution<ApprovedLeave>, LeaveStorageError>> {
     if (!valid(request)) return err('InvalidRequest');
     try {
       const key = await fingerprint(request);
@@ -72,6 +76,7 @@ export class SqliteReplayLeaves implements ReplayLeaveRepository {
       if (current.value.kind !== 'pending' || current.value.owner !== next.owner || current.value.days !== next.days) { this.db.exec('ROLLBACK'); return err('SaveConflict'); }
       this.db.prepare('UPDATE leaves SET state=? WHERE id=?').run(JSON.stringify(checked.value), next.id);
       this.db.prepare('INSERT INTO leave_receipts VALUES(?,?,?)').run(request.requestId, key, JSON.stringify(checked.value));
+      this.events.append(events);
       this.db.exec('COMMIT'); return ok({ kind: 'committed', value: checked.value });
     } catch (cause) {
       try { this.db.exec('ROLLBACK'); } catch { /* no active transaction */ }

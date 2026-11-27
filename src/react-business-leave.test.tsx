@@ -16,7 +16,7 @@ test('leave approval uses the same components and Hooks and preserves individual
   assert.deepEqual(calls, []);
   const report = await app.executeDetailed(leaveApproval, { id: 'holiday' });
   assert.deepEqual(report.result, ok({ kind: 'approved', id: 'holiday', owner: 'employee', days: 3, by: 'boss' }));
-  assert.deepEqual(report.trace.map(row => row.step), ['leave.approve.v1:load', 'authorize-leave', 'approve-leave', 'leave.approve.v1']);
+  assert.deepEqual(report.trace.map(row => row.step), ['resource:leave-context', 'leave.approve.v1:load', 'authorize-leave', 'approve-leave', 'leave.approve.v1']);
   assert.deepEqual(calls, ['load:boss', 'save']);
   calls.length = 0;
   const refusal = await app.executeDetailed(leaveApproval, { id: 'holiday' });
