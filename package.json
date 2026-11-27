@@ -82,7 +82,8 @@
     "test:booking:composition": "node scripts/test-booking-composition.mjs",
     "test:connections:package": "node scripts/test-wiring-package.mjs --verify",
     "prepare:connections": "node scripts/test-wiring-package.mjs --prepare",
-    "demo:authoring:dashboard": "tsx src/experiments/react-business/dashboard-demo.tsx"
+    "demo:authoring:dashboard": "tsx src/experiments/react-business/dashboard-demo.tsx",
+    "test:expense-budget:package": "node scripts/test-expense-budget-package.mjs"
   },
   "devDependencies": {
     "@babel/parser": "8.1.3",
