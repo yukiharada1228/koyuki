@@ -1,0 +1,177 @@
+{
+  "schema": "koyuki.caption-baseline-review.v1",
+  "implementationBaseCommit": "5a11cb4a9839718fc856f7e5b62254f787c94385",
+  "basis": "User-approved saved captions with published slides as corroboration; ASR is secondary. Original audio remains unverified and is not an implementation acceptance gate.",
+  "originalAudioVerified": false,
+  "overrides": [
+    {
+      "id": "iz-22",
+      "status": "supported",
+      "requirement": "イベントから次の計算への接続と失敗停止を実行機構へ委譲する。",
+      "assessment": "defineOperation・Operation・execute、既存Applicationのviewと購読で具体化。React経験者の習得効果は機能要件の充足とは別の評価。",
+      "captionSource": {
+        "file": "izV1h6o3hgQ.ja-orig.txt",
+        "sha256": "4a561e69273852d0acae5fb5be0a8488ba6adbd5f4b5cd35aa3ac31fe24a5ba4",
+        "lineCount": 2258,
+        "durationSeconds": 4890
+      },
+      "startSeconds": 3043,
+      "endSeconds": 3139,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
+      ]
+    },
+    {
+      "id": "iz-24",
+      "status": "supported",
+      "requirement": "Resultによる計算の接続を、手書きの入れ子なしで記述する。",
+      "assessment": "workflow.then、businessの関数列が成功値の受け渡しと失敗停止を行う。言語組込みResultや任意の高階多相推論を要求する発言ではない。",
+      "captionSource": {
+        "file": "izV1h6o3hgQ.ja-orig.txt",
+        "sha256": "4a561e69273852d0acae5fb5be0a8488ba6adbd5f4b5cd35aa3ac31fe24a5ba4",
+        "lineCount": 2258,
+        "durationSeconds": 4890
+      },
+      "startSeconds": 3250,
+      "endSeconds": 3292,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
+        "名前なしの配列要素としてwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。名前付きstepのinline呼出しは対応し、先行する変数束縛も利用できる。monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。在庫文脈の重複注釈3つは直接接続で削除済みだが、通常の業務型宣言は必要。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
+      ]
+    },
+    {
+      "id": "iz-31",
+      "status": "supported",
+      "requirement": "登録イベントを配送ハンドラーへ渡し、人の確認を後続Workflowへ接続できる。",
+      "assessment": "登録・outbox・配送ハンドラー・確認操作を実装しSQLiteで検証。字幕では講演者側も未導入の構想であり、特定の実メール事業者やschedulerの提供までは指定していない。",
+      "captionSource": {
+        "file": "izV1h6o3hgQ.ja-orig.txt",
+        "sha256": "4a561e69273852d0acae5fb5be0a8488ba6adbd5f4b5cd35aa3ac31fe24a5ba4",
+        "lineCount": 2258,
+        "durationSeconds": 4890
+      },
+      "startSeconds": 3879,
+      "endSeconds": 3988,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "実メールprovider統合、常駐scheduler、backoff・最大試行数・dead letter、運用環境でのlease維持は未検証。at-least-once配送はexactly-onceを保証しない。"
+      ]
+    },
+    {
+      "id": "iz-36",
+      "status": "supported",
+      "requirement": "I/Oから分離した純粋な業務関数を単独でテストできる。",
+      "assessment": "休暇等の核を直接実行できる。Resultの取り出しの負担は字幕でも残るトレードオフであり、テストDSLの必須仕様ではない。",
+      "captionSource": {
+        "file": "izV1h6o3hgQ.ja-orig.txt",
+        "sha256": "4a561e69273852d0acae5fb5be0a8488ba6adbd5f4b5cd35aa3ac31fe24a5ba4",
+        "lineCount": 2258,
+        "durationSeconds": 4890
+      },
+      "startSeconds": 4433,
+      "endSeconds": 4480,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "必要に応じたResultの判定・取り出しは残る。専用テストDSLは講演で仕様指定されておらず、追加の必要性・削減効果を実際の利用者の課題で評価する。"
+      ]
+    },
+    {
+      "id": "qbf-12",
+      "status": "supported",
+      "requirement": "独立したフィールド検証のResultをまとめ、手書きの条件分岐の入れ子を避ける。",
+      "assessment": "collectで値とフィールド別エラーを集約する。呼び出し自体は必要で、言語構文の変更は求めていない。",
+      "captionSource": {
+        "file": "qBf910_YiqA.ja-orig.txt",
+        "sha256": "9d991ad2ee339c76806a9bd180dd70d7198da98152c06739abe68a48e527987b",
+        "lineCount": 812,
+        "durationSeconds": 2019
+      },
+      "startSeconds": 1562,
+      "endSeconds": 1681,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "固定フィールドのResult集約はcollectで具体化したが、TypeScript組込みResultや言語レベルの構文は提供しない。言語と同等の記述透明性や独立利用者のDX優位は未実証で、これを通常のlibrary実装不足と同一視しない。"
+      ]
+    },
+    {
+      "id": "qbf-19",
+      "status": "supported",
+      "requirement": "通常の型とユーティリティによりWorkflow定義の重複を減らせる。",
+      "assessment": "操作の入力・結果・失敗・詳細レポートを推論する具体例を配布物でも検査。字幕は改善の余地への言及であり、全注釈と任意のgeneric制約の撤廃ではない。",
+      "captionSource": {
+        "file": "qBf910_YiqA.ja-orig.txt",
+        "sha256": "9d991ad2ee339c76806a9bd180dd70d7198da98152c06739abe68a48e527987b",
+        "lineCount": 812,
+        "durationSeconds": 2019
+      },
+      "startSeconds": 1956,
+      "endSeconds": 1978,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",
+        "在庫文脈の重複注釈3つは直接接続で削除済み。通常の業務型宣言と一般の推論制限は残る。既存の型検査を、独立利用者の学習・原因理解・修正容易性の実証とは扱わない。"
+      ]
+    },
+    {
+      "id": "w0o-13",
+      "status": "supported",
+      "requirement": "前後の状態を引数と戻り値へ明示し、必要なら途中状態の入出力を取得できる。",
+      "assessment": "純粋な核、内部ルールのcapture、traceを提供する。全値の既定永続収集・保持期限・分散相関の提供は指定されていない。",
+      "captionSource": {
+        "file": "w0oLNoGsGLc.ja-orig.txt",
+        "sha256": "9c87024d2fb0d478c272c3558ae97c13e002093edd2ee72d05f542676e6a86bc",
+        "lineCount": 964,
+        "durationSeconds": 2513
+      },
+      "startSeconds": 1315,
+      "endSeconds": 1435,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "履歴の保存先・公開項目・保持削除、opaque関数内部・分散相関はhostの設計または未提供の範囲である。講演のdump可能性を、既定の全値永続収集という必須仕様へ読み替えない。",
+        "型注釈の有無とは分け、観測対象の選択・秘密情報の公開方針・保存結果不明時の記録を運用で設計する必要がある。"
+      ]
+    },
+    {
+      "id": "w0o-17",
+      "status": "design-choice",
+      "requirement": "説明を省いた内容は公開スライドを参照する。",
+      "assessment": "資料と画面の照合記録を参照。省略した説明の案内それ自体は実行時機能の追加要求ではない。",
+      "captionSource": {
+        "file": "w0oLNoGsGLc.ja-orig.txt",
+        "sha256": "9c87024d2fb0d478c272c3558ae97c13e002093edd2ee72d05f542676e6a86bc",
+        "lineCount": 964,
+        "durationSeconds": 2513
+      },
+      "startSeconds": 1750,
+      "endSeconds": 1761,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域、対象区間外、全フレームの原寸読取り、直接音声の確認はこの追加照合の対象外。",
+        "画面の全サンプルコードを実行・証明したものではない。説明例を全てframeworkに内蔵する必須機能へ読み替えない。"
+      ]
+    },
+    {
+      "id": "w0o-23",
+      "status": "supported",
+      "requirement": "直和と直積を組み合わせ、余計な状態を生まないように型を設計する。",
+      "assessment": "登録・休暇・経費の状態Union、非公開の検証証明、外部入力の検証で具体化。後半スライドへの案内は全サンプルコードをライブラリへ内蔵する要求ではない。",
+      "captionSource": {
+        "file": "w0oLNoGsGLc.ja-orig.txt",
+        "sha256": "9c87024d2fb0d478c272c3558ae97c13e002093edd2ee72d05f542676e6a86bc",
+        "lineCount": 964,
+        "durationSeconds": 2513
+      },
+      "startSeconds": 2404,
+      "endSeconds": 2457,
+      "historicalStatus": "partial",
+      "retainedLimitations": [
+        "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域と対象区間外の確認、別記の直接音声確認が必要な区間は残る。",
+        "型による接続の検査や原資料との画素一致だけで、原発話・業務仕様・任意の入力の安全性を証明したとはしない。"
+      ]
+    }
+  ]
+}

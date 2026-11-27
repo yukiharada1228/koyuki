@@ -1,3 +1,5 @@
+> 現在の評価基準：ユーザーの指示により字幕を要件解釈の基準とする。[最新の再評価](lecture-conformance-current.md)を参照。以下の原音未確認・partialの記述は以前の基準における経緯を含む。原音は未確認のままだが、実装受入れの停止条件にはしない。
+
 # 3講演に対する現在の判定
 
 [React風の組み立て](lecture-react-authoring-review.md)では、部品・Context・Hooksから純粋な計算、途中I/O、保存、再送を既存実行機構へ接続する。[選択capture](authoring-capture.md)で必要な途中状態も再実行せず取得し、実tarballと生成宣言をTypeScript 6/7で検査する。[休暇モデルの点検](leave-authorization-proof.md)では、認可の省略を許していた型を修正し、型の接続と業務仕様テストを区別する。一般の型推論・API安定化・原資料等の残件と9話題のpartialは維持する。

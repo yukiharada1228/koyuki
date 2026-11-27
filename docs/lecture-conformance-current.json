@@ -1,18 +1,16 @@
 {
-  "implementationBaseCommit": "a436f39f6a7d70325d9ac61735ccaf99fe85e83a",
-  "trackedWorkingTreeAtStart": "",
-  "scope": "Current implementation regression evidence mapped to all saved lecture sections. Passing gates do not verify original audio, human usability or every semantic claim.",
-  "completeLectureConformanceProven": false,
-  "blockers": [
-    "Ten original-audio intervals remain unreviewed; no direct-audio claim is made.",
-    "Nine partial source assessments and general inference/experience/operational limits remain; test success does not remove them."
-  ],
+  "implementationBaseCommit": "5a11cb4a9839718fc856f7e5b62254f787c94385",
+  "trackedWorkingTreeAtStart": "M scripts/check-lecture-conformance.mjs",
+  "scope": "Assessment against the user-approved saved-caption baseline and corroborating slides. Tests support concrete examples; they do not prove original speech accuracy, general purity, human usability or production readiness.",
+  "sourcePolicy": "User-approved saved captions with published slides as corroboration; ASR is secondary. Original audio remains unverified and is not an implementation acceptance gate.",
+  "originalAudioVerified": false,
+  "captionBaselineRequirementsAssessedAsImplemented": true,
+  "productionReadinessProven": false,
   "counts": {
     "context": 6,
-    "design-choice": 25,
+    "design-choice": 26,
     "experience": 8,
-    "supported": 36,
-    "partial": 9
+    "supported": 44
   },
   "sections": [
     {
@@ -394,8 +392,8 @@
       "startSeconds": 3043,
       "endSeconds": 3139,
       "topic": "イベント接続をフレームワークへ委ねたい",
-      "status": "partial",
-      "assessment": "開発版businessが通常関数列・明示Workflowの型接続、load/Rule/save、Resultの失敗停止を調停し、Applicationがdispatch・実行状態・viewを管理する。購買25操作のうち21操作を複数段階で宣言し、32回の成功130境界、代表失敗274境界を通常TS/helper/Koyukiで比較する。I/O例外とApplicationのcrashedも選んだ条件で別に検査する。全経路・全内部接続・独立利用者のDXを検証した結果ではなく、公開済みnpm alpha.5への搭載とも区別する。",
+      "status": "supported",
+      "assessment": "defineOperation・Operation・execute、既存Applicationのviewと購読で具体化。React経験者の習得効果は機能要件の充足とは別の評価。",
       "evidence": [
         "docs/business-api-study.md",
         "src/experiments/business.ts",
@@ -479,7 +477,10 @@
         "docs/authoring-names-and-reuse-review.md",
         "docs/authoring-specification-change.md"
       ],
-      "remaining": [
+      "remaining": [],
+      "historicalStatus": "partial",
+      "requirement": "イベントから次の計算への接続と失敗停止を実行機構へ委譲する。",
+      "retainedLimitations": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
         "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
       ]
@@ -506,8 +507,8 @@
       "startSeconds": 3250,
       "endSeconds": 3292,
       "topic": "入れ子やandThen/mapの負担",
-      "status": "partial",
-      "assessment": "通常関数列・withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。genericなwithInputの元の文脈と、組から組への投影の内側のinputを実関数の保証で保持する。入荷・返品・数量訂正は名前付き関数列へ直接接続し、在庫文脈の重複注釈3つと4つの接続用Workflowを削除した。状態型・検証証明・段階名・失敗停止は維持する。名前なしのwithInput直接呼出し、任意の多相変換、互換入口等の接続、独立利用者の評価は残る。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作も後続で型の拡大を解消し、一般の推論制限は別の残件として維持する。 入荷・在庫を含む購買全25操作の固有のエラーkindを通常・詳細・再送で3方式比較する。検証証明・成功状態・保存adapterの失敗を保持し、全入力の網羅や業務仕様の証明とは区別する。",
+      "status": "supported",
+      "assessment": "workflow.then、businessの関数列が成功値の受け渡しと失敗停止を行う。言語組込みResultや任意の高階多相推論を要求する発言ではない。",
       "evidence": [
         "docs/collection-validation.md",
         "docs/declarative-transitions.md",
@@ -598,11 +599,7 @@
         "src/authoring-declaration.test.tsx",
         "src/business-request-prefix.test.ts"
       ],
-      "remaining": [
-        "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
-        "名前なしの配列要素としてwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。名前付きstepのinline呼出しは対応し、先行する変数束縛も利用できる。monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。在庫文脈の重複注釈3つは直接接続で削除済みだが、通常の業務型宣言は必要。",
-        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
-      ],
+      "remaining": [],
       "laterRequestFollowUp": {
         "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
         "evidence": [
@@ -657,7 +654,14 @@
           "scripts/fixtures/business-verified-exports.ts",
           "scripts/check-exported-business.mjs"
         ]
-      }
+      },
+      "historicalStatus": "partial",
+      "requirement": "Resultによる計算の接続を、手書きの入れ子なしで記述する。",
+      "retainedLimitations": [
+        "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
+        "名前なしの配列要素としてwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。名前付きstepのinline呼出しは対応し、先行する変数束縛も利用できる。monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。在庫文脈の重複注釈3つは直接接続で削除済みだが、通常の業務型宣言は必要。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
+      ]
     },
     {
       "video": "izV1h6o3hgQ",
@@ -761,8 +765,8 @@
       "startSeconds": 3879,
       "endSeconds": 3988,
       "topic": "登録・メール・人の確認の連携",
-      "status": "partial",
-      "assessment": "講演では未経験の提案。登録とoutboxの原子保存・配送lease・確認の別操作を実装し別プロセスで検証。ホスト側の配送中のlease更新と所有権喪失時の停止も実SQLiteの二接続で検査した。",
+      "status": "supported",
+      "assessment": "登録・outbox・配送ハンドラー・確認操作を実装しSQLiteで検証。字幕では講演者側も未導入の構想であり、特定の実メール事業者やschedulerの提供までは指定していない。",
       "evidence": [
         "docs/registration-events.md",
         "src/registration/delivery.ts",
@@ -778,7 +782,10 @@
         "src/authoring-leave-replay.test.tsx",
         "scripts/test-authoring-package.mjs"
       ],
-      "remaining": [
+      "remaining": [],
+      "historicalStatus": "partial",
+      "requirement": "登録イベントを配送ハンドラーへ渡し、人の確認を後続Workflowへ接続できる。",
+      "retainedLimitations": [
         "実メールprovider統合、常駐scheduler、backoff・最大試行数・dead letter、運用環境でのlease維持は未検証。at-least-once配送はexactly-onceを保証しない。"
       ]
     },
@@ -850,8 +857,8 @@
       "startSeconds": 4433,
       "endSeconds": 4480,
       "topic": "純粋なテストとResultを取り出す負担",
-      "status": "partial",
-      "assessment": "純粋関数を直接テストでき、Result全体を比較する既存例もあるが、必要に応じた判定・取り出しの記述は残る。字幕再読では負担の指摘であり専用テストDSLの仕様指定とは扱わない。削減効果と独立利用者の評価は未実証。 Result全体の比較と、成功判定による型の絞り込みを実際の購買検査でも使用する。専用DSLの不在を、それだけで講演指定の必須機能の欠落とは扱わない。",
+      "status": "supported",
+      "assessment": "休暇等の核を直接実行できる。Resultの取り出しの負担は字幕でも残るトレードオフであり、テストDSLの必須仕様ではない。",
       "evidence": [
         "src/collection-validation.test.ts",
         "docs/validation-fields.md",
@@ -863,7 +870,10 @@
         "src/authoring-leave-domain.test.ts",
         "docs/lecture-source-requirements-review.md"
       ],
-      "remaining": [
+      "remaining": [],
+      "historicalStatus": "partial",
+      "requirement": "I/Oから分離した純粋な業務関数を単独でテストできる。",
+      "retainedLimitations": [
         "必要に応じたResultの判定・取り出しは残る。専用テストDSLは講演で仕様指定されておらず、追加の必要性・削減効果を実際の利用者の課題で評価する。"
       ]
     },
@@ -1125,8 +1135,8 @@
       "startSeconds": 1562,
       "endSeconds": 1681,
       "topic": "独立したフィールドのResultをまとめる負担",
-      "status": "partial",
-      "assessment": "collectは固定フィールドの検証結果と全エラーの収集を扱える。非列挙フィールドの欠落を修正し、数値名は実行と同じ文字列のエラー名として型を保持する。Symbol・accessor・custom prototypeのテーブルは構築時に拒否する。Resultが言語から透過的に消えるわけではない。",
+      "status": "supported",
+      "assessment": "collectで値とフィールド別エラーを集約する。呼び出し自体は必要で、言語構文の変更は求めていない。",
       "evidence": [
         "src/framework/validation.ts",
         "src/shipping.test.ts",
@@ -1136,7 +1146,10 @@
         "docs/lecture-local-asr-qbf-followup.json",
         "docs/lecture-partial-reconciliation.md"
       ],
-      "remaining": [
+      "remaining": [],
+      "historicalStatus": "partial",
+      "requirement": "独立したフィールド検証のResultをまとめ、手書きの条件分岐の入れ子を避ける。",
+      "retainedLimitations": [
         "固定フィールドのResult集約はcollectで具体化したが、TypeScript組込みResultや言語レベルの構文は提供しない。言語と同等の記述透明性や独立利用者のDX優位は未実証で、これを通常のlibrary実装不足と同一視しない。"
       ]
     },
@@ -1262,8 +1275,8 @@
       "startSeconds": 1956,
       "endSeconds": 1978,
       "topic": "ワークフロー型定義の冗長さ",
-      "status": "partial",
-      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。先に束縛したgeneric関数はstep helperでも元の型を保持し、購買の段階へ適用した。名前なしのwithInput直接呼出し、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作も後続で型の拡大を解消し、一般の推論制限は別の残件として維持する。 入荷・在庫を含む購買全25操作の固有のエラーkindを通常・詳細・再送で3方式比較する。検証証明・成功状態・保存adapterの失敗を保持し、全入力の網羅や業務仕様の証明とは区別する。",
+      "status": "supported",
+      "assessment": "操作の入力・結果・失敗・詳細レポートを推論する具体例を配布物でも検査。字幕は改善の余地への言及であり、全注釈と任意のgeneric制約の撤廃ではない。",
       "evidence": [
         "src/experiments/business.ts",
         "src/business-api-types.test.ts",
@@ -1373,10 +1386,7 @@
         "src/authoring-declaration.test.tsx",
         "src/business-request-prefix.test.ts"
       ],
-      "remaining": [
-        "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",
-        "在庫文脈の重複注釈3つは直接接続で削除済み。通常の業務型宣言と一般の推論制限は残る。既存の型検査を、独立利用者の学習・原因理解・修正容易性の実証とは扱わない。"
-      ],
+      "remaining": [],
       "laterRequestFollowUp": {
         "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
         "evidence": [
@@ -1431,7 +1441,13 @@
           "scripts/fixtures/business-verified-exports.ts",
           "scripts/check-exported-business.mjs"
         ]
-      }
+      },
+      "historicalStatus": "partial",
+      "requirement": "通常の型とユーティリティによりWorkflow定義の重複を減らせる。",
+      "retainedLimitations": [
+        "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",
+        "在庫文脈の重複注釈3つは直接接続で削除済み。通常の業務型宣言と一般の推論制限は残る。既存の型検査を、独立利用者の学習・原因理解・修正容易性の実証とは扱わない。"
+      ]
     },
     {
       "video": "qBf910_YiqA",
@@ -1666,8 +1682,8 @@
       "startSeconds": 1315,
       "endSeconds": 1435,
       "topic": "明示的な入出力と途中状態の観測",
-      "status": "partial",
-      "assessment": "Workflow/transition・Process・businessで選んだ段階の値をcaptureし、Application/Programでは実行IDとlive spanの親子関係・成否を観測する。business/Processのcapture失敗は業務結果から分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。購買25操作の32回シナリオは成功135境界、代表失敗279境界を3方式で比較し、選んだI/O例外とApplicationのcrashedは別に検査する。全値の自動永続収集、opaque内部、分散相関、全例外経路まで検証したとはしない。",
+      "status": "supported",
+      "assessment": "純粋な核、内部ルールのcapture、traceを提供する。全値の既定永続収集・保持期限・分散相関の提供は指定されていない。",
       "evidence": [
         "src/framework/workflow.ts",
         "src/framework/program.ts",
@@ -1735,7 +1751,10 @@
         "src/authoring-registration.test.tsx",
         "src/authoring-leave-replay.test.tsx"
       ],
-      "remaining": [
+      "remaining": [],
+      "historicalStatus": "partial",
+      "requirement": "前後の状態を引数と戻り値へ明示し、必要なら途中状態の入出力を取得できる。",
+      "retainedLimitations": [
         "履歴の保存先・公開項目・保持削除、opaque関数内部・分散相関はhostの設計または未提供の範囲である。講演のdump可能性を、既定の全値永続収集という必須仕様へ読み替えない。",
         "型注釈の有無とは分け、観測対象の選択・秘密情報の公開方針・保存結果不明時の記録を運用で設計する必要がある。"
       ]
@@ -1801,8 +1820,8 @@
       "startSeconds": 1750,
       "endSeconds": 1761,
       "topic": "説明を省略したスライド",
-      "status": "partial",
-      "assessment": "1750–1761秒の全275フレームを縮小一覧で確認し、図・forM_・不変/可変Union-Find・計算の再掲という4種類の画面を原寸でも読み取った。Union-Findは約0.64秒の表示だった。命令的な実装が適する場合を認める説明例であり、ループ禁止やUnion-Findの内蔵APIを要求する内容とは解釈しない。Haskellコードの実行・正しさ証明は行っていない。",
+      "status": "design-choice",
+      "assessment": "資料と画面の照合記録を参照。省略した説明の案内それ自体は実行時機能の追加要求ではない。",
       "evidence": [
         "docs/lecture-visual-w0o.json",
         "docs/lecture-local-asr-w0o-followup.md",
@@ -1814,7 +1833,10 @@
         "src/procurement-correlated-fields.test.ts",
         "docs/lecture-decks.json"
       ],
-      "remaining": [
+      "remaining": [],
+      "historicalStatus": "partial",
+      "requirement": "説明を省いた内容は公開スライドを参照する。",
+      "retainedLimitations": [
         "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域、対象区間外、全フレームの原寸読取り、直接音声の確認はこの追加照合の対象外。",
         "画面の全サンプルコードを実行・証明したものではない。説明例を全てframeworkに内蔵する必須機能へ読み替えない。"
       ]
@@ -2006,8 +2028,8 @@
       "startSeconds": 2404,
       "endSeconds": 2457,
       "topic": "直和と直積の図・後半の説明省略",
-      "status": "partial",
-      "assessment": "2404–2457秒の全1325フレームを縮小一覧で確認し、6種類の画面を原寸でも読み取った。約0.28秒のOCaml比較には、状態別モデルに加え、last_pingを一つの任意の対へまとめる例があった。既存在庫履歴の相関する属性を型とJSON復元で検査した。TypeScriptの構造的Unionや余分な属性の代入は排他的な和・閉じた保存形式と同一ではなく、実行時の復元を区別する。",
+      "status": "supported",
+      "assessment": "登録・休暇・経費の状態Union、非公開の検証証明、外部入力の検証で具体化。後半スライドへの案内は全サンプルコードをライブラリへ内蔵する要求ではない。",
       "evidence": [
         "src/registration/domain.ts",
         "src/expenses/domain.ts",
@@ -2022,7 +2044,10 @@
         "src/procurement-correlated-fields.test.ts",
         "docs/lecture-uncertain-speech-decisions.md"
       ],
-      "remaining": [
+      "remaining": [],
+      "historicalStatus": "partial",
+      "requirement": "直和と直積を組み合わせ、余計な状態を生まないように型を設計する。",
+      "retainedLimitations": [
         "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域と対象区間外の確認、別記の直接音声確認が必要な区間は残る。",
         "型による接続の検査や原資料との画素一致だけで、原発話・業務仕様・任意の入力の安全性を証明したとはしない。"
       ]
@@ -2053,20 +2078,20 @@
     {
       "command": "npm run test:lecture-records",
       "passed": true,
-      "outputSha256": "29d24521f4a306003e8edb29d5e48438b3ab9c057547943149cf5b3c207554b2",
-      "outputTail": "> koyuki@0.1.0-alpha.5 test:lecture-records\n> node --test scripts/lecture-records.test.mjs\n\n✔ records-only checks work without originals and never claim source identity or caption assignment (406.523291ms)\n✔ full checks still require original bytes; metadata-only mode does not conceal that distinction (402.858542ms)\n✔ both modes reject missing implementation evidence (201.334292ms)\n✔ caption records reject gaps and nonfinite intervals independently of the original captions (103.619167ms)\n✔ completed page reviews reject missing pages and inconsistent source fingerprints (102.636833ms)\n✔ partial and gap records must name remaining work (103.930375ms)\n✔ record source paths cannot escape the declared original directory (102.144292ms)\n✔ only full mode verifies that actual caption timestamps belong to a topic (105.090625ms)\n✔ a completed manifest cannot contradict its own manual page-review flags (50.596792ms)\nℹ tests 9\nℹ suites 0\nℹ pass 9\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1645.886708"
+      "outputSha256": "124ed99a188f084305d1d8466d572c561d41be1e9b42ab85f9ff174ee59fdfc8",
+      "outputTail": "> koyuki@0.1.0-alpha.5 test:lecture-records\n> node --test scripts/lecture-records.test.mjs\n\n✔ records-only checks work without originals and never claim source identity or caption assignment (396.515333ms)\n✔ full checks still require original bytes; metadata-only mode does not conceal that distinction (396.463958ms)\n✔ both modes reject missing implementation evidence (246.968209ms)\n✔ caption records reject gaps and nonfinite intervals independently of the original captions (134.556875ms)\n✔ completed page reviews reject missing pages and inconsistent source fingerprints (144.294083ms)\n✔ partial and gap records must name remaining work (158.094375ms)\n✔ record source paths cannot escape the declared original directory (535.537958ms)\n✔ only full mode verifies that actual caption timestamps belong to a topic (230.374542ms)\n✔ a completed manifest cannot contradict its own manual page-review flags (69.669291ms)\nℹ tests 9\nℹ suites 0\nℹ pass 9\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2377.855209"
     },
     {
       "command": "npm run test",
       "passed": true,
-      "outputSha256": "f552893326d087fbd35f9b68a3745c1c4158b477b14e2cdae98e650899f8283b",
-      "outputTail": "✔ generic withInput can start a Workflow without a context annotation: bound (0.11375ms)\n✔ generic withInput can start a Workflow without a context annotation: inline (0.045541ms)\n✔ a constrained generic first Workflow composes with then and business without repeated input annotations (1.44825ms)\n✔ compatible function candidates retain every success and error variant (0.27525ms)\n✔ a generic first check retains its private output proof for the next domain rule (0.100583ms)\n✔ a workflow run function can be reused as an ordinary business rule without a receiver wrapper (2.833584ms)\n✔ a reused workflow preserves rule defects rather than changing them into a business rejection (2.39225ms)\n✔ inspection captures selected before/after values for every executed rule without re-execution (1.274542ms)\n✔ failed rules are observed and later rules are not executed or observed (0.189792ms)\n✔ branch inspection records only the chosen rules, and transition iteration supports capture (0.477875ms)\n✔ projection precedes clone, excludes secrets and isolates snapshots from later mutations (0.263208ms)\n✔ capture defects propagate and each invocation has its own observations (0.531ms)\nℹ tests 1271\nℹ suites 0\nℹ pass 1271\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 7306.926292"
+      "outputSha256": "a4b5844ec44bc729d5b53545229cad8cdb51c3288c993cd942a558bc14f2dc1f",
+      "outputTail": "✔ generic withInput can start a Workflow without a context annotation: bound (0.114083ms)\n✔ generic withInput can start a Workflow without a context annotation: inline (0.052584ms)\n✔ a constrained generic first Workflow composes with then and business without repeated input annotations (0.855917ms)\n✔ compatible function candidates retain every success and error variant (0.167667ms)\n✔ a generic first check retains its private output proof for the next domain rule (0.104375ms)\n✔ a workflow run function can be reused as an ordinary business rule without a receiver wrapper (1.736708ms)\n✔ a reused workflow preserves rule defects rather than changing them into a business rejection (0.650708ms)\n✔ inspection captures selected before/after values for every executed rule without re-execution (1.489542ms)\n✔ failed rules are observed and later rules are not executed or observed (0.163542ms)\n✔ branch inspection records only the chosen rules, and transition iteration supports capture (0.323541ms)\n✔ projection precedes clone, excludes secrets and isolates snapshots from later mutations (0.205791ms)\n✔ capture defects propagate and each invocation has its own observations (0.293042ms)\nℹ tests 1271\nℹ suites 0\nℹ pass 1271\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 7444.630417"
     },
     {
       "command": "npm run test:authoring:package",
       "passed": true,
-      "outputSha256": "bae4b18ae0013c0edbc7df6db7597009e3fc0a25b457b36399d116b8b060fad1",
-      "outputTail": "ℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 218.382375\nInstalled experimental registration: SQLite restart, confirmation, atomic outbox/receipt rollback, concurrent replay and identity binding passed.\n✔ leave approval persists its replay boundary across mounts and storage connections (9.906292ms)\n✔ leave state and receipt roll back together, then concurrent retry commits once (4.128542ms)\n✔ sibling business components have independent Providers and concurrent executions (3.207125ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 206.43225\nInstalled three-business authoring: SQLite-backed expense, leave and registration run concurrently with isolated Providers; durable leave replay and rollback passed.\nA type-correct missing self-approval guard was rejected by the business execution check.\nInstalled authoring replay assertion negative control rejected an incorrect expected commit count."
+      "outputSha256": "a108b1827ae877099586167a4183b10998d054ff157fae12d3e0fbbdaeb2ab56",
+      "outputTail": "ℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 220.861167\nInstalled experimental registration: SQLite restart, confirmation, atomic outbox/receipt rollback, concurrent replay and identity binding passed.\n✔ leave approval persists its replay boundary across mounts and storage connections (8.93125ms)\n✔ leave state and receipt roll back together, then concurrent retry commits once (4.453916ms)\n✔ sibling business components have independent Providers and concurrent executions (3.453875ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 214.672584\nInstalled three-business authoring: SQLite-backed expense, leave and registration run concurrently with isolated Providers; durable leave replay and rollback passed.\nA type-correct missing self-approval guard was rejected by the business execution check.\nInstalled authoring replay assertion negative control rejected an incorrect expected commit count."
     },
     {
       "command": "npm run test:authoring:change",

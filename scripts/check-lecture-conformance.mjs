@@ -18,15 +18,29 @@ const followups = {
   'w0o-17': ['docs/lecture-frame-window-survey.md', 'docs/lecture-decks.json'],
   'w0o-23': ['docs/lecture-frame-window-survey.md', 'docs/lecture-uncertain-speech-decisions.md'],
 };
+const policy = JSON.parse(readFileSync(join(root, 'docs/lecture-caption-baseline.json'), 'utf8'));
+assert.equal(policy.originalAudioVerified, false);
+const overrides = new Map(policy.overrides.map(item => [item.id, item]));
+assert.equal(overrides.size, policy.overrides.length, 'Duplicate caption reassessment');
 const sections = [];
 for (const video of ['izV1h6o3hgQ', 'qBf910_YiqA', 'w0oLNoGsGLc']) {
   const audit = JSON.parse(readFileSync(join(root, `docs/lecture-audits/${video}.json`), 'utf8'));
   for (const section of audit.sections) {
     const evidence = [...new Set([...section.evidence, ...(followups[section.id] ?? [])])];
     for (const file of evidence) assert(existsSync(join(root, file)), `Missing evidence: ${section.id} ${file}`);
-    sections.push({ video, ...section, evidence });
+    const revised = overrides.get(section.id);
+    if (revised) {
+      assert.equal(revised.historicalStatus, section.status);
+      assert.equal(revised.captionSource.sha256, audit.source.sha256);
+      assert.equal(revised.startSeconds, section.startSeconds);
+      assert.equal(revised.endSeconds, section.endSeconds);
+      assert(revised.requirement && revised.assessment);
+      overrides.delete(section.id);
+    }
+    sections.push({ video, ...section, evidence, ...(revised ? { historicalStatus: section.status, status: revised.status, requirement: revised.requirement, assessment: revised.assessment, retainedLimitations: revised.retainedLimitations, remaining: [] } : {}) });
   }
 }
+assert.equal(overrides.size, 0, 'Unknown caption reassessment topic');
 assert.equal(sections.length, 84);
 assert.equal(new Set(sections.map(section => section.id)).size, 84);
 function run(command, parameters) {
@@ -46,10 +60,12 @@ const counts = Object.fromEntries([...new Set(sections.map(section => section.st
 const report = {
   implementationBaseCommit: head,
   trackedWorkingTreeAtStart: dirty,
-  scope: 'Current implementation regression evidence mapped to all saved lecture sections. Passing gates do not verify original audio, human usability or every semantic claim.',
-  completeLectureConformanceProven: false,
-  blockers: ['Ten original-audio intervals remain unreviewed; no direct-audio claim is made.', 'Nine partial source assessments and general inference/experience/operational limits remain; test success does not remove them.'],
+  scope: 'Assessment against the user-approved saved-caption baseline and corroborating slides. Tests support concrete examples; they do not prove original speech accuracy, general purity, human usability or production readiness.',
+  sourcePolicy: policy.basis,
+  originalAudioVerified: false,
+  captionBaselineRequirementsAssessedAsImplemented: sections.every(section => ['supported', 'context', 'design-choice', 'experience'].includes(section.status)),
+  productionReadinessProven: false,
   counts, sections, gates,
 };
 if (args[1]) writeFileSync(resolve(root, args[1]), JSON.stringify(report, null, 2) + '\n');
-console.log(JSON.stringify({ counts, completeLectureConformanceProven: report.completeLectureConformanceProven }));
+console.log(JSON.stringify({ counts, captionBaselineRequirementsAssessedAsImplemented: report.captionBaselineRequirementsAssessedAsImplemented }));

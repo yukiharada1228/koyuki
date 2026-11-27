@@ -1,3 +1,5 @@
+> 字幕を基準にした現在の再評価は[こちら](../lecture-conformance-current.md)。このディレクトリのstatusは過去の判定を保存しており、現行評価は`../lecture-caption-baseline.json`を重ねて確認する。原音確認済みという意味ではない。
+
 # 字幕に沿った詳細照合
 
 [講演の対応表](../lecture-coverage.md)を、保存済み字幕へ戻って細かく点検するための記録。
