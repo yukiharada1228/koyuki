@@ -34,6 +34,7 @@ jobs:
       - run: npm run check:package
       - run: npm run test:portable
       - run: npm run test:authoring:package
+      - run: npm run test:authoring:change
       - run: npm run check:business:scale
 
   business:

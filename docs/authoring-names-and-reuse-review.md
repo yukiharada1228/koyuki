@@ -22,3 +22,5 @@
 この小さなメモリRepositoryによる追加試用は、予約業務の永続再送や本番transactionを検証していない。三業務の既存SQLite検証とは区別する。初見React利用者がどこで迷うか、習得時間や生産性は未確認。
 
 再現する場合は、新しい試用ディレクトリをprepare:authoringで用意し、fixtureをcancellation.tsxとしてコピーし、tsconfig.jsonのincludeへ追加してから上記二コマンドを実行する。
+
+続く既存業務の仕様変更試用は[期限ルールの変更記録](authoring-specification-change.md)を参照。新規追加の成功と、仕様変更時の変更範囲を分けて評価している。

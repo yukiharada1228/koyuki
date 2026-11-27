@@ -75,7 +75,8 @@
     "test:model-template": "node --test scripts/model-test-template.test.mjs",
     "benchmark:procurement": "tsx src/experiments/procurement/benchmark.ts",
     "test:authoring:package": "node scripts/test-authoring-package.mjs --verify",
-    "prepare:authoring": "node scripts/test-authoring-package.mjs --prepare"
+    "prepare:authoring": "node scripts/test-authoring-package.mjs --prepare",
+    "test:authoring:change": "node scripts/test-authoring-change.mjs"
   },
   "devDependencies": {
     "@babel/parser": "8.1.3",
