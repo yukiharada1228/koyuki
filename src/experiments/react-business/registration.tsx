@@ -1,6 +1,6 @@
 /** @jsx h */
 import { workflow, process, ok, type Result, type Receipt, type Execution } from '../../framework/index.js';
-import { h, createContext, useContext, useOperation, Operation, operationKey, Fragment } from './runtime.js';
+import { h, createContext, useContext, defineOperation, Operation, Fragment } from './runtime.js';
 import { useActor, ActorContext } from './expense.js';
 import { digestToken as digest } from '../../registration/secrets.js';
 import type { Actor } from '../../expenses/domain.js';
@@ -24,8 +24,7 @@ async function loadRegistration<I extends { id: string }>(repository: Registrati
 function useRegistrationServices() {
   return { repository: useContext(RegistrationContext), actor: Object.freeze({ ...useActor() }) };
 }
-const requestName = 'registration.request.v1', confirmName = 'registration.confirm.v1';
-export function useRegistrationRequest() {
+export const registrationRequest = defineOperation('registration.request.v1', () => {
   const { repository, actor } = useRegistrationServices();
   const call = (input: RegistrationRequest): RegistrationCall => ({ operation: 'request', input, actor });
   const load = process<RegistrationRequest>()
@@ -34,31 +33,24 @@ export function useRegistrationRequest() {
       return ok<StartInput>({ id: input.id, email: input.email, token, tokenDigest: await digest(token) });
     })
     .effect('load-registration', input => loadRegistration(repository, input));
-  return useOperation({ name: requestName, load, execute: requestRegistration,
+  return { load, execute: requestRegistration,
     save: (change, input) => repository.saveRequest(call(input), change),
     replay: { lookup: input => repository.receipt(call(input)), resolveAfter: error => error.kind === 'Conflict' || error.kind === 'StorageUnavailable' || error.kind === 'AlreadyRegistered' },
-  });
-}
-export function useRegistrationConfirmation() {
+  };
+});
+export const registrationConfirmation = defineOperation('registration.confirm.v1', () => {
   const { repository, actor } = useRegistrationServices();
   const call = (input: ConfirmationRequest): RegistrationCall => ({ operation: 'confirm', input, actor });
   const load = process<ConfirmationRequest>()
     .effect('digest-confirmation-token', async input => ok<ConfirmInput>({ id: input.id, now: input.now, tokenDigest: await digest(input.token) }))
     .effect('load-registration', input => loadRegistration(repository, input));
-  return useOperation({ name: confirmName, load, execute: confirmRegistration,
+  return { load, execute: confirmRegistration,
     save: (change, input) => repository.saveRequest(call(input), change),
     replay: { lookup: input => repository.receipt(call(input)), resolveAfter: error => error.kind === 'Conflict' || error.kind === 'StorageUnavailable' || error.kind === 'InvalidConfirmation' },
-  });
-}
-export const registrationRequest = operationKey(requestName, useRegistrationRequest);
-export const registrationConfirmation = operationKey(confirmName, useRegistrationConfirmation);
-function RegistrationOperations() {
-  const requested = useRegistrationRequest(), confirmed = useRegistrationConfirmation();
-  return <Fragment>
-    <Operation operation={registrationRequest} handler={requested} />
-    <Operation operation={registrationConfirmation} handler={confirmed} />
-  </Fragment>;
-}
+  };
+});
+export const useRegistrationRequest = registrationRequest.use;
+export const useRegistrationConfirmation = registrationConfirmation.use;
 export function Registrations({ repository, actor }: { repository: RegistrationPort; actor: Actor }) {
-  return <RegistrationContext.Provider value={repository}><ActorContext.Provider value={actor}><RegistrationOperations /></ActorContext.Provider></RegistrationContext.Provider>;
+  return <RegistrationContext.Provider value={repository}><ActorContext.Provider value={actor}><Fragment><Operation operation={registrationRequest} /><Operation operation={registrationConfirmation} /></Fragment></ActorContext.Provider></RegistrationContext.Provider>;
 }

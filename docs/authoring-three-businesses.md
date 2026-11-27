@@ -1,23 +1,25 @@
 # 経費・休暇・会員登録を同じ公開APIで組み立てる
 
+宣言の重複と用語の後続整理は [操作の宣言APIと比較](authoring-declaration-api.md) を参照。以下の初回検証結果と、後続APIの検査結果は区別する。
+
 原音の未確定を理由に開発を止めず、資料で根拠づけられる設計とユーザー指定のReact風体験を具体化する。講演の完全再現という判定とは分ける。
 
 ## 利用する契約
 
-全例で、純粋関数を `workflow(...).then(...)` で合成し、カスタムHookが `useOperation({ name, load, execute, save, replay })` を返す。`operationKey(name, useHook)` が入力・成功・エラー・詳細レポートを推論する。Repositoryと操作者はProviderで渡す。組み立て時にはI/Oを実行しない。
+全例で、純粋関数を `workflow(...).then(...)` で合成し、`defineOperation(name, useDefinition)` のカスタムHookが取得・計算・保存・再送の定義を返す。宣言した操作自体を `<Operation operation={...} />` と実行で共有し、入力・成功・エラー・詳細レポートを推論する。Repositoryと操作者はProviderで渡す。組み立て時にはI/Oを実行しない。旧useOperation/operationKeyは互換として維持する。
 
 複数の業務部品は `Fragment` で並べる。これは新しい依存スコープも実行状態も持たない。Reactの再レンダリング・Effect・非同期コンポーネントの再現ではない。
 
 公開の開発版importだけで組み立てる例は [three-businesses.tsx](../examples/authoring/three-businesses.tsx)。ホストがアダプターを渡し、呼出し側は同じアプリから次を使う。
 
 ```ts
-await app.dispatch(replayedApproval, { requestId, input: { id, expectedVersion } });
-await app.dispatch(replayedLeaveApproval, { requestId, input: { id } });
-await app.dispatch(registrationRequest, { requestId, id, email });
-await app.dispatch(registrationConfirmation, { requestId, id, token, now });
+await app.execute(replayedApproval, { requestId, input: { id, expectedVersion } });
+await app.execute(replayedLeaveApproval, { requestId, input: { id } });
+await app.execute(registrationRequest, { requestId, id, email });
+await app.execute(registrationConfirmation, { requestId, id, token, now });
 ```
 
-`inspect`は同じ入力で実行し、内部traceと再送のattemptを返す。第3引数のcaptureは明示した項目だけを記録する。`subscribeExecution`または生成時のobserverでlive spanを受け取る。inspectも保存を実行するので、プレビュー用途で重ねて実行しない。
+`executeDetailed`は同じ入力で実行し、内部traceと再送のattemptを返す。第3引数のcaptureは明示した項目だけを記録する。`subscribeExecution`または生成時のobserverでlive spanを受け取る。executeDetailedも保存を実行するので、プレビュー用途で重ねて実行しない。旧inspectは互換aliasである。
 
 ## 各業務の境界
 
@@ -58,7 +60,7 @@ DBアダプターは例示用で、Node/SQLiteは公開runtimeに入れない。
 
 ## 今回固定したAPIの受け入れ条件
 
-1. 部品の評価だけでは業務を実行しない。dispatch/inspectが実行境界になる。
+1. 部品の評価だけでは業務を実行しない。execute/executeDetailedが実行境界になる。
 2. Workflowを渡せば内部ルールのtraceを保ち、失敗した後の遷移・保存を実行しない。
 3. Providerの操作者はリクエストpayloadから取得せず、各Hookで実行に必要な値を確保する。兄弟部品・同時実行で混ぜない。
 4. 再送のreceiptが見つかった場合は業務を再実行せずattempt:nullとする。DB保存とreceiptはadapterが原子的に保存する。

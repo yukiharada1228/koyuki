@@ -2,7 +2,7 @@
 import type { Result, Receipt, Execution } from '../../framework/index.js';
 import type { Actor, Input, Loaded, Change, ExpenseState } from '../../expenses/domain.js';
 import type { LoadError, SaveError } from '../../expenses/repository.js';
-import { h, createContext, useContext, useOperation, Operation, operationKey } from './runtime.js';
+import { h, createContext, useContext, defineOperation, Operation } from './runtime.js';
 import { approveExpense, ActorContext, useActor } from './expense.js';
 export interface ApprovalRequest { readonly requestId: string; readonly input: Input }
 export interface ApprovalIdentity extends ApprovalRequest { readonly operation: 'approve'; readonly actor: Actor }
@@ -14,12 +14,11 @@ export interface ReplayExpenseRepository {
   saveRequest(request: ApprovalIdentity, change: Change): Promise<Result<Execution<ExpenseState>, ReplayStorageError>>;
 }
 export const ReplayExpenseRepositoryContext = createContext<ReplayExpenseRepository>();
-const approvalId = 'expense.approve.v1';
-export function useReplayExpenseApproval() {
+export const replayedApproval = defineOperation('expense.approve.v1', () => {
   const expenses = useContext(ReplayExpenseRepositoryContext);
   const actor = Object.freeze({ ...useActor() });
   const request = (call: ApprovalRequest): ApprovalIdentity => ({ ...call, operation: 'approve', actor });
-  return useOperation({ name: approvalId,
+  return {
     load: (call: ApprovalRequest) => expenses.load(call.input, actor),
     execute: approveExpense,
     save: (change, call) => expenses.saveRequest(request(call), change),
@@ -27,12 +26,11 @@ export function useReplayExpenseApproval() {
       lookup: call => expenses.receipt(request(call)),
       resolveAfter: error => error.kind === 'SaveConflict' || error.kind === 'InvalidState' || error.kind === 'RepositoryUnavailable',
     },
-  });
-}
-export const replayedApproval = operationKey(approvalId, useReplayExpenseApproval);
+  };
+});
+export const useReplayExpenseApproval = replayedApproval.use;
 export function ReplayApproveExpense() {
-  const handler = useReplayExpenseApproval();
-  return <Operation operation={replayedApproval} handler={handler} />;
+  return <Operation operation={replayedApproval} />;
 }
 export function ReplayExpenses({ repository, actor }: { repository: ReplayExpenseRepository; actor: Actor }) {
   return <ReplayExpenseRepositoryContext.Provider value={repository}>

@@ -1,5 +1,7 @@
 # React経験者向けの業務ロジック組み立て試作
 
+宣言と実行名の後続整理は [操作の宣言API](authoring-declaration-api.md) を参照。現在の推奨入口はdefineOperationとexecute/executeDetailed。以下で旧inspect/dispatchやuseOperationに触れる箇所は、同じ挙動を持つ互換経路の説明も含む。
+
 目的はReactの内部を再現することではなく、部品・props・Context・カスタムHooksで業務処理を組み立てる体験を確かめること。組み立てランタイムは `src/framework/authoring.ts` に移し、開発版tarballの実験サブパス `koyuki/experimental` から利用できる。経費・休暇の例は `src/experiments/react-business/` に置く。公開済みnpm alpha.5には含まれない。Reactや新たな実行時依存は追加していない。
 
 ## 経費承認の縦断例
@@ -10,28 +12,21 @@
 // HooksやRepositoryなしでもrun(input)で実行できる純粋な合成。
 const approveExpense = workflow('authorize-approval', validateApproval)
   .then('approve', approve);
-const approvalId = 'expense.approve.v1';
-
-function useExpenseApproval() {
+const approval = defineOperation('expense.approve.v1', () => {
   const expenses = useContext(ExpenseRepositoryContext);
   const actor = useActor();
-  return useOperation({
-    name: approvalId,
+  return {
     load: (input: Input) => expenses.load(input, actor),
     execute: approveExpense,
     save: change => expenses.save(change),
-  });
-}
+  };
+});
 
-const approval = operationKey(approvalId, useExpenseApproval);
-
-function ApproveExpense() {
-  const handler = useExpenseApproval();
-  return <Operation operation={approval} handler={handler} />;
-}
+// ExpensesのProvider内に登録する。
+// <Operation operation={approval} />
 
 const app = createApplication(<Expenses repository={repository} actor={actor} />);
-await app.dispatch(approval, input);
+await app.execute(approval, input);
 ```
 
 ExpensesはRepositoryとActorのProviderを組み合わせる部品。呼び出し元は認証済みの操作者を渡す。業務側では引き続きvalidateApprovalが権限・状態を検証し、クライアント入力に操作者を任せない。
@@ -40,7 +35,7 @@ ExpensesはRepositoryとActorのProviderを組み合わせる部品。呼び出�
 
 ## 評価と実行の境界
 
-JSXは部品の評価をProviderのスコープ内まで遅延する。組み立て時には操作を登録し、フレームワークからload・execute・saveを呼び出さない。dispatchまたはinspectを明示的に呼ぶと既存のdefineCommandで実行する。inspectも実行を伴い、保存も行うため、プレビューではない。
+JSXは部品の評価をProviderのスコープ内まで遅延する。組み立て時には操作を登録し、フレームワークからload・execute・saveを呼び出さない。executeまたはexecuteDetailedを明示的に呼ぶと既存エンジンで実行する。executeDetailedも保存を伴い、プレビューではない。旧dispatch/inspectは同じ関数への互換aliasとして残す。
 
 各createApplicationは独立したContextと登録表を持つ。Hooksを呼べるのは同期的なコンポーネント評価中だけで、評価の終了・例外時に以前のスコープへ戻す。非同期処理には操作者やRepositoryをクロージャとして渡す。dispatch中にグローバルな現在のContextを読み出さない。
 
@@ -48,22 +43,22 @@ JSXは部品の評価をProviderのスコープ内まで遅延する。組み立
 
 ## 試作で見つけた設計上の負担
 
-- JSXの子孫の全操作型を静的に回収する設計にはしていない。`operationKey(approvalId, useExpenseApproval)`でカスタムHookから型を推論するハンドルを一つ宣言し、登録とdispatchで共有する。定義時にHookは評価しない。通常の業務型宣言は残るが、入力・成功・エラー型をハンドルへ重ねて書く必要はなくなった。識別子とハンドルという概念自体の書き心地は引き続き評価する。
-- executeには通常の関数または既存のWorkflowを渡せる。Workflowをそのまま渡すと内部のルール名・失敗位置をアプリのinspectから追える。通常の関数は一段として扱う。関数の本体を解析してtraceを復元することはしない。
+- JSXの子孫の全操作型を静的に回収する設計にはしていない。defineOperationの宣言を登録と実行で共有し、別のoperationKeyとhandler接続を不要にした。型はHookから推論し、定義時にHookは評価しない。通常の業務型とRepository契約は残る。旧useOperation/operationKeyも互換として維持する。
+- executeには通常の関数または既存のWorkflowを渡せる。Workflowをそのまま渡すと内部のルール名・失敗位置をアプリのexecuteDetailedから追える。通常の関数は一段として扱う。関数の本体を解析してtraceを復元することはしない。
 - 再送はuseOperationのreplay設定から既存のwithReplayへ接続する。永続的な変更とreceiptの原子的保存はアダプターの責務。同時要求のloadやsaveの呼び出し回数そのものを一回に制限する機能ではない。操作識別子・要求ID・操作者・入力・ポリシー版の照合もアダプターの契約に含まれる。
 - 再描画、useState、useEffect、Hook呼び出し順の追跡、asyncコンポーネントは実装していない。Reactとの互換ランタイムではない。
 - Providerの値は参照として渡す。認証済みActorの値の変更管理やHTTPリクエストのライフサイクルは呼び出し元の責務。
 
 ## 実行中の通知
 
-createApplicationの第2引数へ既存のExecutionOptionsを渡せる。observeExecution、またはアプリのsubscribeExecutionから、実行ID・各ルールのlive span・完了通知を受け取る。Hookの要求別CommandとOperation登録が、既存の詳細実行の観測能力を引き継ぐ。dispatchとinspectは同じ詳細実行の経路を使い、観測のために業務を再実行しない。
+createApplicationの第2引数へ既存のExecutionOptionsを渡せる。observeExecution、またはアプリのsubscribeExecutionから、実行ID・各ルールのlive span・完了通知を受け取る。Hookの要求別CommandとOperation登録が、既存の詳細実行の観測能力を引き継ぐ。executeとexecuteDetailedは同じ詳細実行の経路を使い、観測のために業務を再実行しない。
 
 ```tsx
 const app = createApplication(<Expenses repository={repository} actor={actor} />, {
   sessionId: 'host-request-1',
   observeExecution: event => record(event),
 });
-await app.dispatch(approval, input);
+await app.execute(approval, input);
 ```
 
 観測者の失敗は業務のResultから分離する。業務I/Oの想定外の例外は元のままrejectし、終端通知はdefectとなる。既存defineApplicationのcrashedへの変換やprojection管理を、この入口に追加したものではない。
@@ -73,8 +68,8 @@ await app.dispatch(approval, input);
 [再送版のHook](../src/experiments/react-business/expense-replay.tsx)は、同じapproveExpenseを使う。
 
 ```tsx
-return useOperation({
-  name: replayedApproval.name,
+// defineOperationのHookが返す定義。
+return {
   load: (call: ApprovalRequest) => expenses.load(call.input, actor),
   execute: approveExpense,
   save: (change, call) => expenses.saveRequest(request(call), change),
@@ -84,14 +79,14 @@ return useOperation({
       || error.kind === 'InvalidState'
       || error.kind === 'RepositoryUnavailable',
   },
-});
+};
 ```
 
 業務関数の変更は不要。Hookにはlookupと回復対象の失敗の指定が追加され、saveは元の要求も受け取る。要求ごとのsaveクロージャを作り、同時実行でも最後に届いた要求で上書きしない。操作者はHook評価時にコピーして固定し、lookupとsaveへ同じ認証済みidentityを渡す。withReplayはdispatch入力をsnapshotしてからlookupと実行へ渡す。
 
-再送も `operationKey(approvalId, useReplayExpenseApproval)` という同じ入口を使う。Hookが再送を含む場合は、入力・保存値・エラーとReplayReportを推論する。明示的に型を書く既存のoperationKey/replayOperationKeyも維持する。再送設定に対してExecutionを返さないsaveは型検査で拒否する。通常実行と再送実行では戻り値とレポートの形が異なるため、ここは利用者が区別して理解する必要がある。
+再送もdefineOperationという同じ入口を使い、入力・保存値・エラーとReplayReportを推論する。明示的に型を書く既存のoperationKey/replayOperationKeyも維持する。再送設定に対してExecutionを返さないsaveは型検査で拒否する。通常実行と再送実行では戻り値とレポートの形が異なるため、ここは利用者が区別して理解する必要がある。
 
-アプリのinspectでは、再送境界のtraceと、実行した場合の `attempt.trace` を分けて返す。キャッシュが見つかった場合はattemptがnullとなる。失敗時はauthorize-approvalなどの個別ルールまで辿れ、成功済みreceiptならload・業務計算・saveを行わない。
+アプリのexecuteDetailedでは、再送境界のtraceと、実行した場合の `attempt.trace` を分けて返す。キャッシュが見つかった場合はattemptがnullとなる。失敗時はauthorize-approvalなどの個別ルールまで辿れ、成功済みreceiptならload・業務計算・saveを行わない。
 
 ## 休暇承認への適用
 

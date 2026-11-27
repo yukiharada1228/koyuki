@@ -1,4 +1,4 @@
-/** Experimental authoring API. Mount is synchronous; IO belongs to dispatch. */
+/** Experimental authoring API. Mount is synchronous; IO belongs to execute. */
 import { defineCommand, defineAction, process, workflow, withReplay, type Result, type Execution, type ReplayBoundary, type ReplayInputError, type ReplayReport } from './index.js';
 import { createObservation, type ObservationReport } from './observation.js';
 import { Workflow, type Rule, type WorkflowCapture, type StageObserver, type StageReceiver } from './workflow.js';
@@ -6,9 +6,17 @@ import { bindDetailed, bindDetailedFunction, invokeDetailed, registerDetailed } 
 import { executionSession, type ExecutionOptions, type OperationReport } from './execution.js';
 import type { ActionLoad, ActionReport } from './action.js';
 type Handler<I, O, E> = (input: I) => Promise<Result<O, E>>;
+type OperationHandler<I, O, E, D extends OperationReport<O, E>> = {
+  readonly run: Handler<I, O, E>;
+  readonly runDetailed: (input: I) => Promise<D>;
+};
 export interface OperationKey<I, O, E, D extends OperationReport<O, E> = ActionReport<O, E>> {
   readonly name: string;
   readonly contract?: { run: Handler<I, O, E>; detail: () => D };
+}
+export interface DeclaredOperation<I, O, E, D extends OperationReport<O, E>> extends OperationKey<I, O, E, D> {
+  /** A custom Hook: evaluated only within a mounted component's Provider scope. */
+  readonly use: () => OperationHandler<I, O, E, D>;
 }
 /** Infer the complete operation contract from a custom Hook without evaluating it. */
 export function operationKey<I, O, E, D extends OperationReport<NoInfer<O>, NoInfer<E>>>(name: string, useHandler: () => {
@@ -96,6 +104,9 @@ function commandFor<I, C, LE, O, DE, S, SE>(definition: Definition<I, C, LE, O, 
       (request: I, observe) => invokeDetailed(bindDetailed(forRequest(request)), request, observe)),
   };
 }
+type RuntimeDefinition = Definition<unknown, unknown, unknown, unknown, unknown, unknown, unknown> & {
+  replay?: ReplayBoundary<unknown, unknown, unknown, unknown>;
+};
 export function useOperation<I, C, LE, O, DE, S, SE, RE>(definition:
   Definition<I, C, LE, O, DE, Execution<S>, SE> & { replay: ReplayBoundary<NoInfer<I>, NoInfer<S>, LE | DE | SE, RE> }
 ): {
@@ -108,9 +119,10 @@ export function useOperation<I, C, LE, O, DE, S, SE>(definition:
   run: Handler<I, S, LE | DE | SE>;
   runDetailed: (input: I) => Promise<ActionReport<S, LE | DE | SE>>;
 };
-export function useOperation(definition: Definition<unknown, unknown, unknown, unknown, unknown, unknown, unknown> & {
-  replay?: ReplayBoundary<unknown, unknown, unknown, unknown>;
-}): unknown {
+export function useOperation(definition: RuntimeDefinition): unknown {
+  return useDefinition(definition);
+}
+function useDefinition(definition: RuntimeDefinition): unknown {
   frame();
   const command = commandFor(definition);
   // The replay overload requires save to return the atomic commit/replay envelope.
@@ -119,14 +131,36 @@ export function useOperation(definition: Definition<unknown, unknown, unknown, u
     runDetailed: (input: unknown) => Promise<ActionReport<Execution<unknown>, unknown>>;
   }, definition.replay) : command;
 }
+/** Declare an operation once; reuse it for JSX registration and execution. */
+export function defineOperation<I, C, LE, O, DE, S, SE, RE>(name: string, useDefinition: () =>
+  Omit<Definition<I, C, LE, O, DE, Execution<S>, SE>, 'name'> & { name?: never; replay: ReplayBoundary<NoInfer<I>, NoInfer<S>, LE | DE | SE, RE> }
+): DeclaredOperation<I, Execution<S>, LE | DE | SE | RE | ReplayInputError, ReplayReport<S, LE | DE | SE, RE>>;
+export function defineOperation<I, C, LE, O, DE, S, SE>(name: string, useDefinition: () =>
+  Omit<Definition<I, C, LE, O, DE, S, SE>, 'name'> & { name?: never; replay?: never }
+): DeclaredOperation<I, S, LE | DE | SE, ActionReport<S, LE | DE | SE>>;
+export function defineOperation(name: string, factory: () => object) {
+  return Object.freeze({ name, use() {
+    frame();
+    return useDefinition({ ...factory(), name } as RuntimeDefinition);
+  } });
+}
+export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation }: {
+  operation: DeclaredOperation<I, O, E, D>;
+  handler?: never;
+}): Node;
 export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation, handler }: {
   operation: OperationKey<I, O, E, D>;
   handler: { run: Handler<NoInfer<I>, NoInfer<O>, NoInfer<E>>; runDetailed: (input: NoInfer<I>) => Promise<NoInfer<D>> };
+}): Node;
+export function Operation<I, O, E, D extends OperationReport<O, E>>({ operation, handler }: {
+  operation: OperationKey<I, O, E, D>;
+  handler?: OperationHandler<I, O, E, D>;
 }): Node {
   return { evaluate() {
     const handlers = frame().handlers;
     if (handlers.has(operation)) throw new Error(`DuplicateOperation:${operation.name}`);
-    handlers.set(operation, { run: handler.run.bind(handler), runDetailed: bindDetailedFunction(handler, handler.runDetailed) });
+    const bound = handler ?? (operation as DeclaredOperation<I, O, E, D>).use();
+    handlers.set(operation, { run: bound.run.bind(bound), runDetailed: bindDetailedFunction(bound, bound.runDetailed) });
   } };
 }
 export function createApplication(root: Node, options?: ExecutionOptions) {
@@ -165,12 +199,17 @@ export function createApplication(root: Node, options?: ExecutionOptions) {
       throw cause;
     }
   }
+  function execute<I, O, E, D extends OperationReport<O, E>>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<Result<O, E>> {
+    entry(operation);
+    return inspect(operation, input).then(report => report.result);
+  }
   return Object.freeze({
     subscribeExecution: executions.subscribe,
-    dispatch<I, O, E, D extends OperationReport<O, E>>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<Result<O, E>> {
-      entry(operation);
-      return inspect(operation, input).then(report => report.result);
-    },
+    execute,
+    executeDetailed: inspect,
+    /** @deprecated Use execute. Executes the operation, including saving. */
+    dispatch: execute,
+    /** @deprecated Use executeDetailed. Executes the operation, including saving. */
     inspect,
   });
 }

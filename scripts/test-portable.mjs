@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { h as authoringH, Fragment as AuthoringFragment, createContext as authoringContext, useContext as authoringUseContext, useOperation as authoringUseOperation, Operation as AuthoringOperation, operationKey as authoringKey, createApplication as mountAuthoring } from './dist/authoring.js';
+import { h as authoringH, Fragment as AuthoringFragment, createContext as authoringContext, useContext as authoringUseContext, defineOperation as authoringDefineOperation, Operation as AuthoringOperation, createApplication as mountAuthoring } from './dist/authoring.js';
 import { exploreModel, sampleModel, sampleModelAsync } from './dist/testing.js';
 import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
@@ -22,12 +22,12 @@ export const result = (async () => {
   const reducedInitial = await sampleModelAsync({ initial: [100], seed: 0, events: () => [], step: n => ({ state: n, output: n }), check: async () => true, invariant: n => n <= 0, shrinkInitial: n => n > 1 ? [0, 1] : [], limits: { cases: 1, length: 0, shrinkAttempts: 20 } });
   if (reducedInitial.kind !== 'counterexample' || reducedInitial.witness.initial !== 1 || reducedInitial.original.initial !== 100) throw new Error('Portable initial shrinking failed');
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
-  const authoringDependency = authoringContext(), authoringOperationId = 'portable-authoring';
+  const authoringDependency = authoringContext();
   let authoringWrites = 0;
-  function usePortableBusiness() {
+  const authoringOperation = authoringDefineOperation('portable-authoring', () => {
     const dependency = authoringUseContext(authoringDependency);
     let receipt = null;
-    return authoringUseOperation({ name: authoringOperationId,
+    return {
       load: effectProcess().effect('authoring-read-input', async input => ok(input + dependency)),
       execute: effectProcess()
         .through(workflow('authoring-increment', input => ok(input + 1)))
@@ -35,18 +35,16 @@ export const result = (async () => {
         .through(workflow('authoring-double', input => ok(input.value * input.multiplier))),
       save: async value => { authoringWrites++; receipt = value; return ok({ kind: 'committed', value }); },
       replay: { lookup: () => ok(receipt === null ? { kind: 'missing' } : { kind: 'found', value: receipt }), resolveAfter: () => false },
-    });
-  }
-  const authoringOperation = authoringKey(authoringOperationId, usePortableBusiness);
+    };
+  });
   function PortableBusiness() {
-    const handler = usePortableBusiness();
-    return authoringH(AuthoringOperation, { operation: authoringOperation, handler });
+    return authoringH(AuthoringOperation, { operation: authoringOperation });
   }
   const authoringEvents = [];
   const authoringApp = mountAuthoring(authoringH(AuthoringFragment, null, authoringH(authoringDependency.Provider, { value: 10 }, authoringH(PortableBusiness, null))), { observeExecution: event => authoringEvents.push(event) });
   const authoringCapture = { input: (_value, step) => step, result: result => result.ok };
-  const authoringFirst = await authoringApp.inspect(authoringOperation, 2, authoringCapture);
-  const authoringReplay = await authoringApp.inspect(authoringOperation, 2, authoringCapture);
+  const authoringFirst = await authoringApp.executeDetailed(authoringOperation, 2, authoringCapture);
+  const authoringReplay = await authoringApp.executeDetailed(authoringOperation, 2, authoringCapture);
   if (authoringFirst.observationErrors.length || !authoringFirst.observations.some(row => row.step === 'authoring-read-policy') || authoringReplay.observations.some(row => row.step === 'authoring-double')) throw new Error('Portable selected authoring capture failed');
   if (!authoringFirst.result.ok || authoringFirst.result.value.value !== 26 || authoringReplay.attempt !== null || authoringWrites !== 1 || !authoringEvents.some(event => event.kind === 'span-started' && event.step === 'authoring-double')) throw new Error('Portable experimental authoring failed');
   let retryCalls = 0;

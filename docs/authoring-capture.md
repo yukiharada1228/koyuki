@@ -1,5 +1,7 @@
 # Hooksから途中状態を選択して観測する
 
+現在の推奨名はexecuteDetailed。旧inspectも同じ関数への互換aliasとして利用できる。どちらも観測だけでなく、業務の実行と保存を伴う。
+
 開発版koyuki/experimentalのcreateApplicationでは、inspectの第3引数へ既存のWorkflowCaptureを渡せる。明示した各段階の入力・Resultから、必要な項目だけを選び、同じ実行のレポートへ返す。
 
 ```tsx
@@ -10,7 +12,7 @@ function selectedState(value: unknown): string | null {
     && typeof state.kind === 'string' ? state.kind : null;
 }
 
-const report = await app.inspect(approval, input, {
+const report = await app.executeDetailed(approval, input, {
   input: (value, step) => ({ step, state: selectedState(value) }),
   result: result => result.ok ? selectedState(result.value) : null,
 });

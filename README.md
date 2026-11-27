@@ -33,7 +33,7 @@ SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用�
 [移行・型検査・書き心地の評価記録](docs/business-api-study.md)も参照できます。
 [利用者評価用の課題](examples/onboarding/README.md)は、開発版tarballと未実装の開始ファイルを独立フォルダーへ準備できます。利用者による評価結果はまだありません。
 
-React経験者向けの組み立て方は、開発版の実験API `koyuki/experimental` で試せます。[独立した試用プロジェクトの準備](examples/authoring/README.md)は、部品・Context・カスタムHooksから経費／休暇の業務関数、再送、traceまで接続します。公開済みalpha.5には含まれません。
+React経験者向けの組み立て方は、開発版の実験API `koyuki/experimental` で試せます。[独立した試用プロジェクトの準備](examples/authoring/README.md)は、部品・Context・カスタムHooksから経費・休暇・会員登録の業務関数、保存、再送、traceまで接続します。操作はdefineOperationで一度宣言し、JSX登録とexecute/executeDetailedで共有します。[APIの説明と比較](docs/authoring-declaration-api.md)を参照してください。公開済みalpha.5には含まれません。
 
 ## 最初の状態遷移
 

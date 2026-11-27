@@ -1,7 +1,7 @@
 /** @jsx h */
 import { process, workflow, ok, err, type Result } from '../../framework/index.js';
 import { validateApproval, approve, type Loaded, type AuthorizedApproval, type Input, type Actor } from '../../expenses/domain.js';
-import { h, createContext, useContext, useOperation, Operation, operationKey } from './runtime.js';
+import { h, createContext, useContext, defineOperation, Operation } from './runtime.js';
 import { ActorContext, ExpenseRepositoryContext, useActor, type ExpenseRepository } from './expense.js';
 export interface BudgetPolicy { readonly approvalLimit: number }
 export interface BudgetPolicyRepository {
@@ -25,24 +25,19 @@ export function budgetApprovalProcess(policies: BudgetPolicyRepository) {
     .effect('read-budget-policy', context => policies.read(context), 'budget')
     .through(approveWithBudgetPolicy);
 }
-const approvalId = 'expense.approve-with-budget.v1';
-export function useBudgetExpenseApproval() {
+export const budgetApproval = defineOperation('expense.approve-with-budget.v1', () => {
   const expenses = useContext(ExpenseRepositoryContext);
   const policies = useContext(BudgetPolicyContext);
   const actor = useActor();
-  return useOperation({ name: approvalId,
+  return {
     load: (input: Input) => expenses.load(input, actor),
     execute: budgetApprovalProcess(policies),
     save: change => expenses.save(change),
-  });
-}
-export const budgetApproval = operationKey(approvalId, useBudgetExpenseApproval);
-function ApproveBudgetExpense() {
-  const handler = useBudgetExpenseApproval();
-  return <Operation operation={budgetApproval} handler={handler} />;
-}
+  };
+});
+export const useBudgetExpenseApproval = budgetApproval.use;
 export function BudgetExpenses({ repository, policies, actor }: { repository: ExpenseRepository; policies: BudgetPolicyRepository; actor: Actor }) {
   return <ExpenseRepositoryContext.Provider value={repository}><BudgetPolicyContext.Provider value={policies}>
-    <ActorContext.Provider value={actor}><ApproveBudgetExpense /></ActorContext.Provider>
+    <ActorContext.Provider value={actor}><Operation operation={budgetApproval} /></ActorContext.Provider>
   </BudgetPolicyContext.Provider></ExpenseRepositoryContext.Provider>;
 }
