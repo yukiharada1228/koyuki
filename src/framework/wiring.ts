@@ -18,9 +18,10 @@ type RequiredCalls<N extends ResourceTable> = { [K in keyof N]: RequiredCall<N[K
 // Preserve unions accepted by one resource, intersect requirements of selections.
 type TableInput<N extends ResourceTable> = [RequiredCalls<N>] extends [never] ? unknown
   : [RequiredCalls<N>] extends [(input: infer I) => void] ? I : never;
-export type NeedsInput<N extends ResourceSpec> = [N] extends [BusinessResource<never, unknown, unknown>]
-  ? [RequiredCall<N>] extends [never] ? unknown : [RequiredCall<N>] extends [(input: infer I) => void] ? I : never
-  : TableInput<Extract<N, ResourceTable>>;
+type SpecCalls<N extends ResourceSpec> = N extends BusinessResource<never, unknown, unknown> ? RequiredCall<N>
+  : N extends ResourceTable ? (input: TableInput<N>) => void : never;
+export type NeedsInput<N extends ResourceSpec> = [SpecCalls<N>] extends [never] ? unknown
+  : [SpecCalls<N>] extends [(input: infer I) => void] ? I : never;
 export type NeedsValues<N extends ResourceSpec> = N extends BusinessResource<never, infer V, unknown> ? V : { readonly [K in keyof N]: N[K] extends BusinessResource<never, infer V, unknown> ? V : never };
 export type NeedsError<N extends ResourceSpec> = N extends BusinessResource<never, unknown, infer E> ? E : N[keyof N] extends BusinessResource<never, unknown, infer E> ? E : never;
 type ResourceLoader = (input: never) => Result<unknown, unknown> | Promise<Result<unknown, unknown>>;

@@ -57,3 +57,15 @@ if (false) {
   // @ts-expect-error Query input must satisfy its resources.
   refreshQuery(snapshotQuery, { input: (_state: number) => ({}), on: [changed], reduce: (_state: number, value) => value });
 }
+function selectedSpecContract(choose: boolean) {
+  const tenant = defineResource('tenant', () => (input: { tenant: string }) => ok(input.tenant));
+  const needs = choose ? current : { tenant };
+  const selected = defineOperation('selected-public-spec', { needs, execute: (_value: unknown) => ok(1), useSave: () => async (value: number) => ok(value) });
+  const mounted = createApplication(<Operation operation={selected} />);
+  void mounted.execute(selected, { id: 'one', tenant: 'two' });
+  // @ts-expect-error Every candidate resource requirement must be satisfied.
+  void mounted.execute(selected, { id: 'one' });
+  // @ts-expect-error The direct resource candidate still requires id.
+  void mounted.execute(selected, { tenant: 'two' });
+}
+void selectedSpecContract;

@@ -85,8 +85,8 @@ try {
   writeFileSync(join(consumer, 'model-sequences.test.ts'), readFileSync(join(root, 'src/model-sequences.test.ts'), 'utf8').replace("'./framework/testing.js'", "'koyuki/testing'"));
   mkdirSync(join(consumer, 'tags'), { recursive: true });
   mkdirSync(join(consumer, 'adapters'), { recursive: true });
-  for (const file of ['tags/domain.ts', 'tags/events.ts', 'tags/model.ts', 'tags/repository.ts', 'tags/identity.ts', 'tags/sqlite.ts', 'tags/lifecycle.ts', 'tags/model-testing.ts', 'tags/replay-model-testing.ts', 'adapters/sqlite-audit.ts']) {
-    writeFileSync(join(consumer, file), readFileSync(join(root, 'src', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'").replaceAll("'../framework/result.js'", "'koyuki'").replaceAll("'../framework/testing.js'", "'koyuki/testing'"));
+  for (const file of ['tags/domain.ts', 'tags/events.ts', 'tags/model.ts', 'tags/repository.ts', 'tags/identity.ts', 'tags/sqlite.ts', 'tags/lifecycle.ts', 'tags/model-testing.ts', 'tags/replay-model-testing.ts', 'adapters/sqlite-audit.ts', 'adapters/sqlite-business-events.ts']) {
+    writeFileSync(join(consumer, file), readFileSync(join(root, 'src', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'").replaceAll("'../framework/authoring.js'", "'koyuki/experimental'").replaceAll("'../framework/result.js'", "'koyuki'").replaceAll("'../framework/testing.js'", "'koyuki/testing'"));
   }
   writeFileSync(join(consumer, 'generated-tag-model.test.ts'), generateModelTest('./tags/model-testing.js'));
   writeFileSync(join(consumer, 'tag-prepersistence.test.ts'), readFileSync(join(root, 'src/tag-prepersistence.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
@@ -100,7 +100,7 @@ try {
   mkdirSync(join(consumer, 'expenses'));
   mkdirSync(join(consumer, 'examples'), { recursive: true });
   for (const file of ['expenses/domain.ts', 'expenses/application.ts', 'expenses/repository.ts', 'expenses/sqlite.ts', 'expenses/sqlite-replay.ts', 'expenses/replay.ts', 'expenses/model-testing.ts', 'expenses/request-model-testing.ts', 'expenses/race-model-testing.ts', 'examples/expense.ts']) {
-    writeFileSync(join(consumer, file), readFileSync(join(root, 'src', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'").replaceAll("'../framework/testing.js'", "'koyuki/testing'"));
+    writeFileSync(join(consumer, file), readFileSync(join(root, 'src', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'").replaceAll("'../framework/authoring.js'", "'koyuki/experimental'").replaceAll("'../framework/testing.js'", "'koyuki/testing'"));
   }
   writeFileSync(join(consumer, 'generated-expense-model.test.ts'), generateModelTest('./expenses/model-testing.js'));
   writeFileSync(join(consumer, 'generated-expense-request-model.test.ts'), generateModelTest('./expenses/request-model-testing.js'));
@@ -110,7 +110,7 @@ try {
   writeFileSync(join(consumer, 'expense-replay-version.test.ts'), readFileSync(join(root, 'src/expense-replay-version.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   mkdirSync(join(consumer, 'shipping'));
   for (const file of ['domain.ts', 'feature.ts']) writeFileSync(join(consumer, 'shipping', file),
-    readFileSync(join(root, 'src/shipping', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'"));
+    readFileSync(join(root, 'src/shipping', file), 'utf8').replaceAll("'../framework/index.js'", "'koyuki'").replaceAll("'../framework/authoring.js'", "'koyuki/experimental'"));
   for (const file of ['shipping.test.ts', 'flow-examples.test.ts', 'model-unions.test.ts']) writeFileSync(join(consumer, file),
     readFileSync(join(root, 'src', file), 'utf8').replace("'./framework/index.js'", "'koyuki'"));
   writeFileSync(join(consumer, 'declaration-ownership.test.ts'), readFileSync(join(root, 'src/declaration-ownership.test.ts'), 'utf8').replace("'./framework/index.js'", "'koyuki'"));

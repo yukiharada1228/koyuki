@@ -190,3 +190,25 @@ test('a connected operation snapshots request data before asynchronous resource 
   const result = app.execute(op, input); await ready; input.id = 'changed'; release();
   assert.deepEqual(await result, ok({ first: 'original', second: 'original', savedId: 'original' }));
 });
+
+test('runtime-selected resource and table declarations require the input of every possible branch', async () => {
+  const id = defineResource('selected-id', () => (input: { id: string }) => ok(input.id));
+  const tenant = defineResource('selected-tenant', () => (input: { tenant: string }) => ok(input.tenant));
+  for (const selected of [true, false]) {
+    const needs = selected ? id : { tenant };
+    const op = defineOperation('selected-spec', { needs, execute: (_value: unknown) => ok(1), useSave: () => async (value: number) => ok(value) });
+    const tableNeeds: { id: typeof id } | { tenant: typeof tenant } = selected ? { id } : { tenant };
+    const tables = defineOperation('selected-tables', { needs: tableNeeds, execute: (_value: unknown) => ok(1), useSave: () => async (value: number) => ok(value) });
+    const app = createApplication(<Fragment><Operation operation={op} /><Operation operation={tables} /></Fragment>);
+    assert.deepEqual(await app.execute(op, { id: 'one', tenant: 'two' }), ok(1));
+    assert.deepEqual(await app.execute(tables, { id: 'one', tenant: 'two' }), ok(1));
+    if (false) {
+      // @ts-expect-error The selected table could require tenant.
+      void app.execute(op, { id: 'one' });
+      // @ts-expect-error The selected direct resource could require id.
+      void app.execute(op, { tenant: 'two' });
+      // @ts-expect-error Disjoint table alternatives still require every candidate's input.
+      void app.execute(tables, { id: 'one' });
+    }
+  }
+});
