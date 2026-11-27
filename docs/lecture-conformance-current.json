@@ -1,0 +1,2078 @@
+{
+  "implementationBaseCommit": "a436f39f6a7d70325d9ac61735ccaf99fe85e83a",
+  "trackedWorkingTreeAtStart": "",
+  "scope": "Current implementation regression evidence mapped to all saved lecture sections. Passing gates do not verify original audio, human usability or every semantic claim.",
+  "completeLectureConformanceProven": false,
+  "blockers": [
+    "Ten original-audio intervals remain unreviewed; no direct-audio claim is made.",
+    "Nine partial source assessments and general inference/experience/operational limits remain; test success does not remove them."
+  ],
+  "counts": {
+    "context": 6,
+    "design-choice": 25,
+    "experience": 8,
+    "supported": 36,
+    "partial": 9
+  },
+  "sections": [
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-01",
+      "startSeconds": 0,
+      "endSeconds": 75,
+      "topic": "導入と自己紹介",
+      "status": "context",
+      "assessment": "登壇時の背景と個人の経験。現在の役職や製品状況を述べる根拠にはしない。",
+      "evidence": [
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-02",
+      "startSeconds": 75,
+      "endSeconds": 124,
+      "topic": "実装パラダイムを選び直す背景",
+      "status": "design-choice",
+      "assessment": "クラス中心の実装から別の表現を試す動機。すべてのクラスを禁止する要件ではない。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-03",
+      "startSeconds": 124,
+      "endSeconds": 306,
+      "topic": "フロントとバックの思考の差",
+      "status": "experience",
+      "assessment": "Reactの小さな関数とバックエンドの実装負担という問題提起。Koyukiでの認知負荷改善は未測定。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-04",
+      "startSeconds": 306,
+      "endSeconds": 499,
+      "topic": "CQRSとGraphQLの取得形状",
+      "status": "design-choice",
+      "assessment": "参照の取得形状と更新時の集約・不変条件を分ける。DBやサービスの物理分離を要求しない。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-05",
+      "startSeconds": 499,
+      "endSeconds": 639,
+      "topic": "Prismaと参照・更新の役割",
+      "status": "supported",
+      "assessment": "当該業務で参照が単純という条件付きの説明。Queryの認可や必要な業務計算を省略しない。Prisma採用は必須ではない。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "examples/prisma-stock/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-06",
+      "startSeconds": 639,
+      "endSeconds": 693,
+      "topic": "宣言的な開発への問題意識",
+      "status": "design-choice",
+      "assessment": "外部記事の紹介と方向性。紹介先の全仕様をそのまま実装する要件にはしない。",
+      "evidence": [
+        "docs/framework-goal.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-07",
+      "startSeconds": 693,
+      "endSeconds": 1044,
+      "topic": "Elm・Reduxのモデルと実行ループ",
+      "status": "supported",
+      "assessment": "Programのupdateとcommand、Applicationの状態・view・dispatchに対応。DOM描画や永続的な実行基盤まで含まない。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/framework/application.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-08",
+      "startSeconds": 1044,
+      "endSeconds": 1101,
+      "topic": "バックエンドのイベントと状態",
+      "status": "design-choice",
+      "assessment": "クリックに限らず業務上の出来事からモデルの変化を考える。イベント名の自動発見ではない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-09",
+      "startSeconds": 1101,
+      "endSeconds": 1240,
+      "topic": "永続化前から始まる予約のモデル",
+      "status": "supported",
+      "assessment": "DBに行ができる前の入力・検証済み・作成計画をタグの型と純粋な関数列で表す。candidate IDはhostがsnapshotへ供給し、CreatedTagのdataではIDを必須にする。予約アプリ全体やIDの採番時刻を一律に再現する要件ではない。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/tags/domain.ts",
+        "src/tag-prepersistence.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-10",
+      "startSeconds": 1240,
+      "endSeconds": 1423,
+      "topic": "IO・純粋計算・IOと既存アーキテクチャ",
+      "status": "supported",
+      "assessment": "入力から状態遷移、保存への境界を保つ。関数型とRepository・集約の併用が可能。",
+      "evidence": [
+        "src/framework/command.ts",
+        "src/framework/use-case.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-11",
+      "startSeconds": 1423,
+      "endSeconds": 1470,
+      "topic": "型とResult・例外の扱い",
+      "status": "supported",
+      "assessment": "想定失敗はResultに表す。注釈がthrowを禁止するわけではなく、予期しない欠陥と業務失敗は区別する。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/framework/application.ts",
+        "docs/result-boundaries.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-12",
+      "startSeconds": 1470,
+      "endSeconds": 1616,
+      "topic": "タグの未検証・検証済み・作成後",
+      "status": "supported",
+      "assessment": "タグの未検証・検証済み状態には完成したdataを置かず、CreatedTagではID・版・順序を必須にする。検証・一意性・上限の証明を省略する接続は拒否する。restoreTagは保存形式の値を検証するconstructorであり、戻り値名PersistedTagだけでDBへ保存済みという事実を証明しない。保存と再取得はrepositoryの契約として別に検査する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/registration/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/tags/domain.ts",
+        "src/tag-prepersistence.test.ts",
+        "src/tags.test.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-13",
+      "startSeconds": 1616,
+      "endSeconds": 1829,
+      "topic": "直和・直積と不可能な組み合わせ",
+      "status": "supported",
+      "assessment": "状態別Unionとprivate brandで接続を制約する。any・assertion・未検証JSONまで排除できるわけではない。",
+      "evidence": [
+        "src/business-api-types.test.ts",
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-14",
+      "startSeconds": 1829,
+      "endSeconds": 1950,
+      "topic": "状態遷移の入出力を型へ表す",
+      "status": "supported",
+      "assessment": "普通の関数が変更前後の型を結び、宣言から実行へ接続する。登録のstart/confirmに加え、購買の注文・請求書・支払・入荷の生成関数を、実際の次状態型へ精密化した。検証成功後の注文placed、入荷acceptedと関連注文placedも型へ表す。通常実行では実際のgeneric saveが型を保持する範囲だけ精密化し、広い保存契約や過去の再送結果は狭めない。型整合性は業務仕様の正しさそのものではない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/experiments/business.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/registration/domain.ts",
+        "src/registration.test.ts",
+        "scripts/test-registration-package.mjs",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-15",
+      "startSeconds": 1950,
+      "endSeconds": 2132,
+      "topic": "失敗を含む計算をResultで合成",
+      "status": "supported",
+      "assessment": "最初の失敗で後続を止め、成功値と失敗型を保持する。neverthrow依存は採用せずコアのResultで実現。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-16",
+      "startSeconds": 2132,
+      "endSeconds": 2341,
+      "topic": "入力・ワークフロー・保存の一本道",
+      "status": "supported",
+      "assessment": "loadと純粋な計算とsaveを共通エンジンへ束縛。認知負荷の低下という評価は別途実測が必要。",
+      "evidence": [
+        "src/framework/command.ts",
+        "src/framework/group-runtime.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-17",
+      "startSeconds": 2341,
+      "endSeconds": 2431,
+      "topic": "Repositoryと非同期境界",
+      "status": "supported",
+      "assessment": "集約の保存とPromiseのResult変換を外側へ置く。Repository不要という書籍の意見を必須ルールへ置き換えない。",
+      "evidence": [
+        "docs/result-boundaries.md",
+        "src/framework/result.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-18",
+      "startSeconds": 2431,
+      "endSeconds": 2544,
+      "topic": "ドメインの近くへロジックを集める",
+      "status": "supported",
+      "assessment": "状態と関連する業務関数をモジュールへ置き、ワークフローを手順の合成へ限定する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/experiments/expense-business.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-19",
+      "startSeconds": 2544,
+      "endSeconds": 2817,
+      "topic": "取得済みモデルと入力をCommandにまとめる",
+      "status": "supported",
+      "assessment": "更新では取得済みモデルと入力をまとめ、検証前後の文脈を普通の関数で接続する。注文・入荷の共通検証が実際に確認した状態も成功型へ反映し、別の状態へ差し替えた文脈の再利用を拒否する。readonlyやprivate印は、任意のaliasによる変更や非公開製品の仕様の等価性まで証明しない。",
+      "evidence": [
+        "src/experiments/expense-business.ts",
+        "src/business-api-migration.test.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-20",
+      "startSeconds": 2817,
+      "endSeconds": 3008,
+      "topic": "途中I/Oと部分適用による注入",
+      "status": "supported",
+      "assessment": "依存関数を外で束縛してDB型の漏出を抑える。引数からDB型が消えても実際のI/Oが純粋になるわけではない。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/registration/delivery.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-21",
+      "startSeconds": 3008,
+      "endSeconds": 3043,
+      "topic": "I/Oで分断されるワークフローの提案",
+      "status": "supported",
+      "assessment": "講演時には未実施の案として扱う。Processのeffectとthroughで純粋な区間とI/Oを接続する。",
+      "evidence": [
+        "docs/process.md",
+        "src/framework/process.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-22",
+      "startSeconds": 3043,
+      "endSeconds": 3139,
+      "topic": "イベント接続をフレームワークへ委ねたい",
+      "status": "partial",
+      "assessment": "開発版businessが通常関数列・明示Workflowの型接続、load/Rule/save、Resultの失敗停止を調停し、Applicationがdispatch・実行状態・viewを管理する。購買25操作のうち21操作を複数段階で宣言し、32回の成功130境界、代表失敗274境界を通常TS/helper/Koyukiで比較する。I/O例外とApplicationのcrashedも選んだ条件で別に検査する。全経路・全内部接続・独立利用者のDXを検証した結果ではなく、公開済みnpm alpha.5への搭載とも区別する。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "src/experiments/business.ts",
+        "src/framework/application.ts",
+        "docs/business.md",
+        "src/framework/business.ts",
+        "docs/procurement-approval-change.md",
+        "docs/procurement-load-composition.md",
+        "src/procurement-load-composition.test.ts",
+        "docs/declaration-ownership.md",
+        "src/declaration-ownership.test.ts",
+        "docs/application-execution.md",
+        "src/application-execution.test.ts",
+        "docs/flow-structure.md",
+        "src/flow-examples.test.ts",
+        "docs/lecture-core-focus.md",
+        "src/live-execution.test.ts",
+        "docs/effect-projection.md",
+        "src/process-projection.test.ts",
+        "docs/procurement-framework-context.md",
+        "src/procurement-framework-context.test.ts",
+        "docs/business-operation-table.md",
+        "src/business-operation-table.test.ts",
+        "docs/business-local-load.md",
+        "docs/business-scale.md",
+        "scripts/check-business-scale.mjs",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/business-generic-load.md",
+        "docs/business-generic-checks.md",
+        "src/business-generic-check.test.ts",
+        "src/business-generic-proof.test.ts",
+        "docs/procurement-shared-guards.md",
+        "docs/procurement-receipt-pipeline.md",
+        "docs/lecture-partial-reconciliation.md",
+        "docs/procurement-failure-observation.md",
+        "src/procurement-failure-observation.test.ts",
+        "docs/procurement-read-failure-observation.md",
+        "docs/procurement-io-exceptions.md",
+        "src/procurement-io-exceptions.test.ts",
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts",
+        "docs/procurement-request-planning.md",
+        "src/procurement-request-planning.test.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/domain.ts",
+        "docs/development-start.md",
+        "docs/procurement-request-edit.md",
+        "src/procurement-application-io-exceptions.test.ts",
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts",
+        "docs/procurement-direct-receipt-stages.md",
+        "docs/step-generic-first.md",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx",
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs",
+        "src/authoring-inferred-key.test.tsx",
+        "docs/authoring-process.md",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "docs/authoring-capture.md",
+        "src/authoring-capture.test.tsx",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/captured-exports.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx",
+        "src/authoring-declaration.test.tsx",
+        "docs/authoring-names-and-reuse-review.md",
+        "docs/authoring-specification-change.md"
+      ],
+      "remaining": [
+        "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
+      ]
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-23",
+      "startSeconds": 3139,
+      "endSeconds": 3250,
+      "topic": "既存の設計とplain dataの利点",
+      "status": "experience",
+      "assessment": "構成要素は既存のまま、内部表現を変えるという評価。DTO削減は公開項目の選別や秘密情報の除外を不要にしない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-24",
+      "startSeconds": 3250,
+      "endSeconds": 3292,
+      "topic": "入れ子やandThen/mapの負担",
+      "status": "partial",
+      "assessment": "通常関数列・withInput・Processの成功値投影で、宣言した境界のResult接続と停止を委譲する。genericなwithInputの元の文脈と、組から組への投影の内側のinputを実関数の保証で保持する。入荷・返品・数量訂正は名前付き関数列へ直接接続し、在庫文脈の重複注釈3つと4つの接続用Workflowを削除した。状態型・検証証明・段階名・失敗停止は維持する。名前なしのwithInput直接呼出し、任意の多相変換、互換入口等の接続、独立利用者の評価は残る。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作も後続で型の拡大を解消し、一般の推論制限は別の残件として維持する。 入荷・在庫を含む購買全25操作の固有のエラーkindを通常・詳細・再送で3方式比較する。検証証明・成功状態・保存adapterの失敗を保持し、全入力の網羅や業務仕様の証明とは区別する。",
+      "evidence": [
+        "docs/collection-validation.md",
+        "docs/declarative-transitions.md",
+        "docs/procurement-load-composition.md",
+        "src/experiments/procurement/context-process.ts",
+        "src/procurement-load-composition.test.ts",
+        "docs/transition-inference-study.md",
+        "docs/effect-projection.md",
+        "src/process-projection.test.ts",
+        "docs/procurement-framework-context.md",
+        "src/procurement-framework-context.test.ts",
+        "docs/transition-inference-compiler-comparison.json",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/business-generic-checks.md",
+        "docs/procurement-receipt-pipeline.md",
+        "src/experiments/procurement/receipt-pipeline.ts",
+        "src/transition-inline-step.test.ts",
+        "docs/lecture-partial-reconciliation.md",
+        "docs/business-input-pair-inference.md",
+        "docs/business-input-pair-inference.json",
+        "scripts/fixtures/business-input-pair.ts",
+        "scripts/investigate-transition-inference.mjs",
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts",
+        "docs/procurement-request-planning.md",
+        "src/procurement-request-planning.test.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/domain.ts",
+        "docs/procurement-request-creation.md",
+        "docs/procurement-request-edit.md",
+        "docs/step-generic-first.md",
+        "docs/business-pair-binding-investigation.md",
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts",
+        "docs/procurement-direct-receipt-stages.md",
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/check-runtime-package.mjs",
+        "docs/inline-inference-compiler-boundary.md",
+        "docs/inline-inference-compiler-control.json",
+        "scripts/investigate-generic-call-skip.mjs",
+        "scripts/inline-inference-observation.mjs",
+        "scripts/fixtures/transition-inference-limit.ts",
+        "scripts/fixtures/transition-inference-minimal.ts",
+        "docs/procurement-commercial-errors.md",
+        "src/procurement-commercial-errors.test.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/procurement-order-guard.test.ts",
+        "src/procurement-request-creation.test.ts",
+        "src/procurement-request-edit.test.ts",
+        "src/procurement.test.ts",
+        "docs/procurement-logistics-errors.md",
+        "src/procurement-logistics-errors.test.ts",
+        "src/experiments/procurement/inventory.ts",
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/business-later-request.md",
+        "docs/onboarding-ai-review.md",
+        "src/business-later-request.test.ts",
+        "scripts/test-onboarding.mjs",
+        "docs/business-verified-request.md",
+        "src/business-verified-request.test.ts",
+        "scripts/fixtures/onboarding-staged-solution.ts",
+        "scripts/check-exported-business.mjs",
+        "scripts/fixtures/business-verified-exports.ts",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx",
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs",
+        "src/authoring-inferred-key.test.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx",
+        "src/authoring-declaration.test.tsx",
+        "src/business-request-prefix.test.ts"
+      ],
+      "remaining": [
+        "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
+        "名前なしの配列要素としてwithInputを直接呼ぶ例は7.0.2で入力がneverとなり不受理。名前付きstepのinline呼出しは対応し、先行する変数束縛も利用できる。monomorphicな入力契約を超える文脈の保持や任意のgeneric変換を保証しない。在庫文脈の重複注釈3つは直接接続で削除済みだが、通常の業務型宣言は必要。",
+        "名前付きstepで通る具体例から、名前なしinlineや任意のgeneric入力保持・注釈省略、独立利用者の開発体験の評価まで達成済みとはしない。"
+      ],
+      "laterRequestFollowUp": {
+        "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
+        "evidence": [
+          "docs/business-later-request.md",
+          "docs/onboarding-ai-review.md",
+          "src/business-later-request.test.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/test-onboarding.mjs"
+        ]
+      },
+      "verifiedRequestFollowUp": {
+        "scope": "Context-preserving proof-producing checks infer later requests; AI exercise follow-up, not full lecture completion or direct audio review.",
+        "evidence": [
+          "docs/business-verified-request.md",
+          "src/business-verified-request.test.ts",
+          "scripts/fixtures/onboarding-staged-solution.ts",
+          "scripts/test-onboarding.mjs",
+          "scripts/test-business-package.mjs",
+          "scripts/check-exported-business.mjs",
+          "scripts/fixtures/business-verified-exports.ts"
+        ]
+      },
+      "inferredChecksFollowUp": {
+        "scope": "Inferred early-return Result alternatives preserve later request inference. Twelve loader type arguments were removed from the procurement application; three nested-context cases remain explicit. Product runtime is unchanged; no full-lecture, direct-audio or independent-human evaluation claim.",
+        "evidence": [
+          "docs/business-inferred-checks.md",
+          "src/business-inferred-checks.test.ts",
+          "src/business-later-request.test.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/test-business-package.mjs"
+        ],
+        "supersededBy": "docs/business-request-prefix.md"
+      },
+      "requestPrefixFollowUp": {
+        "scope": "All fifteen operation-level loader type arguments in the procurement application are now omitted. Request prefixes stop before nested contexts are mistaken for raw input. The declared parameter is captured before the unchanged strict input comparison. Actual loader context guarantees, private facts, variants, error types and runtime remain unchanged. The 64-stage/62-field case is checked from the packed SDK. No full-lecture, direct-audio or new independent-user claim.",
+        "evidence": [
+          "docs/business-request-prefix.md",
+          "src/business-request-prefix.test.ts",
+          "src/framework/business.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/check-request-prefix-scale.mjs",
+          "scripts/test-business-package.mjs"
+        ]
+      },
+      "scopedRequestFollowUp": {
+        "scope": "Seed request prefixes with the actual loader input. Loader-only conditions and later business fields are both required in ordinary/detailed/replay calls. The former scoped declaration refusal is now a valid composition; missing/wrong scope is refused at the call site. Scoped generic factories emit declarations without a final API annotation. Runtime, public API names, lecture source coverage and partial statuses are unchanged.",
+        "evidence": [
+          "docs/business-scoped-request.md",
+          "src/business-scoped-request.test.ts",
+          "src/framework/business.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/fixtures/business-verified-exports.ts",
+          "scripts/check-exported-business.mjs"
+        ]
+      }
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-25",
+      "startSeconds": 3292,
+      "endSeconds": 3360,
+      "topic": "まとめと今後の可能性",
+      "status": "design-choice",
+      "assessment": "宣言的な開発を試した結果と将来像。講演自体も未完成の構想を含み、普及を保証していない。",
+      "evidence": [
+        "docs/framework-goal.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-26",
+      "startSeconds": 3360,
+      "endSeconds": 3414,
+      "topic": "質疑の導入",
+      "status": "context",
+      "assessment": "司会の自己紹介と質問の開始。",
+      "evidence": [
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-27",
+      "startSeconds": 3414,
+      "endSeconds": 3547,
+      "topic": "トランザクションと共有contextの提案",
+      "status": "supported",
+      "assessment": "講演時点では未実施の共有context案。Koyukiでは同期のcreateSyncTransactionとcallback型inTransactionを用意し、SQLiteの保存とPrismaの同一contextへ接続した。Result失敗・履歴失敗・例外・commit失敗、誤ったhostのcallback再実行等を検査する。commit結果不明を未保存と断定せず、任意DBへの原子性や外部IOの巻戻しは保証しない。",
+      "evidence": [
+        "examples/prisma-stock/transaction.ts",
+        "examples/prisma-stock/stock.test.ts",
+        "docs/transactions.md",
+        "src/framework/transaction.ts",
+        "src/transaction.test.ts",
+        "src/async-transaction.test.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-28",
+      "startSeconds": 3547,
+      "endSeconds": 3667,
+      "topic": "必要な範囲の関数型を採用する",
+      "status": "design-choice",
+      "assessment": "宣言が目的で、関数型の道具一式の導入は目的ではない。通常TypeScriptと小さな実行境界を維持する。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "src/framework/result.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-29",
+      "startSeconds": 3667,
+      "endSeconds": 3782,
+      "topic": "TypeScriptとエコシステムを選ぶ理由",
+      "status": "experience",
+      "assessment": "フロントと同じ言語、当時のPrismaなどの利点。Pythonで実装不可能という主張や現在の言語ランキングにはしない。",
+      "evidence": [
+        "docs/business-api-study.md",
+        "examples/prisma-stock/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-30",
+      "startSeconds": 3782,
+      "endSeconds": 3879,
+      "topic": "RESTとGraphQLの役割",
+      "status": "supported",
+      "assessment": "transport非依存の業務操作を両方から呼び出す例がある。RESTでクライアントキャッシュが不可能という一般論にはしない。",
+      "evidence": [
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-31",
+      "startSeconds": 3879,
+      "endSeconds": 3988,
+      "topic": "登録・メール・人の確認の連携",
+      "status": "partial",
+      "assessment": "講演では未経験の提案。登録とoutboxの原子保存・配送lease・確認の別操作を実装し別プロセスで検証。ホスト側の配送中のlease更新と所有権喪失時の停止も実SQLiteの二接続で検査した。",
+      "evidence": [
+        "docs/registration-events.md",
+        "src/registration/delivery.ts",
+        "docs/registration-lease-maintenance.md",
+        "src/registration/lease-delivery.ts",
+        "src/registration-lease.test.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "docs/lecture-partial-reconciliation.md",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx",
+        "scripts/test-authoring-package.mjs"
+      ],
+      "remaining": [
+        "実メールprovider統合、常駐scheduler、backoff・最大試行数・dead letter、運用環境でのlease維持は未検証。at-least-once配送はexactly-onceを保証しない。"
+      ]
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-32",
+      "startSeconds": 3988,
+      "endSeconds": 4053,
+      "topic": "チームへの導入経験",
+      "status": "experience",
+      "assessment": "小さなチームの経験と型の助言。新入社員100人や別組織での習得を確認した結果ではない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-33",
+      "startSeconds": 4053,
+      "endSeconds": 4217,
+      "topic": "Resultは結果表現だけでなく計算の合成",
+      "status": "supported",
+      "assessment": "成功時のみ次へ進む共通実行で、各関数のnullチェックや失敗伝播を繰り返さない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/framework/group-runtime.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-34",
+      "startSeconds": 4217,
+      "endSeconds": 4372,
+      "topic": "Event Stormingとドメイン知識",
+      "status": "design-choice",
+      "assessment": "モデルの発見は専門知識と対話の責務。講演でもチーム全体での理想的な実施は未達とされ、自動モデリングを実装要件にしない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-35",
+      "startSeconds": 4372,
+      "endSeconds": 4433,
+      "topic": "独立検証の複数エラー収集",
+      "status": "supported",
+      "assessment": "固定フィールドはcollect、可変長の独立同期検証はcollectEach。順次依存する処理の失敗停止とは区別。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/collection-validation.test.ts",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-36",
+      "startSeconds": 4433,
+      "endSeconds": 4480,
+      "topic": "純粋なテストとResultを取り出す負担",
+      "status": "partial",
+      "assessment": "純粋関数を直接テストでき、Result全体を比較する既存例もあるが、必要に応じた判定・取り出しの記述は残る。字幕再読では負担の指摘であり専用テストDSLの仕様指定とは扱わない。削減効果と独立利用者の評価は未実証。 Result全体の比較と、成功判定による型の絞り込みを実際の購買検査でも使用する。専用DSLの不在を、それだけで講演指定の必須機能の欠落とは扱わない。",
+      "evidence": [
+        "src/collection-validation.test.ts",
+        "docs/validation-fields.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json",
+        "src/procurement-order-guard.test.ts",
+        "src/procurement-shared-guards.test.ts",
+        "docs/lecture-partial-reconciliation.md",
+        "src/authoring-leave-domain.test.ts",
+        "docs/lecture-source-requirements-review.md"
+      ],
+      "remaining": [
+        "必要に応じたResultの判定・取り出しは残る。専用テストDSLは講演で仕様指定されておらず、追加の必要性・削減効果を実際の利用者の課題で評価する。"
+      ]
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-37",
+      "startSeconds": 4480,
+      "endSeconds": 4673,
+      "topic": "書き心地の差と普及の見通し",
+      "status": "experience",
+      "assessment": "概念が近くなっても実装上の差は残るという回答。将来普及やチームの受容性をコードで保証しない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-38",
+      "startSeconds": 4673,
+      "endSeconds": 4779,
+      "topic": "共有する型と共有しないドメイン",
+      "status": "design-choice",
+      "assessment": "汎用のID型などの共有と、バックエンドのドメイン・公開API境界を区別。ブラウザへドメインを自動公開しない。",
+      "evidence": [
+        "src/framework/identity.ts",
+        "examples/leave-http/README.md",
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "izV1h6o3hgQ",
+      "id": "iz-39",
+      "startSeconds": 4779,
+      "endSeconds": 4890,
+      "topic": "終了と案内",
+      "status": "context",
+      "assessment": "登壇時の採用案内と挨拶。現在の募集状況やライブラリ機能に読み替えない。",
+      "evidence": [
+        "docs/lecture-local-asr-iz-followup.md",
+        "docs/lecture-local-asr-iz-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-01",
+      "startSeconds": 0,
+      "endSeconds": 136,
+      "topic": "導入と発表の対象",
+      "status": "context",
+      "assessment": "飲食店向けサービスの実践と、ドメイン外の実装との関係を説明する発表。フレームワークの機能要件ではない。",
+      "evidence": [
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-02",
+      "startSeconds": 136,
+      "endSeconds": 191,
+      "topic": "設計全体は従来と連続する",
+      "status": "design-choice",
+      "assessment": "関数型の適用で全層を置き換えない。Koyukiも通常のadapterと既存アーキテクチャを残す。",
+      "evidence": [
+        "src/expenses/repository.ts",
+        "examples/leave-http/http.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-03",
+      "startSeconds": 191,
+      "endSeconds": 308,
+      "topic": "書籍から採用する点と採用しない点",
+      "status": "design-choice",
+      "assessment": "型・不変な状態遷移を採り、型と振る舞いの整理は既存の集約・モジュールを維持する。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/tags/domain.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-04",
+      "startSeconds": 308,
+      "endSeconds": 458,
+      "topic": "型による構造とResult合成",
+      "status": "supported",
+      "assessment": "通常の型と関数を使い、入力を直接変更しない業務例、型付きの失敗停止を用意する。任意の利用者関数の純粋性は強制しない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/business-api-types.test.ts",
+        "src/shipping.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-05",
+      "startSeconds": 458,
+      "endSeconds": 588,
+      "topic": "Union・brand・検証付きの生成",
+      "status": "supported",
+      "assessment": "状態Unionと非公開の証明を実例で使い、外部の値はrestore等で検証する。単なる型assertionを安全な生成とは扱わない。タグの復元constructorが保存形式の型を返すことと、DBに実在することの証明は異なる。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts",
+        "src/business-api-types.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json",
+        "src/tags/domain.ts",
+        "src/tag-prepersistence.test.ts",
+        "src/registration.test.ts",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-06",
+      "startSeconds": 588,
+      "endSeconds": 779,
+      "topic": "変更前後を引数と戻り値に表す",
+      "status": "supported",
+      "assessment": "業務関数の入力・出力と接続を型で表現する。登録のChange variantと、購買の注文・財務・入荷の次状態型を厳密一致で検査し、戻り型だけを広げる対照では契約が失敗する。型保持を宣言する購買保存adapterでは、cloneが失う値を更新前に拒否する。coreのopaque値対応、monomorphicな広い保存契約、履歴再送の広い型は区別し、仕様そのものの正しさを保証しない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/business-api-types.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json",
+        "src/registration/domain.ts",
+        "src/registration.test.ts",
+        "scripts/test-registration-package.mjs",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-07",
+      "startSeconds": 779,
+      "endSeconds": 1078,
+      "topic": "サブステップから業務フローを構成",
+      "status": "supported",
+      "assessment": "workflow/transitionと開発版businessで成功値を次へ渡し、最初の失敗で後続と保存を止める。途中I/Oや保存の境界は別に宣言し、関数内部の業務判断をruntimeが推測するわけではない。",
+      "evidence": [
+        "src/framework/model.ts",
+        "src/experiments/business.ts",
+        "src/business-api-study.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json",
+        "src/framework/business.ts",
+        "src/procurement-request-creation.test.ts",
+        "src/procurement-request-edit.test.ts"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-08",
+      "startSeconds": 1078,
+      "endSeconds": 1211,
+      "topic": "更新と参照・DBアクセスの分離",
+      "status": "supported",
+      "assessment": "参照に更新workflowを要求せず、更新をload・純粋計算・saveへ接続する。",
+      "evidence": [
+        "examples/leave-http/http.ts",
+        "examples/leave-http/graphql.ts",
+        "examples/leave-http/graphql.test.ts",
+        "examples/prisma-stock/application.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-09",
+      "startSeconds": 1211,
+      "endSeconds": 1336,
+      "topic": "I/Oと計算のサンドイッチ",
+      "status": "supported",
+      "assessment": "I/O adapterと純粋coreを分離。メール等の途中I/Oはprocessの明示的境界で扱う。",
+      "evidence": [
+        "src/framework/process.ts",
+        "src/registration/delivery.ts",
+        "src/shipping/feature.ts",
+        "src/process.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-10",
+      "startSeconds": 1336,
+      "endSeconds": 1420,
+      "topic": "集約とコードの整理方法",
+      "status": "design-choice",
+      "assessment": "型と振る舞いを近くへ置き、ドメインモデルの発見自体は利用者が行う。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/tags/domain.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-11",
+      "startSeconds": 1420,
+      "endSeconds": 1562,
+      "topic": "目的は型と静的検査の有効利用",
+      "status": "supported",
+      "assessment": "型の誤接続拒否と実行時の業務仕様テストを分ける。FP自体の優越やすべてのテストの不要化を主張しない。",
+      "evidence": [
+        "src/business-api-types.test.ts",
+        "scripts/fixtures/leave-business-diagnostics.ts",
+        "docs/business-change-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-12",
+      "startSeconds": 1562,
+      "endSeconds": 1681,
+      "topic": "独立したフィールドのResultをまとめる負担",
+      "status": "partial",
+      "assessment": "collectは固定フィールドの検証結果と全エラーの収集を扱える。非列挙フィールドの欠落を修正し、数値名は実行と同じ文字列のエラー名として型を保持する。Symbol・accessor・custom prototypeのテーブルは構築時に拒否する。Resultが言語から透過的に消えるわけではない。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/shipping.test.ts",
+        "docs/validation-fields.md",
+        "src/collect-fields.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json",
+        "docs/lecture-partial-reconciliation.md"
+      ],
+      "remaining": [
+        "固定フィールドのResult集約はcollectで具体化したが、TypeScript組込みResultや言語レベルの構文は提供しない。言語と同等の記述透明性や独立利用者のDX優位は未実証で、これを通常のlibrary実装不足と同一視しない。"
+      ]
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-13",
+      "startSeconds": 1681,
+      "endSeconds": 1749,
+      "topic": "do記法や他言語の脱出構文との比較",
+      "status": "design-choice",
+      "assessment": "TypeScriptの構文拡張・HaskellやRustの再実装はしない。関数合成で定型接続を減らす。",
+      "evidence": [
+        "src/experiments/business.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": [
+        "language-level-result-syntax"
+      ]
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-14",
+      "startSeconds": 1749,
+      "endSeconds": 1776,
+      "topic": "ループ内で生じるResult列",
+      "status": "supported",
+      "assessment": "画面で店舗ごとの非同期タスク送信と全失敗集約を確認。同期独立検証はcollectEach、依存する同期計算はfoldEach、独立I/Oの集約はcollectEffectsで接続する。後者は並列数を明示して実行し、位置付き失敗を入力順で返す。講演の無制限の一括開始と同一のスケジュールや任意のループを自動変換する保証ではない。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/collection-validation.test.ts",
+        "src/examples/order-lines.ts",
+        "docs/collection-validation.md",
+        "src/fold-each.test.ts",
+        "src/framework/collection-effects.ts",
+        "src/collection-effects.test.ts",
+        "docs/collection-effects.md",
+        "docs/lecture-visual-qbf.json",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-15",
+      "startSeconds": 1776,
+      "endSeconds": 1813,
+      "topic": "Promiseと例外を境界で変換",
+      "status": "supported",
+      "assessment": "fromPromise/fromThrowableを明示的なI/O adapterで使う。未知の欠陥の自動分類や、mapperの正しさは保証しない。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/result-boundary.test.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-16",
+      "startSeconds": 1813,
+      "endSeconds": 1903,
+      "topic": "運用経験・開発速度・テストの役割",
+      "status": "experience",
+      "assessment": "登壇者の約2年の経験とKoyukiの実績は別。短期速度の改善は講演でも断定されず、Koyukiの障害削減率・教育効果は未測定。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/business-change-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": [
+        "independent-adoption-evaluation"
+      ]
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-17",
+      "startSeconds": 1903,
+      "endSeconds": 1928,
+      "topic": "オンボーディングとResultの複雑化",
+      "status": "experience",
+      "assessment": "ガイドと実例を用意するが、独立した利用者の学習負担はまだ測定していない。",
+      "evidence": [
+        "docs/getting-started.md",
+        "docs/business-api-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": [
+        "independent-adoption-evaluation"
+      ]
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-18",
+      "startSeconds": 1928,
+      "endSeconds": 1956,
+      "topic": "plain dataとDTOの組み替え",
+      "status": "design-choice",
+      "assessment": "plain dataは受け渡しを簡単にするが、HTTP/GraphQLの公開項目の投影・秘密情報の除外まで不要にはならない。",
+      "evidence": [
+        "examples/leave-http/graphql.ts",
+        "src/registration/domain.ts",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-19",
+      "startSeconds": 1956,
+      "endSeconds": 1978,
+      "topic": "ワークフロー型定義の冗長さ",
+      "status": "partial",
+      "assessment": "開発版businessで操作の入力・結果・失敗型を推論し、generic load/save、検証済み文脈、64段の接続と操作/段階の診断を検査する。genericなinput/valueの組と、その内側のinputを実関数の契約で保持し、購買3操作を直接接続して在庫文脈の重複注釈3つを削除した。accepted/returnedの状態型、訂正の数量証明・各段階名・失敗停止を維持する。先に束縛したgeneric関数はstep helperでも元の型を保持し、購買の段階へ適用した。名前なしのwithInput直接呼出し、任意の多相変換・診断品質、独立利用者のDXは未解消・未検証。名前付きstepのinlineなwithInput呼出しは、先行束縛や追加の文脈注釈なしで接続できる。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作も後続で型の拡大を解消し、一般の推論制限は別の残件として維持する。 入荷・在庫を含む購買全25操作の固有のエラーkindを通常・詳細・再送で3方式比較する。検証証明・成功状態・保存adapterの失敗を保持し、全入力の網羅や業務仕様の証明とは区別する。",
+      "evidence": [
+        "src/experiments/business.ts",
+        "src/business-api-types.test.ts",
+        "docs/business-api-study.md",
+        "src/framework/business.ts",
+        "docs/business-save-inference.md",
+        "src/business-save-inference.test.ts",
+        "docs/procurement-load-composition.md",
+        "src/procurement-load-composition.test.ts",
+        "docs/application-input-contract.md",
+        "src/application-input-contract.test.ts",
+        "docs/declaration-ownership.md",
+        "src/declaration-ownership.test.ts",
+        "docs/lecture-core-focus.md",
+        "docs/transition-inference-rest-checks.json",
+        "docs/effect-projection.md",
+        "src/process-projection.test.ts",
+        "docs/procurement-framework-context.md",
+        "src/procurement-framework-context.test.ts",
+        "docs/business-diagnostics.md",
+        "docs/business-diagnostic-study.json",
+        "scripts/fixtures/leave-business-diagnostics.ts",
+        "docs/business-operation-table.md",
+        "src/business-operation-table.test.ts",
+        "docs/business-local-load.md",
+        "docs/business-scale.md",
+        "scripts/check-business-scale.mjs",
+        "docs/transition-inference-compiler-comparison.json",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json",
+        "docs/business-generic-load.md",
+        "src/business-generic-load.test.ts",
+        "docs/business-generic-checks.md",
+        "src/business-generic-check.test.ts",
+        "src/business-generic-proof.test.ts",
+        "src/transition-inline-step.test.ts",
+        "docs/procurement-shared-guards.md",
+        "docs/procurement-receipt-pipeline.md",
+        "docs/lecture-partial-reconciliation.md",
+        "docs/business-input-pair-inference.md",
+        "docs/business-input-pair-inference.json",
+        "scripts/fixtures/business-input-pair.ts",
+        "scripts/investigate-transition-inference.mjs",
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts",
+        "docs/procurement-request-planning.md",
+        "src/procurement-request-planning.test.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/domain.ts",
+        "docs/step-generic-first.md",
+        "docs/business-pair-binding-investigation.md",
+        "docs/development-start.md",
+        "docs/business-input-retention.md",
+        "src/business-input-pair.test.ts",
+        "docs/procurement-direct-receipt-stages.md",
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "scripts/check-runtime-package.mjs",
+        "docs/inline-inference-compiler-boundary.md",
+        "docs/inline-inference-compiler-control.json",
+        "scripts/investigate-generic-call-skip.mjs",
+        "scripts/inline-inference-observation.mjs",
+        "scripts/fixtures/transition-inference-limit.ts",
+        "scripts/fixtures/transition-inference-minimal.ts",
+        "docs/procurement-commercial-errors.md",
+        "src/procurement-commercial-errors.test.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/procurement-order-guard.test.ts",
+        "src/procurement-request-creation.test.ts",
+        "src/procurement-request-edit.test.ts",
+        "src/procurement.test.ts",
+        "docs/procurement-logistics-errors.md",
+        "src/procurement-logistics-errors.test.ts",
+        "src/experiments/procurement/inventory.ts",
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/business-later-request.md",
+        "docs/onboarding-ai-review.md",
+        "src/business-later-request.test.ts",
+        "scripts/test-onboarding.mjs",
+        "docs/business-verified-request.md",
+        "src/business-verified-request.test.ts",
+        "scripts/fixtures/onboarding-staged-solution.ts",
+        "scripts/check-exported-business.mjs",
+        "scripts/fixtures/business-verified-exports.ts",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx",
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs",
+        "src/authoring-inferred-key.test.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx",
+        "src/authoring-declaration.test.tsx",
+        "src/business-request-prefix.test.ts"
+      ],
+      "remaining": [
+        "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",
+        "在庫文脈の重複注釈3つは直接接続で削除済み。通常の業務型宣言と一般の推論制限は残る。既存の型検査を、独立利用者の学習・原因理解・修正容易性の実証とは扱わない。"
+      ],
+      "laterRequestFollowUp": {
+        "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
+        "evidence": [
+          "docs/business-later-request.md",
+          "docs/onboarding-ai-review.md",
+          "src/business-later-request.test.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/test-onboarding.mjs"
+        ]
+      },
+      "verifiedRequestFollowUp": {
+        "scope": "Context-preserving proof-producing checks infer later requests; AI exercise follow-up, not full lecture completion or direct audio review.",
+        "evidence": [
+          "docs/business-verified-request.md",
+          "src/business-verified-request.test.ts",
+          "scripts/fixtures/onboarding-staged-solution.ts",
+          "scripts/test-onboarding.mjs",
+          "scripts/test-business-package.mjs",
+          "scripts/check-exported-business.mjs",
+          "scripts/fixtures/business-verified-exports.ts"
+        ]
+      },
+      "inferredChecksFollowUp": {
+        "scope": "Inferred early-return Result alternatives preserve later request inference. Twelve loader type arguments were removed from the procurement application; three nested-context cases remain explicit. Product runtime is unchanged; no full-lecture, direct-audio or independent-human evaluation claim.",
+        "evidence": [
+          "docs/business-inferred-checks.md",
+          "src/business-inferred-checks.test.ts",
+          "src/business-later-request.test.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/test-business-package.mjs"
+        ],
+        "supersededBy": "docs/business-request-prefix.md"
+      },
+      "requestPrefixFollowUp": {
+        "scope": "All fifteen operation-level loader type arguments in the procurement application are now omitted. Request prefixes stop before nested contexts are mistaken for raw input. The declared parameter is captured before the unchanged strict input comparison. Actual loader context guarantees, private facts, variants, error types and runtime remain unchanged. The 64-stage/62-field case is checked from the packed SDK. No full-lecture, direct-audio or new independent-user claim.",
+        "evidence": [
+          "docs/business-request-prefix.md",
+          "src/business-request-prefix.test.ts",
+          "src/framework/business.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/check-request-prefix-scale.mjs",
+          "scripts/test-business-package.mjs"
+        ]
+      },
+      "scopedRequestFollowUp": {
+        "scope": "Seed request prefixes with the actual loader input. Loader-only conditions and later business fields are both required in ordinary/detailed/replay calls. The former scoped declaration refusal is now a valid composition; missing/wrong scope is refused at the call site. Scoped generic factories emit declarations without a final API annotation. Runtime, public API names, lecture source coverage and partial statuses are unchanged.",
+        "evidence": [
+          "docs/business-scoped-request.md",
+          "src/business-scoped-request.test.ts",
+          "src/framework/business.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/fixtures/business-verified-exports.ts",
+          "scripts/check-exported-business.mjs"
+        ]
+      }
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-20",
+      "startSeconds": 1978,
+      "endSeconds": 2011,
+      "topic": "適用範囲を現場で判断する",
+      "status": "design-choice",
+      "assessment": "既存の設計を残し、利用現場がどの範囲を関数型にするか決める。KoyukiがすべてのCRUDに最適とは主張しない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "qBf910_YiqA",
+      "id": "qbf-21",
+      "startSeconds": 2011,
+      "endSeconds": 2019,
+      "topic": "終了と拍手",
+      "status": "context",
+      "assessment": "挨拶・拍手。実装機能へ変換しない。",
+      "evidence": [
+        "docs/lecture-local-asr-qbf-followup.md",
+        "docs/lecture-local-asr-qbf-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-01",
+      "startSeconds": 0,
+      "endSeconds": 51,
+      "topic": "開始・画面共有",
+      "status": "context",
+      "assessment": "進行と挨拶。フレームワーク機能へ変換しない。",
+      "evidence": [
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-02",
+      "startSeconds": 51,
+      "endSeconds": 116,
+      "topic": "関数と型を捉えるメンタルモデル",
+      "status": "design-choice",
+      "assessment": "関数を値の写像、型を取り得る値の集合として見る説明。APIの指定ではない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/business-api-types.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-03",
+      "startSeconds": 116,
+      "endSeconds": 224,
+      "topic": "型に対する見方の変化と背景",
+      "status": "experience",
+      "assessment": "登壇者の過去の言語経験と参考記事の紹介。特定の言語やIDEの現在の優劣を検証した結果ではない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-04",
+      "startSeconds": 224,
+      "endSeconds": 319,
+      "topic": "命令から計算の定義へ",
+      "status": "design-choice",
+      "assessment": "業務計算を通常の関数の入出力で表す。Koyukiが数学的な純粋性を強制するという意味ではない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/examples/order-lines.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-05",
+      "startSeconds": 319,
+      "endSeconds": 356,
+      "topic": "関数型の無条件な優越ではない",
+      "status": "design-choice",
+      "assessment": "通常のI/Oや単純なCRUDを許容する。全実装のFP化やクラス禁止を要件にしない。",
+      "evidence": [
+        "docs/framework-goal.md",
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-06",
+      "startSeconds": 356,
+      "endSeconds": 467,
+      "topic": "Reactと状態・表示の分離",
+      "status": "supported",
+      "assessment": "Applicationの業務データ・実行状態・viewを分離して購読できる。ReactのDOM rendererやReact相当の性能を提供するわけではない。",
+      "evidence": [
+        "src/framework/application.ts",
+        "src/application.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-07",
+      "startSeconds": 467,
+      "endSeconds": 570,
+      "topic": "Elmの更新・command・イベントループ",
+      "status": "supported",
+      "assessment": "defineProgramのupdate・commandとApplicationの実行委譲で対応する。インプロセスのloopであり永続schedulerではない。",
+      "evidence": [
+        "src/framework/program.ts",
+        "src/program.test.ts",
+        "src/framework/application.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-08",
+      "startSeconds": 570,
+      "endSeconds": 608,
+      "topic": "明示した状態遷移の意義",
+      "status": "design-choice",
+      "assessment": "状態変化を入力と戻り値に表す。UIでの事例から業務ロジックへ考え方をつなぐ説明として扱う。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-09",
+      "startSeconds": 608,
+      "endSeconds": 767,
+      "topic": "for文と計算機のモデル",
+      "status": "design-choice",
+      "assessment": "計算モデルの比較のための総和の例。フレームワーク内部のループやローカル変数の利用を禁止する要求ではない。",
+      "evidence": [
+        "src/framework/validation.ts",
+        "src/examples/order-lines.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-10",
+      "startSeconds": 767,
+      "endSeconds": 916,
+      "topic": "再帰とfold/reduce",
+      "status": "design-choice",
+      "assessment": "値へ関数を繰り返し適用する説明。TypeScriptのreduceや通常関数を利用でき、新しい言語・無限の再帰実行系は実装しない。",
+      "evidence": [
+        "src/examples/order-lines.ts",
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-11",
+      "startSeconds": 916,
+      "endSeconds": 1170,
+      "topic": "文・式・関数適用",
+      "status": "design-choice",
+      "assessment": "言語構文そのものの変更ではなく、業務計算を値を返す関数として構成する。式の形でも副作用があり得るため、形だけで純粋と判定しない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/framework/process.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-12",
+      "startSeconds": 1170,
+      "endSeconds": 1315,
+      "topic": "顧客の状態変更を新しい値で返す",
+      "status": "supported",
+      "assessment": "業務例の不変な遷移と元の入力を変更しないテストに対応する。浅いcopyだけで任意の入れ子の共有まで防げるとは主張しない。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/collection-validation.test.ts",
+        "src/with-input.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-13",
+      "startSeconds": 1315,
+      "endSeconds": 1435,
+      "topic": "明示的な入出力と途中状態の観測",
+      "status": "partial",
+      "assessment": "Workflow/transition・Process・businessで選んだ段階の値をcaptureし、Application/Programでは実行IDとlive spanの親子関係・成否を観測する。business/Processのcapture失敗は業務結果から分離するが、純粋なWorkflow.inspectのcapture例外は伝播する。購買25操作の32回シナリオは成功135境界、代表失敗279境界を3方式で比較し、選んだI/O例外とApplicationのcrashedは別に検査する。全値の自動永続収集、opaque内部、分散相関、全例外経路まで検証したとはしない。",
+      "evidence": [
+        "src/framework/workflow.ts",
+        "src/framework/program.ts",
+        "docs/replay-trace.md",
+        "src/workflow-observation.test.ts",
+        "docs/workflow-observation.md",
+        "src/business-observation.test.ts",
+        "src/framework/observation.ts",
+        "docs/application-ownership.md",
+        "src/application-ownership.test.ts",
+        "docs/detailed-load.md",
+        "src/detailed-load.test.ts",
+        "docs/process-observation.md",
+        "src/process-observation.test.ts",
+        "docs/application-execution.md",
+        "src/application-execution.test.ts",
+        "docs/audit.md",
+        "src/sqlite-audit.test.ts",
+        "docs/lecture-core-focus.md",
+        "src/live-execution.test.ts",
+        "docs/program-execution.md",
+        "src/program-execution.test.ts",
+        "docs/procurement-observation-comparison.md",
+        "src/procurement-observation-scenario.test.ts",
+        "docs/lecture-local-asr.md",
+        "docs/lecture-local-asr-pilot.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/procurement-receipt-pipeline.md",
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/lecture-partial-reconciliation.md",
+        "docs/procurement-failure-observation.md",
+        "src/procurement-failure-observation.test.ts",
+        "docs/procurement-read-failure-observation.md",
+        "docs/procurement-io-exceptions.md",
+        "src/procurement-io-exceptions.test.ts",
+        "docs/business-named-stages.md",
+        "docs/business-named-stages-inference.json",
+        "src/business-named-stages.test.ts",
+        "docs/procurement-request-planning.md",
+        "src/procurement-request-planning.test.ts",
+        "src/experiments/procurement/application.ts",
+        "src/experiments/procurement/domain.ts",
+        "docs/procurement-request-edit.md",
+        "src/procurement-application-io-exceptions.test.ts",
+        "docs/procurement-application-io-exceptions.md",
+        "docs/lecture-react-authoring-review.md",
+        "docs/react-business-prototype.md",
+        "src/experiments/react-business/runtime.ts",
+        "src/react-business-execution.test.tsx",
+        "src/react-business-replay.test.tsx",
+        "src/react-business-leave.test.tsx",
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs",
+        "docs/authoring-capture.md",
+        "src/authoring-capture.test.tsx",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/captured-exports.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx"
+      ],
+      "remaining": [
+        "履歴の保存先・公開項目・保持削除、opaque関数内部・分散相関はhostの設計または未提供の範囲である。講演のdump可能性を、既定の全値永続収集という必須仕様へ読み替えない。",
+        "型注釈の有無とは分け、観測対象の選択・秘密情報の公開方針・保存結果不明時の記録を運用で設計する必要がある。"
+      ]
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-14",
+      "startSeconds": 1435,
+      "endSeconds": 1611,
+      "topic": "複雑な業務とI/Oの分離",
+      "status": "supported",
+      "assessment": "load・純粋な判断・save、途中I/Oのprocessで構成する。外部I/Oを型で隠すだけで消えたことにはしない。",
+      "evidence": [
+        "src/framework/command.ts",
+        "src/shipping/feature.ts",
+        "src/registration/delivery.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/authoring-process.md",
+        "src/framework/authoring.ts",
+        "src/framework/process.ts",
+        "src/experiments/react-business/expense-budget.tsx",
+        "src/authoring-process.test.tsx",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-15",
+      "startSeconds": 1611,
+      "endSeconds": 1717,
+      "topic": "Onionの目的と設計の選択肢",
+      "status": "design-choice",
+      "assessment": "業務をI/Oから独立させる目的に対応する。テスト容易性だけが目的とも、すべての業務を関数型にしなければならないとも解釈しない。",
+      "evidence": [
+        "docs/process.md",
+        "src/expenses/repository.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-16",
+      "startSeconds": 1717,
+      "endSeconds": 1750,
+      "topic": "状態と型の話への接続",
+      "status": "design-choice",
+      "assessment": "UIと業務の中心に計算を置く考え方の整理。認知負担の削減率をKoyukiの実測値へ読み替えない。",
+      "evidence": [
+        "docs/team-development-study.md",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-17",
+      "startSeconds": 1750,
+      "endSeconds": 1761,
+      "topic": "説明を省略したスライド",
+      "status": "partial",
+      "assessment": "1750–1761秒の全275フレームを縮小一覧で確認し、図・forM_・不変/可変Union-Find・計算の再掲という4種類の画面を原寸でも読み取った。Union-Findは約0.64秒の表示だった。命令的な実装が適する場合を認める説明例であり、ループ禁止やUnion-Findの内蔵APIを要求する内容とは解釈しない。Haskellコードの実行・正しさ証明は行っていない。",
+      "evidence": [
+        "docs/lecture-visual-w0o.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/lecture-partial-reconciliation.md",
+        "docs/lecture-frame-window-survey.md",
+        "docs/lecture-frame-window-survey.json",
+        "scripts/check-lecture-frame-survey.py",
+        "src/procurement-correlated-fields.test.ts",
+        "docs/lecture-decks.json"
+      ],
+      "remaining": [
+        "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域、対象区間外、全フレームの原寸読取り、直接音声の確認はこの追加照合の対象外。",
+        "画面の全サンプルコードを実行・証明したものではない。説明例を全てframeworkに内蔵する必須機能へ読み替えない。"
+      ]
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-18",
+      "startSeconds": 1761,
+      "endSeconds": 1985,
+      "topic": "型を値の集合として捉える",
+      "status": "supported",
+      "assessment": "入出力の集合を型で制限し、brandやUnionを実例で使用する。number型だけでは安全な整数や業務上の範囲まで表せず実行時検証も必要。",
+      "evidence": [
+        "src/business-api-types.test.ts",
+        "src/examples/order-lines.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-19",
+      "startSeconds": 1985,
+      "endSeconds": 2118,
+      "topic": "コンパイラとツールチェーン",
+      "status": "supported",
+      "assessment": "誤接続を型検査で拒否し、実tarballからの配布宣言型も検証する。購買の次状態型と検証済み状態は、広い戻り型・状態の証明欠落を検出する対照も用いる。ソース診断は明示した5ファイルの6宣言・25操作ID・56ラベルを確認する。業務仕様の形式証明、任意のgeneric推論やIDE体験の保証ではない。 動的に選んだ関数の直和も、dispatch関数なしでwithInputへ渡せる。全候補が受け取れる入力と、成功・失敗の和を保持する。名前なしinline・遷移中の深いgeneric変換・利用者評価は別の残件である。 inline制限はTS6のcompiler分岐を一時コピーで切り分けたが、製品上は未解消。配布検査では正しい構文の不受理を固定せず、型の厳密一致を保った受理も許容する。 申請・発注12操作は広いRuleError注釈を外し、成功状態を保ったまま通常・詳細・再送の操作別エラー集合を3方式で検査した。入荷・在庫7操作も後続で型の拡大を解消し、一般の推論制限は別の残件として維持する。 入荷・在庫を含む購買全25操作の固有のエラーkindを通常・詳細・再送で3方式比較する。検証証明・成功状態・保存adapterの失敗を保持し、全入力の網羅や業務仕様の証明とは区別する。",
+      "evidence": [
+        "src/transition-inference.test.ts",
+        "scripts/check-runtime-package.mjs",
+        "scripts/fixtures/leave-business-diagnostics.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/with-input-alternatives.md",
+        "docs/selected-requirement-context6.json",
+        "docs/selected-requirement-context7.json",
+        "src/framework/model.ts",
+        "src/with-input-alternatives.test.ts",
+        "scripts/test-business-package.mjs",
+        "docs/inline-inference-compiler-boundary.md",
+        "docs/inline-inference-compiler-control.json",
+        "scripts/investigate-generic-call-skip.mjs",
+        "scripts/inline-inference-observation.mjs",
+        "scripts/fixtures/transition-inference-limit.ts",
+        "scripts/fixtures/transition-inference-minimal.ts",
+        "docs/procurement-commercial-errors.md",
+        "src/procurement-commercial-errors.test.ts",
+        "src/experiments/procurement/domain.ts",
+        "src/experiments/procurement/helper.ts",
+        "src/procurement-order-guard.test.ts",
+        "src/procurement-request-creation.test.ts",
+        "src/procurement-request-edit.test.ts",
+        "src/procurement.test.ts",
+        "docs/procurement-logistics-errors.md",
+        "src/procurement-logistics-errors.test.ts",
+        "src/experiments/procurement/inventory.ts",
+        "src/procurement-receipt-pipeline.test.ts",
+        "docs/business-later-request.md",
+        "docs/onboarding-ai-review.md",
+        "src/business-later-request.test.ts",
+        "scripts/test-onboarding.mjs",
+        "docs/business-verified-request.md",
+        "src/business-verified-request.test.ts",
+        "scripts/fixtures/onboarding-staged-solution.ts",
+        "scripts/check-exported-business.mjs",
+        "scripts/fixtures/business-verified-exports.ts"
+      ],
+      "remaining": [],
+      "laterRequestFollowUp": {
+        "scope": "Shared identity checks followed by operation-specific request requirements; AI exercise follow-up, not direct audio or full lecture completion.",
+        "evidence": [
+          "docs/business-later-request.md",
+          "docs/onboarding-ai-review.md",
+          "src/business-later-request.test.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/test-onboarding.mjs"
+        ]
+      },
+      "verifiedRequestFollowUp": {
+        "scope": "Context-preserving proof-producing checks infer later requests; AI exercise follow-up, not full lecture completion or direct audio review.",
+        "evidence": [
+          "docs/business-verified-request.md",
+          "src/business-verified-request.test.ts",
+          "scripts/fixtures/onboarding-staged-solution.ts",
+          "scripts/test-onboarding.mjs",
+          "scripts/test-business-package.mjs",
+          "scripts/check-exported-business.mjs",
+          "scripts/fixtures/business-verified-exports.ts"
+        ]
+      },
+      "inferredChecksFollowUp": {
+        "scope": "Inferred early-return Result alternatives preserve later request inference. Twelve loader type arguments were removed from the procurement application; three nested-context cases remain explicit. Product runtime is unchanged; no full-lecture, direct-audio or independent-human evaluation claim.",
+        "evidence": [
+          "docs/business-inferred-checks.md",
+          "src/business-inferred-checks.test.ts",
+          "src/business-later-request.test.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/test-business-package.mjs"
+        ],
+        "supersededBy": "docs/business-request-prefix.md"
+      },
+      "requestPrefixFollowUp": {
+        "scope": "All fifteen operation-level loader type arguments in the procurement application are now omitted. Request prefixes stop before nested contexts are mistaken for raw input. The declared parameter is captured before the unchanged strict input comparison. Actual loader context guarantees, private facts, variants, error types and runtime remain unchanged. The 64-stage/62-field case is checked from the packed SDK. No full-lecture, direct-audio or new independent-user claim.",
+        "evidence": [
+          "docs/business-request-prefix.md",
+          "src/business-request-prefix.test.ts",
+          "src/framework/business.ts",
+          "src/experiments/procurement/application.ts",
+          "scripts/check-request-prefix-scale.mjs",
+          "scripts/test-business-package.mjs"
+        ]
+      },
+      "scopedRequestFollowUp": {
+        "scope": "Seed request prefixes with the actual loader input. Loader-only conditions and later business fields are both required in ordinary/detailed/replay calls. The former scoped declaration refusal is now a valid composition; missing/wrong scope is refused at the call site. Scoped generic factories emit declarations without a final API annotation. Runtime, public API names, lecture source coverage and partial statuses are unchanged.",
+        "evidence": [
+          "docs/business-scoped-request.md",
+          "src/business-scoped-request.test.ts",
+          "src/framework/business.ts",
+          "scripts/test-business-package.mjs",
+          "scripts/fixtures/business-verified-exports.ts",
+          "scripts/check-exported-business.mjs"
+        ]
+      }
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-20",
+      "startSeconds": 2118,
+      "endSeconds": 2187,
+      "topic": "Resultで想定した失敗を表す",
+      "status": "supported",
+      "assessment": "宣言した成功・失敗のUnionを保持する。ただしTypeScriptのResult注釈はthrowやPromise rejectionが起きない証明ではなく、未知の欠陥は別経路で扱う。",
+      "evidence": [
+        "src/framework/result.ts",
+        "src/result-boundary.test.ts",
+        "src/process.test.ts",
+        "src/application.test.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-21",
+      "startSeconds": 2187,
+      "endSeconds": 2324,
+      "topic": "直和・直積と不要な組み合わせ",
+      "status": "supported",
+      "assessment": "状態ごとの必須フィールドとUnionで不正な組み合わせを減らす。タグの作成前後の型、登録の状態・版・イベントの対応も具体的に検査する。任意の利用者モデルの正しさを自動生成せず、型のproducer名だけで外部DBの事実まで証明するわけではない。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json",
+        "src/tag-prepersistence.test.ts",
+        "src/registration.test.ts",
+        "docs/leave-authorization-proof.md",
+        "src/experiments/react-business/leave-domain.ts",
+        "src/experiments/react-business/leave.tsx",
+        "src/authoring-leave-domain.test.ts",
+        "scripts/test-authoring-package.mjs",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-22",
+      "startSeconds": 2324,
+      "endSeconds": 2404,
+      "topic": "似た構造の抽象化と継承の使い方",
+      "status": "design-choice",
+      "assessment": "違う役割をUnionでまとめる例。継承そのものの禁止ではなく、差分だけを目的とする安易な階層化を避ける判断として扱う。",
+      "evidence": [
+        "src/expenses/domain.ts",
+        "src/framework/workflow.ts",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-23",
+      "startSeconds": 2404,
+      "endSeconds": 2457,
+      "topic": "直和と直積の図・後半の説明省略",
+      "status": "partial",
+      "assessment": "2404–2457秒の全1325フレームを縮小一覧で確認し、6種類の画面を原寸でも読み取った。約0.28秒のOCaml比較には、状態別モデルに加え、last_pingを一つの任意の対へまとめる例があった。既存在庫履歴の相関する属性を型とJSON復元で検査した。TypeScriptの構造的Unionや余分な属性の代入は排他的な和・閉じた保存形式と同一ではなく、実行時の復元を区別する。",
+      "evidence": [
+        "src/registration/domain.ts",
+        "src/expenses/domain.ts",
+        "src/sum-model.test.ts",
+        "docs/lecture-visual-w0o.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json",
+        "docs/lecture-partial-reconciliation.md",
+        "docs/lecture-frame-window-survey.md",
+        "docs/lecture-frame-window-survey.json",
+        "scripts/check-lecture-frame-survey.py",
+        "src/procurement-correlated-fields.test.ts",
+        "docs/lecture-uncertain-speech-decisions.md"
+      ],
+      "remaining": [
+        "追加確認は対象区間の全フレームの縮小一覧と代表画面の原寸読取り。除外領域と対象区間外の確認、別記の直接音声確認が必要な区間は残る。",
+        "型による接続の検査や原資料との画素一致だけで、原発話・業務仕様・任意の入力の安全性を証明したとはしない。"
+      ]
+    },
+    {
+      "video": "w0oLNoGsGLc",
+      "id": "w0o-24",
+      "startSeconds": 2457,
+      "endSeconds": 2513,
+      "topic": "省略された補足コードとまとめ・終了",
+      "status": "design-choice",
+      "assessment": "静止画でMaybeのパターンマッチ、GraphQL Union、Maybe/Either/IO/Listの文脈、ナップサック問題の比較を確認。計算の捉え方の補足であり、各アルゴリズム・言語機能をKoyukiへ内蔵する要件とは扱わない。Koyukiの完全性・優越性の実証ではない。",
+      "evidence": [
+        "docs/lecture-visual-w0o.json",
+        "docs/lecture-local-asr-w0o-followup.md",
+        "docs/lecture-local-asr-w0o-followup.json"
+      ],
+      "remaining": []
+    }
+  ],
+  "gates": [
+    {
+      "command": "npm run check",
+      "passed": true,
+      "outputSha256": "be24b63cfb9a5683ac9d627d6dfbaa14e0e46e3cef8da5f1d99915f282610f7f",
+      "outputTail": "> koyuki@0.1.0-alpha.5 check\n> tsc --noEmit"
+    },
+    {
+      "command": "npm run test:lecture-records",
+      "passed": true,
+      "outputSha256": "29d24521f4a306003e8edb29d5e48438b3ab9c057547943149cf5b3c207554b2",
+      "outputTail": "> koyuki@0.1.0-alpha.5 test:lecture-records\n> node --test scripts/lecture-records.test.mjs\n\n✔ records-only checks work without originals and never claim source identity or caption assignment (406.523291ms)\n✔ full checks still require original bytes; metadata-only mode does not conceal that distinction (402.858542ms)\n✔ both modes reject missing implementation evidence (201.334292ms)\n✔ caption records reject gaps and nonfinite intervals independently of the original captions (103.619167ms)\n✔ completed page reviews reject missing pages and inconsistent source fingerprints (102.636833ms)\n✔ partial and gap records must name remaining work (103.930375ms)\n✔ record source paths cannot escape the declared original directory (102.144292ms)\n✔ only full mode verifies that actual caption timestamps belong to a topic (105.090625ms)\n✔ a completed manifest cannot contradict its own manual page-review flags (50.596792ms)\nℹ tests 9\nℹ suites 0\nℹ pass 9\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1645.886708"
+    },
+    {
+      "command": "npm run test",
+      "passed": true,
+      "outputSha256": "f552893326d087fbd35f9b68a3745c1c4158b477b14e2cdae98e650899f8283b",
+      "outputTail": "✔ generic withInput can start a Workflow without a context annotation: bound (0.11375ms)\n✔ generic withInput can start a Workflow without a context annotation: inline (0.045541ms)\n✔ a constrained generic first Workflow composes with then and business without repeated input annotations (1.44825ms)\n✔ compatible function candidates retain every success and error variant (0.27525ms)\n✔ a generic first check retains its private output proof for the next domain rule (0.100583ms)\n✔ a workflow run function can be reused as an ordinary business rule without a receiver wrapper (2.833584ms)\n✔ a reused workflow preserves rule defects rather than changing them into a business rejection (2.39225ms)\n✔ inspection captures selected before/after values for every executed rule without re-execution (1.274542ms)\n✔ failed rules are observed and later rules are not executed or observed (0.189792ms)\n✔ branch inspection records only the chosen rules, and transition iteration supports capture (0.477875ms)\n✔ projection precedes clone, excludes secrets and isolates snapshots from later mutations (0.263208ms)\n✔ capture defects propagate and each invocation has its own observations (0.531ms)\nℹ tests 1271\nℹ suites 0\nℹ pass 1271\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 7306.926292"
+    },
+    {
+      "command": "npm run test:authoring:package",
+      "passed": true,
+      "outputSha256": "bae4b18ae0013c0edbc7df6db7597009e3fc0a25b457b36399d116b8b060fad1",
+      "outputTail": "ℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 218.382375\nInstalled experimental registration: SQLite restart, confirmation, atomic outbox/receipt rollback, concurrent replay and identity binding passed.\n✔ leave approval persists its replay boundary across mounts and storage connections (9.906292ms)\n✔ leave state and receipt roll back together, then concurrent retry commits once (4.128542ms)\n✔ sibling business components have independent Providers and concurrent executions (3.207125ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 206.43225\nInstalled three-business authoring: SQLite-backed expense, leave and registration run concurrently with isolated Providers; durable leave replay and rollback passed.\nA type-correct missing self-approval guard was rejected by the business execution check.\nInstalled authoring replay assertion negative control rejected an incorrect expected commit count."
+    },
+    {
+      "command": "npm run test:authoring:change",
+      "passed": true,
+      "outputSha256": "1d5fa6cca02e60c939a7667d45af25970c33758c3838831a2d34350ef87a4c5c",
+      "outputTail": "> koyuki@0.1.0-alpha.5 test:authoring:change\n> node scripts/test-authoring-change.mjs\n\nbooking cancellation: success, denied, missing, trace and actor isolation passed\ndeadline change: boundary ±1ms, repeated clock reads, failures, pure transition and actor isolation passed\nType-correct exclusive-boundary mutation was rejected by the business test.\nA clock function passed instead of a time value was rejected by type checking.\ndeadline change: boundary ±1ms, repeated clock reads, failures, pure transition and actor isolation passed\n24h -> 48h policy-only change passed with the same Hook, Provider, registration and executor."
+    }
+  ]
+}
