@@ -1,0 +1,13 @@
+# React経験者向けQuick Startの配布物検証
+
+実装基点f6e62cd。推奨入口をexamples/authoring-quickstart/README.mdへ集約し、JSXなしのbusinessは別の入口として残す。npm公開済みalpha.5と未公開の開発版tarballを明確に区別する。
+
+最初はdomain.ts、app.tsx、main.tsの三つを読む。純粋な業務関数、Provider内で評価する操作宣言、ホストからの明示的な実行を分ける。trace.tsとreplay.tsxは段階的に読む例とし、最初の操作の定義に必須の概念を増やさない。
+
+検証コマンドは`npm run test:authoring:quickstart`。ルートをbuild/packし、新しい一時プロジェクトに実tarballをインストールする。React・React型・Node型なしでTypeScript 7.0.2の型検査を行い、start・trace・replay・verifyを実行した。成功・失敗停止・純粋な核・内部trace・一回の保存、成功済み要求の再送と同じrequestIdの入力衝突を確認した。
+
+元ディレクトリへの再準備を拒否し、元のファイルを保持することも検査する。認可を削除する変更は型検査を通るが、verifyのForbiddenMustNotSaveで拒否された。型検査だけで業務仕様を保証するとはしない。
+
+次にdomain.tsだけへCancellationLockedを加え、Hook・Provider・保存・登録・executorを変更せず新しい失敗が返り、saveしないことを検証した。初回には再送のresolveAfterが手書きのエラーUnionを重複定義していたため、新しい失敗を追加するとコンパイルを妨げた。Workflow.runの戻り値から失敗型を導出し、重複を削除した。その後、ルール変更を含む全手順が成功した。
+
+再送例は一つの予約を扱うメモリ実装であり、状態とreceiptを同じ同期処理内で一緒に置き換える。再起動耐久性・分散実行・DB transactionの検証ではない。永続例へ進むリンクをガイドに設けた。これは保守者AIによるガイド検証であり、人間の初見利用・習得時間は未評価。npmへの公開は行っていない。

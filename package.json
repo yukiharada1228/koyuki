@@ -76,7 +76,9 @@
     "benchmark:procurement": "tsx src/experiments/procurement/benchmark.ts",
     "test:authoring:package": "node scripts/test-authoring-package.mjs --verify",
     "prepare:authoring": "node scripts/test-authoring-package.mjs --prepare",
-    "test:authoring:change": "node scripts/test-authoring-change.mjs"
+    "test:authoring:change": "node scripts/test-authoring-change.mjs",
+    "prepare:authoring:quickstart": "node scripts/authoring-quickstart.mjs --prepare",
+    "test:authoring:quickstart": "node scripts/authoring-quickstart.mjs --verify"
   },
   "devDependencies": {
     "@babel/parser": "8.1.3",

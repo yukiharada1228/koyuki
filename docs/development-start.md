@@ -1,3 +1,5 @@
+> React経験者向けの推奨入口は[Quick Start](../examples/authoring-quickstart/README.md)です。このページはJSXを使わずbusinessから始める別の構成を説明します。
+
 # 開発版で最初の業務アプリケーションを書く
 
 開発版の入口はbusinessである。通常のTypeScript関数で状態・検証・遷移を書き、loadとsaveを宣言する。

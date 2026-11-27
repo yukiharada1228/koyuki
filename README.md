@@ -2,7 +2,9 @@
 
 業務の状態・検証・遷移を宣言し、接続と実行を任せるTypeScriptフレームワーク。
 
-公開済みalpha.5を使う場合は次のとおりです。開発中のbusinessから始める場合は、[開発版の導入手順](docs/development-start.md)を使ってください。
+**React経験者が開発版を始める場合は、[最初の業務操作を作るQuick Start](examples/authoring-quickstart/README.md)へ進んでください。** 純粋な業務関数をContext・Hooks・JSXで組み立て、実行→ルール変更→trace→再送の順に試せます。公開済みalpha.5には、この実験APIは含まれません。
+
+公開済みalpha.5を使う場合は次のとおりです。
 
 ```sh
 npm install koyuki@0.1.0-alpha.5
@@ -15,8 +17,8 @@ Chromium 156とCloudflare Workersの公開環境で、通常実行・再送・�
 [互換性の範囲と検証例](examples/portability/README.md)を参照してください。
 SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用します。
 
-開発版は[最初の業務アプリケーション](docs/development-start.md)から始められます。
-通常関数とbusinessを使い、取得・保存からApplicationの状態・viewまで試せます。
+JSXを使わず通常関数とbusinessから始めたい場合は、[業務アプリケーションの別の入口](docs/development-start.md)を参照してください。
+取得・保存からApplicationの状態・viewまで試せます。
 公開済みalpha.5を使う場合は[公開版チュートリアル](docs/getting-started.md)へ進んでください。
 以降の「最初の状態遷移」とTargetの例は、公開版でも動く既存APIの説明です。
 
@@ -26,7 +28,7 @@ SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用�
 大規模なチーム開発での効果はまだ未実証です。
 [比較対象・現在の証拠・次の評価仕様](docs/team-development-study.md)を公開しています。
 
-開発版では、[通常関数の配列で業務操作を宣言するbusiness](docs/business.md)を推奨入口として追加しました。
+JSXを使わない構成には、[通常関数の配列で業務操作を宣言するbusiness](docs/business.md)もあります。
 `const expense = business({ name, load, save, operations: { approve: [validateApproval, approve] } })`
 と宣言し、`await expense.approve(input)`で実行します。
 公開済みnpm alpha.5にはまだ含まれません。以下の例・チュートリアルはalpha.5でも利用できる既存APIです。
