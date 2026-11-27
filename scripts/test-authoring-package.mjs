@@ -31,6 +31,7 @@ try {
     scope: 'Unpublished development tarball built from the current working tree; base commit alone does not identify its content.',
   }, null, 2));
   copyFileSync(join(root, 'examples/authoring/main.tsx'), join(workspace, 'main.tsx'));
+  copyFileSync(join(root, 'scripts/fixtures/authoring-key-contracts.ts'), join(workspace, 'key-contracts.ts'));
   copyFileSync(join(root, 'examples/authoring/README.md'), join(workspace, 'README.md'));
   const source = (from, to, replacements) => {
     let text = readFileSync(join(root, from), 'utf8');
@@ -46,7 +47,7 @@ try {
   source('src/examples/expense.ts', 'domain/routing.ts', [["'../framework/index.js'", "'koyuki'"]]);
   source('src/expenses/repository.ts', 'domain/repository.ts', [["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'./expenses.js'"]]);
   writeFileSync(join(workspace, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
-  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'expense.tsx', 'expense-replay.tsx', 'leave.tsx', 'domain/*.ts'] }, null, 2));
+  writeFileSync(join(workspace, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, noUncheckedIndexedAccess: true, noEmit: true, types: [], lib: ['ES2022', 'DOM'], jsx: 'react', jsxFactory: 'h' }, include: ['main.tsx', 'expense.tsx', 'expense-replay.tsx', 'leave.tsx', 'key-contracts.ts', 'domain/*.ts'] }, null, 2));
   if (verify) {
     run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], workspace);
     for (const dependency of ['react', '@types/react', '@types/node']) assert(!existsSync(join(workspace, 'node_modules', dependency)), `Unexpected dependency: ${dependency}`);

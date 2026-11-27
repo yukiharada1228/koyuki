@@ -1,6 +1,6 @@
 /** @jsx h */
 import { workflow, type Result } from '../../framework/index.js';
-import { validateApproval, approve, type Actor, type Input, type Loaded, type Change, type RuleError } from '../../expenses/domain.js';
+import { validateApproval, approve, type Actor, type Input, type Loaded, type Change } from '../../expenses/domain.js';
 import { h, createContext, useContext, useOperation, Operation, operationKey } from './runtime.js';
 
 // Independently callable pure business calculation. No hooks or repository needed.
@@ -11,17 +11,18 @@ export interface ExpenseRepository {
 }
 export const ExpenseRepositoryContext = createContext<ExpenseRepository>();
 export const ActorContext = createContext<Actor>();
-export const approval = operationKey<Input, Change, RuleError | 'LoadFailed' | 'SaveFailed'>('expense.approve.v1');
+const approvalId = 'expense.approve.v1';
 export function useActor() { return useContext(ActorContext); }
 export function useExpenseApproval() {
   const expenses = useContext(ExpenseRepositoryContext);
   const actor = useActor();
-  return useOperation({ name: approval.name,
+  return useOperation({ name: approvalId,
     load: (input: Input) => expenses.load(input, actor),
     execute: approveExpense,
     save: change => expenses.save(change),
   });
 }
+export const approval = operationKey(approvalId, useExpenseApproval);
 export function ApproveExpense() {
   const handler = useExpenseApproval();
   return <Operation operation={approval} handler={handler} />;

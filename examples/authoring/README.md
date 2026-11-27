@@ -14,7 +14,7 @@ npm start
 
 準備ツールは開発版tarballと、実際の経費・休暇の業務関数、部品、Hooks、サンプルmainをコピーする。既存フォルダーを上書きしない。準備後は元リポジトリへ依存せず、通常のnpmパッケージのimportだけで実行する。ReactやNode型はインストールしない。開発時のTypeScript・tsxと、Koyukiだけを使用する。
 
-`expense.tsx`は純粋な合成を作り、ContextからRepository・操作者を取得するカスタムHookを定義する。`expense-replay.tsx`は同じ業務関数に再送境界を加える。`leave.tsx`は同じ構成を別ドメインへ適用する。main.tsxから明示的にdispatch/inspectを呼ぶまで、フレームワークはI/Oを実行しない。
+`expense.tsx`は純粋な合成を作り、ContextからRepository・操作者を取得するカスタムHookを定義する。operationKey(name, useCustomHook)がそのHookから入力・成功・エラー・詳細レポートを推論するため、ハンドル側へ同じ型を重ねて書く必要はない。ハンドルを作るときにHookは評価されない。`expense-replay.tsx`は同じ業務関数に再送境界を加える。`leave.tsx`は同じ構成を別ドメインへ適用する。main.tsxから明示的にdispatch/inspectを呼ぶまで、フレームワークはI/Oを実行しない。
 
 mainのreceipt adapterは単一プロセスのデモ用メモリ実装。永続的な再送や複数プロセスの原子性は保証しない。本番では状態とreceiptを同じtransactionで保存するアダプターが必要になる。既存SQLiteアダプターとの接続はリポジトリ側のテストで検査する。
 

@@ -825,6 +825,21 @@
         "examples/authoring/declaration-client.tsx",
         "scripts/test-portable.mjs"
       ]
+    },
+    "inferredAuthoringKeyFollowUp": {
+      "implementationBaseCommit": "3b452be733afff3ec5ab3848bc697de3a073f93f",
+      "topicIds": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Infer the complete typed operation key from a custom Hook without invoking it at key creation. Three authoring examples remove ten redundant key type arguments while retaining strict plain/replay results and detailed reports. Conflicting run/detail contracts are rejected; packaged TypeScript 6/7 source and declaration-only consumers retain their exact types. No new execution engine, universal inference or source-audio review; statuses unchanged.",
+      "evidence": [
+        "src/framework/authoring.ts",
+        "src/authoring-inferred-key.test.tsx",
+        "docs/react-business-prototype.md",
+        "docs/lecture-react-authoring-review.md",
+        "scripts/test-authoring-package.mjs"
+      ]
     }
   },
   "sections": [
@@ -1217,7 +1232,8 @@
         "examples/authoring/README.md",
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx",
-        "scripts/test-portable.mjs"
+        "scripts/test-portable.mjs",
+        "src/authoring-inferred-key.test.tsx"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
@@ -1327,7 +1343,8 @@
         "examples/authoring/README.md",
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx",
-        "scripts/test-portable.mjs"
+        "scripts/test-portable.mjs",
+        "src/authoring-inferred-key.test.tsx"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",

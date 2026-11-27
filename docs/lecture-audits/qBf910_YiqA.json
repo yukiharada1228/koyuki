@@ -757,6 +757,20 @@
         "examples/authoring/declaration-client.tsx",
         "scripts/test-portable.mjs"
       ]
+    },
+    "inferredAuthoringKeyFollowUp": {
+      "implementationBaseCommit": "3b452be733afff3ec5ab3848bc697de3a073f93f",
+      "topicIds": [
+        "qbf-19"
+      ],
+      "scope": "Infer the complete typed operation key from a custom Hook without invoking it at key creation. Three authoring examples remove ten redundant key type arguments while retaining strict plain/replay results and detailed reports. Conflicting run/detail contracts are rejected; packaged TypeScript 6/7 source and declaration-only consumers retain their exact types. No new execution engine, universal inference or source-audio review; statuses unchanged.",
+      "evidence": [
+        "src/framework/authoring.ts",
+        "src/authoring-inferred-key.test.tsx",
+        "docs/react-business-prototype.md",
+        "docs/lecture-react-authoring-review.md",
+        "scripts/test-authoring-package.mjs"
+      ]
     }
   },
   "sections": [
@@ -1169,7 +1183,8 @@
         "examples/authoring/README.md",
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx",
-        "scripts/test-portable.mjs"
+        "scripts/test-portable.mjs",
+        "src/authoring-inferred-key.test.tsx"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",

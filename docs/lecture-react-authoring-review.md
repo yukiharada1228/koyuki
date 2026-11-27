@@ -7,7 +7,7 @@
 | 講演の論点 | 現在の具体的な経路 | 検証と残件 |
 | --- | --- | --- |
 | iz-22：イベントの接続と実行を任せ、業務の状態遷移に集中する | 部品・Context・カスタムHookでload/合成Workflow/saveを登録し、dispatchで既存Commandを実行 | 経費・休暇の両方で同じランタイムを使用。組み立て時のI/Oゼロ、失敗停止、必須入力の型保持。開発版experimentalサブパスの実tarballを別プロジェクトで試用。APIの確定と一般的な使いやすさの実証は別の残件 |
-| iz-24・qbf-19：Resultの接続と型記述の負担 | 業務関数は既存workflow/thenで合成し、HookにはWorkflow自体を渡す。再送は同じ業務関数へ境界を追加 | 接続callback不要だが、業務関数の通常の型と操作ハンドルの型宣言は必要。一般の多相変換・外側generic actorの特殊化の制限は別に残る |
+| iz-24・qbf-19：Resultの接続と型記述の負担 | 業務関数は既存workflow/thenで合成し、HookにはWorkflow自体を渡す。再送は同じ業務関数へ境界を追加 | 接続callback不要だが、業務関数の通常の型は必要。操作ハンドルの型はカスタムHookから推論する。一般の多相変換・外側generic actorの特殊化の制限は別に残る |
 | w0o-13：途中状態と処理の観測 | 従来の完了後レポートに加え、JSX createApplicationから既存executionSession/instrumentationへ接続 | I/O待機中のspan-started、検証・遷移の個別span、結果・例外の終端通知を検査。値の選択capture、永続履歴、分散相関の新しい保証は加えていない |
 
 JSX/Hooks/Providerは、ユーザーが明示したKoyukiの体験設計である。講演がこれらのAPIを指定した、またはReactの内部実装の再現を求めたとは解釈しない。
@@ -40,3 +40,11 @@ commandForのrunDetailedへ既存のregisterDetailedを接続し、要求ごと�
 準備モードはtarballのhash・基準commit・framework等の未commit変更の有無をDEVELOPMENT.jsonに残す。基準commitだけで作業中のtarball内容を同定したことにはしない。既存ディレクトリは上書きしない。
 
 公開物に含めた新しいmoduleも、実行時依存ゼロのpackage検査とNode globalなしのVM実行の対象に加えた。これは開発版の導入経路の成立であり、独立した人間の評価・API安定化・講演全体の完成ではない。
+
+## 操作ハンドルの重複型指定を減らす
+
+後続でoperationKey(name, useCustomHook)の推論を追加し、経費・再送経費・休暇の3例を移行した。以前必要だったハンドルの型引数合計10個が0個になった。安定した識別子はHookとハンドルで共有する。ハンドル作成時にはHookを実行しない。
+
+[推論検査](../src/authoring-inferred-key.test.tsx)は通常と再送の異なる詳細形式、厳密な成功・エラー型、矛盾した詳細実行の拒否を対象にする。既存の配布物検査では移行後の実ソースを使い、生成した宣言だけを読むconsumerも同じ型を確認する。新しい実行機構・Result・Hooksの実行規則を追加したものではない。
+
+iz-22/24・qbf-19の記述負担への具体的な改善として扱い、原音確認・一般の多相変換・API安定化・人間の学習負担の残件と区別する。これだけで講演全体の完成としない。

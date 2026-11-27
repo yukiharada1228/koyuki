@@ -10,17 +10,20 @@
 // HooksやRepositoryなしでもrun(input)で実行できる純粋な合成。
 const approveExpense = workflow('authorize-approval', validateApproval)
   .then('approve', approve);
+const approvalId = 'expense.approve.v1';
 
 function useExpenseApproval() {
   const expenses = useContext(ExpenseRepositoryContext);
   const actor = useActor();
   return useOperation({
-    name: approval.name,
+    name: approvalId,
     load: (input: Input) => expenses.load(input, actor),
     execute: approveExpense,
     save: change => expenses.save(change),
   });
 }
+
+const approval = operationKey(approvalId, useExpenseApproval);
 
 function ApproveExpense() {
   const handler = useExpenseApproval();
@@ -45,7 +48,7 @@ JSXは部品の評価をProviderのスコープ内まで遅延する。組み立
 
 ## 試作で見つけた設計上の負担
 
-- JSXの要素型だけから、子孫の全操作名・入力・結果を静的に回収する設計にはしていない。代わりに `operationKey<Input, Output, Error>(name)` という型付きハンドルを一つ宣言し、登録とdispatchで共有する。呼び出し時の型安全性は保てるが、これが自然な書き心地かは引き続き評価する。
+- JSXの子孫の全操作型を静的に回収する設計にはしていない。`operationKey(approvalId, useExpenseApproval)`でカスタムHookから型を推論するハンドルを一つ宣言し、登録とdispatchで共有する。定義時にHookは評価しない。通常の業務型宣言は残るが、入力・成功・エラー型をハンドルへ重ねて書く必要はなくなった。識別子とハンドルという概念自体の書き心地は引き続き評価する。
 - executeには通常の関数または既存のWorkflowを渡せる。Workflowをそのまま渡すと内部のルール名・失敗位置をアプリのinspectから追える。通常の関数は一段として扱う。関数の本体を解析してtraceを復元することはしない。
 - 再送はuseOperationのreplay設定から既存のwithReplayへ接続する。永続的な変更とreceiptの原子的保存はアダプターの責務。同時要求のloadやsaveの呼び出し回数そのものを一回に制限する機能ではない。操作識別子・要求ID・操作者・入力・ポリシー版の照合もアダプターの契約に含まれる。
 - 再描画、useState、useEffect、Hook呼び出し順の追跡、asyncコンポーネントは実装していない。Reactとの互換ランタイムではない。
@@ -86,7 +89,7 @@ return useOperation({
 
 業務関数の変更は不要。Hookにはlookupと回復対象の失敗の指定が追加され、saveは元の要求も受け取る。要求ごとのsaveクロージャを作り、同時実行でも最後に届いた要求で上書きしない。操作者はHook評価時にコピーして固定し、lookupとsaveへ同じ認証済みidentityを渡す。withReplayはdispatch入力をsnapshotしてからlookupと実行へ渡す。
 
-再送用の型付きハンドルは `replayOperationKey<Request, Saved, CommandError, LookupError>(name)`。入力・保存値・エラーに加え、inspectの返すReplayReportの型も保つ。再送設定に対してExecutionを返さないsaveは型検査で拒否する。通常実行と再送実行では戻り値とレポートの形が異なるため、ここは利用者が区別して理解する必要がある。
+再送も `operationKey(approvalId, useReplayExpenseApproval)` という同じ入口を使う。Hookが再送を含む場合は、入力・保存値・エラーとReplayReportを推論する。明示的に型を書く既存のoperationKey/replayOperationKeyも維持する。再送設定に対してExecutionを返さないsaveは型検査で拒否する。通常実行と再送実行では戻り値とレポートの形が異なるため、ここは利用者が区別して理解する必要がある。
 
 アプリのinspectでは、再送境界のtraceと、実行した場合の `attempt.trace` を分けて返す。キャッシュが見つかった場合はattemptがnullとなる。失敗時はauthorize-approvalなどの個別ルールまで辿れ、成功済みreceiptならload・業務計算・saveを行わない。
 
@@ -94,7 +97,7 @@ return useOperation({
 
 [休暇承認の例](../src/experiments/react-business/leave.tsx)も、独立したworkflow、RepositoryのProvider、カスタムHook、Operation、dispatchの同じ構成で記述する。追加のランタイムAPIは不要だった。これは組み立て方を比較するための小さな別ドメイン例であり、既存の休暇サンプル全体を移行したものではない。
 
-残る書き心地の負担は、型付きハンドルでの型宣言と、再送アダプターの要求identityを組み立てる関数。今後は複数操作での共有を評価し、業務固有の永続化契約を暗黙化しない範囲で重複を減らす。
+操作ハンドル3箇所の型引数は合計10個から0個になった。残る書き心地の負担は、識別子と型付きハンドルの宣言そのものと、再送アダプターの要求identityを組み立てる関数。今後は複数操作での共有を評価し、業務固有の永続化契約を暗黙化しない範囲で重複を減らす。
 
 ## 検証
 
@@ -112,3 +115,9 @@ npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx sr
 ## 配布物から試す
 
 [独立プロジェクトの準備手順](../examples/authoring/README.md)と `npm run test:authoring:package` を追加した。実tarballへ依存する別プロジェクトで、元リポジトリの相対importなしに型検査・宣言生成・実行する。生成した宣言だけを読むconsumerもTypeScript 6/7で検査する。開発版のtarballであり、npmへの公開は行っていない。
+
+## カスタムHookからの型推論の検査
+
+[推論の専用検査](../src/authoring-inferred-key.test.tsx)では、通常・再送のハンドルが入力、保存後の成功値、閉じたエラー型、詳細レポートを保持することを厳密比較する。ハンドルの定義だけではHookを呼ばず、部品の評価で一度だけ呼ぶ。runとrunDetailedの入力・成功・エラーが矛盾するHookの登録は拒否する。詳細レポート側から通常実行の型を広げて不整合を隠すことは許可しない。
+
+この変更も実tarballと生成宣言だけを読むconsumerをTypeScript 6/7で検査する。最終APIへ型アサーションを追加する方法や、業務の成功型・エラー型をunknownへ広げる方法は使っていない。任意の多相変換や古いbusinessの外側generic actor型の制限を解消する変更ではない。

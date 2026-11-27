@@ -9,7 +9,13 @@ export interface OperationKey<I, O, E, D extends OperationReport<O, E> = ActionR
   readonly name: string;
   readonly contract?: { run: Handler<I, O, E>; detail: () => D };
 }
-export function operationKey<I, O, E>(name: string): OperationKey<I, O, E> { return Object.freeze({ name }); }
+/** Infer the complete operation contract from a custom Hook without evaluating it. */
+export function operationKey<I, O, E, D extends OperationReport<NoInfer<O>, NoInfer<E>>>(name: string, useHandler: () => {
+  readonly run: Handler<I, O, E>;
+  readonly runDetailed: (input: NoInfer<I>) => Promise<D>;
+}): OperationKey<I, O, E, D>;
+export function operationKey<I, O, E>(name: string): OperationKey<I, O, E>;
+export function operationKey(name: string, _useHandler?: unknown) { return Object.freeze({ name }); }
 export function replayOperationKey<I, O, E, RE>(name: string): OperationKey<I, Execution<O>, E | RE | ReplayInputError, ReplayReport<O, E, RE>> {
   return Object.freeze({ name });
 }

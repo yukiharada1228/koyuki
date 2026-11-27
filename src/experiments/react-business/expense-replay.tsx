@@ -1,8 +1,8 @@
 /** @jsx h */
 import type { Result, Receipt, Execution } from '../../framework/index.js';
-import type { Actor, Input, Loaded, Change, ExpenseState, RuleError } from '../../expenses/domain.js';
+import type { Actor, Input, Loaded, Change, ExpenseState } from '../../expenses/domain.js';
 import type { LoadError, SaveError } from '../../expenses/repository.js';
-import { h, createContext, useContext, useOperation, Operation, replayOperationKey } from './runtime.js';
+import { h, createContext, useContext, useOperation, Operation, operationKey } from './runtime.js';
 import { approveExpense, ActorContext, useActor } from './expense.js';
 export interface ApprovalRequest { readonly requestId: string; readonly input: Input }
 export interface ApprovalIdentity extends ApprovalRequest { readonly operation: 'approve'; readonly actor: Actor }
@@ -14,13 +14,12 @@ export interface ReplayExpenseRepository {
   saveRequest(request: ApprovalIdentity, change: Change): Promise<Result<Execution<ExpenseState>, ReplayStorageError>>;
 }
 export const ReplayExpenseRepositoryContext = createContext<ReplayExpenseRepository>();
-export const replayedApproval = replayOperationKey<ApprovalRequest, ExpenseState,
-  LoadError | RuleError | ReplayStorageError, ReplayStorageError>('expense.approve.v1');
+const approvalId = 'expense.approve.v1';
 export function useReplayExpenseApproval() {
   const expenses = useContext(ReplayExpenseRepositoryContext);
   const actor = Object.freeze({ ...useActor() });
   const request = (call: ApprovalRequest): ApprovalIdentity => ({ ...call, operation: 'approve', actor });
-  return useOperation({ name: replayedApproval.name,
+  return useOperation({ name: approvalId,
     load: (call: ApprovalRequest) => expenses.load(call.input, actor),
     execute: approveExpense,
     save: (change, call) => expenses.saveRequest(request(call), change),
@@ -30,6 +29,7 @@ export function useReplayExpenseApproval() {
     },
   });
 }
+export const replayedApproval = operationKey(approvalId, useReplayExpenseApproval);
 export function ReplayApproveExpense() {
   const handler = useReplayExpenseApproval();
   return <Operation operation={replayedApproval} handler={handler} />;

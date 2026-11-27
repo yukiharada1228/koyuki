@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { h as authoringH, createContext as authoringContext, useContext as authoringUseContext, useOperation as authoringUseOperation, Operation as AuthoringOperation, replayOperationKey as authoringKey, createApplication as mountAuthoring } from './dist/authoring.js';
+import { h as authoringH, createContext as authoringContext, useContext as authoringUseContext, useOperation as authoringUseOperation, Operation as AuthoringOperation, operationKey as authoringKey, createApplication as mountAuthoring } from './dist/authoring.js';
 import { exploreModel, sampleModel, sampleModelAsync } from './dist/testing.js';
 import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
@@ -22,17 +22,21 @@ export const result = (async () => {
   const reducedInitial = await sampleModelAsync({ initial: [100], seed: 0, events: () => [], step: n => ({ state: n, output: n }), check: async () => true, invariant: n => n <= 0, shrinkInitial: n => n > 1 ? [0, 1] : [], limits: { cases: 1, length: 0, shrinkAttempts: 20 } });
   if (reducedInitial.kind !== 'counterexample' || reducedInitial.witness.initial !== 1 || reducedInitial.original.initial !== 100) throw new Error('Portable initial shrinking failed');
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
-  const authoringDependency = authoringContext(), authoringOperation = authoringKey('portable-authoring');
+  const authoringDependency = authoringContext(), authoringOperationId = 'portable-authoring';
   let authoringWrites = 0;
-  function PortableBusiness() {
+  function usePortableBusiness() {
     const dependency = authoringUseContext(authoringDependency);
     let receipt = null;
-    const handler = authoringUseOperation({ name: authoringOperation.name,
+    return authoringUseOperation({ name: authoringOperationId,
       load: async input => ok(input + dependency),
       execute: workflow('authoring-increment', input => ok(input + 1)).then('authoring-double', input => ok(input * 2)),
       save: async value => { authoringWrites++; receipt = value; return ok({ kind: 'committed', value }); },
       replay: { lookup: () => ok(receipt === null ? { kind: 'missing' } : { kind: 'found', value: receipt }), resolveAfter: () => false },
     });
+  }
+  const authoringOperation = authoringKey(authoringOperationId, usePortableBusiness);
+  function PortableBusiness() {
+    const handler = usePortableBusiness();
     return authoringH(AuthoringOperation, { operation: authoringOperation, handler });
   }
   const authoringEvents = [];

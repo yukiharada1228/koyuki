@@ -24,16 +24,17 @@ export interface LeaveRepository {
   save(value: ApprovedLeave): Promise<Result<ApprovedLeave, 'SaveConflict'>>;
 }
 export const LeaveRepositoryContext = createContext<LeaveRepository>();
-export const leaveApproval = operationKey<LeaveInput, ApprovedLeave, LeaveError | 'NotFound' | 'SaveConflict'>('leave.approve.v1');
+const approvalId = 'leave.approve.v1';
 export function useLeaveApproval() {
   const repository = useContext(LeaveRepositoryContext);
   const actor = useActor();
-  return useOperation({ name: leaveApproval.name,
+  return useOperation({ name: approvalId,
     load: (input: LeaveInput) => repository.load(input, actor),
     execute: leaveDecision,
     save: value => repository.save(value),
   });
 }
+export const leaveApproval = operationKey(approvalId, useLeaveApproval);
 function ApproveLeave() {
   const handler = useLeaveApproval();
   return <Operation operation={leaveApproval} handler={handler} />;
