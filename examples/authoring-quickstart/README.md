@@ -24,7 +24,7 @@ npm start
 ## 2. 三つのファイルを読む
 
 - `domain.ts`：booked / cancelledのUnionと、認可→キャンセルの純粋なWorkflow。HooksやDBなしで`cancelBooking.run({ booking, actor })`をテストできる。
-- `app.tsx`：ContextからRepository・ホストの操作者を取得するカスタムHookをdefineOperationへ登録。部品がOperationを返し、Providerの内側へ置く。
+- `app.tsx`：必要な予約・操作者をresourceとして一度定義し、defineOperationのneedsへ宣言する。取得とResultの値の組み立て・失敗伝播はruntimeが担当する。useSaveで保存先を取得し、部品をProviderの内側へ置く。
 - `main.ts`：メモリRepositoryとアプリを作り、`app.execute(cancellation, { id })`で実行する。
 
 利用者は業務ルールと取得・保存方法を記述する。Koyukiがload→業務の合成→saveを実行し、Resultが失敗なら後続を止める。部品を評価するだけでは保存しない。actorはホストで認証した値を渡し、リクエスト本文から採用しない。同じアプリ内の操作名は一意にする。
@@ -71,3 +71,5 @@ replay.tsxは同じ純粋なWorkflowを利用し、requestId、照合用の入�
 準備したプロジェクトで`npm run verify`を実行すると、成功、認可失敗、取得失敗、既キャンセル、保存回数、純粋な核、内部traceを確認する。型検査は`npm run check`で別に行う。
 
 リポジトリ側の`npm run test:authoring:quickstart`は、この配布物だけで全手順を実行し、手順3のルール変更がHookやProviderを変えずに適用されることも確認する。保守者AIによる検証であり、人間の初見評価ではない。
+
+業務間のイベント接続は、リポジトリの`docs/declarative-connections.md`へ進む。needsによる依存取得と、emits / Onによる保存後の配送をまとめて試せる。

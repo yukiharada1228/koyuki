@@ -1,6 +1,6 @@
 /** @jsx h */
 import { ok, err, type Result } from 'koyuki';
-import { h, createContext, useContext, defineOperation, Operation, createApplication } from 'koyuki/experimental';
+import { h, createContext, useContext, defineResource, defineOperation, Operation, createApplication } from 'koyuki/experimental';
 import { cancelBooking, type Booking, type Input } from './domain.js';
 export interface BookingRepository {
   load(input: Input): Promise<Result<Booking, 'Missing'>>;
@@ -8,16 +8,18 @@ export interface BookingRepository {
 }
 export const Bookings = createContext<BookingRepository>();
 export const Actor = createContext<string>();
-export const cancellation = defineOperation('booking.cancel.v1', () => {
-  const repository = useContext(Bookings), actor = useContext(Actor);
-  return {
-    load: async (input: Input) => {
-      const result = await repository.load(input);
-      return result.ok ? ok({ booking: result.value, actor }) : result;
-    },
-    execute: cancelBooking,
-    save: booking => repository.save(booking),
-  };
+const currentBooking = defineResource('current-booking', () => {
+  const repository = useContext(Bookings);
+  return (input: Input) => repository.load(input);
+});
+export const authenticatedActor = defineResource('authenticated-actor', () => {
+  const actor = useContext(Actor);
+  return () => ok(actor);
+});
+export const cancellation = defineOperation('booking.cancel.v1', {
+  needs: { booking: currentBooking, actor: authenticatedActor },
+  execute: cancelBooking,
+  useSave: () => { const repository = useContext(Bookings); return (booking: Booking) => repository.save(booking); },
 });
 export function BookingOperations() { return <Operation operation={cancellation} />; }
 export function createBookingApp(repository: BookingRepository, authenticatedActor: string) {

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
-import { h as authoringH, Fragment as AuthoringFragment, createContext as authoringContext, useContext as authoringUseContext, defineOperation as authoringDefineOperation, Operation as AuthoringOperation, createApplication as mountAuthoring } from './dist/authoring.js';
+import { h as authoringH, Fragment as AuthoringFragment, createContext as authoringContext, useContext as authoringUseContext, defineOperation as authoringDefineOperation, Operation as AuthoringOperation, createApplication as mountAuthoring, defineResource as authoringResource, defineEvent as authoringEvent, emit as authoringEmit, On as AuthoringOn } from './dist/authoring.js';
 import { exploreModel, sampleModel, sampleModelAsync } from './dist/testing.js';
 import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
@@ -42,6 +42,16 @@ export const result = (async () => {
   }
   const authoringEvents = [];
   const authoringApp = mountAuthoring(authoringH(AuthoringFragment, null, authoringH(authoringDependency.Provider, { value: 10 }, authoringH(PortableBusiness, null))), { observeExecution: event => authoringEvents.push(event) });
+  let resourceReads = 0, connectedWrites = 0, notifications = 0;
+  const base = authoringResource('portable-base', () => async input => { resourceReads++; return ok(input.value + 1); });
+  const derived = authoringResource('portable-derived', { needs: { base }, useLoad: () => async input => ok(input.base * 2) });
+  const changed = authoringEvent('portable.changed');
+  const connected = authoringDefineOperation('portable.connected', { needs: { base, derived }, execute: input => ok(input.base + input.derived), useSave: () => async value => { connectedWrites++; return ok(value); }, emits: [authoringEmit(changed)] });
+  const payload = authoringResource('portable-payload', () => input => ok(input));
+  const notify = authoringDefineOperation('portable.notify', { needs: { payload }, execute: input => ok(input.payload), useSave: () => async value => { notifications++; return ok(value); } });
+  const connections = mountAuthoring(authoringH(AuthoringFragment, null, authoringH(AuthoringOperation, { operation: connected }), authoringH(AuthoringOn, { event: changed, operation: notify })));
+  const connectedReport = await connections.executeDetailed(connected, { value: 1 });
+  if (!connectedReport.result.ok || connectedReport.result.value !== 6 || resourceReads !== 1 || connectedWrites !== 1 || notifications !== 1 || connectedReport.deliveries[0].status !== 'ok' || typeof connectedReport.publications[0].id !== 'string') throw new Error('Portable dependency graph and event routing failed');
   const authoringCapture = { input: (_value, step) => step, result: result => result.ok };
   const authoringFirst = await authoringApp.executeDetailed(authoringOperation, 2, authoringCapture);
   const authoringReplay = await authoringApp.executeDetailed(authoringOperation, 2, authoringCapture);
@@ -178,8 +188,8 @@ export const result = (async () => {
 })();`;
 const bundled = await build({ stdin: { contents: source, resolveDir: root, loader: 'js' }, bundle: true, platform: 'browser', format: 'iife', globalName: 'Portable', write: false, metafile: true });
 assert.equal(Object.keys(bundled.metafile.outputs).flatMap(key => bundled.metafile.outputs[key].imports).length, 0);
-const context = { structuredClone, setTimeout, clearTimeout };
+const context = { structuredClone, setTimeout, clearTimeout, crypto: globalThis.crypto };
 runInNewContext(bundled.outputFiles[0].text, context);
 const result = JSON.parse(JSON.stringify(await context.Portable.result));
 assert.deepEqual(result, { queuedValue: 3, crash: 'crashed', appValue: 100, first: 'committed', value: 4, steps: 5, replay: 'replayed', attempt: null, writes: 1 });
-console.log('Browser bundle executed without Node globals: function declarations, opaque domain decisions, replay and application snapshots, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');
+console.log('Browser bundle executed without Node globals: dependency resources and automatic event routing, function declarations, opaque domain decisions, replay and application snapshots, input-preserving composition, group commit, direct effect process, collection validation, replay and application lifecycle verified.');

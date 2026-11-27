@@ -79,7 +79,9 @@
     "test:authoring:change": "node scripts/test-authoring-change.mjs",
     "prepare:authoring:quickstart": "node scripts/authoring-quickstart.mjs --prepare",
     "test:authoring:quickstart": "node scripts/authoring-quickstart.mjs --verify",
-    "test:booking:composition": "node scripts/test-booking-composition.mjs"
+    "test:booking:composition": "node scripts/test-booking-composition.mjs",
+    "test:connections:package": "node scripts/test-wiring-package.mjs --verify",
+    "prepare:connections": "node scripts/test-wiring-package.mjs --prepare"
   },
   "devDependencies": {
     "@babel/parser": "8.1.3",

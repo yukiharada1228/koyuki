@@ -1,3 +1,5 @@
+> 依存取得とイベント配送まで任せる場合は、[needs / emits / Onの宣言形式](declarative-connections.md)を推奨します。以下の関数factoryによるload/execute/saveの入口は、個別の取得やProcessを直接組み立てる場合にも利用できます。
+
 # 操作を一度宣言し、登録と実行で共有する
 
 対象は開発版 `koyuki/experimental`。npm公開済みalpha.5のAPIを変更したものではない。React互換性や再描画の追加を目的にせず、既存の関数型の核と実行エンジンを維持する。

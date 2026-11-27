@@ -1,7 +1,7 @@
 /** @jsx h */
 import { ok, err, type Result, type Execution } from 'koyuki';
-import { h, createContext, useContext, defineOperation, Operation, createApplication } from 'koyuki/experimental';
-import { Actor } from './app.js';
+import { h, createContext, useContext, defineResource, defineOperation, Operation, createApplication } from 'koyuki/experimental';
+import { Actor, authenticatedActor } from './app.js';
 import { cancelBooking, type Input, type Booking } from './domain.js';
 type Request = { requestId: string; input: Input };
 type Identity = { key: string; fingerprint: string };
@@ -29,18 +29,22 @@ const store = {
   },
 };
 const Store = createContext<typeof store>();
-const replayedCancellation = defineOperation('booking.cancel.v1', () => {
+function useRequestStore() {
   const repository = useContext(Store), actor = useContext(Actor);
-  const identity = (call: Request): Identity => ({ key: call.requestId, fingerprint: JSON.stringify([call.input.id, actor]) });
-  return {
-    load: async (call: Request) => {
-      const result = await repository.load(call.input);
-      return result.ok ? ok({ booking: result.value, actor }) : result;
-    },
-    execute: cancelBooking,
-    save: (booking: Booking, call: Request) => repository.commit(booking, identity(call)),
-    replay: { lookup: (call: Request) => repository.lookup(identity(call)), resolveAfter: (error: 'Missing' | CancellationError | StoreError) => error === 'AlreadyCancelled' || error === 'ConcurrentChange' },
-  };
+  return { repository, identity: (call: Request): Identity => ({ key: call.requestId, fingerprint: JSON.stringify([call.input.id, actor]) }) };
+}
+const requestedBooking = defineResource('requested-booking', () => {
+  const repository = useContext(Store);
+  return (call: Request) => repository.load(call.input);
+});
+const replayedCancellation = defineOperation('booking.cancel.v1', {
+  needs: { booking: requestedBooking, actor: authenticatedActor },
+  execute: cancelBooking,
+  useSave: () => { const { repository, identity } = useRequestStore(); return (booking: Booking, call: Request) => repository.commit(booking, identity(call)); },
+  useReplay: () => { const { repository, identity } = useRequestStore(); return {
+    lookup: (call: Request) => repository.lookup(identity(call)),
+    resolveAfter: (error: 'Missing' | CancellationError | StoreError) => error === 'AlreadyCancelled' || error === 'ConcurrentChange',
+  }; },
 });
 const app = createApplication(<Store.Provider value={store}><Actor.Provider value="alice"><Operation operation={replayedCancellation} /></Actor.Provider></Store.Provider>);
 const call: Request = { requestId: 'request-1', input: { id: 'one' } };

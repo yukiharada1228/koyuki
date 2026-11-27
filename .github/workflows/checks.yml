@@ -37,6 +37,7 @@ jobs:
       - run: npm run test:authoring:change
       - run: npm run test:authoring:quickstart
       - run: npm run test:booking:composition
+      - run: npm run test:connections:package
       - run: npm run check:business:scale
 
   business:
