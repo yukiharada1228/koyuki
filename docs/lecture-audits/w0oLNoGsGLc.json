@@ -606,6 +606,11 @@
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx"
       ]
+    },
+    "threeBusinessAuthoringFollowUp": {
+      "baseCommit": "c7bbb730dbfda342ceefbb7d23ebc2be61c583e0",
+      "evidence": "docs/authoring-three-businesses.md",
+      "scope": "経費・休暇・登録を共通Hooks/Provider/replay/captureへ接続。3業務のSQLite実行も開発版tarballで検査。AI評価と原資料の未確認は区別し、statusと直接音声・全画面確認のflagは変更しない。"
     }
   },
   "sections": [
@@ -863,7 +868,11 @@
         "docs/authoring-capture.md",
         "src/authoring-capture.test.tsx",
         "scripts/fixtures/authoring-key-contracts.ts",
-        "examples/authoring/captured-exports.tsx"
+        "examples/authoring/captured-exports.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx"
       ],
       "remaining": [
         "履歴の保存先・公開項目・保持削除、opaque関数内部・分散相関はhostの設計または未提供の範囲である。講演のdump可能性を、既定の全値永続収集という必須仕様へ読み替えない。",

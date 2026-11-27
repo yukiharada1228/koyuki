@@ -5,6 +5,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { build } from 'esbuild';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const verify = args.length === 1 && args[0] === '--verify';
@@ -131,6 +132,38 @@ try {
     ]);
     console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/registration.test.tsx'], workspace).trim());
     console.log('Installed experimental registration: SQLite restart, confirmation, atomic outbox/receipt rollback, concurrent replay and identity binding passed.');
+    // Bundle only host sample code. The framework must remain an external SDK
+    // import, so this integration cannot silently test the root source engine.
+    const adapters = await build({
+      stdin: { contents: `
+        export { SqliteReplayLeaves } from './src/experiments/react-business/leave-sqlite.ts';
+        export { ReplayRegistrationRepository } from './src/registration/replay-repository.ts';
+        export { ReplaySqliteExpenses } from './src/expenses/sqlite-replay.ts';
+        export { expenseReplayCommands } from './src/expenses/replay.ts';
+      `, resolveDir: root },
+      absWorkingDir: root, bundle: true, platform: 'node', format: 'esm', target: 'es2022', write: false, metafile: true,
+      plugins: [{ name: 'installed-sdk-only', setup(context) {
+        context.onResolve({ filter: /framework\/index\.js$/ }, () => ({ path: 'koyuki', external: true }));
+      } }],
+    });
+    assert(!Object.keys(adapters.metafile.inputs).some(path => path.includes('src/framework/')), 'Integration bundled the root framework');
+    for (const output of Object.values(adapters.metafile.outputs)) for (const dependency of output.imports) {
+      assert(dependency.external && (dependency.path === 'koyuki' || dependency.path.startsWith('node:')), `Unexpected integration import: ${dependency.path}`);
+    }
+    writeFileSync(join(workspace, 'integration/sqlite-adapters.mjs'), adapters.outputFiles[0].contents);
+    source('src/authoring-leave-replay.test.tsx', 'integration/three-businesses.test.tsx', [
+      ["'./framework/authoring.js'", "'koyuki/experimental'"], ["'./framework/index.js'", "'koyuki'"],
+      ["'./experiments/react-business/leave-replay.js'", "'../leave-replay.js'"],
+      ["'./experiments/react-business/leave-sqlite.js'", "'./sqlite-adapters.mjs'"],
+      ["'./experiments/react-business/registration.js'", "'../registration.js'"],
+      ["'./registration/replay-repository.js'", "'./sqlite-adapters.mjs'"],
+      ["'./experiments/react-business/expense-replay.js'", "'../expense-replay.js'"],
+      ["'./expenses/sqlite-replay.js'", "'./sqlite-adapters.mjs'"],
+      ["'./expenses/replay.js'", "'./sqlite-adapters.mjs'"],
+      ["'./expenses/domain.js'", "'../domain/expenses.js'"],
+    ]);
+    console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/three-businesses.test.tsx'], workspace).trim());
+    console.log('Installed three-business authoring: SQLite-backed expense, leave and registration run concurrently with isolated Providers; durable leave replay and rollback passed.');
     const businessDomain = join(workspace, 'leave-domain.ts');
     const validDomain = readFileSync(businessDomain, 'utf8');
     const selfApprovalGuard = "  if (actor.id === current.owner) return err('SelfApproval');\n";

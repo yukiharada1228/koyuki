@@ -894,6 +894,11 @@
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx"
       ]
+    },
+    "threeBusinessAuthoringFollowUp": {
+      "baseCommit": "c7bbb730dbfda342ceefbb7d23ebc2be61c583e0",
+      "evidence": "docs/authoring-three-businesses.md",
+      "scope": "経費・休暇・登録を共通Hooks/Provider/replay/captureへ接続。3業務のSQLite実行も開発版tarballで検査。AI評価と原資料の未確認は区別し、statusと直接音声・全画面確認のflagは変更しない。"
     }
   },
   "sections": [
@@ -1330,7 +1335,11 @@
         "docs/authoring-capture.md",
         "src/authoring-capture.test.tsx",
         "scripts/fixtures/authoring-key-contracts.ts",
-        "examples/authoring/captured-exports.tsx"
+        "examples/authoring/captured-exports.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
@@ -1441,7 +1450,11 @@
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx",
         "scripts/test-portable.mjs",
-        "src/authoring-inferred-key.test.tsx"
+        "src/authoring-inferred-key.test.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
@@ -1609,7 +1622,12 @@
         "src/registration-lease.test.ts",
         "docs/lecture-local-asr-iz-followup.md",
         "docs/lecture-local-asr-iz-followup.json",
-        "docs/lecture-partial-reconciliation.md"
+        "docs/lecture-partial-reconciliation.md",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx",
+        "scripts/test-authoring-package.mjs"
       ],
       "remaining": [
         "実メールprovider統合、常駐scheduler、backoff・最大試行数・dead letter、運用環境でのlease維持は未検証。at-least-once配送はexactly-onceを保証しない。"

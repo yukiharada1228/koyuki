@@ -790,6 +790,11 @@
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx"
       ]
+    },
+    "threeBusinessAuthoringFollowUp": {
+      "baseCommit": "c7bbb730dbfda342ceefbb7d23ebc2be61c583e0",
+      "evidence": "docs/authoring-three-businesses.md",
+      "scope": "経費・休暇・登録を共通Hooks/Provider/replay/captureへ接続。3業務のSQLite実行も開発版tarballで検査。AI評価と原資料の未確認は区別し、statusと直接音声・全画面確認のflagは変更しない。"
     }
   },
   "sections": [
@@ -1227,7 +1232,11 @@
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx",
         "scripts/test-portable.mjs",
-        "src/authoring-inferred-key.test.tsx"
+        "src/authoring-inferred-key.test.tsx",
+        "docs/authoring-three-businesses.md",
+        "examples/authoring/three-businesses.tsx",
+        "src/authoring-registration.test.tsx",
+        "src/authoring-leave-replay.test.tsx"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",
