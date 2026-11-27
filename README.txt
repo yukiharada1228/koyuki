@@ -1,36 +1,16 @@
 Koyuki
 
-業務の状態・検証・遷移を宣言し、Resultの合成と取得・保存・実行管理を任せる
-TypeScriptフレームワークの試作です。安定版APIではありません。
+独立したTypeScriptの業務関数を、Context・Hooks・JSXで組み立てる業務フレームワーク。
+コアはWeb標準APIを使用し、実行時の外部パッケージ依存はありません。
 
-入口
-src/framework/index.ts
-src/tags/events.ts — 業務イベントの宣言
-src/tags/model.ts — 取得・保存の登録
-src/tags/program.ts — 操作と業務状態への反映
-src/expenses/application.ts — 経費申請への適用
+API・Quick Start・保証範囲は、同梱のREADME.mdを参照してください。
+https://github.com/yukiharada1228/koyuki
 
-起動と検証（Node 26.12.0で確認）
-npm ci
-npm run check
-npm test
-npm run demo:expenses:sqlite
-npm run dev
+koyuki/experimentalはalpha.6以降の実験APIです。
+業務仕様・認証・保存の原子性・外部配送の重複排除にはホスト側の実装が必要です。
+サンプルのSQLiteはNode固有APIを使用します。
 
-http://127.0.0.1:4317       タグ管理
-http://127.0.0.1:4317/react React表示の利用例
+ライセンス: MIT（同梱のLICENSEを参照）
 
-業務の核はReactに依存しません。Reactは表示アダプターの一例です。
-ローカルDBは.data/に生成されます。リポジトリには含めていません。
-
-PUBLIC-API.txtと各RESULTS.txtに設計判断・検証結果・制約を記載しています。
-planning/feature-issues.jsonはGitHub Issueの起票原稿です。
-
-この試作は伊藤直也氏の以下の発表に着想を得ています。
-https://www.youtube.com/watch?v=izV1h6o3hgQ
-https://www.youtube.com/watch?v=qBf910_YiqA
-https://www.youtube.com/watch?v=w0oLNoGsGLc
+伊藤直也氏の関数型プログラミングに関する発表に着想を得ています。
 発表者による実装・監修・推奨を意味しません。
-
-実認証、汎用の永続実行、自動再送等は未実装です。
-ライセンス条件はまだ設定していません。
