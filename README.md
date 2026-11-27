@@ -37,6 +37,8 @@ JSXを使わない構成には、[通常関数の配列で業務操作を宣言�
 
 React経験者向けの組み立て方は、開発版の実験API `koyuki/experimental` で試せます。[独立した試用プロジェクトの準備](examples/authoring/README.md)は、部品・Context・カスタムHooksから経費・休暇・会員登録の業務関数、保存、再送、traceまで接続します。操作はdefineOperationで一度宣言し、JSX登録とexecute/executeDetailedで共有します。[APIの説明と比較](docs/authoring-declaration-api.md)を参照してください。公開済みalpha.5には含まれません。
 
+[業務部品と通常関数の比較](examples/booking-composition/README.md)では、3操作をまとめたBookingBusinessをpropsで再利用し、24h/48hの期限と別Repository・操作者を検証します。同じ再利用は関数でも成立するため、JSXは任意の組み立て方として扱います。
+
 ## 最初の状態遷移
 
 ```ts
