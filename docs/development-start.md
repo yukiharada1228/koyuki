@@ -2,7 +2,7 @@
 
 # 開発版で最初の業務アプリケーションを書く
 
-開発版の入口はbusinessである。通常のTypeScript関数で状態・検証・遷移を書き、loadとsaveを宣言する。
+このページで扱うJSXなしの入口はbusinessである。通常のTypeScript関数で状態・検証・遷移を書き、loadとsaveを宣言する。
 実行状態とviewも必要な場合に、defineApplicationとoperationsを加える。
 公開済みnpm alpha.5にはbusinessが含まれないため、この手順はソースからpackした開発版を使う。
 公開版から始める場合は[alpha.5向けチュートリアル](getting-started.md)を参照する。

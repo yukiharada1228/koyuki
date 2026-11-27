@@ -24,13 +24,19 @@ try {
   mkdirSync(consumer);
   copyFileSync(join(temp, pack.filename), join(consumer, 'koyuki-development.tgz'));
   writeFileSync(join(consumer, 'DEVELOPMENT.json'), JSON.stringify({ baseCommit: run('git', ['rev-parse', 'HEAD']).trim(), sha256: createHash('sha256').update(readFileSync(join(temp, pack.filename))).digest('hex'), scope: 'Unpublished tarball built from current working tree. Not the npm registry alpha.5.' }, null, 2));
-  for (const file of ['domain.ts', 'app.tsx', 'main.ts', 'trace.ts', 'replay.tsx', 'verify.ts', 'tsconfig.json', 'README.md']) copyFileSync(join(root, 'examples/authoring-quickstart', file), join(consumer, file));
-  writeFileSync(join(consumer, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.ts', trace: 'tsx trace.ts', replay: 'tsx replay.tsx', verify: 'tsx verify.ts' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
+  for (const file of ['domain.ts', 'app.tsx', 'main.tsx', 'trace.tsx', 'replay.tsx', 'verify.tsx', 'access.tsx', 'tsconfig.json', 'README.md']) copyFileSync(join(root, 'examples/authoring-quickstart', file), join(consumer, file));
+  writeFileSync(join(consumer, 'package.json'), JSON.stringify({ private: true, type: 'module', scripts: { check: 'tsc --noEmit', start: 'tsx main.tsx', trace: 'tsx trace.tsx', replay: 'tsx replay.tsx', verify: 'tsx verify.tsx', access: 'tsx access.tsx' }, dependencies: { koyuki: 'file:./koyuki-development.tgz' }, devDependencies: { typescript: '7.0.2', tsx: '4.23.15' } }, null, 2));
   if (!verify) { console.log(`Prepared ${consumer}. Run npm install, npm run check and npm start there. Unpublished development package only.`); }
   else {
     run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund'], consumer);
     for (const name of ['react', '@types/react', '@types/node']) assert(!existsSync(join(consumer, 'node_modules', name)), `Unexpected ${name}`);
-    for (const command of ['check', 'start', 'trace', 'replay', 'verify']) console.log(run('npm', ['run', command], consumer).trim());
+    for (const version of ['7.0.2', '6.0.3']) {
+      if (version === '6.0.3') run('npm', ['install', '--save-dev', `typescript@${version}`, '--ignore-scripts', '--no-audit', '--no-fund'], consumer);
+      run('npm', ['run', 'check'], consumer);
+      run('npm', ['exec', '--', 'tsc', '--noEmit', 'false', '--declaration', '--emitDeclarationOnly', '--rootDir', '.', '--outDir', 'declarations'], consumer);
+      console.log(`Quick Start TypeScript ${version}: checks and declaration emit passed.`);
+    }
+    for (const command of ['check', 'start', 'trace', 'access', 'replay', 'verify']) console.log(run('npm', ['run', command], consumer).trim());
     const domainFile = join(consumer, 'domain.ts'), source = readFileSync(domainFile, 'utf8');
     assert(run(process.execPath, [fileURLToPath(import.meta.url), '--prepare', consumer], root, true).includes('Refusing to overwrite'));
     assert.equal(readFileSync(domainFile, 'utf8'), source);
@@ -41,13 +47,18 @@ try {
     console.log('Missing authorization was rejected by the business test; existing directories were preserved.');
     const changed = source.replace("return booking.kind === 'booked'", "if (booking.id === 'locked') return err('CancellationLocked');\n    return booking.kind === 'booked'").replace("'Forbidden' | 'AlreadyCancelled'>", "'Forbidden' | 'AlreadyCancelled' | 'CancellationLocked'>");
     assert.notEqual(source, changed); writeFileSync(domainFile, changed);
-    writeFileSync(join(consumer, 'changed.ts'), `import { cancellation, createBookingApp, memoryBookings } from './app.js';
-const repository = memoryBookings([{ kind: 'booked', id: 'locked', owner: 'alice' }]);
-const result = await createBookingApp(repository, 'alice').execute(cancellation, { id: 'locked' });
+    writeFileSync(join(consumer, 'changed.tsx'), `/** @jsx h */
+import { h } from 'koyuki/experimental';
+import { bookingId, actorId } from './domain.js';
+import { Actor, cancellation, createBookingApp, memoryBookings } from './app.js';
+const id = bookingId('locked'), actor = actorId('alice');
+if (!id.ok || !actor.ok) throw new Error('InvalidChangedRuleFixture');
+const repository = memoryBookings([{ kind: 'booked', id: id.value, owner: actor.value }]);
+const result = await createBookingApp(repository).scope(children => <Actor.Provider value={actor.value}>{children}</Actor.Provider>).execute(cancellation, { id: id.value });
 if (result.ok || result.error !== 'CancellationLocked' || repository.saves !== 0) throw new Error('ChangedRuleNotApplied');
 console.log('Domain-only rule change and inferred failure passed.');`);
     run('npm', ['run', 'check'], consumer);
-    console.log(run('npm', ['exec', '--', 'tsx', 'changed.ts'], consumer).trim());
+    console.log(run('npm', ['exec', '--', 'tsx', 'changed.tsx'], consumer).trim());
     console.log('Installed Quick Start verified without React or Node types; app, Providers and executor stayed unchanged.');
   }
 } finally { rmSync(temp, { recursive: true, force: true }); }

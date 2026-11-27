@@ -1,51 +1,49 @@
 # Koyuki
 
-業務の状態・検証・遷移を宣言し、接続と実行を任せるTypeScriptフレームワーク。
+独立したTypeScriptの業務関数を、ReactらしいContext・Hooks・JSXで組み立てる業務フレームワーク。状態・検証・遷移は業務側で定義し、型付きの接続・失敗停止・実行記録・イベント配送を共通の実行器へ任せます。
 
-**React経験者が開発版を始める場合は、[最初の業務操作を作るQuick Start](examples/authoring-quickstart/README.md)へ進んでください。** 純粋な業務関数をContext・Hooks・JSXで組み立て、実行→ルール変更→trace→再送の順に試せます。公開済みalpha.5には、この実験APIは含まれません。
+## 開発版のQuick Start
 
-公開済みalpha.5を使う場合は次のとおりです。
+**[最初の業務操作を作る](examples/authoring-quickstart/README.md)** を推奨の入口とします。普通の業務関数から始め、Operation → JSXの実行スコープ → Guard → trace → 再送へ進みます。
+
+```sh
+# この開発版のチェックアウトのルートで
+npm ci
+npm run prepare:authoring:quickstart -- ../my-bookings
+cd ../my-bookings
+npm install
+npm run check
+npm start
+```
+
+既存ディレクトリは上書きしません。準備したプロジェクトは開発版tarballと公開importのみで動きます。**公開済みnpm alpha.5には`koyuki/experimental`は含まれません。** 未コミットの変更がある場合、新しくcloneした公開リポジトリだけでは同じ開発版になりません。
+
+業務ツリーは`createApplicationTemplate`、操作者は実行ごとの`scope`とProviderで構成します。構成時に業務I/Oは始まらず、`execute` / `executeDetailed`で実行します。React自体は不要で、再描画・useState・useEffectは提供しません。APIは実験段階です。
+
+| 試したいこと | ガイド |
+| --- | --- |
+| 普通の関数から段階的に理解する | [学習ガイド](docs/learning-path.md) |
+| 実行ごとのActor・配下の認可 | [実行スコープとGuard](docs/execution-scopes.md) |
+| Resource・イベント・Query・viewをつなぐ | [宣言的な接続](docs/declarative-connections.md) |
+| 複数段階の経費承認・予算・再送 | [予算付き経費精算と比較](docs/expense-budget-study.md) |
+| ID・接続の型安全性と安定名 | [保証の範囲](docs/identifier-safety.md) |
+| 部品・propsで別業務へ再利用する | [予約業務の合成](examples/booking-composition/README.md) |
+
+複数の業務で実行契約を統一したい場合に向きます。単純なCRUDでは普通の関数だけで十分な場合があります。業務仕様・認証・DBの原子性を自動で決定するものではありません。通常TypeScriptより常にコードが少なくなる保証や、大規模チームでの生産性の実証もありません。
+
+コアはWeb標準APIのみ・実行時外部依存ゼロです。[ランタイムの契約](docs/runtime.md)と[互換性の検証範囲](examples/portability/README.md)を参照してください。Quick StartはNode.js 22以上、SQLiteの統合例はNode.js 26で検証します。サンプルのSQLiteアダプターにはNode固有APIを使用します。
+
+## 公開alpha.5と既存の入口
 
 ```sh
 npm install koyuki@0.1.0-alpha.5
 ```
 
-**実験段階のアルファ版です。** APIは変更される可能性があります。ES Modulesと
-Node.jsでの利用・サンプルの実行は22以上を対象にしています。
-alpha.4のコアはNode固有APIへの依存を外し、`structuredClone` などの標準APIのみを使用します。
-Chromium 156とCloudflare Workersの公開環境で、通常実行・再送・詳細記録を検証しています。
-[互換性の範囲と検証例](examples/portability/README.md)を参照してください。
-SQLiteなどのサンプルアダプターは引き続きNode固有APIを使用します。
+公開版を使う場合は[公開版チュートリアル](docs/getting-started.md)へ進んでください。JSXなしの開発版には[businessによる入口](docs/development-start.md)もあります。これらは代替・既存APIの説明であり、上記の開発版Quick Startの手順ではありません。
 
-JSXを使わず通常関数とbusinessから始めたい場合は、[業務アプリケーションの別の入口](docs/development-start.md)を参照してください。
-取得・保存からApplicationの状態・viewまで試せます。
-公開済みalpha.5を使う場合は[公開版チュートリアル](docs/getting-started.md)へ進んでください。
-以降の「最初の状態遷移」とTargetの例は、公開版でも動く既存APIの説明です。
+[三業務を組み立てる試用](examples/authoring/README.md)、[APIの説明と比較](docs/authoring-declaration-api.md)、[チーム開発での評価範囲](docs/team-development-study.md)も参照できます。
 
-新しい[依存とイベント接続の宣言](docs/declarative-connections.md)では、`needs`で取得・依存を、`emits`と`On`で業務間の接続を宣言できます。取得結果のResultを手で組み立てたり、承認後の通知を呼び出し側から直接実行する記述をruntimeへ移します。申請→承認→通知を配布物だけで試せます。
-
-JSXで登録した操作は`app.start({ initial, operations, view })`から表示用の状態管理にも接続できます。`projection`で成功値の反映を宣言し、実行中・失敗・例外・購読はフレームワークが管理します。詳しくは[接続とviewのガイド](docs/declarative-connections.md#jsxの構成から状態とviewへ)を参照してください。
-
-`defineQuery`と`refreshQuery`で、後続イベントに応じた認可済みデータの再取得とview更新も宣言できます。経費・休暇・会員登録を同じ方式で扱う例は`npm run demo:authoring:dashboard`で実行できます。
-
-コアはWeb標準APIのみ・実行時外部依存ゼロを方針とします。[依存の契約と自動検証](docs/runtime.md)を参照してください。
-
-複数の業務を同じ実行契約で実装できることを価値仮説としています。
-大規模なチーム開発での効果はまだ未実証です。
-[比較対象・現在の証拠・次の評価仕様](docs/team-development-study.md)を公開しています。
-
-JSXを使わない構成には、[通常関数の配列で業務操作を宣言するbusiness](docs/business.md)もあります。
-`const expense = business({ name, load, save, operations: { approve: [validateApproval, approve] } })`
-と宣言し、`await expense.approve(input)`で実行します。
-公開済みnpm alpha.5にはまだ含まれません。以下の例・チュートリアルはalpha.5でも利用できる既存APIです。
-[移行・型検査・書き心地の評価記録](docs/business-api-study.md)も参照できます。
-[利用者評価用の課題](examples/onboarding/README.md)は、開発版tarballと未実装の開始ファイルを独立フォルダーへ準備できます。利用者による評価結果はまだありません。
-
-React経験者向けの組み立て方は、開発版の実験API `koyuki/experimental` で試せます。[独立した試用プロジェクトの準備](examples/authoring/README.md)は、部品・Context・カスタムHooksから経費・休暇・会員登録の業務関数、保存、再送、traceまで接続します。操作はdefineOperationで一度宣言し、JSX登録とexecute/executeDetailedで共有します。[APIの説明と比較](docs/authoring-declaration-api.md)を参照してください。公開済みalpha.5には含まれません。
-
-[業務部品と通常関数の比較](examples/booking-composition/README.md)では、3操作をまとめたBookingBusinessをpropsで再利用し、24h/48hの期限と別Repository・操作者を検証します。同じ再利用は関数でも成立するため、JSXは任意の組み立て方として扱います。
-
-## 最初の状態遷移
+### 最初の状態遷移（既存API）
 
 ```ts
 import { ok, err, step, transition, type Result } from 'koyuki';

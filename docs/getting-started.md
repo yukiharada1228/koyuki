@@ -1,7 +1,7 @@
 # 最初の業務操作を作る
 
 このページは公開済みnpm alpha.5向けのチュートリアルである。
-開発版で新しく始める場合は、通常関数とbusinessを使う[開発版の最初のアプリケーション](development-start.md)を参照する。
+開発版で新しく始める場合は、JSX・実行スコープを使う[Quick Start](../examples/authoring-quickstart/README.md)を参照する。JSXを使わない構成は[別の入口](development-start.md)に分けている。
 以下の推奨表は公開版で利用できるAPIの範囲であり、開発版の入口を置き換えるものではない。
 
 Koyukiは、純粋な業務判断と、取得・保存・アプリケーションの実行を接続する。

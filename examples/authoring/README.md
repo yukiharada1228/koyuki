@@ -1,5 +1,7 @@
 # Reactらしい組み立てを開発版で試す
 
+最初は[Quick Start](../authoring-quickstart/README.md)で一つの業務操作と実行スコープを確認してください。このページは経費・休暇・会員登録をまとめて試す発展例です。
+
 この例は未公開の開発版tarballを使う。npm公開済みalpha.5には`koyuki/experimental`は含まれない。APIは実験段階で変更され得る。
 
 リポジトリのルートで、未使用の保存先を指定する。
