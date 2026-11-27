@@ -77,3 +77,5 @@ DBアダプターは例示用で、Node/SQLiteは公開runtimeに入れない。
 | npm run test:lecture-records | 9件成功。原音確認とは区別 |
 
 その後、3業務を同一Fragmentへ並べる並行実行テストを拡張し、該当3件と全ソースの型検査を再確認した。GitHub CIの結果や未実施の本番検証を、このローカル結果へ含めない。
+
+配布物検査の後続確認では、新しい登録HookのSQLite統合も実tarball側へ移した。別workspaceの `integration` 内に例示用adapterと5件のテストを配置し、frameworkへの参照をすべてインストールしたkoyuki / koyuki/experimentalへ向けて実行する。DB再接続後の再送、確認、outbox/receiptのrollback、同時要求、tokenのidentity対応を確認した。Nodeを使うこの実行時検査は、Node型なしで検査する利用者コードとは分けており、Node型の追加インストールで宣言検査を通したものではない。休暇の永続adapterの実行証拠は依然ソース側のテストであり、この追加だけで全3業務の永続adapterを配布物上で実行したとはしない。

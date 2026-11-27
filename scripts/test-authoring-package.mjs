@@ -112,6 +112,25 @@ try {
       console.log(`TypeScript ${version}: installed experimental subpath, strict inputs/results, JSX, declaration emit and declaration-only consumer passed without Node types.`);
     }
     console.log(run('npm', ['start'], workspace).trim());
+    // Runtime-only SQLite integration lives outside the Node-type-free consumer
+    // compilation. Every framework import still resolves to the installed SDK.
+    mkdirSync(join(workspace, 'integration'));
+    source('src/registration/repository.ts', 'integration/repository.ts', [
+      ["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'../domain/registration.js'"],
+    ]);
+    source('src/registration/replay-repository.ts', 'integration/replay-repository.ts', [
+      ["'../framework/index.js'", "'koyuki'"], ["'./domain.js'", "'../domain/registration.js'"],
+      ["'./secrets.js'", "'../domain/registration-secrets.js'"],
+      ["'../experiments/react-business/registration.js'", "'../registration.js'"],
+    ]);
+    source('src/authoring-registration.test.tsx', 'integration/registration.test.tsx', [
+      ["'./framework/authoring.js'", "'koyuki/experimental'"], ["'./framework/index.js'", "'koyuki'"],
+      ["'./experiments/react-business/registration.js'", "'../registration.js'"],
+      ["'./registration/replay-repository.js'", "'./replay-repository.js'"],
+      ["'./registration/secrets.js'", "'../domain/registration-secrets.js'"],
+    ]);
+    console.log(run('npm', ['exec', '--', 'tsx', '--test', 'integration/registration.test.tsx'], workspace).trim());
+    console.log('Installed experimental registration: SQLite restart, confirmation, atomic outbox/receipt rollback, concurrent replay and identity binding passed.');
     const businessDomain = join(workspace, 'leave-domain.ts');
     const validDomain = readFileSync(businessDomain, 'utf8');
     const selfApprovalGuard = "  if (actor.id === current.owner) return err('SelfApproval');\n";
