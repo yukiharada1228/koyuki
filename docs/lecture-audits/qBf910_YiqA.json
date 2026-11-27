@@ -742,6 +742,21 @@
         "src/react-business-replay.test.tsx",
         "src/react-business-leave.test.tsx"
       ]
+    },
+    "experimentalAuthoringPackageFollowUp": {
+      "implementationBaseCommit": "a0aca044a7244a83c79a93418dacfd52946e7b94",
+      "topicIds": [
+        "qbf-19"
+      ],
+      "scope": "Expose the authoring study through an explicitly experimental development-package subpath. Install a real tarball into an isolated TypeScript 6/7 consumer, emit declarations and verify a declaration-only consumer. Execute expenses, leave, receipt replay, actor isolation and live spans. Retain zero runtime dependencies and add browser-VM coverage. Not an npm publication, independent human usability trial, universal inference fix or original audio/frame review. Topic statuses unchanged.",
+      "evidence": [
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs"
+      ]
     }
   },
   "sections": [
@@ -1148,7 +1163,13 @@
         "src/experiments/react-business/runtime.ts",
         "src/react-business-execution.test.tsx",
         "src/react-business-replay.test.tsx",
-        "src/react-business-leave.test.tsx"
+        "src/react-business-leave.test.tsx",
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs"
       ],
       "remaining": [
         "名前なしinline・generic requireと未注釈evolveの同時推論、任意の多相変換やcallback注釈の全省略は保証しない。",

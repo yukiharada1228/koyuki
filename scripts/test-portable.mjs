@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Test tooling uses Node; the bundled consumer has only standard runtime globals.
 const source = `
+import { h as authoringH, createContext as authoringContext, useContext as authoringUseContext, useOperation as authoringUseOperation, Operation as AuthoringOperation, replayOperationKey as authoringKey, createApplication as mountAuthoring } from './dist/authoring.js';
 import { exploreModel, sampleModel, sampleModelAsync } from './dist/testing.js';
 import { retryEffect } from './dist/index.js';
 import { describeFlow, flowMermaid, auditRecord, inTransaction, createSyncTransaction, workflow, combine, collectEffects, foldEach, business, withReplay, defineUseCaseGroup, replayOperations, defineApplication, operation, defineTransition, withInput, ok, fromThrowable, fromPromise, process as effectProcess, collectEach, err } from './dist/index.js';
@@ -21,6 +22,24 @@ export const result = (async () => {
   const reducedInitial = await sampleModelAsync({ initial: [100], seed: 0, events: () => [], step: n => ({ state: n, output: n }), check: async () => true, invariant: n => n <= 0, shrinkInitial: n => n > 1 ? [0, 1] : [], limits: { cases: 1, length: 0, shrinkAttempts: 20 } });
   if (reducedInitial.kind !== 'counterexample' || reducedInitial.witness.initial !== 1 || reducedInitial.original.initial !== 100) throw new Error('Portable initial shrinking failed');
   if ('process' in globalThis || 'Buffer' in globalThis || 'require' in globalThis) throw new Error('Node global leaked');
+  const authoringDependency = authoringContext(), authoringOperation = authoringKey('portable-authoring');
+  let authoringWrites = 0;
+  function PortableBusiness() {
+    const dependency = authoringUseContext(authoringDependency);
+    let receipt = null;
+    const handler = authoringUseOperation({ name: authoringOperation.name,
+      load: async input => ok(input + dependency),
+      execute: workflow('authoring-increment', input => ok(input + 1)).then('authoring-double', input => ok(input * 2)),
+      save: async value => { authoringWrites++; receipt = value; return ok({ kind: 'committed', value }); },
+      replay: { lookup: () => ok(receipt === null ? { kind: 'missing' } : { kind: 'found', value: receipt }), resolveAfter: () => false },
+    });
+    return authoringH(AuthoringOperation, { operation: authoringOperation, handler });
+  }
+  const authoringEvents = [];
+  const authoringApp = mountAuthoring(authoringH(authoringDependency.Provider, { value: 10 }, authoringH(PortableBusiness, null)), { observeExecution: event => authoringEvents.push(event) });
+  const authoringFirst = await authoringApp.inspect(authoringOperation, 2);
+  const authoringReplay = await authoringApp.inspect(authoringOperation, 2);
+  if (!authoringFirst.result.ok || authoringFirst.result.value.value !== 26 || authoringReplay.attempt !== null || authoringWrites !== 1 || !authoringEvents.some(event => event.kind === 'span-started' && event.step === 'authoring-double')) throw new Error('Portable experimental authoring failed');
   let retryCalls = 0;
   const retried = await retryEffect(async n => ++retryCalls === 1 ? err('Offline') : ok(n), { maxAttempts: 2, decide: () => ({ kind: 'retry', safety: 'not-applied', delayMs: 0 }) })(3);
   if (!retried.ok || retried.value !== 3 || retryCalls !== 2) throw new Error('Portable bounded retry failed');

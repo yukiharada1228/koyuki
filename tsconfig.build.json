@@ -13,6 +13,7 @@
   },
   "include": [
     "src/framework/index.ts",
-    "src/framework/testing.ts"
+    "src/framework/testing.ts",
+    "src/framework/authoring.ts"
   ]
 }

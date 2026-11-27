@@ -1,6 +1,6 @@
 # React経験者向けの業務ロジック組み立て試作
 
-目的はReactの内部を再現することではなく、部品・props・Context・カスタムHooksで業務処理を組み立てる体験を確かめること。試作は `src/experiments/react-business/` に置き、npmの公開APIは変更していない。Reactや新たな実行時依存は追加していない。
+目的はReactの内部を再現することではなく、部品・props・Context・カスタムHooksで業務処理を組み立てる体験を確かめること。組み立てランタイムは `src/framework/authoring.ts` に移し、開発版tarballの実験サブパス `koyuki/experimental` から利用できる。経費・休暇の例は `src/experiments/react-business/` に置く。公開済みnpm alpha.5には含まれない。Reactや新たな実行時依存は追加していない。
 
 ## 経費承認の縦断例
 
@@ -108,3 +108,7 @@ npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx sr
 [再送テスト](../src/react-business-replay.test.tsx)は既存のSQLiteアダプターを使用し、保存済み要求、同時重複、応答喪失、要求payload変更、操作者の違い、dispatch後の入力変更、Hook評価後の操作者変更、異なる要求の並行処理を確認する。[休暇テスト](../src/react-business-leave.test.tsx)では同じ構成で成功・失敗・個別ルールのtraceを検査する。SQLiteはテスト用のI/Oアダプターであり、試作ランタイムはNode APIをimportしない。
 
 これは保守者によるAI実装・評価であり、初見の人間の評価としては数えない。講演全内容の完全実現や、現行APIの置き換え完了を意味するものでもない。
+
+## 配布物から試す
+
+[独立プロジェクトの準備手順](../examples/authoring/README.md)と `npm run test:authoring:package` を追加した。実tarballへ依存する別プロジェクトで、元リポジトリの相対importなしに型検査・宣言生成・実行する。生成した宣言だけを読むconsumerもTypeScript 6/7で検査する。開発版のtarballであり、npmへの公開は行っていない。

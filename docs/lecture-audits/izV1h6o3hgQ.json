@@ -809,6 +809,22 @@
         "src/react-business-replay.test.tsx",
         "src/react-business-leave.test.tsx"
       ]
+    },
+    "experimentalAuthoringPackageFollowUp": {
+      "implementationBaseCommit": "a0aca044a7244a83c79a93418dacfd52946e7b94",
+      "topicIds": [
+        "iz-22",
+        "iz-24"
+      ],
+      "scope": "Expose the authoring study through an explicitly experimental development-package subpath. Install a real tarball into an isolated TypeScript 6/7 consumer, emit declarations and verify a declaration-only consumer. Execute expenses, leave, receipt replay, actor isolation and live spans. Retain zero runtime dependencies and add browser-VM coverage. Not an npm publication, independent human usability trial, universal inference fix or original audio/frame review. Topic statuses unchanged.",
+      "evidence": [
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs"
+      ]
     }
   },
   "sections": [
@@ -1195,7 +1211,13 @@
         "src/experiments/react-business/runtime.ts",
         "src/react-business-execution.test.tsx",
         "src/react-business-replay.test.tsx",
-        "src/react-business-leave.test.tsx"
+        "src/react-business-leave.test.tsx",
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs"
       ],
       "remaining": [
         "開発版APIの安定化と独立利用者による書き心地・学習負担の評価が残る。25操作の検査を任意の業務や実運用の優位性へ一般化しない。",
@@ -1299,7 +1321,13 @@
         "src/experiments/react-business/runtime.ts",
         "src/react-business-execution.test.tsx",
         "src/react-business-replay.test.tsx",
-        "src/react-business-leave.test.tsx"
+        "src/react-business-leave.test.tsx",
+        "src/framework/authoring.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/README.md",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/test-portable.mjs"
       ],
       "remaining": [
         "名前なしinline要件と未注釈evolveの同時推論や、任意の多相変換には制限が残る。取得・業務順序・文脈構築は利用者が宣言し、言語レベルのdo記法と同等の透明性やDX優位は未実証。",
