@@ -1,10 +1,6 @@
 # 全84話題の判定と現行実装への経路を点検する
 
-[Hooksから途中I/Oと純粋な計算を組み立てる例](authoring-process.md)を追加した。詳細形式のload・Processのexecute・保存を既存実行機構へ接続し、公開Process型によって利用者のexport時の宣言生成も支える。原資料・一般の型推論・運用等の残件と9話題のpartialは維持する。
-
-[React風の組み立て試作](lecture-react-authoring-review.md)ではカスタムHookから操作ハンドルの型を推論し、経費・再送経費・休暇の型引数指定を10個から0個にした。配布物と生成宣言の型を検査する改善であり、一般の多相変換・原音・API安定化等の残件は維持する。
-
-[React風の組み立てとlive観測の再点検](lecture-react-authoring-review.md)を追加した。経費・休暇の部品化、再送境界、処理中のspanを既存の実行機構へ接続する。試作APIの安定化・一般の型推論、原音等の残件を維持し、9話題のpartialは変更しない。
+[React風の組み立て](lecture-react-authoring-review.md)では、部品・Context・Hooksから純粋な計算、途中I/O、保存、再送を既存実行機構へ接続する。[選択capture](authoring-capture.md)で必要な途中状態も再実行せず取得し、実tarballと生成宣言をTypeScript 6/7で検査する。一般の型推論・API安定化・原資料等の残件と9話題のpartialは維持する。
 
 [入れ子の段階の要求型](business-request-prefix.md)を改善し、購買25操作の定義から残るload型引数指定3箇所も削除した。操作定義では当初の15箇所が0箇所となり、既存の厳密な入力比較とload全体の保証は維持する。任意の多相変換・原音確認等の残件と9話題のpartialは変更しない。
 

@@ -44,8 +44,10 @@ export const result = (async () => {
   }
   const authoringEvents = [];
   const authoringApp = mountAuthoring(authoringH(authoringDependency.Provider, { value: 10 }, authoringH(PortableBusiness, null)), { observeExecution: event => authoringEvents.push(event) });
-  const authoringFirst = await authoringApp.inspect(authoringOperation, 2);
-  const authoringReplay = await authoringApp.inspect(authoringOperation, 2);
+  const authoringCapture = { input: (_value, step) => step, result: result => result.ok };
+  const authoringFirst = await authoringApp.inspect(authoringOperation, 2, authoringCapture);
+  const authoringReplay = await authoringApp.inspect(authoringOperation, 2, authoringCapture);
+  if (authoringFirst.observationErrors.length || !authoringFirst.observations.some(row => row.step === 'authoring-read-policy') || authoringReplay.observations.some(row => row.step === 'authoring-double')) throw new Error('Portable selected authoring capture failed');
   if (!authoringFirst.result.ok || authoringFirst.result.value.value !== 26 || authoringReplay.attempt !== null || authoringWrites !== 1 || !authoringEvents.some(event => event.kind === 'span-started' && event.step === 'authoring-double')) throw new Error('Portable experimental authoring failed');
   let retryCalls = 0;
   const retried = await retryEffect(async n => ++retryCalls === 1 ? err('Offline') : ok(n), { maxAttempts: 2, decide: () => ({ kind: 'retry', safety: 'not-applied', delayMs: 0 }) })(3);

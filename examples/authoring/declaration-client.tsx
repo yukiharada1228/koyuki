@@ -1,6 +1,7 @@
 /** @jsx h */
 import { h, createApplication } from 'koyuki/experimental';
-import type { Result, Execution, ReplayInputError, ReplayReport } from 'koyuki';
+import type { Result, Execution, ReplayInputError, ReplayReport, StepObservation } from 'koyuki';
+import { captureExpense, captureReplayedExpense } from './declarations/captured-exports.js';
 import { Expenses, approval, type ExpenseRepository } from './declarations/expense.js';
 import { BudgetExpenses, budgetApproval, type BudgetPolicyRepository } from './declarations/expense-budget.js';
 import { ReplayExpenses, replayedApproval, type ReplayExpenseRepository, type ReplayStorageError } from './declarations/expense-replay.js';
@@ -11,9 +12,16 @@ export function checkDeclarations(repository: ExpenseRepository, replayRepositor
   const app = createApplication(<Expenses repository={repository} actor={actor} />);
   const result = app.dispatch(approval, { id: 'one', expectedVersion: 1 });
   const exact: Equal<typeof result, Promise<Result<Change, RuleError | 'LoadFailed' | 'SaveFailed'>>> = true;
+  const captured = app.inspect(approval, { id: 'one', expectedVersion: 1 }, { input: (_value, step) => ({ step }), result: result => result.ok });
+  type Captured = Awaited<typeof captured>;
+  const exactCapturedInput: Equal<Captured['observations'], readonly StepObservation<{ step: string }, boolean>[]> = true;
+  const exactCapturedResult: Equal<Captured['result'], Result<Change, RuleError | 'LoadFailed' | 'SaveFailed'>> = true;
   const replay = createApplication(<ReplayExpenses repository={replayRepository} actor={actor} />);
   const report = replay.inspect(replayedApproval, { requestId: 'one', input: { id: 'one', expectedVersion: 1 } });
   const exactReport: Equal<typeof report, Promise<ReplayReport<ExpenseState, LoadError | RuleError | ReplayStorageError, ReplayStorageError>>> = true;
+  const capturedReplay = replay.inspect(replayedApproval, { requestId: 'one', input: { id: 'one', expectedVersion: 1 } }, { input: () => null, result: result => result.ok });
+  const exactCapturedReplay: Equal<Awaited<typeof capturedReplay>['result'], Result<Execution<ExpenseState>, LoadError | RuleError | ReplayStorageError | ReplayInputError>> = true;
+  const exactCapturedAttempt: Equal<Awaited<typeof capturedReplay>['attempt'], ReplayReport<ExpenseState, LoadError | RuleError | ReplayStorageError, ReplayStorageError>['attempt']> = true;
   const replayResult = replay.dispatch(replayedApproval, { requestId: 'one', input: { id: 'one', expectedVersion: 1 } });
   const exactReplayResult: Equal<typeof replayResult, Promise<Result<Execution<ExpenseState>, LoadError | RuleError | ReplayStorageError | ReplayInputError>>> = true;
   if (false) {
@@ -23,5 +31,9 @@ export function checkDeclarations(repository: ExpenseRepository, replayRepositor
   const budget = createApplication(<BudgetExpenses repository={repository} policies={policies} actor={actor} />);
   const budgetResult = budget.dispatch(budgetApproval, { id: 'one', expectedVersion: 1 });
   const exactBudget: Equal<typeof budgetResult, Promise<Result<Change, RuleError | 'LoadFailed' | 'SaveFailed' | 'BudgetUnavailable' | 'ApprovalLimitExceeded'>>> = true;
-  return { exact, exactReport, exactReplayResult, exactBudget };
+  const exported = captureExpense(repository, actor, { id: 'one', expectedVersion: 1 });
+  const exactExported: Equal<Awaited<typeof exported>['observations'], readonly StepObservation<{ step: string }, boolean>[]> = true;
+  const exportedReplay = captureReplayedExpense(replayRepository, actor, { requestId: 'one', input: { id: 'one', expectedVersion: 1 } });
+  const exactExportedReplay: Equal<Awaited<typeof exportedReplay>['result'], Result<Execution<ExpenseState>, LoadError | RuleError | ReplayStorageError | ReplayInputError>> = true;
+  return { exactExported, exactExportedReplay, exact, exactReport, exactReplayResult, exactBudget, exactCapturedInput, exactCapturedResult, exactCapturedReplay, exactCapturedAttempt };
 }

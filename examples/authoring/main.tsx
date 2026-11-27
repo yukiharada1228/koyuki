@@ -24,6 +24,18 @@ check(value(report.result).next.kind === 'approved', 'expense approval failed');
 check(report.trace.some(row => row.step === 'authorize-approval'), 'inner rule trace was lost');
 check(events.some(row => row.kind === 'span-started' && row.step === 'approve'), 'live span was lost');
 
+function selectedState(value: unknown): string | null {
+  if (value === null || typeof value !== 'object') return null;
+  const state = 'current' in value ? value.current : 'next' in value ? value.next : value;
+  return state !== null && typeof state === 'object' && 'kind' in state && typeof state.kind === 'string' ? state.kind : null;
+}
+const captured = await app.inspect(approval, input, {
+  input: (value, step) => ({ step, state: selectedState(value) }),
+  result: result => result.ok ? selectedState(result.value) : null,
+});
+check(captured.observationErrors.length === 0 && captured.observations.some(row => row.step === 'approve' && row.input.state === 'manager' && row.result === 'approved'), 'selected rule capture failed');
+
+
 let policyReads = 0;
 const policies = { async read() { policyReads++; return ok({ approvalLimit: 2000 }); } };
 const budgetApp = createApplication(<BudgetExpenses repository={repository} policies={policies} actor={actor} />);

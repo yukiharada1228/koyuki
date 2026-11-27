@@ -51,3 +51,9 @@ function omittedPolicyRead() {
   process<Loaded>().through(workflow('authorize', validateApproval)).through(approveWithBudgetPolicy);
 }
 void omittedPolicyRead;
+
+const captured = app.inspect(key, { id: 'one' }, { input: (_value, step) => step, result: result => result.ok });
+const exactCapturedResult: Equal<Awaited<typeof captured>['result'], Result<number, never>> = true; void exactCapturedResult;
+const exactCapturedValue: Equal<Awaited<typeof captured>['observations'][number]['result'], boolean> = true; void exactCapturedValue;
+// @ts-expect-error Selected capture must retain the required input type.
+void app.inspect(key, {}, { input: () => null, result: result => result.ok });

@@ -571,6 +571,23 @@
         "scripts/test-authoring-package.mjs",
         "examples/authoring/declaration-client.tsx"
       ]
+    },
+    "authoringSelectedCaptureFollowUp": {
+      "implementationBaseCommit": "6c10484dface21777dedfd4c4b62f7c4dda6d301",
+      "topicIds": [
+        "w0o-13"
+      ],
+      "scope": "Opt into selected input/result snapshots across explicit instrumented stages through the Hooks application inspect boundary, in one execution. Preserve Result, replay attempts, nested IO and live spans; isolate selector failures, retain per-call ownership, and avoid fabricating values from opaque handlers or skipped replay stages. Packaged TypeScript 6/7 and declaration-only consumers preserve projected values and original detailed Result types. Not default full-value logging, persistent history, original audio/frame review or a status upgrade.",
+      "evidence": [
+        "docs/authoring-capture.md",
+        "src/framework/authoring.ts",
+        "src/authoring-capture.test.tsx",
+        "examples/authoring/main.tsx",
+        "examples/authoring/declaration-client.tsx",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "scripts/test-authoring-package.mjs",
+        "examples/authoring/captured-exports.tsx"
+      ]
     }
   },
   "sections": [
@@ -816,7 +833,11 @@
         "examples/authoring/README.md",
         "examples/authoring/main.tsx",
         "examples/authoring/declaration-client.tsx",
-        "scripts/test-portable.mjs"
+        "scripts/test-portable.mjs",
+        "docs/authoring-capture.md",
+        "src/authoring-capture.test.tsx",
+        "scripts/fixtures/authoring-key-contracts.ts",
+        "examples/authoring/captured-exports.tsx"
       ],
       "remaining": [
         "履歴の保存先・公開項目・保持削除、opaque関数内部・分散相関はhostの設計または未提供の範囲である。講演のdump可能性を、既定の全値永続収集という必須仕様へ読み替えない。",

@@ -1,6 +1,7 @@
 /** Experimental authoring API. Mount is synchronous; IO belongs to dispatch. */
 import { defineCommand, defineAction, process, workflow, withReplay, type Result, type Execution, type ReplayBoundary, type ReplayInputError, type ReplayReport } from './index.js';
-import { Workflow, type Rule } from './workflow.js';
+import { createObservation, type ObservationReport } from './observation.js';
+import { Workflow, type Rule, type WorkflowCapture, type StageObserver, type StageReceiver } from './workflow.js';
 import { bindDetailed, bindDetailedFunction, invokeDetailed, registerDetailed } from './instrumentation.js';
 import { executionSession, type ExecutionOptions, type OperationReport } from './execution.js';
 import type { ActionLoad, ActionReport } from './action.js';
@@ -136,15 +137,25 @@ export function createApplication(root: Node, options?: ExecutionOptions) {
     if (!handler) throw new Error(`UnregisteredOperation:${operation.name}`);
     return handler;
   }
-  async function inspect<I, O, E, D extends OperationReport<O, E>>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<D> {
+  function inspect<I, O, E, D extends OperationReport<O, E>, A, B>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>, capture: WorkflowCapture<A, B>): Promise<Omit<D, 'observations' | 'observationErrors'> & ObservationReport<A, B>>;
+  function inspect<I, O, E, D extends OperationReport<O, E>>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>): Promise<D>;
+  async function inspect<I, O, E, D extends OperationReport<O, E>, A, B>(operation: OperationKey<I, O, E, D>, input: NoInfer<I>, capture?: WorkflowCapture<A, B>) {
     const handler = entry(operation), context = executions.create(operation.name);
     context?.emit({ kind: 'queued' });
     context?.emit({ kind: 'started' });
+    const recorder = capture ? createObservation(capture) : undefined;
+    // This entry opts into all explicit instrumented stages, including nested IO.
+    // Legacy Workflow/Process capture boundaries retain their existing contract.
+    const observe: StageObserver | undefined = recorder ? Object.assign((step: string, value: unknown): StageReceiver => {
+      const outer = context?.observe(step, value), selected = recorder.observe(step, value);
+      return Object.assign((result: Result<unknown, unknown>) => { selected(result); outer?.(result); },
+        { defect: () => { selected.defect?.(); outer?.defect?.(); } });
+    }, { live: true as const, scope: context?.observe.scope }) : context?.observe;
     try {
-      const report = await invokeDetailed(handler.runDetailed, input, context?.observe);
+      const report = await invokeDetailed(handler.runDetailed, input, observe);
       context?.steps(report);
       context?.emit({ kind: 'completed', status: report.result.ok ? 'ok' : 'error' });
-      return report;
+      return recorder ? { ...report, ...recorder.report() } : report;
     } catch (cause) {
       context?.emit({ kind: 'completed', status: 'defect' });
       throw cause;

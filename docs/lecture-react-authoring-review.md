@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | iz-22：イベントの接続と実行を任せ、業務の状態遷移に集中する | 部品・Context・カスタムHookでload/合成Workflow/saveを登録し、dispatchで既存Commandを実行 | 経費・休暇の両方で同じランタイムを使用。組み立て時のI/Oゼロ、失敗停止、必須入力の型保持。開発版experimentalサブパスの実tarballを別プロジェクトで試用。APIの確定と一般的な使いやすさの実証は別の残件 |
 | iz-24・qbf-19：Resultの接続と型記述の負担 | 業務関数は既存workflow/thenで合成し、HookにはWorkflow自体を渡す。再送は同じ業務関数へ境界を追加 | 接続callback不要だが、業務関数の通常の型は必要。操作ハンドルの型はカスタムHookから推論する。一般の多相変換・外側generic actorの特殊化の制限は別に残る |
-| w0o-13：途中状態と処理の観測 | 従来の完了後レポートに加え、JSX createApplicationから既存executionSession/instrumentationへ接続 | I/O待機中のspan-started、検証・遷移の個別span、結果・例外の終端通知を検査。値の選択capture、永続履歴、分散相関の新しい保証は加えていない |
+| w0o-13：途中状態と処理の観測 | 従来の完了後レポートに加え、JSX createApplicationから既存executionSession/instrumentationへ接続 | I/O待機中のspan-started、検証・遷移の個別span、結果・例外の終端通知を検査。選択captureから必要な状態の変化も取得する。永続履歴と分散相関は別の残件 |
 
 JSX/Hooks/Providerは、ユーザーが明示したKoyukiの体験設計である。講演がこれらのAPIを指定した、またはReactの内部実装の再現を求めたとは解釈しない。
 
@@ -52,3 +52,7 @@ iz-22/24・qbf-19の記述負担への具体的な改善として扱い、原音
 ## 途中I/Oを含む組み立て
 
 [詳細形式のProcessの接続](authoring-process.md)を追加し、権限検証後のポリシー照会と純粋な上限判定・状態生成をHooksから接続した。iz-17/20/21とw0o-14の計算とI/Oの分離を新しい組み立て入口でも扱う具体例である。Processの公開型を追加し、利用者が合成したProcessをexportする際の宣言生成も修正する。同期Ruleへ非同期処理を混ぜず、既存のProcess・Action・Commandを利用する。原音確認・一般の推論・API安定化等の残件と各statusは維持する。
+
+## 選択した途中状態をHooksの入口でも取得する
+
+[選択capture](authoring-capture.md)をinspectへ接続した。明示した内部段階へ既存の観測能力を引き継ぎ、必要な入力・結果だけを一度の実行から取得する。未選択項目を観測用に複製せず、capture失敗は業務Resultと分離する。live spanとの併用、途中I/O、再送時の業務段階の省略、並行captureを検査し、実tarballのTypeScript 6/7でも元の結果型・再送attempt・選択値の型を保持する。w0o-13の観測論点への追加実装であり、永続履歴・運用・原音等の残件とstatusは維持する。

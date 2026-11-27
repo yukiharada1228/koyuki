@@ -125,3 +125,7 @@ npx tsx --test src/react-business.test.tsx src/react-business-replay.test.tsx sr
 ## 途中I/Oを含む業務
 
 [Processの接続](authoring-process.md)では、loadまたはexecuteへ詳細形式のProcessを渡し、純粋な計算と途中の外部照会を組み合わせる。予算ポリシー付き経費承認を追加し、内部trace・live span・再送時の省略・配布宣言を検査する。通常の同期Ruleと純粋なWorkflowの実行経路は維持する。
+
+## 選択した途中状態のcapture
+
+[inspectの選択capture](authoring-capture.md)を追加した。第3引数のselectorで必要な状態や成否を選び、一度の実行からobservationsとobservationErrorsを取得する。元の業務Resultと再送レポートは維持し、live spanも同じ実行へ接続する。
